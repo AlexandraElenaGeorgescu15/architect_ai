@@ -1,0 +1,6 @@
+graph TD
+A[PhonePanelPage] --> B(PhoneFilters)
+A --> C(PhoneList)
+A --> D(AddPhoneDialog)
+A --> E(PhoneService)
+C --> F{PhoneCard[]}

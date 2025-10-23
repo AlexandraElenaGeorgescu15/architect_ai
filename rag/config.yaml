@@ -1,0 +1,208 @@
+allow_extensions:
+  - ".ts"
+  - ".tsx"
+  - ".js"
+  - ".jsx"
+  - ".cs"
+  - ".py"
+  - ".json"
+  - ".md"
+  - ".yml"
+  - ".yaml"
+  - ".sql"
+  - ".txt"
+  - ".rst"
+  - ".adoc"
+  - ".xml"
+  - ".html"
+  - ".css"
+  - ".scss"
+  - ".less"
+
+ignore_globs:
+  - "node_modules/**"
+  - "dist/**"
+  - "build/**"
+  - ".git/**"
+  - ".venv/**"
+  - "coverage/**"
+  - "**/*.min.js"
+  - "**/*.min.css"
+  - "architect_ai_cursor_poc/**"  # Exclude the tool itself from indexing
+  - "**/rag/index/**"  # Exclude RAG index data
+  - "**/bin/**"
+  - "**/obj/**"
+  - "**/target/**"
+  - "**/out/**"
+
+max_file_mb: 1.5
+
+# Scaling settings
+scaling:
+  parallel_tasks: true
+  max_concurrent_llm_calls: 5
+  cache_enabled: true
+  cache_backend: "memory"  # or "redis"
+  cache_ttl: 3600
+
+# Performance tuning
+chunk:
+  text_tokens: 550
+  code_tokens: 360
+  overlap_tokens: 60
+  batch_size: 64
+
+embedding:
+  provider: "local"                     # or "openai"
+  local_model: "sentence-transformers/all-MiniLM-L6-v2"
+  openai_model: "text-embedding-3-small"
+  batch_size: 32
+  use_gpu: true
+
+store:
+  kind: "chroma"  # or "pinecone", "qdrant"
+  path: "rag/index"
+  # For Pinecone:
+  # api_key: "${PINECONE_API_KEY}"
+  # index_name: "architect-ai"
+  # For Qdrant:
+  # url: "http://localhost:6333"
+  # api_key: "${QDRANT_API_KEY}"
+
+hybrid:
+  bm25: true
+  k_vector: 200
+  k_bm25: 200
+  k_final: 18
+  cache_results: true
+
+# Monitoring
+monitoring:
+  enabled: true
+  log_level: "INFO"
+  log_file: "logs/architect_ai.log"
+  json_format: false
+  metrics_export_interval: 60
+
+# Rate limiting
+rate_limiting:
+  enabled: false
+  requests_per_minute: 60
+  burst_size: 10
+
+# Multi-tenant
+multi_tenant:
+  enabled: false
+  storage_path: "tenants/data"
+
+# Celery/Workers
+workers:
+  enabled: false
+  broker_url: "pyamqp://guest@localhost//"
+  result_backend: "redis://localhost:6379/0"
+
+# Redis
+redis:
+  enabled: false
+  url: "redis://localhost:6379/0"
+
+# API Gateway
+api:
+  enabled: false
+  host: "0.0.0.0"
+  port: 8000
+  cors_origins: ["*"]
+
+# Auto-ingestion settings
+auto_ingestion:
+  enabled: true
+  watch_directories: ["."]  # Can specify multiple
+  debounce_seconds: 5
+  batch_size: 10
+  max_file_size_mb: 1.5
+  exclude_patterns:
+    - "**/node_modules/**"
+    - "**/.git/**"
+    - "**/dist/**"
+    - "**/build/**"
+    - "**/coverage/**"
+    - "**/rag/index/**"  # Exclude RAG index data
+
+# Background worker settings
+background_worker:
+  enabled: true
+  max_concurrent_jobs: 3
+  retry_attempts: 3
+  retry_delay: 30
+  job_timeout: 1800  # 30 minutes
+
+# Phase 4: Intelligence Features
+intelligence:
+  # Query Expansion
+  query_expansion:
+    enabled: true
+    num_queries: 3
+    use_llm: false  # Use synonym-based expansion (faster)
+  
+  # Reranking
+  reranking:
+    enabled: true
+    strategy: "hybrid"  # Options: cross_encoder, diversity, hybrid
+    model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    top_k: 18
+    diversity_weight: 0.3
+  
+  # AST Chunking
+  ast_chunking:
+    enabled: true
+    fallback_to_token: true
+    preserve_imports: true
+    max_chunk_lines: 100
+  
+  # Metadata Enhancement
+  metadata:
+    enabled: true
+    extract_complexity: true
+    extract_quality_metrics: true
+    calculate_importance: true
+  
+  # Context Optimization
+  context_optimization:
+    enabled: true
+    max_tokens: 8000
+    preserve_top_n: 5
+    diversity_bonus: true
+  
+  # Output Validation
+  validation:
+    enabled: true
+    min_quality_score: 0.5
+    validate_on_generation: true
+    save_validation_reports: true
+
+# Phase 5: Analysis Features
+analysis:
+  # Code Review
+  code_review:
+    enabled: true
+    check_complexity: true
+    check_code_smells: true
+    check_security: true
+    check_performance: true
+    check_best_practices: true
+    check_documentation: true
+    check_testing: true
+    min_quality_score: 70
+  
+  # Security Scanning
+  security_scan:
+    enabled: true
+    scan_generated_code: true
+    max_risk_score: 50  # Alert if risk score exceeds this
+    check_hardcoded_secrets: true
+    check_injection_risks: true
+    check_weak_crypto: true
+  
+  # Save analysis reports
+  save_reports: true
+  reports_dir: "outputs/analysis"

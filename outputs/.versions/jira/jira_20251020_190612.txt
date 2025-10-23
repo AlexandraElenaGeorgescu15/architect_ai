@@ -1,0 +1,96 @@
+```markdown
+# EPIC: Implement Phone Swap Request Feature
+**Description**: Allows users to request a phone from the available list and offer one of their current phones in exchange.
+**Story Points**: 20
+
+## Story 1: As a user, I want to request a phone swap
+**Description**: Implement the "Request Phone Swap" button and modal pop-up on the main phone list page.
+**Story Points**: 8
+**Assignee**: Frontend Team (Alexandra)
+**Labels**: `frontend`, `angular`, `phone-swap`
+
+### Subtask 1.1: Implement "Request Phone Swap" button
+**Description**: Add a "Request Phone Swap" button to the main phone list page.
+**Assignee**: Frontend Team (Alexandra)
+**Estimate**: 2 points
+
+### Subtask 1.2: Create modal pop-up with form
+**Description**: Create a modal pop-up that displays when the "Request Phone Swap" button is clicked. The modal should contain the swap request form.
+**Assignee**: Frontend Team (Alexandra)
+**Estimate**: 3 points
+
+### Subtask 1.3: Implement form fields in the modal
+**Description**: Implement the "Phone to Request," "Phone to Exchange," and "Reason for Request" fields in the modal form.
+**Assignee**: Frontend Team (Alexandra)
+**Estimate**: 3 points
+
+**Acceptance Criteria**:
+*   **G**: Given I am on the main phone page, **W**: When I click the "Request Phone Swap" button, **T**: Then a modal pop-up appears with the phone swap request form.
+*   **G**: Given the modal is open, **W**: When I inspect the form, **T**: Then I see "Phone to Request," "Phone to Exchange," and "Reason for Request" fields.
+
+## Story 2: As a user, I want to populate the form with relevant data
+**Description**: Implement dropdown lists in the form to populate the "Phone to Request" and "Phone to Exchange" fields with available and owned phones, respectively.
+**Story Points**: 5
+**Assignee**: Frontend Team (Alexandra)
+**Labels**: `frontend`, `angular`, `phone-swap`
+
+### Subtask 2.1: Populate "Phone to Request" dropdown
+**Description**: Populate the "Phone to Request" dropdown list with all available phones.
+**Assignee**: Frontend Team (Alexandra)
+**Estimate**: 2 points
+
+### Subtask 2.2: Populate "Phone to Exchange" dropdown
+**Description**: Populate the "Phone to Exchange" dropdown list with only phones owned by the logged-in user.
+**Assignee**: Frontend Team (Alexandra)
+**Estimate**: 3 points
+
+**Acceptance Criteria**:
+
+*   **G**: Given the modal is open, **W**: When I inspect the "Phone to Request" dropdown, **T**: Then I see a list of all available phones.
+*   **G**: Given the modal is open, **W**: When I inspect the "Phone to Exchange" dropdown, **T**: Then I see a list of only my owned phones.
+
+## Story 3: As a user, I want to submit a phone swap request
+**Description**: Implement the submission functionality for the swap request form, including validation and confirmation messages.
+**Story Points**: 7
+**Assignee**: Frontend Team (Alexandra), Backend Team
+**Labels**: `frontend`, `backend`, `api`, `phone-swap`
+
+### Subtask 3.1: Implement "Submit Request" and "Cancel" buttons
+**Description**: Implement the "Submit Request" and "Cancel" buttons in the modal form.
+**Assignee**: Frontend Team (Alexandra)
+**Estimate**: 1 point
+
+### Subtask 3.2: Validate form data before submission
+**Description**: Implement validation to ensure the user has selected a phone to request and a phone to exchange.
+**Assignee**: Frontend Team (Alexandra)
+**Estimate**: 1 point
+
+### Subtask 3.3: Create API endpoint for swap requests
+**Description**: Create a POST /api/phone-swaps API endpoint to handle form submissions.
+**Assignee**: Backend Team
+**Estimate**: 3 points
+
+### Subtask 3.4: Store swap request in the database
+**Description**: Implement database storage for the swap request with the requester's ID, requested phone ID, offered phone ID, status (default 'Pending'), and comment (optional).
+**Assignee**: Backend Team
+**Estimate**: 2 points
+
+**Acceptance Criteria**:
+
+*   **G**: Given I have filled out the form correctly, **W**: When I click the "Submit Request" button, **T**: Then the modal closes, and a confirmation message is displayed.  The API endpoint is successfully called with the form data.
+*   **G**: Given the API receives the form data, **W**: When processing is complete, **T**: Then the database stores the swap request with the correct information and default status.
+
+## Story 4: Implement backend validation for phone ownership
+**Description**: Ensure that the backend validates that the user owns the phone they are offering in exchange.
+**Story Points**: 5
+**Assignee**: Backend Team
+**Labels**: `backend`, `api`, `phone-swap`, `validation`
+
+### Subtask 4.1: Validate user ownership on the backend
+**Description**: Implement backend validation logic to ensure that the user submitting the swap request actually owns the phone they are offering in exchange.
+**Assignee**: Backend Team
+**Estimate**: 5 points
+
+**Acceptance Criteria**:
+*   **G**: Given I submit a swap request offering a phone I do not own, **W**: When the backend processes the request, **T**: Then the API returns an error, and the swap request is not stored in the database.
+```

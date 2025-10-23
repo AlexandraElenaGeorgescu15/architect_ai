@@ -1,0 +1,112 @@
+Okay, here are the requested workflows based on the provided RAG context and requirements, presented in Markdown format.  I will focus on generating a comprehensive, clear, and concise workflow incorporating elements from the design document, README, and agent code.
+
+```markdown
+## Phone Swap Request Feature: Development, Testing, and Deployment Workflows
+
+Based on the provided context, the following workflows are proposed for the "Phone Swap Request" feature.
+
+### 1. Development Workflow
+
+**Objective:** To develop the "Phone Swap Request" feature, ensuring adherence to requirements and team standards.
+
+**Steps:**
+
+1.  **Jira Ticket Creation:** The Product Manager creates a formal Jira ticket with the defined user story and acceptance criteria.
+2.  **UI Wireframe Design:** The UX Team creates the wireframe of the modal and form by the end of day, October 17.
+3.  **Wireframe Approval:** The Frontend Team begins implementation once the wireframes are approved.
+4.  **Frontend Development:**
+    *   Build the "Request Phone Swap" button and the basic modal structure using Angular and Angular Material.
+    *   Implement the form with dropdowns for "Phone to Request" and "Phone to Exchange," and a text area for "Reason for Request."
+    *   Add "Submit Request" and "Cancel" buttons.
+    *   Display a confirmation message upon successful submission.
+5.  **Backend Development:**
+    *   The Backend Team develops the new API endpoint (`POST /api/phone-swaps`) and database schema (likely .NET and MongoDB). Target completion: October 21.
+    *   Implement validation to ensure the requester owns the offered phone and the status is set to "Pending" by default.
+6.  **Code Review:** (See Code Review Process below)
+7.  **Integration:**  Frontend and Backend teams integrate their components.
+8.  **Development Environment Setup:**
+    *   Angular CLI (latest stable version)
+    *   Node.js 18+ LTS
+    *   Target Browsers: Chrome, Firefox, Safari, Edge
+
+### 2. Testing Workflow
+
+**Objective:** To ensure the quality and functionality of the "Phone Swap Request" feature through rigorous testing.
+
+**Testing Strategy Elements (Based on agent code context):**
+
+1.  **Unit Testing:**
+    *   Frontend: Test individual components of the modal and form (e.g., button click handlers, form validation).
+    *   Backend: Test API endpoint logic, database interactions, and validation rules.
+2.  **Integration Testing:**
+    *   Verify communication between frontend and backend components.
+    *   Test data flow from the UI to the API and database.
+3.  **End-to-End Testing:**
+    *   Test the entire workflow, from clicking the "Request Phone Swap" button to receiving confirmation.  Simulate a user completing the entire process.
+4.  **Performance Testing:**
+    *   Measure API response time and dropdown loading efficiency.
+    *   Address performance bottlenecks (e.g., implement debouncing or throttling if needed, as suggested in the design document).
+5.  **Security Testing:**
+    *   Validate input data to prevent security vulnerabilities.
+    *   Implement proper authentication and authorization for the API endpoint.
+6.  **User Acceptance Testing (UAT):**
+    *   Verify that the feature meets the acceptance criteria defined in the Jira ticket.
+    *   Manual testing: all "Given/When/Then" scenarios, accessibility (keyboard navigation, screen reader), responsive grid/list modes, mobile layout
+7.  **Test Data Management:**
+    *   Use mock data during development and testing phases, ensuring it mirrors the real API contract.
+8.  **CI/CD Integration:**
+    *   Automate testing as part of the CI/CD pipeline.
+
+**Specific Testing Requirements (From extracted requirements):**
+
+*   Frontend: Verify the modal opens correctly, and the form fields are displayed as expected.
+*   Frontend: Test the "Submit Request" and "Cancel" buttons.
+*   Frontend: Check for proper display of the confirmation message upon submission.
+*   Backend: Ensure the API endpoint correctly handles form submissions.
+*   Backend: Validate data storage in the database.
+*   Backend: Verify phone ownership validation logic.
+
+**Manual Testing (outputs/design.md context):**
+
+*   Acceptance Criteria: All Given/When/Then scenarios.
+*   Accessibility: Keyboard navigation, screen reader compatibility.
+*   Responsive Design: Grid/list modes, mobile layout.
+
+**Reviewers:** Victor (QA)
+
+### 3. Deployment Workflow
+
+**Objective:**  To deploy the "Phone Swap Request" feature to the production environment in a safe and reliable manner.
+
+**Steps:**
+
+1.  **Build Configuration:** Ensure both Production and Development builds are configured appropriately, production build with optimized bundles, development build with source maps and hot reload.
+2.  **Code Freeze:**  A code freeze is implemented prior to deployment.
+3.  **Environment Configuration:** Configure the target environment (e.g., Azure, AWS, GCP) with necessary dependencies and settings.
+4.  **Deployment:** Deploy the frontend and backend components to the staging environment.
+5.  **Staging Testing:** Perform comprehensive testing in the staging environment to ensure stability and functionality.
+6.  **Production Deployment:** Deploy the frontend and backend components to the production environment.
+7.  **Monitoring:** Monitor the deployed feature for performance and errors using telemetry and logging.
+8.  **Rollback Plan:** Have a rollback plan in place in case of issues.
+
+### 4. Code Review Process
+
+**Objective:** To maintain code quality and consistency through peer review.
+
+**Steps:**
+
+1.  **Developer Completes Task:** A developer completes their assigned task (frontend or backend).
+2.  **Code Submission:** The developer submits their code for review (e.g., via a pull request in Git).
+3.  **Reviewer Assignment:** A designated reviewer (or reviewers) is assigned to review the code.
+4.  **Code Review:** The reviewer examines the code for:
+    *   Adherence to coding standards and best practices.
+    *   Correctness and functionality.
+    *   Security vulnerabilities.
+    *   Code clarity and maintainability.
+    *   Test coverage.
+5.  **Feedback and Revision:** The reviewer provides feedback to the developer.  The developer revises the code based on the feedback.
+6.  **Re-review (If Necessary):** If significant changes were made, the reviewer re-reviews the code.
+7.  **Approval:** Once the reviewer is satisfied, they approve the code.
+8.  **Merge:** The approved code is merged into the main branch.
+
+```

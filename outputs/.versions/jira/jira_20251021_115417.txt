@@ -1,0 +1,243 @@
+```markdown
+# EPIC: Phone Swap Request Feature
+
+**Description**: Implement a feature that allows users to request a phone swap within the application.
+
+**Story Points**: 20
+
+## Story 1: As a user, I can request a phone swap
+**Story Points**: 5
+**Assignee**: Frontend Developer
+**Dependencies**: UX Wireframes
+
+**Description**: Implement the UI components for requesting a phone swap, including the button, modal, dropdowns, and text area.
+
+**Acceptance Criteria**:
+
+*   **Given** I am a logged-in user on the main phone page
+*   **When** I click the "Request Phone Swap" button
+*   **Then** a modal should appear, populated with "Phone to Request" and "Phone to Exchange" dropdowns, and a text area for the reason
+
+*   **Given** the "Request Phone Swap" modal is open
+*   **When** I select a phone from the "Phone to Request" dropdown and a phone I own from the "Phone to Exchange" dropdown, and enter a reason
+*   **Then** the "Submit Request" button should be enabled
+
+*   **Given** I have filled out all the fields in the "Request Phone Swap" modal
+*   **When** I click the "Submit Request" button
+*   **Then** the modal should close, and a confirmation message should be displayed
+
+### Subtask 1.1: Implement "Request Phone Swap" button
+**Story Points**: 1
+**Assignee**: Frontend Developer
+**Dependencies**: None
+
+**Tasks**:
+
+*   [ ] Add the "Request Phone Swap" button to the main phone page.
+*   [ ] Ensure the button is styled appropriately and is accessible.
+
+**Acceptance Criteria**:
+
+*   **Given** I am on the main phone page
+*   **When** the page loads
+*   **Then** I should see a "Request Phone Swap" button
+
+### Subtask 1.2: Build the "Request Phone Swap" modal
+**Story Points**: 2
+**Assignee**: Frontend Developer
+**Dependencies**: UX Wireframes
+
+**Tasks**:
+
+*   [ ] Create the modal structure using Angular Material components.
+*   [ ] Implement the overlay and ensure it's responsive.
+*   [ ] Implement accessibility features such as focus management.
+
+**Acceptance Criteria**:
+
+*   **Given** I click on the "Request Phone Swap" button
+*   **When** the modal opens
+*   **Then** it should overlay the current view without breaking the layout
+
+### Subtask 1.3: Populate Dropdowns with Phone Lists
+**Story Points**: 2
+**Assignee**: Frontend Developer
+**Dependencies**: Backend API
+
+**Tasks**:
+
+*   [ ] Fetch the list of available phones from the backend API.
+*   [ ] Fetch the list of phones owned by the user from the backend API.
+*   [ ] Populate the "Phone to Request" and "Phone to Exchange" dropdowns with the fetched data.
+
+**Acceptance Criteria**:
+
+*   **Given** the "Request Phone Swap" modal is open
+*   **When** the "Phone to Request" dropdown is loaded
+*   **Then** it should contain all available phones
+
+*   **Given** the "Request Phone Swap" modal is open
+*   **When** the "Phone to Exchange" dropdown is loaded
+*   **Then** it should contain only phones owned by the logged-in user
+
+## Story 2: As a backend system, I need to handle the phone swap request
+**Story Points**: 8
+**Assignee**: Backend Developer
+**Dependencies**: Database Schema
+
+**Description**: Develop the API endpoint and backend logic to process phone swap requests, including validation and data storage.
+
+**Acceptance Criteria**:
+
+*   **Given** a valid swap request is submitted
+*   **When** the API endpoint is called
+*   **Then** the request should be processed, and the swap request details should be stored in the database.
+
+*   **Given** an invalid swap request is submitted (e.g., user doesn't own the phone)
+*   **When** the API endpoint is called
+*   **Then** the request should be rejected, and an appropriate error message should be returned.
+
+### Subtask 2.1: Create API Endpoint (POST /api/phone-swaps)
+**Story Points**: 3
+**Assignee**: Backend Developer
+**Dependencies**: None
+
+**Tasks**:
+
+*   [ ] Define the API endpoint structure and request/response formats.
+*   [ ] Implement the endpoint logic to receive and validate the swap request data.
+
+**Acceptance Criteria**:
+
+*   **Given** a valid swap request is sent to the API endpoint
+*   **When** the endpoint receives the request
+*   **Then** it should return a success status code (200 or 201)
+
+### Subtask 2.2: Implement Backend Validation
+**Story Points**: 2
+**Assignee**: Backend Developer
+**Dependencies**: API Endpoint
+
+**Tasks**:
+
+*   [ ] Implement validation logic to ensure the user owns the phone being offered.
+*   [ ] Implement validation logic to ensure the requested phone is available.
+*   [ ] Return appropriate error messages for invalid requests.
+
+**Acceptance Criteria**:
+
+*   **Given** I submit a swap request for a phone I don't own
+*   **When** the API endpoint receives the request
+*   **Then** it should return an error message indicating that I don't own the phone.
+
+### Subtask 2.3: Create Database Schema for Swap Requests
+**Story Points**: 3
+**Assignee**: Backend Developer
+**Dependencies**: None
+
+**Tasks**:
+
+*   [ ] Design the database schema to store swap request details (Requester ID, Requested Phone ID, Offered Phone ID, Status, Comment).
+*   [ ] Implement the schema in the chosen database system.
+
+**Acceptance Criteria**:
+
+*   **Given** the database schema is implemented
+*   **When** a swap request is submitted
+*   **Then** the request details should be stored in the database correctly.
+
+## Story 3: As a UX Designer, I want to create wireframes for the Phone Swap Request feature
+**Story Points**: 3
+**Assignee**: UX Designer
+**Dependencies**: Feature Requirements
+
+**Description**: Design the user interface and create wireframes for the "Request Phone Swap" modal.
+
+**Acceptance Criteria**:
+
+*   **Given** the feature requirements are defined
+*   **When** the wireframes are created
+*   **Then** the wireframes should clearly depict the modal layout, dropdowns, text area, and buttons.
+
+### Subtask 3.1: Design the "Request Phone Swap" Modal Wireframe
+**Story Points**: 3
+**Assignee**: UX Designer
+**Dependencies**: None
+
+**Tasks**:
+
+*   [ ] Create a wireframe showing the layout of the modal, including the position of the dropdowns, text area, and buttons.
+*   [ ] Ensure the wireframe adheres to accessibility best practices.
+*   [ ] The wireframe should be complete by EOD, October 17.
+
+**Acceptance Criteria**:
+
+*   **Given** the wireframe is created
+*   **When** it is reviewed
+*   **Then** it should be easy to understand and provide a clear visual representation of the modal's intended design.
+
+## Story 4: Testing of the Phone Swap Request Functionality
+**Story Points**: 4
+**Assignee**: QA Engineer
+**Dependencies**: All Development Tasks
+
+**Description**: Perform end-to-end testing of the phone swap request functionality to ensure it meets the specified requirements and acceptance criteria.
+
+**Acceptance Criteria**:
+
+*   **Given** all development tasks are completed
+*   **When** the testing is performed
+*   **Then** all acceptance criteria for each story are met
+
+### Subtask 4.1: Frontend Testing
+**Story Points**: 2
+**Assignee**: QA Engineer
+**Dependencies**: All frontend subtasks
+
+**Tasks**:
+*   [ ] Verify the correct phones are displayed in the "Phone to Request" dropdown.
+*   [ ] Verify the correct phones are displayed in the "Phone to Exchange" dropdown (owned by the user).
+*   [ ] Test successful submission of a swap request.
+*   [ ] Test the display of the confirmation message.
+
+**Acceptance Criteria**:
+*   **Given** the frontend components are implemented
+*   **When** the components are tested
+*   **Then** all acceptance criteria defined in the frontend subtasks should be met.
+
+### Subtask 4.2: Backend Testing
+**Story Points**: 2
+**Assignee**: QA Engineer
+**Dependencies**: All backend subtasks
+
+**Tasks**:
+*   [ ] Test that validation prevents a user from offering a phone they don't own.
+*   [ ] Test error handling for invalid inputs.
+*   [ ] Test the API endpoint's ability to handle concurrent requests.
+
+**Acceptance Criteria**:
+*   **Given** the backend API is implemented
+*   **When** the API is tested
+*   **Then** all acceptance criteria defined in the backend subtasks should be met.
+
+**Definition of Done (DoD)**
+*   Code compiles without errors
+*   Acceptance criteria met
+*   Basic tests written and passing
+*   Code reviewed
+*   Documentation updated
+
+**Sprint Planning**
+
+*   Assign specific subtasks to team members for the sprint.
+*   Estimate the effort required for each subtask.
+*   Set a target completion date for the sprint based on dependencies and team capacity.
+*   Ensure that all tasks are clarified and the team members are aware of the dependencies.
+
+**Risk Assessment**
+*   *Risk*: Backend API might not be ready on time, blocking frontend development.
+    *   *Mitigation*: Frequent communication between frontend and backend teams, with backend team providing mock API endpoints initially.
+*   *Risk*: UX wireframes might be delayed.
+    *   *Mitigation*: Product manager should follow up with the UX designer to ensure the wireframes are on track.
+
+```

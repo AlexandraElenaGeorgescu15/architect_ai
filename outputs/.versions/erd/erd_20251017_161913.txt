@@ -1,0 +1,23 @@
+graph TD
+erDiagram
+USER ||--o{ PHONE_SWAP_REQUEST : "requests"
+PHONE ||--o{ PHONE_SWAP_REQUEST : "requested in"
+PHONE ||--o{ PHONE_SWAP_REQUEST : "offered in"
+USER {
+int user_id PK
+string username
+string email
+}
+PHONE {
+int phone_id PK
+string model
+string os
+}
+PHONE_SWAP_REQUEST {
+int swap_id PK
+int requester_id FK
+int requested_phone_id FK
+int offered_phone_id FK
+string status
+string reason
+}

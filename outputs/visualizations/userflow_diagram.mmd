@@ -1,0 +1,7 @@
+graph TD
+A[Start] --> B[Enter Website]
+B --> C[Browse Products]
+C --> D{Add to Cart?}
+D -->|Yes| E[Shopping Cart]
+D -->|No| C
+E --> F[Checkout]

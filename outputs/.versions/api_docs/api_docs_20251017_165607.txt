@@ -1,0 +1,153 @@
+```markdown
+# API Documentation
+
+## API Overview
+
+This document provides a comprehensive overview of the available API endpoints for the backend service. The backend is built using C# .NET. It also includes documentation for the planned Phone API.
+
+## Base URL
+
+### Current Backend API (C# .NET)
+
+`https://localhost:7214`
+
+### Planned Phone API
+
+`https://localhost:7214/api`
+
+## Authentication
+
+User authentication is handled via the `/Users/login` endpoint. Successful authentication returns user data.  Authentication is required for some endpoints.
+
+## Endpoints
+
+### Users Controller (`/Users`)
+
+#### `POST /Users/register` - User registration
+
+*   **Description**: Registers a new user.
+*   **Request Body**: `UserDto` (username, email, `***REDACTED***`)
+*   **Response**:
+    *   200 OK: Registration successful.
+    *   400 BadRequest: Registration failed due to invalid input.
+
+#### `POST /Users/login` - User authentication
+
+*   **Description**: Authenticates an existing user.
+*   **Request Body**: `UserDto` (username/email, `***REDACTED***`)
+*   **Response**:
+    *   200 OK: Authentication successful, returns user data.
+    *   404 NotFound: Authentication failed due to invalid credentials.
+
+### Weather Controller (`/WeatherForecast`)
+
+#### `GET /WeatherForecast` - Sample weather data
+
+*   **Description**:  A demo endpoint that returns sample weather data. No authentication required.
+
+### Planned Phone API Endpoints (`/api/phones`)
+
+#### `GET /api/phones?brand=&q=&priceMin=&priceMax=`
+
+*   **Description**: Retrieves a list of phones based on optional filter criteria.
+*   **Parameters**:
+    *   `brand` (string, optional): Filter by phone brand.
+    *   `q` (string, optional): General search query.
+    *   `priceMin` (number, optional): Minimum price.
+    *   `priceMax` (number, optional): Maximum price.
+*   **Response**: `Phone[]`
+
+#### `POST /api/phones`
+
+*   **Description**: Creates a new phone.
+*   **Request Body**: `Phone`
+*   **Response**: `Phone`
+
+#### `DELETE /api/phones/{id}`
+
+*   **Description**: Deletes a phone by its ID.
+*   **Parameters**:
+    *   `id` (string, required): The ID of the phone to delete.
+*   **Response**: 204 No Content
+
+#### `PUT /api/phones/{id}/primary`
+
+*   **Description**: Sets a phone as the primary phone for a user.
+*   **Parameters**:
+    *   `id` (string, required): The ID of the phone to set as primary.
+*   **Response**: `Phone`
+
+### Planned Phone Swap API Endpoints (`/api/phone-swaps`)
+
+#### `POST /api/phone-swaps`
+
+*   **Description**: Creates a new phone swap request.
+*   **Request Body**:
+    ```json
+    {
+      "requesterId": "string", // User ID of the requester
+      "requestedPhoneId": "string", // ID of the phone being requested
+      "offeredPhoneId": "string", // ID of the phone being offered in exchange
+      "comment": "string" // Optional comment
+    }
+    ```
+*   **Response**:
+    *   201 Created: Swap request successfully created.
+    *   400 Bad Request: Invalid input or validation failed (e.g., user doesn't own the offered phone).
+    *   401 Unauthorized: User not authenticated.
+    *   500 Internal Server Error:  An unexpected error occurred.
+
+## DTOs
+
+### UserDto (C#)
+
+```csharp
+{
+  "username": string,
+  "email": string,
+  "***REDACTED***": string
+}
+```
+
+### Phone (TypeScript)
+
+```typescript
+{
+  id: string;
+  userId: string;
+  brand: 'Apple'|'Samsung'|'Google'|'Xiaomi'|'OnePlus'|'Other';
+  model: string;
+  numberE164: string;   // +14155551212
+  display: string;      // +1 415 555 1212 (formatted)
+  price: number;        // 0..2000
+  currency: 'USD';
+  isPrimary: boolean;
+  createdAt: string;    // ISO
+  updatedAt: string;    // ISO
+}
+```
+
+### PhoneSwapRequest (Example)
+
+```typescript
+{
+    requesterId: string;  // User ID of the requester
+    requestedPhoneId: string; // ID of the phone being requested
+    offeredPhoneId: string;   // ID of the phone being offered
+    status: 'Pending' | 'Approved' | 'Rejected'; // Status of the swap request
+    comment?: string;  //Optional comment from requester
+}
+
+```
+
+## Error Codes
+
+*   400 Bad Request: The request was malformed or invalid.
+*   401 Unauthorized: Authentication is required and has failed or has not yet been provided.
+*   403 Forbidden: The server understands the request, but refuses to authorize it.
+*   404 Not Found: The requested resource could not be found.
+*   500 Internal Server Error: An unexpected error occurred on the server.
+
+## Rate Limiting
+
+_TBD - Details about rate limiting will be added here._

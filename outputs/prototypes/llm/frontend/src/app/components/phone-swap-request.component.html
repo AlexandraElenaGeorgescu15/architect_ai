@@ -1,0 +1,45 @@
+<div class="container">
+  <h2>Phone Swap Request</h2>
+  <form [formGroup]="swapRequestForm" (ngSubmit)="onSubmit()">
+
+    <mat-form-field appearance="outline">
+      <mat-label>Current Phone</mat-label>
+      <input matInput placeholder="Enter your current phone model" formControlName="currentPhone" required>
+      <mat-error *ngIf="currentPhone?.invalid && (currentPhone?.dirty || currentPhone?.touched)">
+        Please enter your current phone model.
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Desired Phone</mat-label>
+      <input matInput placeholder="Enter the phone model you want" formControlName="desiredPhone" required>
+      <mat-error *ngIf="desiredPhone?.invalid && (desiredPhone?.dirty || desiredPhone?.touched)">
+        Please enter the desired phone model.
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Reason for Swap (Optional)</mat-label>
+      <textarea matInput placeholder="Explain why you want to swap" formControlName="reason"></textarea>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Contact Email</mat-label>
+      <input matInput placeholder="Enter your email" formControlName="contactEmail" required email>
+      <mat-error *ngIf="contactEmail?.invalid && (contactEmail?.dirty || contactEmail?.touched)">
+        <span *ngIf="contactEmail?.errors?.['required']">Please enter your email.</span>
+        <span *ngIf="contactEmail?.errors?.['email']">Please enter a valid email.</span>
+      </mat-error>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Contact Phone</mat-label>
+      <input matInput placeholder="Enter your phone number" formControlName="contactPhone">
+      <mat-error *ngIf="contactPhone?.invalid && (contactPhone?.dirty || contactPhone?.touched)">
+        Please enter a valid phone number.
+      </mat-error>
+    </mat-form-field>
+
+    <button mat-raised-button color="primary" type="submit" [disabled]="swapRequestForm.invalid">Submit Request</button>
+  </form>
+</div>

@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architect.AI - Complete Technical Walkthrough</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .demo-controls {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid #667eea;
+            text-align: center;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 5px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .step-counter {
+            display: inline-block;
+            margin-left: 20px;
+            font-weight: bold;
+            color: #667eea;
+            font-size: 18px;
+            padding: 8px 16px;
+            background: #f0f4ff;
+            border-radius: 20px;
+        }
+
+        .step-container {
+            padding: 40px;
+            margin-top: 100px;
+        }
+
+        .step {
+            margin-bottom: 60px;
+            opacity: 0.3;
+            transition: opacity 0.5s ease;
+            display: none;
+        }
+
+        .step.active {
+            opacity: 1;
+            display: block;
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 12px;
+            border-left: 6px solid #667eea;
+        }
+
+        .step-number {
+            background: #667eea;
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.3em;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+
+        .step-title {
+            font-size: 1.8em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .step-description {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .demo-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 20px 0;
+        }
+
+        .demo-section h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .demo-section h4 {
+            color: #764ba2;
+            margin: 25px 0 15px 0;
+            font-size: 1.2em;
+        }
+
+        .code-block {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 20px 0;
+            overflow-x: auto;
+            line-height: 1.6;
+        }
+
+        .code-block .comment {
+            color: #a0aec0;
+        }
+
+        .code-block .keyword {
+            color: #f687b3;
+        }
+
+        .code-block .string {
+            color: #68d391;
+        }
+
+        .code-block .number {
+            color: #fbd38d;
+        }
+
+        .file-tree {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            margin: 20px 0;
+            line-height: 1.8;
+        }
+
+        .file-tree .file {
+            color: #68d391;
+        }
+
+        .file-tree .directory {
+            color: #63b3ed;
+            font-weight: bold;
+        }
+
+        .visual-box {
+            border: 3px solid #667eea;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            background: white;
+        }
+
+        .visual-box h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .flow-diagram {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .flow-box {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            min-width: 150px;
+            margin: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .flow-box.highlight {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .flow-arrow {
+            font-size: 2em;
+            color: #667eea;
+            margin: 0 10px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 1em;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-weight: bold;
+            color: #856404;
+        }
+
+        .result-box {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+
+        .result-box h4 {
+            color: #155724;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+
+        .result-box pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+        }
+
+        .info-box {
+            background: #d1ecf1;
+            border: 2px solid #bee5eb;
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .info-box h4 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #0c5460;
+            line-height: 1.6;
+        }
+
+        ul {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+
+        li {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .flow-diagram {
+                flex-direction: column;
+            }
+            
+            .flow-arrow {
+                transform: rotate(90deg);
+            }
+
+            .step-title {
+                font-size: 1.3em;
+            }
+
+            .demo-controls {
+                padding: 10px;
+            }
+
+            .btn {
+                padding: 10px 15px;
+                font-size: 14px;
+                margin: 5px 2px;
+            }
+
+            .step-counter {
+                display: block;
+                margin: 10px 0 0 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 Architect.AI - Complete Technical Walkthrough</h1>
+            <p>From "Make Hello World Blue" to Production-Ready Code</p>
+        </div>
+
+        <div class="demo-controls">
+            <button class="btn" onclick="startDemo()">🚀 Start Demo</button>
+            <button class="btn" onclick="previousStep()" id="prevBtn" disabled>⬅️ Previous</button>
+            <button class="btn" onclick="nextStep()" id="nextBtn" disabled>Next ➡️</button>
+            <button class="btn" onclick="resetDemo()">🔄 Reset</button>
+            <span class="step-counter" id="stepCounter">Step 0 of 12</span>
+        </div>
+
+        <div class="step-container">
+            <!-- Step 1: The Simple Project -->
+            <div class="step" id="step1">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <div>
+                        <div class="step-title">📁 Our Simple Project</div>
+                        <div class="step-description">A basic "Hello World" web application</div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>The Starting Point</h3>
+                    <p>We have a simple web project with just 3 files:</p>
+                    
+                    <div class="file-tree">
+<span class="directory">📁 hello-world-project/</span>
+  <span class="file">📄 index.html</span>
+  <span class="file">📄 style.css</span>
+  <span class="file">📄 app.js</span>
+                    </div>
+
+                    <h4>index.html - The Main Page</h4>
+                    <div class="code-block">
+<span class="keyword">&lt;!DOCTYPE</span> <span class="string">html</span><span class="keyword">&gt;</span>
+<span class="keyword">&lt;html&gt;</span>
+<span class="keyword">&lt;head&gt;</span>
+    <span class="keyword">&lt;title&gt;</span>Hello World<span class="keyword">&lt;/title&gt;</span>
+    <span class="keyword">&lt;link</span> <span class="string">rel=</span><span class="string">"stylesheet"</span> <span class="string">href=</span><span class="string">"style.css"</span><span class="keyword">&gt;</span>
+<span class="keyword">&lt;/head&gt;</span>
+<span class="keyword">&lt;body&gt;</span>
+    <span class="keyword">&lt;div</span> <span class="string">id=</span><span class="string">"message"</span><span class="keyword">&gt;</span>Hello World!<span class="keyword">&lt;/div&gt;</span>
+    <span class="keyword">&lt;script</span> <span class="string">src=</span><span class="string">"app.js"</span><span class="keyword">&gt;&lt;/script&gt;</span>
+<span class="keyword">&lt;/body&gt;</span>
+<span class="keyword">&lt;/html&gt;</span>
+                    </div>
+
+                    <h4>style.css - The Styling</h4>
+                    <div class="code-block">
+<span class="keyword">#message</span> {
+    <span class="string">font-size</span>: <span class="number">24px</span>;
+    <span class="string">text-align</span>: <span class="string">center</span>;
+    <span class="string">margin-top</span>: <span class="number">50px</span>;
+    <span class="string">color</span>: <span class="string">black</span>;  <span class="comment">/* Currently black */</span>
+}
+                    </div>
+
+                    <h4>app.js - The JavaScript</h4>
+                    <div class="code-block">
+<span class="keyword">function</span> <span class="string">displayMessage</span>() {
+    <span class="keyword">const</span> element = document.getElementById(<span class="string">'message'</span>);
+    element.textContent = <span class="string">'Hello World!'</span>;
+}
+
+<span class="comment">// Run when page loads</span>
+window.onload = displayMessage;
+                    </div>
+
+                    <div class="info-box">
+                        <h4>📝 Current State</h4>
+                        <p>Right now, the text "Hello World!" is displayed in <strong>black</strong>. We want to change it to <strong>blue</strong>.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Meeting Notes -->
+            <div class="step" id="step2">
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <div>
+                        <div class="step-title">📝 User Input: Meeting Notes</div>
+                        <div class="step-description">The user describes what they want</div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>The Request</h3>
+                    <div class="visual-box">
+                        <h4>Meeting Notes from Product Manager:</h4>
+                        <div class="code-block">
+<span class="string">"We need to make the Hello World text blue instead of black.
+The user feedback says the black text is too harsh.
+Please update the styling to use a nice blue color."</span>
+                        </div>
+                    </div>
+
+                    <h4>What Architect.AI Understands:</h4>
+                    <div class="flow-diagram">
+                        <div class="flow-box highlight">
+                            <strong>Target</strong><br/>
+                            "Hello World" text
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box highlight">
+                            <strong>Action</strong><br/>
+                            Change color
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box highlight">
+                            <strong>New Value</strong><br/>
+                            Blue
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">1</div>
+                            <div class="stat-label">File to Modify</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">CSS</div>
+                            <div class="stat-label">File Type</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">Simple</div>
+                            <div class="stat-label">Complexity</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: RAG Indexing Starts -->
+            <div class="step" id="step3">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <div>
+                        <div class="step-title">🔍 Step 1: File Discovery & Filtering</div>
+                        <div class="step-description">RAG system scans the project files</div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Scanning the Project</h3>
+                    <p>The RAG system looks at all files in the project and decides which ones to index:</p>
+
+                    <div class="file-tree">
+<span class="directory">📁 hello-world-project/</span>
+  <span class="file">📄 index.html</span>          ✅ <span class="string">Allowed (.html)</span>
+  <span class="file">📄 style.css</span>           ✅ <span class="string">Allowed (.css)</span>
+  <span class="file">📄 app.js</span>              ✅ <span class="string">Allowed (.js)</span>
+  <span class="directory">📁 node_modules/</span>       ❌ <span class="comment">Ignored (in config)</span>
+  <span class="file">📄 .git/</span>               ❌ <span class="comment">Ignored (in config)</span>
+                    </div>
+
+                    <h4>Filtering Rules (from rag/config.yaml):</h4>
+                    <div class="code-block">
+<span class="comment"># Files we want to index:</span>
+<span class="keyword">allow_extensions</span>: [<span class="string">".html"</span>, <span class="string">".css"</span>, <span class="string">".js"</span>, <span class="string">".md"</span>]
+
+<span class="comment"># Folders we ignore:</span>
+<span class="keyword">ignore_globs</span>: [<span class="string">"node_modules/**"</span>, <span class="string">".git/**"</span>, <span class="string">"dist/**"</span>]
+
+<span class="comment"># File size limit:</span>
+<span class="keyword">max_file_mb</span>: <span class="number">1.5</span>
+                    </div>
+
+                    <div class="result-box">
+                        <h4>✅ Result:</h4>
+                        <p><strong>3 files</strong> will be indexed: index.html, style.css, app.js</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Chunking -->
+            <div class="step" id="step4">
+                <div class="step-header">
+                    <div class="step-number">4</div>
+                    <div>
+                        <div class="step-title">✂️ Step 2: Breaking Files into Chunks</div>
+                        <div class="step-description">Files are split into smaller pieces for better processing</div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Why Chunking?</h3>
+                    <p>Large files are split into smaller "chunks" so the AI can process them more efficiently. Each chunk contains a meaningful piece of code.</p>
+
+                    <h4>Example: style.css gets chunked</h4>
+                    <div class="visual-box">
+                        <h4>Original File (style.css):</h4>
+                        <div class="code-block">
+<span class="keyword">#message</span> {
+    <span class="string">font-size</span>: <span class="number">24px</span>;
+    <span class="string">text-align</span>: <span class="string">center</span>;
+    <span class="string">margin-top</span>: <span class="number">50px</span>;
+    <span class="string">color</span>: <span class="string">black</span>;
+}
+                        </div>
+
+                        <h4>Becomes Chunk:</h4>
+                        <div class="code-block">
+<span class="comment">// Chunk ID: style.css::text::0</span>
+<span class="keyword">FILE</span>: <span class="string">style.css</span>
+<span class="keyword">SECTION</span>: <span class="number">0</span>
+<span class="keyword">CONTENT</span>:
+<span class="keyword">#message</span> {
+    <span class="string">font-size</span>: <span class="number">24px</span>;
+    <span class="string">text-align</span>: <span class="string">center</span>;
+    <span class="string">margin-top</span>: <span class="number">50px</span>;
+    <span class="string">color</span>: <span class="string">black</span>;
+}
+                        </div>
+                    </div>
+
+                    <h4>Chunking Strategy:</h4>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">550</div>
+                            <div class="stat-label">Max Tokens per Text Chunk</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">360</div>
+                            <div class="stat-label">Max Tokens per Code Chunk</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">60</div>
+                            <div class="stat-label">Overlap Tokens</div>
+                        </div>
+                    </div>
+
+                    <div class="result-box">
+                        <h4>✅ Result:</h4>
+                        <p><strong>3 chunks</strong> created from our 3 files (they're small, so 1 chunk each)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5: Vector Embeddings -->
+            <div class="step" id="step5">
+                <div class="step-header">
+                    <div class="step-number">5</div>
+                    <div>
+                        <div class="step-title">🧮 Step 3: Converting to Vector Embeddings</div>
+                        <div class="step-description">Text is converted to numbers that AI can understand</div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>What are Vector Embeddings?</h3>
+                    <p>Imagine converting words into coordinates on a map. Similar words are close together, different words are far apart. This helps the AI understand meaning, not just match exact words.</p>
+
+                    <div class="visual-box">
+                        <h4>Example: Our style.css chunk</h4>
+                        <div class="code-block">
+<span class="comment"># Input Text:</span>
+<span class="string">"FILE: style.css SECTION: 0 #message { font-size: 24px; text-align: center; margin-top: 50px; color: black; }"</span>
+
+<span class="comment"># AI Model (sentence-transformers/all-MiniLM-L6-v2) converts it to:</span>
+<span class="keyword">Vector</span> = [<span class="number">0.123</span>, <span class="number">-0.456</span>, <span class="number">0.789</span>, <span class="number">0.234</span>, <span class="number">-0.567</span>, ... <span class="comment">(384 numbers total)</span>]
+                        </div>
+                    </div>
+
+                    <h4>Visual Representation:</h4>
+                    <div class="flow-diagram">
+                        <div class="flow-box">
+                            <strong>Text</strong><br/>
+                            "color: black"
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box highlight">
+                            <strong>AI Model</strong><br/>
+                            Embedding Generator
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box">
+                            <strong>Vector</strong><br/>
+                            [0.1, -0.4, 0.7, ...]
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <h4>💡 Why This Matters</h4>
+                        <p>When we search for "change color to blue", the AI can find our "color: black" CSS even though the words don't match exactly. It understands they're related!</p>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">384</div>
+                            <div class="stat-label">Dimensions per Vector</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">3</div>
+                            <div class="stat-label">Vectors Created</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">Local</div>
+                            <div class="stat-label">Processing (Private)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 6: Storage -->
+            <div class="step" id="step6">
+                <div class="step-header">
+                    <div class="step-number">6</div>
+                    <div>
+                        <div class="step-title">💾 Step 4: Storing in ChromaDB</div>
+                        <div class="step-description">Vectors are saved locally for fast searching</div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Local Storage (Your Computer)</h3>
+                    <p>All vectors are stored in a local database on your machine. Nothing goes to the cloud!</p>
+
+                    <div class="file-tree">
+<span class="directory">📁 architect_ai_cursor_poc/rag/index/</span>
+  <span class="file">📄 chroma.sqlite3</span>          <span class="comment">← Main database</span>
+  <span class="file">📄 manifest.json</span>           <span class="comment">← Index info</span>
+  <span class="directory">📁 collection-uuid/</span>
+    <span class="file">📄 data_level0.bin</span>       <span class="comment">← Vector data</span>
+    <span class="file">📄 index_metadata.pickle</span> <span class="comment">← Metadata</span>
+                    </div>
+
+                    <h4>What Gets Stored:</h4>
+                    <div class="code-block">
+<span class="comment">// For each chunk:</span>
+{
+    <span class="keyword">"id"</span>: <span class="string">"sha1_hash_of_style.css::text::0"</span>,
+    <span class="keyword">"document"</span>: <span class="string">"FILE: style.css\nSECTION: 0\n#message { ... }"</span>,
+    <span class="keyword">"embedding"</span>: [<span class="number">0.123</span>, <span class="number">-0.456</span>, <span class="number">0.789</span>, ...],
+    <span class="keyword">"metadata"</span>: {
+        <span class="keyword">"path"</span>: <span class="string">"style.css"</span>,
+        <span class="keyword">"kind"</span>: <span class="string">"text"</span>,
+        <span class="keyword">"chunk"</span>: <span class="number">0</span>,
+        <span class="keyword">"file_type"</span>: <span class="string">".css"</span>
+    }
+}
+                    </div>
+
+                    <h4>BM25 Index (Keyword Search):</h4>
+                    <p>In addition to vectors, we also create a traditional keyword index:</p>
+                    <div class="code-block">
+<span class="comment">// Words extracted from style.css:</span>
+<span class="keyword">tokens</span> = [<span class="string">"message"</span>, <span class="string">"font"</span>, <span class="string">"size"</span>, <span class="string">"text"</span>, <span class="string">"align"</span>, <span class="string">"center"</span>, 
+          <span class="string">"margin"</span>, <span class="string">"top"</span>, <span class="string">"color"</span>, <span class="string">"black"</span>]
+
+<span class="comment">// BM25 Formula: Scores how relevant each word is</span>
+<span class="keyword">score</span>(document, query) = IDF(query) × TF(query, document)
+                    </div>
+
+                    <div class="result-box">
+                        <h4>✅ Indexing Complete!</h4>
+                        <p><strong>3 chunks</strong> stored with vectors + keyword index</p>
+                        <p><strong>Storage:</strong> All data saved locally at <code>rag/index/</code></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 7: Query Processing -->
+            <div class="step" id="step7">
+                <div class="step-header">
+                    <div class="step-number">7</div>
+                    <div>
+                        <div class="step-title">❓ Step 5: Processing User Query</div>
+                        <div class="step-description">Converting the request into something searchable</div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>From Meeting Notes to Search Query</h3>
+                    
+                    <div class="visual-box">
+                        <h4>Original Request:</h4>
+                        <div class="code-block">
+<span class="string">"Make the Hello World text blue instead of black"</span>
+                        </div>
+
+                        <h4>AI Extracts Key Information:</h4>
+                        <div class="code-block">
+<span class="keyword">Target</span>: <span class="string">"Hello World text"</span>
+<span class="keyword">Property</span>: <span class="string">"color"</span>
+<span class="keyword">Current Value</span>: <span class="string">"black"</span>
+<span class="keyword">New Value</span>: <span class="string">"blue"</span>
+<span class="keyword">File Type</span>: <span class="string">"CSS"</span> <span class="comment">(inferred)</span>
+                        </div>
+
+                        <h4>Search Query Created:</h4>
+                        <div class="code-block">
+<span class="keyword">query</span> = <span class="string">"CSS styling color text message"</span>
+                        </div>
+                    </div>
+
+                    <h4>Query is Also Converted to Vector:</h4>
+                    <div class="flow-diagram">
+                        <div class="flow-box">
+                            <strong>Query Text</strong><br/>
+                            "CSS color styling"
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box highlight">
+                            <strong>Same AI Model</strong><br/>
+                            Embedding Generator
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box">
+                            <strong>Query Vector</strong><br/>
+                            [0.2, -0.5, 0.8, ...]
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <h4>💡 Smart Processing</h4>
+                        <p>The system understands that "make text blue" means finding CSS color properties, even though the words don't match exactly!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 8: Hybrid Search -->
+            <div class="step" id="step8">
+                <div class="step-header">
+                    <div class="step-number">8</div>
+                    <div>
+                        <div class="step-title">🔍 Step 6: Hybrid Search (Vector + Keywords)</div>
+                        <div class="step-description">Finding the most relevant code using two methods</div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Two Search Methods Working Together</h3>
+
+                    <h4>Method 1: Vector Search (Semantic Understanding)</h4>
+                    <p>Compares the query vector with all stored vectors to find similar meaning:</p>
+                    <div class="code-block">
+<span class="comment">// Query Vector: [0.2, -0.5, 0.8, ...]</span>
+
+<span class="comment">// Compare with each stored chunk:</span>
+<span class="keyword">style.css chunk</span>: [<span class="number">0.123</span>, <span class="number">-0.456</span>, <span class="number">0.789</span>, ...]
+<span class="keyword">Similarity Score</span>: <span class="number">0.92</span> <span class="comment">← Very similar! (0-1 scale)</span>
+
+<span class="keyword">app.js chunk</span>: [<span class="number">0.5</span>, <span class="number">0.3</span>, <span class="number">-0.2</span>, ...]
+<span class="keyword">Similarity Score</span>: <span class="number">0.45</span> <span class="comment">← Not very similar</span>
+
+<span class="keyword">index.html chunk</span>: [<span class="number">0.3</span>, <span class="number">-0.1</span>, <span class="number">0.4</span>, ...]
+<span class="keyword">Similarity Score</span>: <span class="number">0.67</span> <span class="comment">← Somewhat similar</span>
+                    </div>
+
+                    <h4>Method 2: BM25 Search (Keyword Matching)</h4>
+                    <p>Looks for exact word matches:</p>
+                    <div class="code-block">
+<span class="comment">// Query words: ["CSS", "color", "styling"]</span>
+
+<span class="keyword">style.css</span>: Contains <span class="string">"color"</span> → <span class="keyword">BM25 Score</span>: <span class="number">1.45</span>
+<span class="keyword">app.js</span>: No matches → <span class="keyword">BM25 Score</span>: <span class="number">0.0</span>
+<span class="keyword">index.html</span>: No matches → <span class="keyword">BM25 Score</span>: <span class="number">0.0</span>
+                    </div>
+
+                    <h4>Combining Both Methods (Hybrid):</h4>
+                    <div class="visual-box">
+                        <div class="code-block">
+<span class="comment">// Formula: 60% Vector + 40% Keywords</span>
+<span class="keyword">Final Score</span> = (<span class="number">0.6</span> × <span class="keyword">Vector Score</span>) + (<span class="number">0.4</span> × <span class="keyword">BM25 Score</span>)
+
+<span class="comment">// Results:</span>
+<span class="keyword">style.css</span>:   (<span class="number">0.6</span> × <span class="number">0.92</span>) + (<span class="number">0.4</span> × <span class="number">1.45</span>) = <span class="highlight">1.13</span> ⭐ <span class="string">WINNER!</span>
+<span class="keyword">index.html</span>: (<span class="number">0.6</span> × <span class="number">0.67</span>) + (<span class="number">0.4</span> × <span class="number">0.0</span>)  = <span class="number">0.40</span>
+<span class="keyword">app.js</span>:      (<span class="number">0.6</span> × <span class="number">0.45</span>) + (<span class="number">0.4</span> × <span class="number">0.0</span>)  = <span class="number">0.27</span>
+                        </div>
+                    </div>
+
+                    <div class="result-box">
+                        <h4>✅ Search Result:</h4>
+                        <p><strong>style.css</strong> is the most relevant file!</p>
+                        <p>The system found the exact file that needs to be modified.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 9: Context Assembly -->
+            <div class="step" id="step9">
+                <div class="step-header">
+                    <div class="step-number">9</div>
+                    <div>
+                        <div class="step-title">📋 Step 7: Assembling Context for AI</div>
+                        <div class="step-description">Preparing the information for code generation</div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Building the Context</h3>
+                    <p>The AI needs to know what code exists before it can make changes. We give it the relevant chunks:</p>
+
+                    <div class="visual-box">
+                        <h4>Context Sent to AI:</h4>
+                        <div class="code-block">
+<span class="comment">// === REPOSITORY CONTEXT ===</span>
+
+<span class="keyword">FILE</span>: <span class="string">style.css</span>
+<span class="keyword">SECTION</span>: <span class="number">0</span>
+<span class="keyword">RELEVANCE SCORE</span>: <span class="number">1.13</span> <span class="comment">(highest)</span>
+
+<span class="keyword">#message</span> {
+    <span class="string">font-size</span>: <span class="number">24px</span>;
+    <span class="string">text-align</span>: <span class="string">center</span>;
+    <span class="string">margin-top</span>: <span class="number">50px</span>;
+    <span class="string">color</span>: <span class="string">black</span>;  <span class="comment">← This needs to change!</span>
+}
+
+<span class="comment">// === USER REQUEST ===</span>
+<span class="string">"Make the Hello World text blue instead of black"</span>
+
+<span class="comment">// === TASK ===</span>
+<span class="string">"Modify the CSS to change the color from black to blue"</span>
+                        </div>
+                    </div>
+
+                    <h4>Why This Works:</h4>
+                    <div class="flow-diagram">
+                        <div class="flow-box">
+                            <strong>AI Sees</strong><br/>
+                            Existing Code
+                        </div>
+                        <div class="flow-arrow">+</div>
+                        <div class="flow-box">
+                            <strong>AI Knows</strong><br/>
+                            What to Change
+                        </div>
+                        <div class="flow-arrow">=</div>
+                        <div class="flow-box highlight">
+                            <strong>AI Generates</strong><br/>
+                            Perfect Solution
+                        </div>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">1</div>
+                            <div class="stat-label">Chunk Retrieved</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">87</div>
+                            <div class="stat-label">Context Tokens</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">8,000</div>
+                            <div class="stat-label">Token Limit</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 10: AI Generation -->
+            <div class="step" id="step10">
+                <div class="step-header">
+                    <div class="step-number">10</div>
+                    <div>
+                        <div class="step-title">🤖 Step 8: AI Multi-Agent Generation</div>
+                        <div class="step-description">Three AI agents work together to create the solution</div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>The Three-Agent Pipeline</h3>
+
+                    <div class="flow-diagram">
+                        <div class="flow-box highlight">
+                            <strong>🔍 Agent 1</strong><br/>
+                            Analyzer<br/>
+                            <small>Understands the task</small>
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box highlight">
+                            <strong>⚡ Agent 2</strong><br/>
+                            Generator<br/>
+                            <small>Creates the code</small>
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box highlight">
+                            <strong>✅ Agent 3</strong><br/>
+                            Critic<br/>
+                            <small>Reviews & improves</small>
+                        </div>
+                    </div>
+
+                    <h4>Agent 1: Analyzer</h4>
+                    <div class="code-block">
+<span class="comment">// Analyzer's Thoughts:</span>
+<span class="string">"Task: Change color property in CSS
+Target file: style.css
+Current value: black
+New value: blue
+Selector: #message
+Action: Replace color value"</span>
+                    </div>
+
+                    <h4>Agent 2: Generator</h4>
+                    <div class="code-block">
+<span class="comment">// Generator creates the new code:</span>
+<span class="keyword">#message</span> {
+    <span class="string">font-size</span>: <span class="number">24px</span>;
+    <span class="string">text-align</span>: <span class="string">center</span>;
+    <span class="string">margin-top</span>: <span class="number">50px</span>;
+    <span class="string">color</span>: <span class="string">blue</span>;  <span class="comment">← Changed from black to blue!</span>
+}
+                    </div>
+
+                    <h4>Agent 3: Critic</h4>
+                    <div class="code-block">
+<span class="comment">// Critic's Review:</span>
+<span class="string">"✅ Color changed correctly: black → blue
+✅ Syntax is valid CSS
+✅ No other properties affected
+✅ Maintains existing styling
+✅ Follows CSS best practices
+Score: 95/100 - Excellent!"</span>
+                    </div>
+
+                    <div class="result-box">
+                        <h4>✅ Generation Complete!</h4>
+                        <p>All three agents agree: The solution is correct and ready to use.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 11: Validation -->
+            <div class="step" id="step11">
+                <div class="step-header">
+                    <div class="step-number">11</div>
+                    <div>
+                        <div class="step-title">✅ Step 9: Quality Validation</div>
+                        <div class="step-description">8 validators check the generated code</div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>Comprehensive Quality Checks</h3>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">✅</div>
+                            <div class="stat-label">1. Syntax Valid</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">✅</div>
+                            <div class="stat-label">2. Architecture OK</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">✅</div>
+                            <div class="stat-label">3. Security Check</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">✅</div>
+                            <div class="stat-label">4. Style Consistent</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">✅</div>
+                            <div class="stat-label">5. Error Handling</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">✅</div>
+                            <div class="stat-label">6. Documentation</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">✅</div>
+                            <div class="stat-label">7. Performance OK</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">✅</div>
+                            <div class="stat-label">8. Business Logic</div>
+                        </div>
+                    </div>
+
+                    <h4>Detailed Validation Report:</h4>
+                    <div class="code-block">
+<span class="keyword">Validator 1</span> - <span class="string">Syntax Check</span>: ✅ <span class="string">PASS</span>
+  <span class="comment">→ Valid CSS syntax</span>
+  <span class="comment">→ No parsing errors</span>
+
+<span class="keyword">Validator 2</span> - <span class="string">Architecture</span>: ✅ <span class="string">PASS</span>
+  <span class="comment">→ Follows CSS best practices</span>
+  <span class="comment">→ Proper selector usage</span>
+
+<span class="keyword">Validator 3</span> - <span class="string">Security</span>: ✅ <span class="string">PASS</span>
+  <span class="comment">→ No injection risks</span>
+  <span class="comment">→ Safe color value</span>
+
+<span class="keyword">Validator 4</span> - <span class="string">Style Consistency</span>: ✅ <span class="string">PASS</span>
+  <span class="comment">→ Matches existing code style</span>
+  <span class="comment">→ Proper indentation</span>
+
+<span class="keyword">Overall Score</span>: <span class="highlight">95/100</span> ⭐
+                    </div>
+
+                    <div class="result-box">
+                        <h4>🎉 Validation Passed!</h4>
+                        <p><strong>Quality Score: 95/100</strong></p>
+                        <p>The code is production-ready and safe to use!</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 12: Final Result -->
+            <div class="step" id="step12">
+                <div class="step-header">
+                    <div class="step-number">12</div>
+                    <div>
+                        <div class="step-title">🎉 Final Result: Mission Accomplished!</div>
+                        <div class="step-description">From meeting notes to working code in 30 seconds</div>
+                    </div>
+                </div>
+
+                <div class="demo-section">
+                    <h3>The Complete Journey</h3>
+
+                    <div class="visual-box">
+                        <h4>What We Started With:</h4>
+                        <div class="code-block">
+<span class="keyword">#message</span> {
+    <span class="string">color</span>: <span class="string">black</span>;  <span class="comment">← Original</span>
+}
+                        </div>
+
+                        <h4>What We Got:</h4>
+                        <div class="code-block">
+<span class="keyword">#message</span> {
+    <span class="string">color</span>: <span class="string">blue</span>;   <span class="comment">← Changed! ✨</span>
+}
+                        </div>
+                    </div>
+
+                    <h4>The Complete Process:</h4>
+                    <div class="flow-diagram">
+                        <div class="flow-box">
+                            <strong>1</strong><br/>
+                            Meeting Notes
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box">
+                            <strong>2-6</strong><br/>
+                            RAG System
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box">
+                            <strong>7-8</strong><br/>
+                            AI Search
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box">
+                            <strong>9-10</strong><br/>
+                            AI Generation
+                        </div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box highlight">
+                            <strong>11-12</strong><br/>
+                            Validated Code
+                        </div>
+                    </div>
+
+                    <h4>Key Achievements:</h4>
+                    <ul>
+                        <li>✅ <strong>Found the right file</strong> - style.css identified automatically</li>
+                        <li>✅ <strong>Understood the context</strong> - Knew it was about CSS color</li>
+                        <li>✅ <strong>Made precise changes</strong> - Only changed what was needed</li>
+                        <li>✅ <strong>Validated quality</strong> - All 8 validators passed</li>
+                        <li>✅ <strong>Production ready</strong> - Code can be deployed immediately</li>
+                    </ul>
+
+                    <div class="result-box">
+                        <h4>🎉 Success!</h4>
+                        <p><strong>Time:</strong> 30 seconds</p>
+                        <p><strong>Quality Score:</strong> 95/100</p>
+                        <p><strong>Files Modified:</strong> 1 (style.css)</p>
+                        <p><strong>Result:</strong> Hello World is now blue! 🎨</p>
+                    </div>
+
+                    <h3>Why This is Powerful:</h3>
+                    <div class="info-box">
+                        <h4>🚀 The Magic of RAG + AI</h4>
+                        <p><strong>Without RAG:</strong> AI would generate generic CSS, might not match your style, could break existing code.</p>
+                        <p><strong>With RAG:</strong> AI understands YOUR codebase, makes precise changes, maintains your style, and validates everything.</p>
+                        <p><strong>Result:</strong> Production-ready code that fits perfectly into your project!</p>
+                    </div>
+
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-number">30s</div>
+                            <div class="stat-label">Total Time</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">95/100</div>
+                            <div class="stat-label">Quality Score</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">100%</div>
+                            <div class="stat-label">Accuracy</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number">✅</div>
+                            <div class="stat-label">Production Ready</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 0;
+        const totalSteps = 12;
+
+        function startDemo() {
+            currentStep = 0;
+            updateStepDisplay();
+            document.getElementById('nextBtn').disabled = false;
+            document.getElementById('prevBtn').disabled = true;
+        }
+
+        function nextStep() {
+            if (currentStep < totalSteps - 1) {
+                currentStep++;
+                updateStepDisplay();
+                
+                if (currentStep === totalSteps - 1) {
+                    document.getElementById('nextBtn').textContent = '🎉 Demo Complete!';
+                    document.getElementById('nextBtn').disabled = true;
+                }
+                
+                document.getElementById('prevBtn').disabled = false;
+            }
+        }
+
+        function previousStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                updateStepDisplay();
+                
+                if (currentStep === 0) {
+                    document.getElementById('prevBtn').disabled = true;
+                }
+                
+                document.getElementById('nextBtn').disabled = false;
+                document.getElementById('nextBtn').textContent = 'Next ➡️';
+            }
+        }
+
+        function resetDemo() {
+            currentStep = 0;
+            updateStepDisplay();
+            document.getElementById('nextBtn').disabled = true;
+            document.getElementById('prevBtn').disabled = true;
+            document.getElementById('nextBtn').textContent = 'Next ➡️';
+        }
+
+        function updateStepDisplay() {
+            // Hide all steps
+            for (let i = 1; i <= totalSteps; i++) {
+                document.getElementById(`step${i}`).classList.remove('active');
+            }
+            
+            // Show current step
+            document.getElementById(`step${currentStep + 1}`).classList.add('active');
+            
+            // Update counter
+            document.getElementById('stepCounter').textContent = `Step ${currentStep + 1} of ${totalSteps}`;
+            
+            // Scroll to top of step
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        // Initialize
+        resetDemo();
+    </script>
+</body>
+</html>
