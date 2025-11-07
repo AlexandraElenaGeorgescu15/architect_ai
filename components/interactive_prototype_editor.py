@@ -66,29 +66,29 @@ class InteractivePrototypeEditor:
         # This ensures AI sees everything and can make truly surgical changes
         
         # Build minimal, clear prompt focused on the specific change
+        project_context = feature_context.strip() if feature_context else ""
         prompt = f"""
-TASK: Modify ONE specific thing in this HTML file.
+You are editing an existing HTML prototype for the Architect.AI project. Apply the user's request surgically.
 
 CURRENT FILE:
 {current_html}
 
+STYLE & CONTEXT GUIDELINES:
+{project_context if project_context else "- Follow the existing design language already present in the HTML."}
+
 USER WANTS TO CHANGE:
 {modification_request}
 
-INSTRUCTIONS:
-1. Find the exact element/line the user is talking about
-2. Make ONLY that specific change
-3. Keep everything else IDENTICAL
-4. Output the complete modified HTML
+RULES:
+1. Locate the exact element(s) the request references.
+2. Update ONLY what is necessary for this change.
+3. Preserve all other markup, classes, scripts, and comments exactly.
+4. Output the complete updated HTML document with the modification applied.
 
-Think step-by-step:
-- What is the user asking to change?
-- Where is it in the HTML?
-- What's the current value?
-- What should the new value be?
-- Change it and output the full HTML
-
-CRITICAL: Output the COMPLETE HTML file with the user's requested change. Do not regenerate or rewrite anything else.
+Before editing, think step-by-step:
+- What element and attributes must change?
+- How does the project's styling affect the change?
+- Apply the edit while keeping the rest untouched.
 """
         
         # Call AI with simple, direct instructions
@@ -152,6 +152,13 @@ CRITICAL: Output the COMPLETE HTML file with the user's requested change. Do not
         file_path = outputs_dir / filename
         file_path.write_text(html, encoding='utf-8')
         
+        # Keep session state aligned with saved content
+        st.session_state.current_prototype_html = html
+        if mode == "pm":
+            st.session_state['pm_cached_html'] = html
+        else:
+            st.session_state['dev_cached_html'] = html
+
         # ULTRA-NUCLEAR CACHE BUSTING
         import random
         current_time = datetime.now().isoformat()
@@ -171,18 +178,11 @@ CRITICAL: Output the COMPLETE HTML file with the user's requested change. Do not
             st.session_state.pm_prototype_last_save = current_time
             st.session_state.pm_prototype_force_mtime = file_mtime
             # CRITICAL: Clear any cached HTML
-            if 'pm_cached_html' in st.session_state:
-                del st.session_state['pm_cached_html']
         else:
             st.session_state.dev_prototype_updated = True
             st.session_state.dev_prototype_last_save = current_time
             st.session_state.dev_prototype_force_mtime = file_mtime
             # CRITICAL: Clear any cached HTML
-            if 'dev_cached_html' in st.session_state:
-                del st.session_state['dev_cached_html']
-        
-        # NUCLEAR OPTION: Force immediate rerun to update outputs tab
-        st.rerun()
         
         return file_path
     

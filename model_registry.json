@@ -1,0 +1,127 @@
+{
+  "codellama-7b-finetuned-20251102_163319": {
+    "model_id": "codellama-7b-finetuned-20251102_163319",
+    "model_name": "Codellama 7B (Fine-tuned)",
+    "base_model": "codellama-7b",
+    "status": "trained",
+    "model_path": "./finetuned_models/codellama-7b_finetuned",
+    "created_at": "2025-11-02T16:33:19.068526",
+    "trained_at": "2025-11-02T16:33:19.068526",
+    "training_config": {
+      "model_name": "codellama-7b",
+      "epochs": 3,
+      "learning_rate": 0.002,
+      "batch_size": 2,
+      "lora_rank": 8,
+      "lora_alpha": 16,
+      "lora_dropout": 0.05,
+      "use_4bit": true,
+      "use_8bit": false,
+      "max_length": 512
+    },
+    "metrics": {
+      "final_loss": 0.44760213212834465,
+      "epochs_completed": 3
+    }
+  },
+  "codellama-7b-finetuned-20251103_220708": {
+    "model_id": "codellama-7b-finetuned-20251103_220708",
+    "model_name": "Codellama 7B (Fine-tuned)",
+    "base_model": "codellama-7b",
+    "status": "trained",
+    "model_path": "finetuned_models\\codellama-7b\\codellama-7b_finetuned-20251103_220707",
+    "created_at": "2025-11-03T22:07:08.180826",
+    "trained_at": "2025-11-03T22:07:08.180826",
+    "training_config": {
+      "model_name": "codellama-7b",
+      "epochs": 3,
+      "learning_rate": 0.002,
+      "batch_size": 2,
+      "lora_rank": 16,
+      "lora_alpha": 32,
+      "lora_dropout": 0.05,
+      "use_4bit": true,
+      "use_8bit": false,
+      "max_length": 512
+    },
+    "metrics": {
+      "final_loss": 1.2063082343056089,
+      "epochs_completed": 3
+    }
+  },
+  "codellama-7b-finetuned-20251104_093722": {
+    "model_id": "codellama-7b-finetuned-20251104_093722",
+    "model_name": "Codellama 7B (Fine-tuned)",
+    "base_model": "codellama-7b",
+    "status": "trained",
+    "model_path": "finetuned_models\\codellama-7b\\codellama-7b_finetuned-20251104_093722",
+    "created_at": "2025-11-04T09:37:22.757533",
+    "trained_at": "2025-11-04T09:37:22.757533",
+    "training_config": {
+      "model_name": "codellama-7b",
+      "epochs": 3,
+      "learning_rate": 0.002,
+      "batch_size": 2,
+      "lora_rank": 16,
+      "lora_alpha": 32,
+      "lora_dropout": 0.05,
+      "use_4bit": true,
+      "use_8bit": false,
+      "max_length": 512
+    },
+    "metrics": {
+      "final_loss": 8.30685043334961,
+      "epochs_completed": 3
+    }
+  },
+  "codellama-7b-finetuned-20251105_151102": {
+    "model_id": "codellama-7b-finetuned-20251105_151102",
+    "model_name": "Codellama 7B (Fine-tuned)",
+    "base_model": "codellama-7b",
+    "status": "trained",
+    "model_path": "finetuned_models\\codellama-7b\\codellama-7b_finetuned-20251105_151102",
+    "created_at": "2025-11-05T15:11:02.932853",
+    "trained_at": "2025-11-05T15:11:02.932853",
+    "training_config": {
+      "model_name": "codellama-7b",
+      "epochs": 10,
+      "learning_rate": 0.00032,
+      "batch_size": 4,
+      "lora_rank": 29,
+      "lora_alpha": 59,
+      "lora_dropout": 0.05,
+      "use_4bit": true,
+      "use_8bit": false,
+      "max_length": 512
+    },
+    "metrics": {
+      "final_loss": 2.0802550293150404,
+      "epochs_completed": 10
+    }
+  },
+  "codellama-7b-finetuned-20251105_173606": {
+    "model_id": "codellama-7b-finetuned-20251105_173606",
+    "model_name": "Codellama 7B (Fine-tuned)",
+    "base_model": "codellama-7b",
+    "status": "trained",
+    "model_path": "finetuned_models\\codellama-7b\\codellama-7b_finetuned-20251105_173606",
+    "created_at": "2025-11-05T17:36:06.410764",
+    "trained_at": "2025-11-05T17:36:06.410764",
+    "training_config": {
+      "model_name": "codellama-7b",
+      "epochs": 3,
+      "learning_rate": 0.0002,
+      "batch_size": 2,
+      "lora_rank": 16,
+      "lora_alpha": 32,
+      "lora_dropout": 0.05,
+      "use_4bit": true,
+      "use_8bit": false,
+      "max_length": 512
+    },
+    "metrics": {
+      "final_loss": 2.4016088008880616,
+      "epochs_completed": 3
+    }
+  }
+}

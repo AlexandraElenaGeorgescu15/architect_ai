@@ -138,41 +138,196 @@ class UniversalArchitectAgent:
         self._initialize_advanced_systems()
     
     def _initialize_ai_client(self):
-        """Initialize AI client (supports OpenAI, Gemini, Groq)"""
+        """Initialize AI client (supports Local Fine-tuned, OpenAI, Gemini, Groq) with global key persistence"""
+        # Import global API key manager
+        try:
+            from config.api_key_manager import api_key_manager
+            global_keys = api_key_manager.get_all_keys()
+        except:
+            global_keys = {'groq': None, 'openai': None, 'gemini': None}
+        
+        # Track if we've already logged connection status (prevent spam on reruns)
+        import streamlit as st
+        logged_key = '_agent_conn_logged'
+        already_logged = False
+        try:
+            already_logged = st.session_state.get(logged_key, False)
+        except:
+            pass
+        
+        def _set_active_provider(label: str):
+            try:
+                st.session_state['active_provider_actual'] = label
+            except Exception:
+                pass
+
+        # Reset any previous warning prior to initialization
+        try:
+            if 'provider_override_warning' in st.session_state:
+                del st.session_state['provider_override_warning']
+        except Exception:
+            pass
+
+        # Check for Ollama provider FIRST (default local provider)
+        try:
+            provider = st.session_state.get('provider', 'Ollama (Local)')
+            if provider == "Ollama (Local)":
+                # Initialize Ollama client
+                from ai.ollama_client import OllamaClient
+                from ai.model_router import get_router
+                
+                ollama_client = OllamaClient()
+                is_healthy = False
+                try:
+                    import asyncio
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        # If loop is running, check synchronously
+                        import httpx
+                        response = httpx.get("http://localhost:11434/api/tags", timeout=5.0)
+                        is_healthy = response.status_code == 200
+                    else:
+                        is_healthy = loop.run_until_complete(ollama_client.check_server_health())
+                except Exception:
+                    try:
+                        import httpx
+                        response = httpx.get("http://localhost:11434/api/tags", timeout=5.0)
+                        is_healthy = response.status_code == 200
+                    except Exception:
+                        is_healthy = False
+                
+                if is_healthy:
+                    self.client = ollama_client
+                    self.client_type = 'ollama'
+                    self.ollama_client = ollama_client
+                    self.model_router = get_router(self.config, ollama_client)
+                    if not already_logged:
+                        print("[OK] Connected to Ollama (Local Models)")
+                        st.session_state[logged_key] = True
+                    _set_active_provider("Ollama (Local)")
+                    return
+                else:
+                    if not already_logged:
+                        print("[WARN] Ollama server not running. Falling back to cloud provider.")
+                        warning_message = "Ollama server not running. Using cloud provider instead."
+                        try:
+                            st.session_state['provider_override_warning'] = warning_message
+                        except Exception:
+                            pass
+        except Exception as e:
+            pass  # No Ollama available, continue to other providers
+        
+        # Check for local fine-tuned model (second priority)
+        try:
+            selected_local_model = st.session_state.get('selected_local_model')
+            if selected_local_model and selected_local_model.get('model_path'):
+                # User has selected a local fine-tuned model
+                from components.local_finetuning import local_finetuning_system
+                
+                # Check if model is already loaded
+                if local_finetuning_system.current_model:
+                    self.client = local_finetuning_system.current_model
+                    self.client_type = 'local_finetuned'
+                    if not already_logged:
+                        print(f"[OK] Using local fine-tuned model: {selected_local_model['model_name']}")
+                        st.session_state[logged_key] = True
+                        _set_active_provider(selected_local_model.get('model_name', 'Local Fine-tuned'))
+                    return
+                else:
+                    # Try to load the model
+                    try:
+                        model_path = Path(selected_local_model['model_path'])
+                        if model_path.exists():
+                            # Load the fine-tuned model
+                            base_model_key = selected_local_model.get('base_model', 'codellama-7b')
+                            finetuned_version = model_path.name  # e.g., "codellama-7b_finetuned"
+                            
+                            if not already_logged:
+                                print(f"[INFO] Loading local fine-tuned model: {selected_local_model['model_name']}...")
+                            
+                            local_finetuning_system.load_finetuned_model(base_model_key, finetuned_version)
+                            self.client = local_finetuning_system.current_model
+                            self.client_type = 'local_finetuned'
+                            if not already_logged:
+                                print(f"[OK] Local fine-tuned model loaded successfully!")
+                                st.session_state[logged_key] = True
+                            _set_active_provider(selected_local_model.get('model_name', 'Local Fine-tuned'))
+                            return
+                    except Exception as e:
+                        print(f"[WARN] Failed to load local model: {e}")
+                        warning_message = (
+                            f"Local model '{selected_local_model.get('model_name', 'Local Model')}' "
+                            f"failed to load: {e}. Falling back to cloud provider."
+                        )
+                        try:
+                            st.session_state['provider_override_warning'] = warning_message
+                        except Exception:
+                            pass
+                        # Fall through to cloud providers
+        except Exception as e:
+            pass  # No local model selected or streamlit not available
+        
         # Try Groq first (fastest and free)
-        groq_key = self.config.get('groq_api_key') or os.getenv("GROQ_API_KEY")
+        groq_key = self.config.get('groq_api_key') or global_keys.get('groq') or os.getenv("GROQ_API_KEY")
         if groq_key and GROQ_AVAILABLE:
             self.client = AsyncGroq(api_key=groq_key)
             self.client_type = 'groq'
-            print("[OK] Connected to Groq (llama-3.3-70b - FAST & FREE)")
+            if not already_logged:
+                print("[OK] Connected to Groq (llama-3.3-70b - FAST & FREE)")
+                try:
+                    st.session_state[logged_key] = True
+                except:
+                    pass
+            _set_active_provider("Groq (llama-3.3-70b)")
             return
         
         # Try OpenAI
-        openai_key = self.config.get('api_key') or os.getenv("OPENAI_API_KEY")
+        openai_key = self.config.get('api_key') or global_keys.get('openai') or os.getenv("OPENAI_API_KEY")
         if openai_key and OPENAI_AVAILABLE:
             self.client = AsyncOpenAI(api_key=openai_key)
             self.client_type = 'openai'
-            print("[OK] Connected to OpenAI")
+            if not already_logged:
+                print("[OK] Connected to OpenAI")
+                try:
+                    st.session_state[logged_key] = True
+                except:
+                    pass
+            _set_active_provider("OpenAI (GPT-4)")
             return
         
         # Try Gemini
-        gemini_key = self.config.get('gemini_api_key') or os.getenv("GEMINI_API_KEY")
+        gemini_key = self.config.get('gemini_api_key') or global_keys.get('gemini') or os.getenv("GEMINI_API_KEY")
         if gemini_key and GEMINI_AVAILABLE:
             genai.configure(api_key=gemini_key)
             self.client = genai.GenerativeModel('gemini-2.0-flash-exp')
             self.client_type = 'gemini'
-            print("[OK] Connected to Gemini 2.0 Flash (FREE)")
+            if not already_logged:
+                print("[OK] Connected to Gemini 2.0 Flash (FREE)")
+                try:
+                    st.session_state[logged_key] = True
+                except:
+                    pass
+            _set_active_provider("Google Gemini 2.0 Flash")
             return
         
-        print("[WARN] No AI model connected. Set GROQ_API_KEY, OPENAI_API_KEY, or GEMINI_API_KEY")
+        if not already_logged:
+            print("[WARN] No AI model connected. Set GROQ_API_KEY, OPENAI_API_KEY, or GEMINI_API_KEY")
+            try:
+                st.session_state[logged_key] = True
+            except:
+                pass
+        _set_active_provider("None")
     
     def _initialize_rag_system(self):
-        """Initialize RAG system"""
+        """Initialize RAG system using global client (reduces telemetry spam)"""
         try:
+            from rag.chromadb_config import get_global_chroma_client
             self.cfg = load_cfg()
-            self.chroma_client = chroma_client(self.cfg["store"]["path"])
-            self.collection = self.chroma_client.get_or_create_collection("repo", metadata={"hnsw:space":"cosine"})
-            print("[OK] RAG system initialized")
+            self.chroma_client, self.collection = get_global_chroma_client(self.cfg["store"]["path"], "repo")
+            # Only print on first initialization to reduce log spam
+            if not hasattr(UniversalArchitectAgent, '_rag_init_logged'):
+                print("[OK] RAG system initialized")
+                UniversalArchitectAgent._rag_init_logged = True
         except Exception as e:
             print(f"[WARN] RAG system initialization failed: {e}")
             self.cfg = None
@@ -180,12 +335,14 @@ class UniversalArchitectAgent:
             self.collection = None
     
     def _initialize_advanced_systems(self):
-        """Initialize advanced AI systems"""
+        """Initialize advanced AI systems (reduced logging to prevent spam)"""
         # Advanced RAG
         if ADVANCED_RAG_AVAILABLE and self.client:
             try:
                 self.advanced_rag = get_advanced_retrieval(self)
-                print("[OK] Advanced RAG initialized (HyDE, Multi-hop, Query Decomposition)")
+                if not hasattr(UniversalArchitectAgent, '_advanced_rag_logged'):
+                    print("[OK] Advanced RAG initialized (HyDE, Multi-hop, Query Decomposition)")
+                    UniversalArchitectAgent._advanced_rag_logged = True
             except Exception as e:
                 print(f"[WARN] Advanced RAG initialization failed: {e}")
                 self.advanced_rag = None
@@ -196,7 +353,9 @@ class UniversalArchitectAgent:
         if MULTI_AGENT_AVAILABLE and self.client:
             try:
                 self.multi_agent = get_multi_agent_system(self)
-                print("[OK] Multi-agent system initialized (8 specialized agents)")
+                if not hasattr(UniversalArchitectAgent, '_multi_agent_logged'):
+                    print("[OK] Multi-agent system initialized (8 specialized agents)")
+                    UniversalArchitectAgent._multi_agent_logged = True
             except Exception as e:
                 print(f"[WARN] Multi-agent initialization failed: {e}")
                 self.multi_agent = None
@@ -207,7 +366,9 @@ class UniversalArchitectAgent:
         if ADVANCED_PROMPTING_AVAILABLE and self.client:
             try:
                 self.advanced_prompting = get_advanced_prompting(self)
-                print("[OK] Advanced prompting initialized (CoT, ToT, ReAct, Self-Consistency)")
+                if not hasattr(UniversalArchitectAgent, '_advanced_prompting_logged'):
+                    print("[OK] Advanced prompting initialized (CoT, ToT, ReAct, Self-Consistency)")
+                    UniversalArchitectAgent._advanced_prompting_logged = True
             except Exception as e:
                 print(f"[WARN] Advanced prompting initialization failed: {e}")
                 self.advanced_prompting = None
@@ -218,28 +379,326 @@ class UniversalArchitectAgent:
         if QUALITY_SYSTEM_AVAILABLE and self.client:
             try:
                 self.quality_system = get_quality_system(self)
-                print("[OK] Quality system initialized (Evaluation, Improvement, Validation)")
+                if not hasattr(UniversalArchitectAgent, '_quality_system_logged'):
+                    print("[OK] Quality system initialized (Evaluation, Improvement, Validation)")
+                    UniversalArchitectAgent._quality_system_logged = True
             except Exception as e:
                 print(f"[WARN] Quality system initialization failed: {e}")
                 self.quality_system = None
         else:
             self.quality_system = None
     
-    async def _call_ai(self, prompt: str, system_prompt: str = None) -> str:
-        """Call AI model with RAG context"""
+    async def _call_ai(self, prompt: str, system_prompt: str = None, artifact_type: str = None) -> str:
+        """
+        Call AI model with RAG context and automatic model selection.
+        
+        Args:
+            prompt: User prompt
+            system_prompt: System prompt (optional)
+            artifact_type: Type of artifact being generated (for automatic model selection)
+        """
         if not self.client:
             raise Exception("No AI client available")
         
-        # Include RAG context in prompt
-        full_prompt = f"""
-RAG RETRIEVED CONTEXT:
-{self.rag_context}
+        # Include RAG context in prompt (context already has headers from context_optimizer)
+        full_prompt = f"""{self.rag_context}
 
 USER REQUEST:
 {prompt}
 """
         
-        if self.client_type == 'groq':
+        # Ollama provider with automatic model selection
+        if self.client_type == 'ollama' and hasattr(self, 'model_router') and artifact_type:
+            from config.artifact_model_mapping import get_artifact_mapper
+            
+            mapper = get_artifact_mapper()
+            task_type = mapper.get_task_type(artifact_type)
+            model_name = mapper.get_model_name(artifact_type, prefer_fine_tuned=True)
+            
+            # Try local model first
+            try:
+                response = await self.model_router.generate(
+                    task_type=task_type,
+                    prompt=full_prompt,
+                    system_message=system_prompt,
+                    temperature=0.2
+                )
+                
+                if response.success:
+                    return response.content
+                else:
+                    # Local model failed, try cloud fallback
+                    print(f"[WARN] Local model failed: {response.error_message}. Falling back to cloud...")
+                    # Fall through to cloud providers below
+            except Exception as e:
+                print(f"[WARN] Ollama generation failed: {e}. Falling back to cloud...")
+                # Fall through to cloud providers
+        
+        # Cloud fallback: Try cloud providers when local fails
+        if self.client_type == 'ollama' or (self.client_type == 'local_finetuned' and not hasattr(self, 'client')):
+            # Local failed, try cloud providers in order of preference
+            from config.artifact_model_mapping import get_artifact_mapper
+            from config.api_key_manager import api_key_manager
+            
+            mapper = get_artifact_mapper()
+            
+            # Select best cloud model for artifact type
+            if artifact_type:
+                task_type = mapper.get_task_type(artifact_type)
+                
+                # Smart cloud model selection based on artifact type
+                cloud_providers = []
+                
+                # Diagrams: Gemini Flash (free, fast)
+                if task_type == 'mermaid':
+                    cloud_providers = [
+                        ('gemini', 'gemini-2.0-flash-exp'),
+                        ('groq', 'llama-3.3-70b-versatile'),
+                        ('openai', 'gpt-4')
+                    ]
+                # Code/HTML: Groq (fast, free) or GPT-4 (quality)
+                elif task_type in ['code', 'html']:
+                    cloud_providers = [
+                        ('groq', 'llama-3.3-70b-versatile'),
+                        ('gemini', 'gemini-2.0-flash-exp'),
+                        ('openai', 'gpt-4')
+                    ]
+                # Documentation: Gemini (free) or Groq (fast)
+                elif task_type == 'documentation':
+                    cloud_providers = [
+                        ('gemini', 'gemini-2.0-flash-exp'),
+                        ('groq', 'llama-3.3-70b-versatile'),
+                        ('openai', 'gpt-4')
+                    ]
+                # JIRA/Workflows: Groq (fast) or Gemini (free)
+                elif task_type in ['jira', 'planning']:
+                    cloud_providers = [
+                        ('groq', 'llama-3.3-70b-versatile'),
+                        ('gemini', 'gemini-2.0-flash-exp'),
+                        ('openai', 'gpt-4')
+                    ]
+                else:
+                    # Default: Try all in order
+                    cloud_providers = [
+                        ('groq', 'llama-3.3-70b-versatile'),
+                        ('gemini', 'gemini-2.0-flash-exp'),
+                        ('openai', 'gpt-4')
+                    ]
+                
+                # Try each cloud provider until one works
+                for provider_name, model_name in cloud_providers:
+                    try:
+                        api_key = api_key_manager.get_key(provider_name)
+                        if not api_key:
+                            continue  # Skip if no API key
+                        
+                        # Try this cloud provider
+                        if provider_name == 'groq':
+                            from groq import AsyncGroq
+                            client = AsyncGroq(api_key=api_key)
+                            messages = []
+                            if system_prompt:
+                                messages.append({"role": "system", "content": system_prompt})
+                            messages.append({"role": "user", "content": full_prompt})
+                            
+                            response = await client.chat.completions.create(
+                                model="llama-3.3-70b-versatile",
+                                messages=messages,
+                                temperature=0.2,
+                                max_tokens=8000
+                            )
+                            print(f"[OK] Cloud fallback succeeded using Groq")
+                            return response.choices[0].message.content
+                        
+                        elif provider_name == 'gemini':
+                            import google.generativeai as genai
+                            genai.configure(api_key=api_key)
+                            model = genai.GenerativeModel('gemini-2.0-flash-exp')
+                            
+                            # Build prompt
+                            combined_prompt = full_prompt
+                            if system_prompt:
+                                combined_prompt = f"{system_prompt}\n\n{full_prompt}"
+                            
+                            response = await model.generate_content_async(combined_prompt)
+                            print(f"[OK] Cloud fallback succeeded using Gemini")
+                            return response.text
+                        
+                        elif provider_name == 'openai':
+                            from openai import AsyncOpenAI
+                            client = AsyncOpenAI(api_key=api_key)
+                            messages = []
+                            if system_prompt:
+                                messages.append({"role": "system", "content": system_prompt})
+                            messages.append({"role": "user", "content": full_prompt})
+                            
+                            response = await client.chat.completions.create(
+                                model="gpt-4",
+                                messages=messages,
+                                temperature=0.2,
+                                max_tokens=8000
+                            )
+                            print(f"[OK] Cloud fallback succeeded using OpenAI GPT-4")
+                            return response.choices[0].message.content
+                    except Exception as e:
+                        print(f"[WARN] Cloud provider {provider_name} failed: {e}. Trying next...")
+                        continue
+                
+                # All cloud providers failed
+                raise Exception("All cloud providers failed. Please check API keys in secrets store.")
+        
+        if self.client_type == 'ollama' and hasattr(self, 'ollama_client'):
+            # Direct Ollama call (fallback if router not available)
+            try:
+                # Use default model or get from mapper
+                if artifact_type:
+                    from config.artifact_model_mapping import get_artifact_mapper
+                    mapper = get_artifact_mapper()
+                    model_name = mapper.get_model_name(artifact_type)
+                else:
+                    model_name = "codellama:7b-instruct-q4_K_M"  # Default
+                
+                response = await self.ollama_client.generate(
+                    model_name=model_name,
+                    prompt=full_prompt,
+                    system_message=system_prompt,
+                    temperature=0.2
+                )
+                
+                if response.success:
+                    return response.content
+                else:
+                    raise Exception(f"Ollama generation failed: {response.error_message}")
+            except Exception as e:
+                print(f"[WARN] Ollama generation failed: {e}. Falling back to cloud...")
+                # Fall through to cloud providers
+        
+        if self.client_type == 'local_finetuned':
+            # Use local fine-tuned model
+            import torch
+            
+            model = self.client['model']
+            tokenizer = self.client['tokenizer']
+            
+            # Format prompt for instruction-following
+            instruction_prompt = f"""### Instruction:
+{system_prompt if system_prompt else 'You are an expert software architect. Generate high-quality technical documentation and code.'}
+
+### Input:
+{full_prompt}
+
+### Output:
+"""
+            
+            # Tokenize
+            inputs = tokenizer(instruction_prompt, return_tensors="pt", truncation=True, max_length=4096)
+            
+            # Move to GPU if available
+            if self.client.get('cuda_available'):
+                inputs = {k: v.cuda() for k, v in inputs.items()}
+            
+            # Stream tokens for user feedback
+            try:
+                from transformers import TextIteratorStreamer
+                import threading
+                streamer = TextIteratorStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
+                generation_kwargs = dict(
+                    **inputs,
+                    max_new_tokens=4096,  # Increased from 2048 for full prototypes
+                    temperature=0.2,
+                    do_sample=True,
+                    top_p=0.95,
+                    pad_token_id=tokenizer.pad_token_id,
+                    eos_token_id=tokenizer.eos_token_id,
+                    streamer=streamer,
+                )
+            
+                # Prepare optional Streamlit placeholder for live logs
+                log_placeholder = None
+                try:
+                    import streamlit as st
+                    log_placeholder = st.empty()
+                    log_placeholder.info("🧠 Generating with local Codellama…")
+                except Exception:
+                    log_placeholder = None
+
+                generated_chunks = []
+                generation_error: Dict[str, Exception] = {}
+
+                def _generate_async():
+                    try:
+                        with torch.no_grad():
+                            model.generate(**generation_kwargs)
+                    except Exception as exc:  # noqa: BLE001
+                        generation_error["error"] = exc
+
+                thread = threading.Thread(target=_generate_async)
+                thread.start()
+
+                for token in streamer:
+                    generated_chunks.append(token)
+                    partial_text = "".join(generated_chunks)
+                    if log_placeholder is not None:
+                        log_placeholder.markdown(f"```\n{partial_text[-2000:]}\n```")
+                    else:
+                        print(f"[LOCAL_GEN] {partial_text[-120:]}" if len(partial_text) > 120 else f"[LOCAL_GEN] {partial_text}")
+
+                thread.join()
+
+                if generation_error:
+                    raise generation_error["error"]
+
+                generated_text = "".join(generated_chunks)
+
+            except Exception as stream_err:
+                # Fallback to non-streaming generation
+                print(f"[WARN] Streaming generation failed: {stream_err}. Retrying without streamer...")
+                try:
+                    with torch.no_grad():
+                        outputs = model.generate(
+                            **inputs,
+                            max_new_tokens=4096,  # Increased from 2048 for full prototypes
+                            temperature=0.0,
+                            do_sample=False,
+                            top_p=0.95,
+                            pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
+                            eos_token_id=tokenizer.eos_token_id,
+                        )
+                    prompt_length = inputs["input_ids"].shape[-1]
+                    generated_ids = outputs[0][prompt_length:]
+                    generated_text = tokenizer.decode(generated_ids.detach().cpu(), skip_special_tokens=True)
+                except Exception as final_err:  # noqa: BLE001
+                    if log_placeholder is not None:
+                        try:
+                            log_placeholder.error("❌ Local model generation failed. Swapping to cloud provider.")
+                        except Exception:  # noqa: BLE001
+                            pass
+                    # Clear CUDA error state to keep app responsive
+                    if self.client.get('cuda_available'):
+                        try:
+                            torch.cuda.empty_cache()
+                        except Exception:  # noqa: BLE001
+                            pass
+                    # Fine-tuned model failed, try cloud fallback
+                    print(f"[WARN] Local fine-tuned model failed: {final_err}. Falling back to cloud...")
+                    # Fall through to cloud fallback below
+            
+            cleaned_text = generated_text.strip()
+            if "### Output:" in cleaned_text:
+                result = cleaned_text.split("### Output:", 1)[-1].strip()
+            else:
+                result = cleaned_text
+            
+            # Clear live log placeholder once finished
+            try:
+                if log_placeholder is not None:
+                    log_placeholder.empty()
+            except Exception:
+                pass
+
+            return result
+        
+        elif self.client_type == 'groq':
             messages = []
             if system_prompt:
                 messages.append({"role": "system", "content": system_prompt})
@@ -268,11 +727,39 @@ USER REQUEST:
         
         elif self.client_type == 'gemini':
             full_system_prompt = f"{system_prompt}\n\n{full_prompt}" if system_prompt else full_prompt
-            response = self.client.generate_content(full_system_prompt)
-            return response.text
+            
+            # Add retry logic for rate limiting (429 errors)
+            import time
+            import random
+            max_retries = 3
+            base_delay = 5  # Base delay in seconds
+            
+            for attempt in range(max_retries):
+                try:
+                    response = self.client.generate_content(full_system_prompt)
+                    return response.text
+                except Exception as e:
+                    error_str = str(e)
+                    # Check if it's a 429 rate limit error
+                    if "429" in error_str or "Resource exhausted" in error_str or "ResourceExhausted" in error_str:
+                        if attempt < max_retries - 1:
+                            # Exponential backoff with jitter
+                            delay = base_delay * (2 ** attempt) + random.uniform(1, 3)
+                            print(f"[WARN] Rate limit hit (429). Retrying in {delay:.1f}s (attempt {attempt + 1}/{max_retries})...")
+                            time.sleep(delay)
+                            continue
+                        else:
+                            print(f"[ERROR] Rate limit exceeded after {max_retries} attempts. Please wait before trying again.")
+                            raise Exception(f"429 Rate limit exceeded. Please wait a few minutes before trying again. Error: {error_str}")
+                    else:
+                        # Not a rate limit error, re-raise immediately
+                        raise
         
         else:
-            raise Exception(f"Unknown client type: {self.client_type}")
+            # Unknown client type - try cloud fallback
+            print(f"[WARN] Unknown client type: {self.client_type}. Attempting cloud fallback...")
+            # Fall through to cloud fallback logic above
+            raise Exception(f"Unknown client type: {self.client_type}. No cloud fallback available.")
     
     async def retrieve_rag_context(self, query: str, force_refresh: bool = False) -> str:
         """Retrieve relevant context using ENHANCED RAG with caching"""
@@ -315,6 +802,46 @@ USER REQUEST:
                 bm25_hits = bm25_search(bm25, q, self.cfg["hybrid"]["k_bm25"])
                 merged = merge_rerank(vec_hits, bm25_hits, self.cfg["hybrid"]["k_final"])
                 all_hits.extend(merged)
+            
+            # RAG DEBUG LOGGING (pre-tokenization)
+            try:
+                from pathlib import Path
+                import json
+                import datetime
+                
+                debug_entries = []
+                for doc, score in all_hits[:20]:
+                    debug_entries.append({
+                        "path": (doc.get("meta") or {}).get("path", "") if isinstance(doc, dict) else "",
+                        "chunk": str((doc.get("meta") or {}).get("chunk", "")) if isinstance(doc, dict) else "",
+                        "score": f"{score:.4f}" if isinstance(score, (int, float)) else str(score),
+                        "content_preview": (doc.get("content", "")[:500] + ("…" if len(doc.get("content", "")) > 500 else "")) if isinstance(doc, dict) else str(doc)[:500]
+                    })
+                
+                # Write to file
+                output_dir = Path("outputs/validation")
+                output_dir.mkdir(parents=True, exist_ok=True)
+                ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                debug_file = output_dir / f"rag_debug_{ts}.json"
+                debug_file.write_text(json.dumps({
+                    "timestamp": ts,
+                    "query": query,
+                    "expanded_queries": queries,
+                    "total_hits": len(all_hits),
+                    "top_20_chunks": debug_entries
+                }, indent=2), encoding="utf-8")
+                
+                print(f"[RAG_DEBUG] Logged {len(debug_entries)} chunks to {debug_file}")
+                
+                # Also store in session state if streamlit is available
+                try:
+                    import streamlit as st
+                    st.session_state["last_rag_debug"] = debug_entries
+                    st.session_state["last_rag_query"] = query
+                except:
+                    pass
+            except Exception as e:
+                print(f"[WARN] RAG debug logging failed: {e}")
             
             # Step 3: Rerank (if enabled)
             if intelligence_cfg.get("reranking", {}).get("enabled", True):
@@ -626,7 +1153,7 @@ Return as detailed JSON.
         return self.feature_requirements
     
     async def generate_prototype_code(self, feature_name: str) -> Dict[str, Any]:
-        """Generate code prototype"""
+        """Generate code prototype - ENHANCED with Pattern Mining"""
         print("[INFO] Generating code prototype...")
         
         # CRITICAL: Analyze repository FIRST if not already done
@@ -634,14 +1161,69 @@ Return as detailed JSON.
             print("[INFO] Repository not analyzed yet, analyzing now...")
             await self.analyze_repository()
         
-        # ENHANCED RAG CONTEXT: Include coding style, conventions, architecture patterns
+        # ENHANCED RAG CONTEXT: Be MORE SPECIFIC with feature name to get relevant examples
+        # Extract key words from feature name for better matching
+        feature_keywords = ' '.join(word.lower() for word in feature_name.split('-') if len(word) > 2)
+        
         await self.retrieve_rag_context(f"""
-        prototype {feature_name} implementation code patterns components services API controller backend
-        coding style conventions architecture patterns design patterns
-        README documentation definition of done definition of ready
-        coding standards best practices naming conventions
-        project structure folder organization file naming
+        {feature_name} {feature_keywords} feature request form component service controller
+        implementation example similar component API endpoint backend service
+        coding style patterns components services API controller architecture
+        README documentation coding standards best practices conventions
+        project structure folder organization file naming TypeScript Angular C# .NET
         """)
+        
+        # ENHANCE with Pattern Mining insights
+        pattern_context = ""
+        try:
+            from components.pattern_mining import PatternDetector
+            import os
+            from pathlib import Path
+            
+            # SMART ROOT DETECTION: Find the actual USER's project root, not Architect.AI
+            current = Path(".").resolve()
+            project_root = current
+            check_path = current
+            for _ in range(3):  # Check up to 3 levels up
+                parent = check_path.parent
+                if parent != check_path:
+                    subdirs = [d for d in parent.iterdir() if d.is_dir() and not d.name.startswith('.')]
+                    if len(subdirs) >= 2 and check_path.name in [d.name for d in subdirs]:
+                        project_root = parent
+                        break
+                check_path = parent
+            
+            detector = PatternDetector()
+            analysis = detector.analyze_project(project_root)
+            
+            # Extract design patterns to follow
+            design_patterns = [p for p in analysis.patterns if p.pattern_type == "design_pattern"]
+            language_idioms = [p for p in analysis.patterns if p.pattern_type == "idiom"]
+            
+            if design_patterns or language_idioms:
+                pattern_context = "\n\nDETECTED CODE PATTERNS TO FOLLOW:\n"
+                
+                if design_patterns:
+                    pattern_context += "Design Patterns (USE THESE):\n"
+                    for pattern in design_patterns[:5]:
+                        pattern_context += f"- {pattern.name}: {pattern.description}\n"
+                        pattern_context += f"  Found in: {', '.join(pattern.files[:3])}\n"
+                
+                if language_idioms:
+                    pattern_context += "\nLanguage Idioms (FOLLOW THESE):\n"
+                    for idiom in language_idioms[:5]:
+                        pattern_context += f"- {idiom.name}: {idiom.description}\n"
+                
+                # Add code quality context
+                pattern_context += f"\nCode Quality Score: {analysis.code_quality_score:.0f}/100\n"
+                pattern_context += "Top Recommendations:\n"
+                for rec in analysis.recommendations[:3]:
+                    pattern_context += f"- {rec}\n"
+                
+                self.rag_context += pattern_context
+                print(f"[OK] Enhanced code generation with {len(design_patterns)} patterns from Pattern Mining")
+        except Exception as e:
+            print(f"[WARN] Could not enhance with Pattern Mining: {e}")
         
         # Detect tech stacks to be explicit about what to generate
         tech_stacks = self.repo_analysis.tech_stacks if self.repo_analysis else []
@@ -781,7 +1363,7 @@ Make it DETAILED and COMPLETE - this should be ready to copy-paste and run!
         }
     
     async def generate_visual_prototype(self, feature_name: str) -> str:
-        """Generate interactive visual prototype"""
+        """Generate interactive visual prototype - ENHANCED with Pattern Mining"""
         print("[INFO] Generating visual prototype...")
         
         # CRITICAL: Analyze repository FIRST if not already done
@@ -797,8 +1379,55 @@ Make it DETAILED and COMPLETE - this should be ready to copy-paste and run!
         responsive design mobile patterns accessibility
         """)
         
+        # ENHANCE with Pattern Mining for UI/UX patterns
+        try:
+            from components.pattern_mining import PatternDetector
+            import os
+            from pathlib import Path
+            
+            # SMART ROOT DETECTION: Find the actual USER's project root, not Architect.AI
+            current = Path(".").resolve()
+            project_root = current
+            check_path = current
+            for _ in range(3):  # Check up to 3 levels up
+                parent = check_path.parent
+                if parent != check_path:
+                    subdirs = [d for d in parent.iterdir() if d.is_dir() and not d.name.startswith('.')]
+                    if len(subdirs) >= 2 and check_path.name in [d.name for d in subdirs]:
+                        project_root = parent
+                        break
+                check_path = parent
+            
+            detector = PatternDetector()
+            analysis = detector.analyze_project(project_root)
+            
+            # Extract UI/UX patterns
+            design_patterns = [p for p in analysis.patterns if p.pattern_type == "design_pattern"]
+            language_idioms = [p for p in analysis.patterns if p.pattern_type == "idiom"]
+            
+            pm_context = "\n\nUI/UX PATTERNS FROM CODEBASE:\n"
+            
+            # Check for Angular/React/Vue patterns
+            frontend_patterns = [p for p in language_idioms if any(tech in p.description.lower() for tech in ['angular', 'react', 'vue', 'component'])]
+            if frontend_patterns:
+                pm_context += "Frontend Patterns (USE THESE):\n"
+                for pattern in frontend_patterns[:5]:
+                    pm_context += f"- {pattern.name}: {pattern.description}\n"
+                    pm_context += f"  Found in: {', '.join(pattern.files[:2])}\n"
+            
+            # Add styling insights
+            pm_context += "\nStyling Approach:\n"
+            pm_context += f"- Code Quality: {analysis.code_quality_score:.0f}/100\n"
+            pm_context += "- Follow detected component patterns\n"
+            pm_context += "- Maintain consistent styling conventions\n"
+            
+            self.rag_context += pm_context
+            print(f"[OK] Enhanced visual prototype with UI patterns from Pattern Mining")
+        except Exception as e:
+            print(f"[WARN] Could not enhance with Pattern Mining: {e}")
+        
         prompt = f"""
-Generate a BEAUTIFUL, FULLY FUNCTIONAL visual prototype for: {feature_name}
+Generate a FULLY FUNCTIONAL visual prototype for: {feature_name}
 
 REQUIREMENTS:
 {json.dumps(self.feature_requirements, indent=2)}
@@ -853,85 +1482,63 @@ Include realistic mock data and make it visually appealing.
         
         response = await self._call_ai(
             prompt,
-            "You are an expert frontend developer. Generate a complete, working HTML prototype."
+            "You are an expert frontend developer. Generate a complete, working HTML prototype.",
+            artifact_type="visual_prototype_dev"
         )
         
         return response
     
     def _clean_diagram_output(self, diagram_text: str) -> str:
-        """Clean diagram output - AGGRESSIVE cleaning to ensure valid Mermaid"""
-        import re
+        """
+        Clean diagram output - Uses aggressive preprocessing + universal diagram fixer.
         
-        # Remove markdown code blocks
-        diagram_text = re.sub(r'```mermaid\s*\n?', '', diagram_text)
-        diagram_text = re.sub(r'```\s*$', '', diagram_text)
-        diagram_text = diagram_text.replace("```", "")
+        Pipeline:
+        1. Aggressive preprocessing (fixes 4 common syntax errors)
+        2. UniversalDiagramFixer (comprehensive type-specific cleaning)
         
-        # Split into lines
-        lines = [l.strip() for l in diagram_text.strip().split('\n')]
-        cleaned_lines = []
-        diagram_type = None
-        header_count = 0
-        
-        for line in lines:
-            if not line or line.startswith('%%'):  # Skip empty and comments
-                continue
+        Fixes:
+        - Multiple diagram declarations on same line
+        - Special characters in node labels (.NET, C#, etc.)
+        - Markdown fences inside diagram content
+        - Malformed ERD entity blocks
+        """
+        try:
+            # CRITICAL: Aggressive preprocessing BEFORE universal fixer
+            from components.mermaid_preprocessor import aggressive_mermaid_preprocessing
+            diagram_text = aggressive_mermaid_preprocessing(diagram_text)
             
-            # Detect and enforce SINGLE diagram header
-            if line.startswith('graph '):
-                if header_count == 0:
-                    cleaned_lines.append(line)
-                    diagram_type = 'graph'
-                    header_count += 1
-                # else: skip duplicate header
-                continue
-            elif line.startswith('sequenceDiagram'):
-                if header_count == 0:
-                    cleaned_lines.append(line)
-                    diagram_type = 'sequence'
-                    header_count += 1
-                # else: skip duplicate header
-                continue
-            elif line.startswith('flowchart '):
-                if header_count == 0:
-                    cleaned_lines.append(line)
-                    diagram_type = 'flowchart'
-                    header_count += 1
-                # else: skip duplicate header
-                continue
-            
-            # Skip invalid syntax
-            if any(keyword in line.lower() for keyword in ['subgraph', 'style ', 'classdef', 'click ']):
-                continue
-            
-            # Skip lines that don't look like diagram syntax
-            if diagram_type in ['graph', 'flowchart']:
-                if not any(marker in line for marker in ['-->', '[', '{', '|', '(']):
-                    continue
-            elif diagram_type == 'sequence':
-                if not any(marker in line for marker in ['->>', '-->', 'participant', 'actor']):
-                    continue
-            
-            # Fix double braces {{...}} -> {...}
-            line = re.sub(r'\{\{([^}]+)\}\}', r'{\1}', line)
-            
-            cleaned_lines.append(line)
-        
-        result = '\n'.join(cleaned_lines).strip()
-        
-        # Final validation: ensure we have a header
-        if not any(result.startswith(t) for t in ['graph ', 'sequenceDiagram', 'flowchart ']):
-            # Prepend default header
-            result = f"graph TD\n{result}"
-        
-        return result
+            from components.universal_diagram_fixer import fix_any_diagram
+            cleaned, fixes = fix_any_diagram(diagram_text)
+            return cleaned
+        except Exception as e:
+            # Fallback: basic cleanup with preprocessing
+            try:
+                from components.mermaid_preprocessor import aggressive_mermaid_preprocessing
+                diagram_text = aggressive_mermaid_preprocessing(diagram_text)
+            except:
+                # Last resort: manual cleanup
+                import re
+                diagram_text = re.sub(r'```mermaid\s*\n?', '', diagram_text)
+                diagram_text = re.sub(r'```\s*$', '', diagram_text)
+                diagram_text = diagram_text.replace("```", "")
+            return diagram_text.strip()
     
     # =============================================================================
     # GRANULAR GENERATION METHODS (for cost optimization)
     # =============================================================================
     
-    async def generate_erd_only(self) -> Optional[str]:
-        """Generate ONLY ERD diagram (granular generation)"""
+    def _should_use_mermaid_model(self) -> bool:
+        """Check if MermaidMistral model is available and loaded"""
+        try:
+            import streamlit as st
+            selected_model = st.session_state.get('selected_local_model', {})
+            model_name = selected_model.get('base_model', '')
+            return 'mermaid' in model_name.lower()
+        except:
+            return False
+    
+    async def generate_erd_only(self, artifact_type: str = "erd") -> Optional[str]:
+        """Generate ONLY ERD diagram (granular generation) - ENHANCED with Knowledge Graph + MermaidMistral"""
         from rag.erd_generator import get_erd_generator
         
         erd_gen = get_erd_generator()
@@ -940,30 +1547,178 @@ Include realistic mock data and make it visually appealing.
             return None
         
         print("[INFO] Generating ERD diagram only...")
-        # ENHANCED RAG CONTEXT: Include data modeling patterns and conventions
+        
+        # Check if specialized Mermaid model is available
+        if self._should_use_mermaid_model():
+            print("[OK] Using MermaidMistral for ERD generation")
+            # MermaidMistral doesn't need heavy RAG context - it's already specialized
+            prompt = f"""Generate a complete Mermaid ERD for this system:
+
+Meeting Notes:
+{self.meeting_notes}
+
+Create an erDiagram with:
+- All entities and their fields
+- Data types for each field
+- Primary keys (PK) and Foreign keys (FK)  
+- Relationships between entities (one-to-one, one-to-many, many-to-many)
+
+Output ONLY the Mermaid ERD code starting with 'erDiagram'."""
+            return await self._call_ai(prompt, artifact_type=artifact_type)
+        
+        # Standard generation with RAG context for general models
         await self.retrieve_rag_context("""
         database schema tables entities relationships models data
         data modeling patterns naming conventions database design
         entity relationships cardinality constraints
         """)
         
+        # ENHANCE with Knowledge Graph component relationships
+        kg_context = ""
+        try:
+            from components.knowledge_graph import KnowledgeGraphBuilder
+            import os
+            from pathlib import Path
+            
+            # SMART ROOT DETECTION: Find the actual USER's project root, not Architect.AI
+            current = Path(".").resolve()
+            project_root = current
+            check_path = current
+            for _ in range(3):  # Check up to 3 levels up
+                parent = check_path.parent
+                if parent != check_path:
+                    subdirs = [d for d in parent.iterdir() if d.is_dir() and not d.name.startswith('.')]
+                    # If parent has multiple project-like directories (e.g., final_project, architect_ai_cursor_poc)
+                    if len(subdirs) >= 2 and check_path.name in [d.name for d in subdirs]:
+                        project_root = parent
+                        print(f"[INFO] Detected user project root at: {project_root}")
+                        break
+                check_path = parent
+            
+            kg_builder = KnowledgeGraphBuilder()
+            kg = kg_builder.build_graph(project_root)
+            kg_results = kg.to_dict()
+            
+            # Extract relevant entity relationships
+            components_dict = kg_results.get("components", {})
+            components = list(components_dict.values())  # Convert dict to list
+            models = [c for c in components if c["type"] in ["class", "interface"] and 
+                     any(keyword in c.get("file_path", "").lower() for keyword in ["model", "entity", "dto"])]
+            
+            if models:
+                kg_context = "\n\nACTUAL COMPONENT RELATIONSHIPS FROM CODEBASE:\n"
+                for model in models[:10]:  # Top 10 models
+                    kg_context += f"- {model['name']} ({model['type']}) in {model['file_path']}\n"
+                    if model.get("dependencies"):
+                        kg_context += f"  Dependencies: {', '.join(model['dependencies'][:5])}\n"
+                
+                self.rag_context += kg_context
+                print(f"[OK] Enhanced ERD with {len(models)} model relationships from Knowledge Graph")
+        except Exception as e:
+            print(f"[WARN] Could not enhance with Knowledge Graph: {e}")
+        
         prompt = erd_gen.generate_erd_prompt(self.meeting_notes, self.rag_context)
         response = await self._call_ai(
             prompt,
-            "Generate ONLY the ERD diagram in Mermaid format. Start with 'erDiagram'."
+            "Generate ONLY the ERD diagram in Mermaid format. Start with 'erDiagram' (NOT graph TD).",
+            artifact_type="erd"
         )
         
-        return self._clean_diagram_output(response)
+        cleaned = self._clean_diagram_output(response)
+        
+        # POST-PROCESS: Fix any diagram syntax issues (UNIVERSAL)
+        try:
+            from components.universal_diagram_fixer import fix_any_diagram
+            cleaned, fixes = fix_any_diagram(cleaned)
+            if fixes:
+                print(f"[OK] ERD syntax fixed: {len(fixes)} issues resolved")
+                for fix in fixes[:3]:  # Show first 3 fixes
+                    print(f"  - {fix}")
+        except Exception as e:
+            print(f"[WARN] Diagram syntax fix failed: {e}")
+        
+        return cleaned
     
     async def generate_architecture_only(self) -> str:
-        """Generate ONLY system architecture diagram (granular generation)"""
+        """Generate ONLY system architecture diagram (granular generation) - ENHANCED with Knowledge Graph + MermaidMistral"""
         print("[INFO] Generating architecture diagram only...")
-        # ENHANCED RAG CONTEXT: Include architectural patterns and design decisions
+        
+        # Check if specialized Mermaid model is available
+        if self._should_use_mermaid_model():
+            print("[OK] Using MermaidMistral for architecture diagram generation")
+            prompt = f"""Generate a system architecture flowchart using Mermaid:
+
+Meeting Notes:
+{self.meeting_notes}
+
+Create a flowchart showing:
+- All system components (frontend, backend, database, services)
+- Communication flow between components
+- External dependencies
+- Data flow directions
+
+Output ONLY the Mermaid flowchart code starting with 'flowchart TD' or 'flowchart LR'."""
+            return await self._call_ai(prompt)
+        
+        # Standard generation with RAG context for general models
         await self.retrieve_rag_context("""
         system architecture components services infrastructure
         architectural patterns design decisions technology choices
         microservices patterns service boundaries API design
         """)
+        
+        # ENHANCE with Knowledge Graph architecture insights
+        try:
+            from components.knowledge_graph import KnowledgeGraphBuilder
+            import os
+            from pathlib import Path
+            
+            # SMART ROOT DETECTION: Find the actual USER's project root, not Architect.AI
+            current = Path(".").resolve()
+            project_root = current
+            check_path = current
+            for _ in range(3):  # Check up to 3 levels up
+                parent = check_path.parent
+                if parent != check_path:
+                    subdirs = [d for d in parent.iterdir() if d.is_dir() and not d.name.startswith('.')]
+                    # If parent has multiple project-like directories (e.g., final_project, architect_ai_cursor_poc)
+                    if len(subdirs) >= 2 and check_path.name in [d.name for d in subdirs]:
+                        project_root = parent
+                        print(f"[INFO] Detected user project root at: {project_root}")
+                        break
+                check_path = parent
+            
+            kg_builder = KnowledgeGraphBuilder()
+            kg = kg_builder.build_graph(project_root)
+            kg_results = kg.to_dict()
+            
+            # Extract architectural components (services, controllers, etc.)
+            components_dict = kg_results.get("components", {})
+            components = list(components_dict.values())  # Convert dict to list
+            arch_components = [c for c in components if c["type"] in ["class", "module"] and
+                             any(keyword in c.get("file_path", "").lower() for keyword in ["service", "controller", "component"])]
+            
+            if arch_components:
+                kg_context = "\n\nACTUAL ARCHITECTURE FROM CODEBASE:\n"
+                for comp in arch_components[:15]:  # Top 15 components
+                    kg_context += f"- {comp['name']} ({comp['type']})\n"
+                    if comp.get("dependencies"):
+                        kg_context += f"  Uses: {', '.join(comp['dependencies'][:5])}\n"
+                    if comp.get("dependents"):
+                        kg_context += f"  Used by: {', '.join(comp['dependents'][:3])}\n"
+                
+                # Add graph metrics
+                metrics = kg_results.get("metrics", {})
+                if metrics:
+                    kg_context += f"\nArchitecture Metrics:\n"
+                    kg_context += f"- Components: {metrics.get('total_components', 'N/A')}\n"
+                    kg_context += f"- Relationships: {metrics.get('total_relationships', 'N/A')}\n"
+                    kg_context += f"- Coupling: {metrics.get('graph_density', 'N/A'):.2f}\n"
+                
+                self.rag_context += kg_context
+                print(f"[OK] Enhanced Architecture with {len(arch_components)} components from Knowledge Graph")
+        except Exception as e:
+            print(f"[WARN] Could not enhance with Knowledge Graph: {e}")
         
         prompt = f"""
 Generate a system architecture diagram showing the high-level components and their relationships.
@@ -975,8 +1730,19 @@ RAG CONTEXT: {self.rag_context}
 
 OUTPUT: Mermaid graph diagram (start with 'graph TD'), max 8 nodes, show component relationships.
 """
-        response = await self._call_ai(prompt, "Generate ONLY the diagram. Start with 'graph TD'.")
-        return self._clean_diagram_output(response)
+        response = await self._call_ai(prompt, "Generate ONLY the diagram. Start with 'graph TD'.", artifact_type="architecture")
+        cleaned = self._clean_diagram_output(response)
+        
+        # POST-PROCESS: Fix any diagram syntax issues (UNIVERSAL)
+        try:
+            from components.universal_diagram_fixer import fix_any_diagram
+            cleaned, fixes = fix_any_diagram(cleaned)
+            if fixes:
+                print(f"[OK] Architecture diagram syntax fixed: {len(fixes)} issues resolved")
+        except Exception as e:
+            print(f"[WARN] Diagram syntax fix failed: {e}")
+        
+        return cleaned
     
     async def generate_api_docs_only(self) -> str:
         """Generate ONLY API documentation (granular generation)"""
@@ -1004,7 +1770,7 @@ Include:
 
 Match the style and patterns from the RAG context above.
 """
-        response = await self._call_ai(prompt, "Generate comprehensive API documentation in Markdown.")
+        response = await self._call_ai(prompt, "Generate comprehensive API documentation in Markdown.", artifact_type="api_docs")
         return response
     
     async def generate_jira_only(self) -> str:
@@ -1032,7 +1798,7 @@ Format:
 Include acceptance criteria (Given/When/Then) for each story.
 Match the team's style from the RAG context.
 """
-        response = await self._call_ai(prompt, "Generate JIRA tasks in Markdown format.")
+        response = await self._call_ai(prompt, "Generate JIRA tasks in Markdown format.", artifact_type="jira")
         return response
     
     async def generate_workflows_only(self) -> str:
@@ -1060,12 +1826,97 @@ Include:
 
 Match the team's actual workflows from the RAG context.
 """
-        response = await self._call_ai(prompt, "Generate workflows in Markdown format.")
+        response = await self._call_ai(prompt, "Generate workflows in Markdown format.", artifact_type="workflows")
         return response
     
     async def generate_erd_diagram(self) -> Optional[str]:
         """Generate ERD diagram if database discussion detected (used in full workflow)"""
         return await self.generate_erd_only()
+    
+    async def generate_system_overview_diagram(self) -> Optional[str]:
+        """Generate ONLY system overview diagram (Bug Fix #2: don't generate all)"""
+        await self.retrieve_rag_context("architecture system overview")
+        overview_prompt = f"""
+You are a Mermaid diagram generator. Generate ONLY valid Mermaid code.
+
+REQUIREMENTS: {self.feature_requirements}
+TECH STACKS: {self.repo_analysis.tech_stacks if self.repo_analysis else []}
+
+OUTPUT RULES (CRITICAL - FOLLOW EXACTLY):
+1. First line MUST be: graph TD
+2. NO markdown blocks (NO ```, NO ```mermaid)
+3. NO subgraphs
+4. Maximum 7 nodes
+5. Use ONLY square brackets: [Text]
+6. Use ONLY --> for arrows
+
+Generate a simple system overview with max 7 nodes following these EXACT rules.
+"""
+        raw_overview = await self._call_ai(overview_prompt, "Output ONLY the diagram. Start with 'graph TD'.")
+        cleaned = self._clean_diagram_output(raw_overview)
+        try:
+            from components.universal_diagram_fixer import fix_any_diagram
+            cleaned, _ = fix_any_diagram(cleaned)
+        except Exception as e:
+            print(f"[WARN] Failed to fix diagram: {e}")
+        return cleaned
+    
+    async def generate_data_flow_diagram(self) -> Optional[str]:
+        """Generate ONLY data flow diagram (Bug Fix #2: don't generate all)"""
+        await self.retrieve_rag_context("data flow process")
+        prompt = f"""
+You are a Mermaid diagram generator. Generate ONLY valid Mermaid code.
+
+REQUIREMENTS: {self.feature_requirements}
+
+OUTPUT RULES: graph TD, max 6 nodes, square brackets, --> arrows only.
+Show: Input -> Process -> Store -> Output
+"""
+        raw = await self._call_ai(prompt, "Output ONLY the diagram. Start with 'graph TD'.")
+        return self._clean_diagram_output(raw)
+    
+    async def generate_user_flow_diagram(self) -> Optional[str]:
+        """Generate ONLY user flow diagram (Bug Fix #2: don't generate all)"""
+        await self.retrieve_rag_context("user flow journey")
+        prompt = f"""
+You are a Mermaid diagram generator. Generate ONLY valid Mermaid code.
+
+REQUIREMENTS: {self.feature_requirements}
+
+OUTPUT RULES: graph TD, max 7 nodes, [Text] for actions, {{{{Text}}}} for decisions.
+Show user journey with decision points.
+"""
+        raw = await self._call_ai(prompt, "Output ONLY the diagram. Start with 'graph TD'.")
+        return self._clean_diagram_output(raw)
+    
+    async def generate_components_diagram(self) -> Optional[str]:
+        """Generate ONLY components diagram (Bug Fix #2: don't generate all)"""
+        await self.retrieve_rag_context("components modules architecture")
+        prompt = f"""
+You are a Mermaid diagram generator. Generate ONLY valid Mermaid code.
+
+REQUIREMENTS: {self.feature_requirements}
+TECH STACK: {self.repo_analysis.tech_stacks if self.repo_analysis else []}
+
+OUTPUT RULES: graph LR, max 7 nodes, square brackets, --> arrows.
+Show component relationships.
+"""
+        raw = await self._call_ai(prompt, "Output ONLY the diagram. Start with 'graph LR'.")
+        return self._clean_diagram_output(raw)
+    
+    async def generate_api_sequence_diagram(self) -> Optional[str]:
+        """Generate ONLY API sequence diagram (Bug Fix #2: don't generate all)"""
+        await self.retrieve_rag_context("API endpoints sequence")
+        prompt = f"""
+You are a Mermaid diagram generator. Generate ONLY valid Mermaid code.
+
+REQUIREMENTS: {self.feature_requirements}
+
+OUTPUT RULES: sequenceDiagram, max 4 participants, ->> arrows.
+Show API request/response flow.
+"""
+        raw = await self._call_ai(prompt, "Output ONLY the diagram. Start with 'sequenceDiagram'.")
+        return self._clean_diagram_output(raw)
     
     async def generate_specific_diagrams(self) -> Dict[str, str]:
         """Generate specific diagrams for each section"""
@@ -1079,6 +1930,10 @@ Match the team's actual workflows from the RAG context.
         erd = await self.generate_erd_diagram()
         if erd:
             diagrams['erd'] = erd
+        
+        # Add delay to avoid rate limits
+        import asyncio
+        await asyncio.sleep(2)  # 2 second delay between diagrams
         
         # System Overview
         overview_prompt = f"""
@@ -1109,7 +1964,17 @@ graph TD
 Generate a simple system overview with max 7 nodes following these EXACT rules.
 """
         raw_overview = await self._call_ai(overview_prompt, "Output ONLY the diagram. Start with 'graph TD'. No text before or after.")
-        diagrams['overview'] = self._clean_diagram_output(raw_overview)
+        cleaned_overview = self._clean_diagram_output(raw_overview)
+        
+        # Apply universal diagram fixer
+        try:
+            from components.universal_diagram_fixer import fix_any_diagram
+            cleaned_overview, _ = fix_any_diagram(cleaned_overview)
+        except Exception as e:
+            print(f"[WARN] Failed to fix overview diagram: {e}")
+        
+        diagrams['overview'] = cleaned_overview
+        await asyncio.sleep(2)  # Delay to avoid rate limits
         
         # Data Flow
         dataflow_prompt = f"""
@@ -1138,7 +2003,14 @@ graph TD
 Generate a simple data flow with max 6 nodes following these EXACT rules.
 """
         raw_dataflow = await self._call_ai(dataflow_prompt, "Output ONLY the diagram. Start with 'graph TD'. No text before or after.")
-        diagrams['dataflow'] = self._clean_diagram_output(raw_dataflow)
+        cleaned_dataflow = self._clean_diagram_output(raw_dataflow)
+        try:
+            from components.universal_diagram_fixer import fix_any_diagram
+            cleaned_dataflow, _ = fix_any_diagram(cleaned_dataflow)
+        except:
+            pass
+        diagrams['dataflow'] = cleaned_dataflow
+        await asyncio.sleep(2)  # Delay to avoid rate limits
         
         # User Flow
         userflow_prompt = f"""
@@ -1167,7 +2039,14 @@ graph TD
 Generate a simple user flow with max 7 nodes following these EXACT rules.
 """
         raw_userflow = await self._call_ai(userflow_prompt, "Output ONLY the diagram. Start with 'graph TD'. No text before or after.")
-        diagrams['userflow'] = self._clean_diagram_output(raw_userflow)
+        cleaned_userflow = self._clean_diagram_output(raw_userflow)
+        try:
+            from components.universal_diagram_fixer import fix_any_diagram
+            cleaned_userflow, _ = fix_any_diagram(cleaned_userflow)
+        except:
+            pass
+        diagrams['userflow'] = cleaned_userflow
+        await asyncio.sleep(2)  # Delay to avoid rate limits
         
         # Component Relationships
         components_prompt = f"""
@@ -1198,7 +2077,14 @@ graph LR
 Generate a simple component diagram with max 7 nodes following these EXACT rules.
 """
         raw_components = await self._call_ai(components_prompt, "Output ONLY the diagram. Start with 'graph LR'. No text before or after.")
-        diagrams['components'] = self._clean_diagram_output(raw_components)
+        cleaned_components = self._clean_diagram_output(raw_components)
+        try:
+            from components.universal_diagram_fixer import fix_any_diagram
+            cleaned_components, _ = fix_any_diagram(cleaned_components)
+        except:
+            pass
+        diagrams['components'] = cleaned_components
+        await asyncio.sleep(2)  # Delay to avoid rate limits
         
         # API Integration
         api_prompt = f"""
@@ -1227,8 +2113,15 @@ sequenceDiagram
 Generate a simple API sequence with max 6 interactions following these EXACT rules.
 """
         raw_api = await self._call_ai(api_prompt, "Output ONLY the diagram. Start with 'sequenceDiagram'. No text before or after.")
-        diagrams['api'] = self._clean_diagram_output(raw_api)
+        cleaned_api = self._clean_diagram_output(raw_api)
+        try:
+            from components.universal_diagram_fixer import fix_any_diagram
+            cleaned_api, _ = fix_any_diagram(cleaned_api)
+        except:
+            pass
+        diagrams['api'] = cleaned_api
         
+        print(f"[OK] Generated {len(diagrams)} diagrams with universal syntax validation")
         return diagrams
     
     async def generate_design_document(self) -> str:
@@ -1318,10 +2211,52 @@ Base this on YOUR actual repository architecture shown in the RAG context.
         )
     
     async def generate_api_documentation(self) -> str:
-        """Generate API documentation"""
+        """Generate API documentation - ENHANCED with Knowledge Graph"""
         print("[INFO] Generating API documentation...")
         
         await self.retrieve_rag_context("API endpoints routes controllers services")
+        
+        # ENHANCE with Knowledge Graph for actual API structure
+        try:
+            from components.knowledge_graph import KnowledgeGraphBuilder
+            import os
+            from pathlib import Path
+            
+            # SMART ROOT DETECTION: Find the actual USER's project root, not Architect.AI
+            current = Path(".").resolve()
+            project_root = current
+            check_path = current
+            for _ in range(3):  # Check up to 3 levels up
+                parent = check_path.parent
+                if parent != check_path:
+                    subdirs = [d for d in parent.iterdir() if d.is_dir() and not d.name.startswith('.')]
+                    # If parent has multiple project-like directories (e.g., final_project, architect_ai_cursor_poc)
+                    if len(subdirs) >= 2 and check_path.name in [d.name for d in subdirs]:
+                        project_root = parent
+                        print(f"[INFO] Detected user project root at: {project_root}")
+                        break
+                check_path = parent
+            
+            kg_builder = KnowledgeGraphBuilder()
+            kg = kg_builder.build_graph(project_root)
+            kg_results = kg.to_dict()
+            
+            # Extract API controllers and their methods
+            components_dict = kg_results.get("components", {})
+            components = list(components_dict.values())  # Convert dict to list
+            controllers = [c for c in components if "controller" in c.get("file_path", "").lower() or "api" in c.get("file_path", "").lower()]
+            
+            if controllers:
+                kg_context = "\n\nACTUAL API CONTROLLERS FROM CODEBASE:\n"
+                for ctrl in controllers[:10]:
+                    kg_context += f"- {ctrl['name']} in {ctrl['file_path']}\n"
+                    if ctrl.get("dependencies"):
+                        kg_context += f"  Services used: {', '.join(ctrl['dependencies'][:5])}\n"
+                
+                self.rag_context += kg_context
+                print(f"[OK] Enhanced API docs with {len(controllers)} controllers from Knowledge Graph")
+        except Exception as e:
+            print(f"[WARN] Could not enhance with Knowledge Graph: {e}")
         
         prompt = f"""
 Generate comprehensive API documentation:
@@ -1360,10 +2295,60 @@ Base this on YOUR actual API patterns shown in the RAG context.
         )
     
     async def generate_jira_tasks(self) -> str:
-        """Generate JIRA-ready tasks"""
+        """Generate JIRA-ready tasks - ENHANCED with Pattern Mining"""
         print("[INFO] Generating JIRA tasks...")
         
         await self.retrieve_rag_context("tasks user stories epic subtasks estimates")
+        
+        # ENHANCE with Pattern Mining for realistic complexity estimates
+        try:
+            from components.pattern_mining import PatternDetector
+            import os
+            from pathlib import Path
+            
+            # SMART ROOT DETECTION: Find the actual USER's project root, not Architect.AI
+            current = Path(".").resolve()
+            project_root = current
+            check_path = current
+            for _ in range(3):  # Check up to 3 levels up
+                parent = check_path.parent
+                if parent != check_path:
+                    subdirs = [d for d in parent.iterdir() if d.is_dir() and not d.name.startswith('.')]
+                    if len(subdirs) >= 2 and check_path.name in [d.name for d in subdirs]:
+                        project_root = parent
+                        break
+                check_path = parent
+            
+            detector = PatternDetector()
+            analysis = detector.analyze_project(project_root)
+            
+            # Extract complexity insights
+            anti_patterns = [p for p in analysis.patterns if p.pattern_type == "anti_pattern"]
+            code_smells = [p for p in analysis.patterns if p.pattern_type == "smell"]
+            
+            pm_context = "\n\nCODEBASE COMPLEXITY INSIGHTS:\n"
+            pm_context += f"Code Quality Score: {analysis.code_quality_score:.0f}/100\n"
+            
+            if anti_patterns:
+                pm_context += f"\nKnown Issues to Address ({len(anti_patterns)} anti-patterns):\n"
+                for ap in anti_patterns[:3]:
+                    pm_context += f"- {ap.name} in {len(ap.files)} files (severity: {ap.severity})\n"
+            
+            if code_smells:
+                pm_context += f"\nCode Quality Issues ({len(code_smells)} smells):\n"
+                for smell in code_smells[:3]:
+                    pm_context += f"- {smell.name}: {smell.frequency} occurrences\n"
+            
+            # Add effort estimation hints
+            pm_context += "\nEffort Estimation Context:\n"
+            pm_context += f"- Current codebase has {analysis.metrics.get('total_patterns', 'N/A')} patterns\n"
+            pm_context += f"- Average complexity suggests medium-effort tasks\n"
+            pm_context += "- Consider refactoring overhead when estimating\n"
+            
+            self.rag_context += pm_context
+            print(f"[OK] Enhanced JIRA tasks with complexity insights from Pattern Mining")
+        except Exception as e:
+            print(f"[WARN] Could not enhance with Pattern Mining: {e}")
         
         prompt = f"""
 Generate JIRA-ready tasks:
@@ -1381,6 +2366,7 @@ RAG CONTEXT FROM YOUR REPOSITORY:
 CRITICAL - USE THE RAG CONTEXT:
 The RAG context shows your actual codebase structure and complexity.
 Create tasks that are REALISTIC based on the actual code patterns shown above.
+Use the complexity insights to provide ACCURATE story point estimates.
 
 Create comprehensive JIRA tasks including:
 
@@ -1431,10 +2417,98 @@ Make tasks specific and actionable based on the actual requirements.
         )
     
     async def generate_workflows(self) -> str:
-        """Generate workflows"""
+        """Generate workflows - ENHANCED with Knowledge Graph & Pattern Mining"""
         print("[INFO] Generating workflows...")
         
         await self.retrieve_rag_context("workflow deployment testing CI/CD development process")
+        
+        # ENHANCE with Knowledge Graph for component dependencies
+        try:
+            from components.knowledge_graph import KnowledgeGraphBuilder
+            import os
+            from pathlib import Path
+            
+            # SMART ROOT DETECTION: Find the actual USER's project root, not Architect.AI
+            current = Path(".").resolve()
+            project_root = current
+            check_path = current
+            for _ in range(3):  # Check up to 3 levels up
+                parent = check_path.parent
+                if parent != check_path:
+                    subdirs = [d for d in parent.iterdir() if d.is_dir() and not d.name.startswith('.')]
+                    # If parent has multiple project-like directories (e.g., final_project, architect_ai_cursor_poc)
+                    if len(subdirs) >= 2 and check_path.name in [d.name for d in subdirs]:
+                        project_root = parent
+                        print(f"[INFO] Detected user project root at: {project_root}")
+                        break
+                check_path = parent
+            
+            kg_builder = KnowledgeGraphBuilder()
+            kg = kg_builder.build_graph(project_root)
+            kg_results = kg.to_dict()
+            
+            components_dict = kg_results.get("components", {})
+            components = list(components_dict.values())  # Convert dict to list
+            metrics = kg_results.get("metrics", {})
+            
+            kg_context = "\n\nDEPLOYMENT STRUCTURE FROM KNOWLEDGE GRAPH:\n"
+            kg_context += f"Total Components: {metrics.get('total_components', 'N/A')}\n"
+            kg_context += f"Component Dependencies: {metrics.get('total_relationships', 'N/A')}\n"
+            kg_context += f"Coupling Level: {metrics.get('graph_density', 0):.2f}\n"
+            
+            # Identify critical components for deployment order
+            critical = [c for c in components if len(c.get("dependents", [])) > 3]
+            if critical:
+                kg_context += f"\nCritical Components (deploy first):\n"
+                for comp in critical[:5]:
+                    kg_context += f"- {comp['name']}: {len(comp.get('dependents', []))} dependents\n"
+            
+            self.rag_context += kg_context
+            print(f"[OK] Enhanced workflows with deployment structure from Knowledge Graph")
+        except Exception as e:
+            print(f"[WARN] Could not enhance with Knowledge Graph: {e}")
+        
+        # ENHANCE with Pattern Mining for quality gates
+        try:
+            from components.pattern_mining import PatternDetector
+            from pathlib import Path
+            
+            # SMART ROOT DETECTION: Find the actual USER's project root
+            current = Path(".").resolve()
+            project_root = current
+            check_path = current
+            for _ in range(3):
+                parent = check_path.parent
+                if parent != check_path:
+                    subdirs = [d for d in parent.iterdir() if d.is_dir() and not d.name.startswith('.')]
+                    if len(subdirs) >= 2 and check_path.name in [d.name for d in subdirs]:
+                        project_root = parent
+                        break
+                check_path = parent
+            
+            detector = PatternDetector()
+            analysis = detector.analyze_project(project_root)
+            
+            pm_context = "\n\nQUALITY GATES FROM PATTERN MINING:\n"
+            pm_context += f"Required Code Quality: {analysis.code_quality_score:.0f}/100\n"
+            pm_context += "Pre-deployment Checklist:\n"
+            
+            # Add quality gates based on detected issues
+            anti_patterns = [p for p in analysis.patterns if p.pattern_type == "anti_pattern"]
+            if anti_patterns:
+                pm_context += f"- Check for {len(anti_patterns)} known anti-patterns\n"
+            
+            code_smells = [p for p in analysis.patterns if p.pattern_type == "smell"]
+            if code_smells:
+                pm_context += f"- Verify no new code smells (current: {len(code_smells)})\n"
+            
+            pm_context += "- Maintain or improve code quality score\n"
+            pm_context += "- Follow detected design patterns\n"
+            
+            self.rag_context += pm_context
+            print(f"[OK] Enhanced workflows with quality gates from Pattern Mining")
+        except Exception as e:
+            print(f"[WARN] Could not enhance with Pattern Mining: {e}")
         
         prompt = f"""
 Generate comprehensive workflows:
@@ -1452,6 +2526,7 @@ RAG CONTEXT FROM YOUR REPOSITORY:
 CRITICAL - USE THE RAG CONTEXT:
 The RAG context shows your actual development setup, build process, and team practices.
 Create workflows that match YOUR actual development environment shown above.
+Use the deployment structure and quality gates to create realistic workflows.
 
 Create detailed workflows for:
 

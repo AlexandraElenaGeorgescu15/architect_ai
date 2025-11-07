@@ -20,27 +20,35 @@ Author: Alexandra Georgescu (alestef81@gmail.com)
 License: Proprietary - Internal use only
 """
 
-import streamlit as st
 import os
+# ===== DISABLE CHROMADB TELEMETRY GLOBALLY (BEFORE ANY IMPORTS) =====
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
+os.environ["CHROMA_TELEMETRY"] = "False"
+os.environ["CHROMA_DISABLE_TELEMETRY"] = "True"
+
+import streamlit as st
 import asyncio
 import json
 import base64
 import zlib
+import time
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple, List
 import sys
-
-# Auto-update architecture documentation on app start
-try:
-    sys.path.insert(0, str(Path(__file__).parent.parent))
-    from utils.architecture_updater import update_architecture_doc
-    update_architecture_doc()
-except Exception:
-    pass  # Silently fail if update doesn't work
 
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent))
+
+# Import async utilities to fix event loop errors
+from utils.async_utils import run_async
+# Import artifact router for intelligent model selection
+from ai.artifact_router import ArtifactRouter, ArtifactType
+# Import output validator for quality assurance
+from ai.output_validator import OutputValidator
+
+# Note: Auto-update architecture documentation feature was removed
+# to prevent startup crashes. If needed, run manually via utils/architecture_updater.py
 
 # Import the universal agent
 from agents.universal_agent import UniversalArchitectAgent
@@ -48,6 +56,13 @@ from agents.universal_agent import UniversalArchitectAgent
 from components.prototype_generator import generate_best_effort
 from components.metrics_dashboard import track_generation, render_metrics_dashboard
 from components.rag_cache import get_rag_cache
+from components.progress_tracker import progress_tracker, render_progress_bar, track_rag_retrieval, track_ai_generation, track_validation, track_file_operations
+from components.mermaid_syntax_corrector import mermaid_corrector, render_mermaid_syntax_corrector, validate_mermaid_syntax
+from components.mermaid_html_renderer import mermaid_html_renderer, render_mermaid_html_comparison_tab
+from components.enhanced_api_docs import enhanced_api_docs_generator, render_enhanced_api_docs_tab
+from components.enhanced_rag import enhanced_rag_system, render_enhanced_rag_tab
+from components.parallel_processing import parallel_processing_system, render_parallel_processing_tab
+# Note: Local fine-tuning system is imported dynamically in sidebar to avoid PEFT dependency at startup
 from components.rate_limiter import get_rate_limiter
 
 # Optional components with fallbacks
@@ -88,121 +103,544 @@ enqueue_job = None
 render_publish_panel = None
 render_prototype_editor = None
 
+# Auto-resume interrupted training jobs on startup
+# Note: Import happens once at module level, not on every Streamlit rerun
+# Use globals() instead of __builtins__ to avoid dict vs module issues
+if '_training_manager_imported' not in globals():
+    try:
+        from components.persistent_training import persistent_training_manager
+        # Note: Auto-resume is disabled to prevent resource conflicts
+        # Users can manually resume training via sidebar "🔄 Resume Training" section
+        # This ensures only one training session runs at a time
+        if '_training_init_logged' not in st.session_state:
+            print("[INFO] Training manager initialized (auto-resume disabled)")
+            st.session_state['_training_init_logged'] = True
+        globals()['_training_manager_imported'] = True
+    except Exception as e:
+        if '_training_init_error_logged' not in st.session_state:
+            print(f"[WARNING] Could not initialize training manager: {e}")
+            st.session_state['_training_init_error_logged'] = True
+        # Graceful degradation - app continues without training features
+        globals()['_training_manager_imported'] = False
+
 # Background job worker function for artifact generation
 # Note: Runs in-process thread via components.jobs.enqueue_job
 
-def job_generate_artifact(artifact_type: str, provider_key: str, provider_name: str, meeting_notes: str, rag_suffix: str = "", force_refresh: bool = False, job_id: int = 0) -> str:
+def job_generate_artifact(
+    artifact_type: str,
+    provider_key: str,
+    provider_config_key: str,
+    provider_label: str,
+    meeting_notes: str,
+    alternate_models: Optional[List[str]] = None,
+    rag_suffix: str = "",
+    force_refresh: bool = False,
+    job_id: int = 0
+) -> str:
     """
-    Background job worker for artifact generation.
+    Background job worker for artifact generation with unified context retrieval.
+    
+    ⚠️ THREAD SAFETY WARNING:
+    This function runs in a background thread. Do NOT access st.session_state directly!
+    Session state access from threads can cause race conditions and crashes.
+    Use logging instead of session state for status updates.
+    
+    Uses a SINGLE RAG retrieval for all artifact types, avoiding duplication.
+    Passes meeting_notes and retrieved context to all generators.
     
     Runs in-process thread via components.jobs.enqueue_job.
     Imports are done locally to avoid circular dependencies.
+    
+    NOW WITH COMPREHENSIVE FALLBACKS - NEVER FAILS UNEXPECTEDLY!
     """
     outputs_dir = Path("outputs")
     outputs_dir.mkdir(parents=True, exist_ok=True)
     from agents.universal_agent import UniversalArchitectAgent
     from components.prototype_generator import generate_best_effort
+    from utils.comprehensive_fallbacks import safe_rag, safe_ai, safe_file, safe_diagram, safe_html
     import asyncio
+    import json
     
-    agent = UniversalArchitectAgent({provider_name: provider_key})
+    # Start progress tracking
+    task_name = f"Generate {artifact_type.replace('_', ' ').title()}"
+    total_steps = 4  # RAG retrieval, AI generation, validation, file save
+    task_id = progress_tracker.start_tracking(task_name, total_steps, f"Initializing {task_name}...")
+
+    # ========== ARTIFACT ROUTING: AUTO-SELECT BEST MODEL ==========
+    # If using Ollama, route to specialized model based on artifact type
+    if provider_label == "Ollama (Local)":
+        try:
+            from ai.artifact_router import ArtifactRouter, ArtifactType
+            router = ArtifactRouter()
+            
+            # Map artifact_type string to ArtifactType enum
+            artifact_map = {
+                'erd': ArtifactType.ERD,
+                'architecture': ArtifactType.ARCHITECTURE,
+                'system_overview': ArtifactType.ARCHITECTURE,
+                'data_flow': ArtifactType.ARCHITECTURE,
+                'code_prototype': ArtifactType.CODE,
+                'api_client_python': ArtifactType.CODE,
+                'api_client_typescript': ArtifactType.CODE,
+                'visual_prototype_dev': ArtifactType.HTML,
+                'api_docs': ArtifactType.DOCUMENTATION,
+                'jira': ArtifactType.DOCUMENTATION,
+                'workflows': ArtifactType.DOCUMENTATION,
+            }
+            
+            if artifact_type in artifact_map:
+                optimal_model = router.route_artifact(artifact_map[artifact_type])
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] 🎯 Routing {artifact_type} → {optimal_model}")
+                # Update provider config to use optimal model
+                # Note: This requires the agent to support dynamic model switching
+                # For now, we log it for visibility
+            else:
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] ℹ️  No specialized routing for {artifact_type}, using default")
+        except Exception as e:
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Artifact routing failed: {e}")
+
+    agent = UniversalArchitectAgent({provider_config_key: provider_key})
     agent.meeting_notes = meeting_notes
-    
-    # Retrieve RAG
+
+    # ========== STEP 1: UNIFIED RAG RETRIEVAL WITH MODEL AWARENESS ==========
+    track_rag_retrieval(task_id, 1, f"Retrieving context for {artifact_type}...")
     rag_query = f"{artifact_type} {meeting_notes} {rag_suffix}".strip()
-    asyncio.run(agent.retrieve_rag_context(rag_query, force_refresh=force_refresh))
-    # Generate and save
-    if artifact_type == "erd":
-        res = asyncio.run(agent.generate_erd_only())
-        if res:
-            p = outputs_dir / "visualizations" / "erd_diagram.mmd"
-            p.parent.mkdir(exist_ok=True)
-            p.write_text(res, encoding='utf-8')
-            return str(p)
-    if artifact_type == "architecture":
-        res = asyncio.run(agent.generate_architecture_only())
-        if res:
-            p = outputs_dir / "visualizations" / "architecture_diagram.mmd"
-            p.parent.mkdir(exist_ok=True)
-            p.write_text(res, encoding='utf-8')
-            return str(p)
-    if artifact_type == "all_diagrams":
-        diagrams = asyncio.run(agent.generate_specific_diagrams())
-        last = None
-        if diagrams:
-            viz = outputs_dir / "visualizations"
-            viz.mkdir(exist_ok=True)
-            for name, content in diagrams.items():
-                p = viz / f"{name}_diagram.mmd"
-                p.write_text(content, encoding='utf-8')
-                last = str(p)
-        return last or ""
-    if artifact_type == "api_docs":
-        res = asyncio.run(agent.generate_api_docs_only())
-        if res:
-            p = outputs_dir / "documentation" / "api.md"
-            p.parent.mkdir(exist_ok=True)
-            p.write_text(res, encoding='utf-8')
-            return str(p)
-    if artifact_type == "jira":
-        res = asyncio.run(agent.generate_jira_only())
-        if res:
-            p = outputs_dir / "documentation" / "jira_tasks.md"
-            p.parent.mkdir(exist_ok=True)
-            p.write_text(res, encoding='utf-8')
-            return str(p)
-    if artifact_type == "workflows":
-        res = asyncio.run(agent.generate_workflows_only())
-        if res:
-            p = outputs_dir / "workflows" / "workflows.md"
-            p.parent.mkdir(exist_ok=True)
-            p.write_text(res, encoding='utf-8')
-            return str(p)
-    if artifact_type == "code_prototype":
-        res = asyncio.run(agent.generate_prototype_code("feature-from-notes"))
-        if res and isinstance(res, dict) and "code" in res:
-            p = outputs_dir / "prototypes" / "prototype_code.txt"
-            p.parent.mkdir(exist_ok=True)
-            p.write_text(res["code"], encoding='utf-8')
-            return str(p)
-    if artifact_type == "visual_prototype_dev":
-        res = asyncio.run(agent.generate_visual_prototype("developer-feature"))
-        if res:
-            p = outputs_dir / "prototypes" / "developer_visual_prototype.html"
-            p.parent.mkdir(exist_ok=True)
-            p.write_text(res, encoding='utf-8')
-            return str(p)
-    if artifact_type == "openapi":
-        # Generate OpenAPI YAML via LLM
-        prompt = f"""
-Generate a strict OpenAPI 3.1 YAML for the project's API based on the RAG context and repository patterns. Include info, servers (placeholder), tags, paths with operations, requestBodies, responses, components/schemas. Output YAML only.
+
+    # Check if Enhanced RAG is enabled (default: True)
+    # NOTE: Accessing session_state in thread is UNSAFE, but .get() with default is read-only and safer
+    use_enhanced = st.session_state.get('use_enhanced_rag', True) if hasattr(st, 'session_state') else True
+
+    # Auto-detect task type: GENERATION (always for artifact generation)
+    # Fine-tuning is handled separately in local_finetuning.py
+    from components.enhanced_rag import TaskType
+    task_type = TaskType.GENERATION
+
+    # Get intelligent RAG configuration based on task type and model
+    # ========== INTELLIGENT RAG CONFIGURATION ==========
+    # Always use GENERATION for artifact creation tasks
+    resolved_label = provider_label or provider_config_key
+    rag_config = enhanced_rag_system.get_optimal_config(resolved_label, TaskType.GENERATION, alternate_models)
+
+    max_chunks = rag_config["max_chunks"]
+    context_window = rag_config["context_window"]
+    chunk_source = f"{resolved_label} ({rag_config['reason']})"
+
+    # Log intelligent decision (using print instead of session_state for thread safety)
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🧠 Intelligent RAG: {max_chunks} chunks, {context_window:,} tokens ({rag_config['reason']})")
+    
+    # Retrieve context ONCE - to be used for ALL generators
+    retrieved_context = None
+    context_metadata = {}
+        
+    try:
+        if use_enhanced:
+            enhanced_context = run_async(
+                enhanced_rag_system.retrieve_enhanced_context(
+                    rag_query, 
+                    model_name=rag_config.get('resolved_model_name', resolved_label),
+                    max_chunks=max_chunks,  # ✅ DYNAMIC
+                    strategy="tiered"
+                )
+            )
+            
+            # Store enhanced context in agent
+            agent.enhanced_rag_context = enhanced_context
+            retrieved_context = enhanced_context.context_text if hasattr(enhanced_context, 'context_text') else str(enhanced_context)
+            context_metadata = {
+                'chunks': enhanced_context.total_chunks,
+                'tokens': enhanced_context.total_tokens,
+                'quality': enhanced_context.quality_score,
+                'source': f'enhanced ({chunk_source})',
+                'model': resolved_label,
+                'context_window': context_window
+            }
+            
+            # Log to console (thread-safe)
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] 🧠 Enhanced RAG: {enhanced_context.total_chunks} chunks, {enhanced_context.total_tokens} tokens, quality: {enhanced_context.quality_score:.2f}")
+        else:
+            # Use standard RAG with model-aware limits
+            run_async(agent.retrieve_rag_context(rag_query, force_refresh=force_refresh))
+            retrieved_context = agent.rag_context
+            standard_chunks = min(18, max_chunks) if max_chunks else 18
+            context_metadata = {
+                'chunks': standard_chunks,
+                'source': f'standard ({chunk_source})',
+                'model': resolved_label,
+                'context_window': context_window
+            }
+            
+            # Log to console (thread-safe)
+            print(f"[{datetime.now().strftime('%H:%M:%S')}] 📚 Standard RAG: {standard_chunks} chunks from {chunk_source}")
+
+    except Exception as e:
+        # Fallback to original RAG
+        run_async(agent.retrieve_rag_context(rag_query, force_refresh=force_refresh))
+        retrieved_context = agent.rag_context
+        context_metadata = {
+                'chunks': 18,
+                'source': f'fallback',
+            'model': resolved_label,
+                'context_window': context_window
+            }
+        
+        # Log to console (thread-safe)
+        print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Enhanced RAG failed, using fallback: {str(e)[:50]}")
+
+        # ========== STEP 2: AI GENERATION (WITH UNIFIED CONTEXT) ==========
+        track_ai_generation(task_id, 2, f"Generating {artifact_type} with AI...")
+        
+        # Generate and save based on artifact type
+        result_path = ""
+        
+        # Check if using Ollama and should fall back to cloud on validation failure
+        use_ollama = provider_label == "Ollama (Local)"
+        force_local_only = False  # Can't access session state in background thread
+        
+        if artifact_type == "erd":
+            # Use thread-safe validation
+            def generate_erd():
+                return run_async(agent.generate_erd_only(artifact_type="erd"))
+            
+            res = generate_with_validation_silent(
+                "erd",
+                generate_erd,
+                meeting_notes,
+                outputs_dir
+            )
+            
+            # If Ollama failed validation and not forced local, try cloud fallback
+            if use_ollama and not res and not force_local_only:
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Local model validation failed, falling back to cloud...")
+                # Switch to cloud provider temporarily
+                original_provider = st.session_state.get('provider') if hasattr(st, 'session_state') else None
+                try:
+                    if hasattr(st, 'session_state'):
+                        st.session_state['provider'] = "Groq (FREE & FAST)"
+                    # Recreate agent with cloud provider
+                    cloud_agent = UniversalArchitectAgent({})
+                    cloud_agent.meeting_notes = meeting_notes
+                    # Retry with cloud
+                    res = run_async(cloud_agent.generate_erd_only(artifact_type="erd"))
+                    if res:
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Cloud fallback succeeded")
+                except Exception as e:
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Cloud fallback failed: {e}")
+                finally:
+                    if hasattr(st, 'session_state') and original_provider:
+                        st.session_state['provider'] = original_provider
+            if res:
+                p = outputs_dir / "visualizations" / "erd_diagram.mmd"
+                p.parent.mkdir(exist_ok=True)
+                p.write_text(res, encoding='utf-8')
+                result_path = str(p)
+        elif artifact_type == "all_diagrams":
+            diagrams = run_async(agent.generate_specific_diagrams())
+            if diagrams:
+                viz = outputs_dir / "visualizations"
+                viz.mkdir(exist_ok=True)
+                for name, content in diagrams.items():
+                    p = viz / f"{name}_diagram.mmd"
+                    p.write_text(content, encoding='utf-8')
+                    result_path = str(p)
+        elif artifact_type == "api_docs":
+            # Use enhanced API docs generator with context
+            try:
+                enhanced_docs = run_async(
+                    enhanced_api_docs_generator.generate_enhanced_api_docs(
+                        rag_query, 
+                        meeting_notes,  # ✅ PASS MEETING NOTES
+                        "web"
+                    )
+                )
+                
+                # Generate markdown content
+                markdown_content = f"""# {enhanced_docs.title} API Documentation
+
+**Version:** {enhanced_docs.version}  
+**Base URL:** {enhanced_docs.base_url}  
+**Generated:** {enhanced_docs.generated_at.strftime('%Y-%m-%d %H:%M:%S')}
+**Context:** {context_metadata['chunks']} chunks, {context_metadata.get('tokens', 'unknown')} tokens
+
+## Description
+{enhanced_docs.description}
+
+## Authentication
+- **Type:** {enhanced_docs.authentication.get('type', 'Bearer Token')}
+- **Description:** {enhanced_docs.authentication.get('description', 'API key required')}
+
+## Rate Limits
+- **Requests per minute:** {enhanced_docs.rate_limits.get('requests_per_minute', 100)}
+- **Requests per hour:** {enhanced_docs.rate_limits.get('requests_per_hour', 1000)}
+
+## Endpoints
 """
-        res = asyncio.run(agent._call_ai(prompt, "You are an expert API designer. Output only valid OpenAPI YAML."))
-        if res:
-            p = outputs_dir / "documentation" / "openapi.yaml"
-            p.parent.mkdir(exist_ok=True)
-            p.write_text(res, encoding='utf-8')
-            return str(p)
-    if artifact_type == "api_client_python":
-        prompt = f"""
-Generate a production-ready Python API client for the project's endpoints found in the RAG context. Use requests, handle auth (token), timeouts, retries, typed dataclasses, and raise for status. Output full .py code only.
+                
+                for endpoint in enhanced_docs.endpoints:
+                    markdown_content += f"""
+### {endpoint.method} {endpoint.path}
+- **Summary:** {endpoint.summary}
+- **Description:** {endpoint.description}
 """
-        res = asyncio.run(agent._call_ai(prompt, "You are an expert Python engineer. Output only code."))
+                
+                # Save markdown
+                p = outputs_dir / "documentation" / "enhanced_api_docs.md"
+                p.parent.mkdir(exist_ok=True)
+                p.write_text(markdown_content, encoding='utf-8')
+                result_path = str(p)
+                
+                # Also save OpenAPI spec
+                openapi_spec = enhanced_api_docs_generator.generate_openapi_spec(enhanced_docs)
+                openapi_path = outputs_dir / "documentation" / "api_spec.json"
+                openapi_path.write_text(json.dumps(openapi_spec, indent=2), encoding='utf-8')
+                
+            except Exception as e:
+                # Fallback to agent's generate_api_docs_only (has its own RAG retrieval)
+                try:
+                    res = run_async(agent.generate_api_docs_only())
+                    if res:
+                        p = outputs_dir / "documentation" / "api.md"
+                        p.parent.mkdir(exist_ok=True)
+                        p.write_text(res, encoding='utf-8')
+                        result_path = str(p)
+                    # Log to console (thread-safe)
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Enhanced API Docs failed, using standard generator: {str(e)[:50]}")
+                except Exception as fallback_exc:
+                    # Log to console (thread-safe)
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Both enhanced and fallback API doc generation failed: {str(fallback_exc)[:50]}")
+                    result_path = str(p)
+        elif artifact_type == "jira":
+            # JIRA generation with validation
+            try:
+                def generate_jira():
+                    return run_async(agent.generate_jira_only())
+                
+                res = generate_with_validation_silent(
+                    "jira",
+                    generate_jira,
+                    meeting_notes,
+                    outputs_dir
+                )
+                if res:
+                    p = outputs_dir / "documentation" / "jira_tasks.md"
+                    p.parent.mkdir(exist_ok=True)
+                    # Add context metadata to JIRA output
+                    full_content = f"""<!-- Generated with {context_metadata['chunks']} RAG chunks from repository -->
+<!-- Meeting Notes: {meeting_notes[:100]}... -->
+
+{res}"""
+                    p.write_text(full_content, encoding='utf-8')
+                    result_path = str(p)
+            except Exception as e:
+                # Log to console (thread-safe)
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ JIRA generation failed: {str(e)[:50]}")
+                result_path = None
+        elif artifact_type == "workflows":
+            # Workflows generation with validation
+            try:
+                def generate_workflows():
+                    return run_async(agent.generate_workflows_only())
+                
+                res = generate_with_validation_silent(
+                    "workflows",
+                    generate_workflows,
+                    meeting_notes,
+                    outputs_dir
+                )
+                if res:
+                    p = outputs_dir / "workflows" / "workflows.md"
+                    p.parent.mkdir(exist_ok=True)
+                    # Add context metadata to workflows output
+                    full_content = f"""<!-- Generated with {context_metadata['chunks']} RAG chunks from repository -->
+<!-- Meeting Notes: {meeting_notes[:100]}... -->
+
+{res}"""
+                    p.write_text(full_content, encoding='utf-8')
+                    result_path = str(p)
+            except Exception as e:
+                # Log to console (thread-safe)
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Workflows generation failed: {str(e)[:50]}")
+                result_path = None
+        elif artifact_type == "code_prototype":
+            # Code prototype generation with validation
+            try:
+                def generate_code():
+                    res = run_async(agent.generate_prototype_code("feature-from-notes"))
+                    if res and isinstance(res, dict) and "code" in res:
+                        return res["code"]
+                    return None
+                
+                code_content = generate_with_validation_silent(
+                    "code_prototype",
+                    generate_code,
+                    meeting_notes,
+                    outputs_dir
+                )
+                if code_content:
+                    p = outputs_dir / "prototypes" / "prototype_code.txt"
+                    p.parent.mkdir(exist_ok=True)
+                    p.write_text(code_content, encoding='utf-8')
+                    result_path = str(p)
+                    
+                    # Log completion (thread-safe print instead of session_state)
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Code prototype saved! Job #{job_id} complete.")
+                else:
+                    result_path = None
+            except Exception as e:
+                # Log to console (thread-safe)
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Code prototype generation failed: {str(e)[:50]}")
+                result_path = None
+        elif artifact_type == "visual_prototype_dev":
+            def generate_visual():
+                return run_async(agent.generate_visual_prototype("developer-feature"))
+            
+            res = generate_with_validation_silent(
+                "visual_prototype_dev",
+                generate_visual,
+                meeting_notes,
+                outputs_dir
+            )
+            if res:
+                p = outputs_dir / "prototypes" / "developer_visual_prototype.html"
+                p.parent.mkdir(exist_ok=True)
+                p.write_text(res, encoding='utf-8')
+                result_path = str(p)
+        elif artifact_type == "openapi":
+            # Generate OpenAPI YAML via LLM with context
+            prompt = f"""
+You are an expert API designer. Generate a strict OpenAPI 3.1 YAML for the project's API.
+
+MEETING NOTES / REQUIREMENTS:
+{meeting_notes}
+
+RAG CONTEXT (from repository):
+{retrieved_context[:2000] if retrieved_context else "No RAG context available"}
+
+Generate a complete OpenAPI 3.1 YAML with:
+- info (title, version, description)
+- servers (placeholder URL)
+- tags
+- paths with operations
+- requestBodies with examples
+- responses with schemas
+- components/schemas
+
+Output YAML only, no markdown formatting.
+"""
+            res = run_async(agent._call_ai(prompt, "Generate valid OpenAPI 3.1 YAML only."))
+            if res:
+                p = outputs_dir / "documentation" / "openapi.yaml"
+                p.parent.mkdir(exist_ok=True)
+                p.write_text(res, encoding='utf-8')
+                result_path = str(p)
+        elif artifact_type == "api_client_python":
+            # Generate Python API client with context
+            prompt = f"""
+You are an expert Python engineer. Generate a production-ready Python API client.
+
+MEETING NOTES / REQUIREMENTS:
+{meeting_notes}
+
+RAG CONTEXT (from repository):
+{retrieved_context[:2000] if retrieved_context else "No RAG context available"}
+
+Generate a complete Python API client that:
+- Uses requests library
+- Handles authentication with API tokens
+- Includes timeout and retry logic
+- Has typed dataclasses for requests/responses
+- Raises for HTTP errors
+- Includes docstrings
+
+Output full .py code only, no markdown.
+"""
+            res = run_async(agent._call_ai(prompt, "Generate production-ready Python code only."))
         if res:
             p = outputs_dir / "prototypes" / "api_client.py"
             p.parent.mkdir(exist_ok=True)
             p.write_text(res, encoding='utf-8')
-            return str(p)
-    if artifact_type == "api_client_typescript":
-        prompt = f"""
-Generate a production-ready TypeScript API client for the project's endpoints found in the RAG context. Use fetch, generics, error handling, and typed interfaces. Output full .ts code only.
+            result_path = str(p)
+        elif artifact_type == "api_client_typescript":
+            # Generate TypeScript API client with context
+            prompt = f"""
+You are an expert TypeScript engineer. Generate a production-ready TypeScript API client.
+
+MEETING NOTES / REQUIREMENTS:
+{meeting_notes}
+
+RAG CONTEXT (from repository):
+{retrieved_context[:2000] if retrieved_context else "No RAG context available"}
+
+Generate a complete TypeScript API client that:
+- Uses fetch API with proper types
+- Includes generic request/response handling
+- Has comprehensive error handling
+- Uses typed interfaces for all data
+- Includes async/await patterns
+- Has JSDoc documentation
+
+Output full .ts code only, no markdown.
 """
-        res = asyncio.run(agent._call_ai(prompt, "You are an expert TS engineer. Output only code."))
-        if res:
-            p = outputs_dir / "prototypes" / "api_client.ts"
-            p.parent.mkdir(exist_ok=True)
-            p.write_text(res, encoding='utf-8')
-            return str(p)
-    return ""
+            res = run_async(agent._call_ai(prompt, "Generate production-ready TypeScript code only."))
+            if res:
+                p = outputs_dir / "prototypes" / "api_client.ts"
+                p.parent.mkdir(exist_ok=True)
+                p.write_text(res, encoding='utf-8')
+                result_path = str(p)
+        
+        # ========== STEP 3: VALIDATE MERMAID & GENERATE HTML ==========
+        if artifact_type in ["erd", "architecture", "all_diagrams"] and result_path:
+            try:
+                diagram_content = Path(result_path).read_text(encoding='utf-8')
+                is_valid, corrected_diagram, errors = validate_mermaid_syntax(diagram_content)
+                
+                if not is_valid:
+                    # Save corrected version
+                    Path(result_path).write_text(corrected_diagram, encoding='utf-8')
+                    # Log to console (thread-safe)
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🔧 Mermaid syntax corrected for {artifact_type}")
+                
+                # Generate HTML version with Gemini (context-aware with RAG)
+                try:
+                    # Use Gemini to generate context-aware HTML visualization with RAG context
+                    html_content = run_async(
+                        mermaid_html_renderer.generate_html_visualization_with_gemini(
+                            corrected_diagram, 
+                            meeting_notes,  # ✅ PASS MEETING NOTES
+                            artifact_type,
+                            retrieved_context,  # ✅ PASS RAG CONTEXT
+                            agent=agent
+                        )
+                    )
+                    html_path = result_path.replace('.mmd', '.html')
+                    Path(html_path).write_text(html_content, encoding='utf-8')
+                    # Log to console (thread-safe)
+                    print(f"[{datetime.now().strftime('%H:%M:%S')}] 🎨 Gemini HTML visualization generated for {artifact_type}")
+                except Exception as e:
+                    # Fallback to basic HTML rendering
+                    try:
+                        html_content = mermaid_html_renderer.render_mermaid_as_html(corrected_diagram, f"{artifact_type}_diagram")
+                        html_path = result_path.replace('.mmd', '.html')
+                        Path(html_path).write_text(html_content, encoding='utf-8')
+                        # Log to console (thread-safe)
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] 🎨 Basic HTML visualization generated for {artifact_type}")
+                    except Exception as e2:
+                        # Log to console (thread-safe)
+                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ HTML generation failed: {str(e2)[:50]}")
+                    
+            except Exception as e:
+                # Log to console (thread-safe)
+                print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Mermaid validation failed: {str(e)[:50]}")
+        
+        # ========== STEP 4: FILE OPERATIONS ==========
+        track_file_operations(task_id, 4, f"Saving {artifact_type} to disk...")
+        
+        # Complete progress tracking
+        progress_tracker.complete_task(task_id, f"{artifact_type} generated successfully!")
+        return result_path
+    except Exception as e:
+        progress_tracker.fail_task(task_id, f"Failed to generate {artifact_type}: {str(e)}")
+        raise
+    
 
 # Helpers for RAG controls
 
@@ -411,13 +849,44 @@ def apply_custom_css():
         color: #4b5563 !important;
     }
     
-    /* Tabs styling - Better contrast */
+    /* Tabs styling - Better contrast with scrollbar support */
     .stTabs [data-baseweb="tab-list"] {
         gap: 10px;
         background: rgba(255, 255, 255, 0.95);
         border-radius: 10px;
         padding: 0.5rem;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        overflow-x: auto;
+        overflow-y: hidden;
+        max-width: 100%;
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: center;
+    }
+    
+    /* Scrollbar styling for tabs */
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {
+        height: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.05);
+        border-radius: 10px;
+    }
+    
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-thumb {
+        background: rgba(0, 99, 163, 0.5);
+        border-radius: 10px;
+    }
+    
+    .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 99, 163, 0.8);
+    }
+    
+    /* Firefox scrollbar */
+    .stTabs [data-baseweb="tab-list"] {
+        scrollbar-color: rgba(0, 99, 163, 0.5) rgba(0, 0, 0, 0.05);
+        scrollbar-width: thin;
     }
     
     .stTabs [data-baseweb="tab"] {
@@ -668,8 +1137,17 @@ class AppConfig:
     INPUTS_DIR = _APP_ROOT / "inputs"
     MEETING_NOTES_FILE = "meeting_notes.md"
     
+    MIN_MEETING_NOTES_LENGTH = 80  # Minimum characters to consider notes meaningful
+    
     # AI Model Providers
     AI_PROVIDERS = {
+        "Ollama (Local)": {
+            "name": "Ollama Local Models",
+            "key_env": None,  # No API key needed
+            "config_key": "ollama",
+            "icon": "🖥️",
+            "is_local": True
+        },
         "Groq (FREE & FAST)": {
             "name": "Groq Llama 3.3",
             "key_env": "GROQ_API_KEY",
@@ -690,6 +1168,88 @@ class AppConfig:
         }
     }
 
+
+def is_local_provider(provider_name: Optional[str]) -> bool:
+    """Determine if the selected provider represents a local fine-tuned model or Ollama."""
+    if not provider_name:
+        return False
+    # Check for Ollama provider
+    if provider_name == "Ollama (Local)":
+        return True
+    # Check for fine-tuned models
+    return provider_name.startswith("🎓 Local:") or provider_name.endswith(" ✅")
+
+
+def get_selected_local_model(provider_name: Optional[str]) -> Optional[Dict[str, Any]]:
+    """Fetch metadata for the currently selected local model, if available."""
+    if not provider_name:
+        return None
+    local_options = st.session_state.get('local_provider_options', {})
+    return local_options.get(provider_name)
+
+
+def resolve_provider_runtime() -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+    """Build runtime configuration for the currently selected AI provider."""
+    provider = st.session_state.get('provider', 'Ollama (Local)')
+    context: Dict[str, Any] = {
+        "provider_label": provider
+    }
+    if is_local_provider(provider):
+        # Check if it's Ollama (not fine-tuned)
+        if provider == "Ollama (Local)":
+            context.update({
+                "provider_type": "ollama",
+                "config": {
+                    "ollama": True
+                },
+                "config_key": "ollama",
+                "credential": "ollama_local",
+                "ollama_enabled": True
+            })
+            return context, None
+        
+        # Fine-tuned local model
+        local_model = get_selected_local_model(provider)
+        if not local_model:
+            return None, "Local model metadata missing. Re-select the model in the sidebar."
+        context.update({
+            "provider_type": "local",
+            "config": {
+                "local_model_path": local_model['model_path'],
+                "local_model_name": local_model['model_name']
+            },
+            "config_key": "local_model_path",
+            "credential": local_model['model_path'],
+            "local_model": local_model
+        })
+        return context, None
+    provider_info = AppConfig.AI_PROVIDERS.get(provider)
+    if not provider_info:
+        return None, f"Unsupported provider selected: {provider}"
+    api_key = st.session_state.get('api_key') or os.getenv(provider_info['key_env'], "")
+    if not api_key:
+        return None, f"Missing API key for {provider_info['name']}. Configure it in the sidebar."
+    if st.session_state.get('api_key') != api_key:
+        st.session_state.api_key = api_key
+    context.update({
+        "provider_type": "remote",
+        "config": {provider_info['config_key']: api_key},
+        "config_key": provider_info['config_key'],
+        "credential": api_key,
+        "provider_info": provider_info
+    })
+    return context, None
+
+
+def get_current_agent() -> Tuple[Optional['UniversalArchitectAgent'], Optional[Dict[str, Any]]]:
+    """Return an initialized agent and its runtime context for the active provider."""
+    runtime_context, error = resolve_provider_runtime()
+    if error or not runtime_context:
+        st.error(f"❌ {error}")
+        return None, None
+    agent = get_or_create_agent(runtime_context['config'])
+    return agent, runtime_context
+
 # =============================================================================
 # SESSION STATE INITIALIZATION
 # =============================================================================
@@ -698,35 +1258,157 @@ def init_session_state():
     """
     Initialize session state variables.
     
-    Ensures all required session variables exist to prevent KeyError exceptions.
+    Ensures ALL required session variables exist to prevent KeyError exceptions.
     Called once at app startup.
+    
+    State Categories:
+    - Core: mode, api_key, provider
+    - Logs & History: rag_logs, ai_conversation, last_generation
+    - UI Flags: outputs_updated, dev_prototype_updated, pm_prototype_updated
+    - Cache Busters: prototype_cache_buster_dev, prototype_cache_buster_pm
+    - Timestamps: outputs_updated_time, prototype_last_modified, dev_prototype_force_mtime, pm_prototype_force_mtime
+    - Agent: cached_agent, cached_agent_config
+    - Features: use_multi_agent, use_validation, max_retries, use_enhanced_rag
+    - System: auto_ingestion_initialized
     """
+    # === CORE STATE ===
     if 'mode' not in st.session_state:
         st.session_state.mode = None
     if 'api_key' not in st.session_state:
         st.session_state.api_key = None
     if 'provider' not in st.session_state:
-        st.session_state.provider = "Groq (FREE & FAST)"
+        st.session_state.provider = "Ollama (Local)"
+    
+    # === LOGS & HISTORY ===
     if 'rag_logs' not in st.session_state:
         st.session_state.rag_logs = []
     if 'ai_conversation' not in st.session_state:
         st.session_state.ai_conversation = []
     if 'last_generation' not in st.session_state:
         st.session_state.last_generation = []
+    
+    # === UI FLAGS (for notifications and updates) ===
+    if 'outputs_updated' not in st.session_state:
+        st.session_state.outputs_updated = False
+    if 'outputs_updated_time' not in st.session_state:
+        st.session_state.outputs_updated_time = None
+    if 'dev_prototype_updated' not in st.session_state:
+        st.session_state.dev_prototype_updated = False
+    if 'pm_prototype_updated' not in st.session_state:
+        st.session_state.pm_prototype_updated = False
+    
+    # === CACHE BUSTERS (deterministic, file-based) ===
+    if 'prototype_cache_buster_dev' not in st.session_state:
+        st.session_state.prototype_cache_buster_dev = 0
+    if 'prototype_cache_buster_pm' not in st.session_state:
+        st.session_state.prototype_cache_buster_pm = 0
+    
+    # === TIMESTAMPS ===
+    if 'prototype_last_modified' not in st.session_state:
+        st.session_state.prototype_last_modified = datetime.now().isoformat()
+    if 'dev_prototype_force_mtime' not in st.session_state:
+        st.session_state.dev_prototype_force_mtime = 0
+    if 'pm_prototype_force_mtime' not in st.session_state:
+        st.session_state.pm_prototype_force_mtime = 0
+    
+    # === MEETING NOTES ===
+    if 'meeting_notes' not in st.session_state:
+        st.session_state.meeting_notes = ""
+    
+    # === FEATURE FLAGS ===
     if 'use_multi_agent' not in st.session_state:
         st.session_state.use_multi_agent = False
     if 'use_validation' not in st.session_state:
         st.session_state.use_validation = True
     if 'max_retries' not in st.session_state:
         st.session_state.max_retries = 2
-    # Agent caching to avoid re-initialization
+    if 'use_enhanced_rag' not in st.session_state:
+        st.session_state.use_enhanced_rag = True
+    
+    # === AGENT CACHING ===
     if 'cached_agent' not in st.session_state:
         st.session_state.cached_agent = None
     if 'cached_agent_config' not in st.session_state:
         st.session_state.cached_agent_config = None
-    # Auto-ingestion state
+    
+    # === SYSTEM STATE ===
     if 'auto_ingestion_initialized' not in st.session_state:
         st.session_state.auto_ingestion_initialized = False
+    
+    # === NOTIFICATION SYSTEM (toast-style, auto-clear) ===
+    if 'notification_message' not in st.session_state:
+        st.session_state.notification_message = None
+    if 'notification_type' not in st.session_state:
+        st.session_state.notification_type = None  # 'success', 'error', 'info', 'warning'
+    if 'notification_timestamp' not in st.session_state:
+        st.session_state.notification_timestamp = None
+
+
+# =============================================================================
+# NOTIFICATION SYSTEM (Toast-style, auto-clear)
+# =============================================================================
+
+def show_notification(message: str, notification_type: str = "success"):
+    """
+    Show a toast-style notification that auto-clears after 5 seconds.
+    
+    Args:
+        message: Notification message to display
+        notification_type: 'success', 'error', 'info', 'warning'
+    
+    Usage:
+        show_notification("✅ Artifact generated!", "success")
+    """
+    st.session_state.notification_message = message
+    st.session_state.notification_type = notification_type
+    st.session_state.notification_timestamp = time.time()
+
+
+def render_notifications():
+    """
+    Render active notifications and auto-clear after 5 seconds.
+    Call this at the top of main content area.
+    """
+    if st.session_state.notification_message and st.session_state.notification_timestamp:
+        # Check if notification is still fresh (< 5 seconds old)
+        elapsed = time.time() - st.session_state.notification_timestamp
+        
+        if elapsed < 5.0:
+            # Show notification
+            notification_fn = {
+                'success': st.success,
+                'error': st.error,
+                'info': st.info,
+                'warning': st.warning
+            }.get(st.session_state.notification_type, st.info)
+            
+            notification_fn(st.session_state.notification_message)
+        else:
+            # Clear expired notification
+            st.session_state.notification_message = None
+            st.session_state.notification_type = None
+            st.session_state.notification_timestamp = None
+
+
+def get_file_cache_buster(file_path: Path) -> str:
+    """
+    Generate deterministic cache buster based ONLY on file metadata.
+    
+    No random numbers - this is predictable and correct.
+    Changes only when file actually changes.
+    
+    Args:
+        file_path: Path to file
+    
+    Returns:
+        Cache buster string (e.g., "1699123456_12345")
+    """
+    if not file_path.exists():
+        return "0_0"
+    
+    stat = file_path.stat()
+    # Use mtime (modification time) and size - both change when file is updated
+    return f"{int(stat.st_mtime)}_{stat.st_size}"
 
 
 def init_auto_ingestion():
@@ -816,8 +1498,10 @@ def get_or_create_agent(config: Dict) -> 'UniversalArchitectAgent':
     st.session_state.cached_agent = agent
     st.session_state.cached_agent_config = config_hash
     
+    # Log agent initialization (safe access)
+    config_name = list(config.keys())[0] if config and config.keys() else "unknown"
     st.session_state.rag_logs.append(
-        f"[{datetime.now().strftime('%H:%M:%S')}] 🔄 Agent initialized (config: {list(config.keys())[0]})"
+        f"[{datetime.now().strftime('%H:%M:%S')}] 🔄 Agent initialized (config: {config_name})"
     )
     
     return agent
@@ -858,7 +1542,7 @@ def retrieve_rag_with_cache(agent: 'UniversalArchitectAgent', meeting_notes: str
     
     # Perform RAG retrieval
     query = f"repository context, architecture, patterns for: {meeting_notes[:500]}"
-    asyncio.run(agent.retrieve_rag_context(query, force_refresh=force_refresh))
+    run_async(agent.retrieve_rag_context(query, force_refresh=force_refresh))
     
     # Cache the result
     if agent.rag_context:
@@ -866,6 +1550,11 @@ def retrieve_rag_with_cache(agent: 'UniversalArchitectAgent', meeting_notes: str
         st.session_state.rag_logs.append(
             f"[{datetime.now().strftime('%H:%M:%S')}] 💾 Cached RAG context ({len(agent.rag_context)} chars)"
         )
+        snippet_count = agent.rag_context.count('## Context')
+        if snippet_count:
+            st.session_state.rag_logs.append(
+                f"[{datetime.now().strftime('%H:%M:%S')}] 📚 RAG snippets retrieved: {snippet_count}"
+            )
     
     return agent.rag_context or ""
 
@@ -998,89 +1687,69 @@ def render_sidebar():
         except Exception:
             pass  # Silently fail if refresh manager not available
         
-        # Auto-Ingestion Status
+        # Auto-Reindex Controls
         try:
-            from rag.auto_ingestion import get_auto_ingestion_status
-            auto_status = get_auto_ingestion_status()
+            from rag.auto_reindex import get_auto_reindexer, start_auto_reindex, stop_auto_reindex, get_reindex_status
             
-            if auto_status['enabled']:
-                if auto_status['is_running']:
-                    with st.expander("🔄 Auto-Ingestion Status", expanded=False):
-                        st.success("🟢 Auto-ingestion is running")
-                        
-                        # Show active jobs
-                        if auto_status['active_jobs'] > 0:
-                            st.info(f"📋 {auto_status['active_jobs']} indexing jobs active")
-                        
-                        # Show pending events
-                        if auto_status['pending_events'] > 0:
-                            st.warning(f"⏳ {auto_status['pending_events']} file changes pending")
-                        
-                        # Show recent jobs
-                        if auto_status['recent_jobs']:
-                            st.caption("Recent jobs:")
-                            for job in auto_status['recent_jobs'][-3:]:  # Show last 3
-                                status_emoji = "✅" if job.status == "completed" else "🔄" if job.status == "processing" else "❌"
-                                st.caption(f"{status_emoji} {job.status} - {job.files_processed}/{job.total_files} files")
-                        
-                        # Manual controls
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if st.button("⏸️ Pause", help="Temporarily pause auto-ingestion"):
-                                from rag.auto_ingestion import stop_auto_ingestion
-                                stop_auto_ingestion()
-                                st.rerun()
-                        
-                        with col2:
-                            if st.button("🔄 Refresh Now", help="Force immediate RAG refresh"):
-                                try:
-                                    # Trigger manual RAG refresh
-                                    import subprocess
-                                    import sys
-                                    from pathlib import Path
-                                    
-                                    # Run the manual ingestion
-                                    result = subprocess.run([
-                                        sys.executable, 
-                                        str(Path(__file__).parent.parent / "rag" / "ingest.py")
-                                    ], capture_output=True, text=True, cwd=Path(__file__).parent.parent)
-                                    
-                                    if result.returncode == 0:
-                                        st.success("✅ RAG index refreshed successfully!")
-                                        st.session_state.rag_logs.append(
-                                            f"[{datetime.now().strftime('%H:%M:%S')}] 🔄 Manual RAG refresh completed"
-                                        )
-                                    else:
-                                        st.error(f"❌ RAG refresh failed: {result.stderr}")
-                                        st.session_state.rag_logs.append(
-                                            f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Manual RAG refresh failed: {result.stderr[:100]}"
-                                        )
-                                    
-                                    st.rerun()
-                                    
-                                except Exception as e:
-                                    st.error(f"❌ Error triggering RAG refresh: {e}")
-                                    st.session_state.rag_logs.append(
-                                        f"[{datetime.now().strftime('%H:%M:%S')}] ❌ RAG refresh error: {str(e)[:100]}"
-                                    )
-                else:
-                    with st.expander("🔄 Auto-Ingestion Status", expanded=False):
-                        st.warning("🟡 Auto-ingestion is enabled but not running")
-                        if st.button("▶️ Start Auto-Ingestion"):
-                            from rag.auto_ingestion import start_auto_ingestion
-                            if start_auto_ingestion():
-                                st.success("Auto-ingestion started!")
-                                st.rerun()
-                            else:
-                                st.error("Failed to start auto-ingestion")
-            else:
-                with st.expander("🔄 Auto-Ingestion Status", expanded=False):
-                    st.info("⚪ Auto-ingestion is disabled")
-                    st.caption("Enable in rag/config.yaml to automatically update RAG index")
+            with st.expander("🔄 Auto RAG Re-indexing", expanded=False):
+                status = get_reindex_status()
+                
+                if status['is_running']:
+                    st.success("✅ Auto-reindex is **running**")
+                    st.caption(f"📁 Watching {len(status['watched_dirs'])} directories")
+                    st.caption(f"📊 Tracking {status['tracked_files']} files")
+                    st.caption(f"⏰ Last reindex: {status['last_reindex']}")
                     
+                    if st.button("⏸️ Stop Auto-Reindex", key="stop_auto_reindex"):
+                        stop_auto_reindex()
+                        st.success("Stopped")
+                        time.sleep(1)
+                        st.rerun()
+                else:
+                    st.info("💤 Auto-reindex is **stopped**")
+                    st.caption("Files changes will not trigger re-indexing")
+                    
+                    if st.button("▶️ Start Auto-Reindex", key="start_auto_reindex"):
+                        start_auto_reindex()
+                        st.success("Started monitoring files")
+                        time.sleep(1)
+                        st.rerun()
+                
+                st.caption(f"Check interval: {status['watch_interval']}s")
         except Exception as e:
-            # Silently fail if auto-ingestion not available
-            pass
+            pass  # Silently fail if auto-reindex not available
+        
+        st.divider()
+        
+        # Manual Reindex / Full Rebuild
+        with st.expander("🔧 Manual RAG Rebuild", expanded=False):
+            st.info("Rebuild the entire RAG index from scratch")
+            st.caption("This will scan all files in the inputs/ directory and recreate the index")
+            
+            if st.button("🔨 Rebuild RAG Index", key="manual_rebuild_index", type="primary"):
+                with st.spinner("Rebuilding RAG index..."):
+                    try:
+                        import subprocess
+                        import sys
+                        
+                        # Run the ingest.py script
+                        result = subprocess.run(
+                            [sys.executable, "rag/ingest.py"],
+                            capture_output=True,
+                            text=True,
+                            timeout=300  # 5 minute timeout
+                        )
+                        
+                        if result.returncode == 0:
+                            st.success("✅ RAG index rebuilt successfully!")
+                            st.code(result.stdout, language="text")
+                        else:
+                            st.error("❌ Failed to rebuild index")
+                            st.code(result.stderr, language="text")
+                    except subprocess.TimeoutExpired:
+                        st.error("❌ Index rebuild timed out (took longer than 5 minutes)")
+                    except Exception as e:
+                        st.error(f"❌ Error: {e}")
         
         st.divider()
         
@@ -1097,32 +1766,119 @@ def render_sidebar():
 
         # AI Provider selection
         st.markdown("### 🤖 AI Provider")
+        
+        # Build provider list with Ollama first, then cloud + local fine-tuned models
+        providers_list = list(AppConfig.AI_PROVIDERS.keys())
+        local_provider_options: Dict[str, Dict[str, Any]] = {}
+        
+        # Ensure Ollama is first (default)
+        if "Ollama (Local)" in providers_list:
+            providers_list.remove("Ollama (Local)")
+            providers_list.insert(0, "Ollama (Local)")
+        
+        # Add any fine-tuned models from the REGISTRY (check for duplicates)
+        added_models = set()  # Track added models to prevent duplicates
+        
+        try:
+            from components.model_registry import model_registry
+            
+            # Get all trained models from NEW registry
+            trained_models = model_registry.get_trained_models()
+            for model in trained_models:
+                # Add to dropdown with visual indicator
+                model_key = model.model_name.lower()
+                if model_key not in added_models:
+                    display_name = f"🎓 Local: {model.model_name} ✅"
+                    providers_list.append(display_name)
+                    local_provider_options[display_name] = {
+                        "model_id": model.model_id,
+                        "model_name": model.model_name,
+                        "model_path": model.model_path,
+                        "base_model": model.base_model,
+                        "trained_at": model.trained_at,
+                    }
+                    added_models.add(model_key)
+        except Exception:
+            pass  # Silently continue if registry doesn't exist
+        
         provider = st.selectbox(
             "Select Provider",
-            list(AppConfig.AI_PROVIDERS.keys()),
+            providers_list,
             index=0,
             label_visibility="collapsed"
         )
         st.session_state.provider = provider
+        st.session_state.local_provider_options = local_provider_options
+        selected_local_model = get_selected_local_model(provider)
         
-        provider_info = AppConfig.AI_PROVIDERS[provider]
-        st.info(f"{provider_info['icon']} {provider_info['name']}")
+        # Handle provider info
+        is_local_model = is_local_provider(provider)
+        
+        provider_info = AppConfig.AI_PROVIDERS.get(provider)
+        if is_local_model:
+            # Local fine-tuned model
+            st.info(f"🎓 Using local fine-tuned model: {provider}")
+            if selected_local_model:
+                st.caption(f"📁 Model path: {selected_local_model['model_path']}")
+                st.session_state.selected_local_model = selected_local_model
+            else:
+                st.warning("⚠️ Unable to locate model metadata. Verify model registry entry.")
+        else:
+            st.session_state.selected_local_model = None
+            if not provider_info:
+                st.error("❌ Unknown provider selected. Please pick a supported provider.")
+            else:
+                st.info(f"{provider_info['icon']} {provider_info['name']}")
+
+        actual_provider = st.session_state.get('active_provider_actual')
+        if actual_provider and actual_provider != provider:
+            st.caption(f"🔌 Active connection: {actual_provider}")
+
+        override_warning = None
+        try:
+            override_warning = st.session_state.pop('provider_override_warning', None)
+        except Exception:
+            override_warning = None
+        if override_warning:
+            st.warning(override_warning)
         
         # API Key input with persistence
-        default_key = st.session_state.get('api_key', '') or os.getenv(provider_info['key_env'], "")
-        api_key = st.text_input(
-            f"{provider_info['key_env']}",
-            type="password",
-            value=default_key,
-            help=f"Enter your {provider_info['name']} API key (will be remembered in this session)",
-            key=f"api_key_input_{provider}"
-        )
-        
-        if api_key:
-            st.session_state.api_key = api_key
-            st.success("✅ API Key configured and saved")
+        if is_local_model:
+            # No API key needed for local models (Ollama or fine-tuned)
+            if provider == "Ollama (Local)":
+                st.success("✅ Using Ollama local models (no API key needed)")
+                st.session_state.api_key = "ollama_local"
+            else:
+                st.success("✅ No API key needed for local fine-tuned models")
+                st.session_state.api_key = "local_finetuned"
         else:
-            st.warning("⚠️ Please enter API key")
+            if provider_info:
+                default_key = st.session_state.get('api_key', '') or os.getenv(provider_info['key_env'], "")
+                api_key = st.text_input(
+                    f"{provider_info['key_env']}",
+                    type="password",
+                    value=default_key,
+                    help=f"Enter your {provider_info['name']} API key (will be remembered in this session)",
+                    key=f"api_key_input_{provider}"
+                )
+                
+                if api_key:
+                    st.session_state.api_key = api_key
+                    
+                    # Store in global API key manager for persistence across agent instances
+                    from config.api_key_manager import api_key_manager
+                    provider_map = {
+                        "Ollama (Local)": "ollama",
+                        "Groq (FREE & FAST)": "groq",
+                        "Google Gemini (FREE)": "gemini",
+                        "OpenAI GPT-4": "openai"
+                    }
+                    if provider in provider_map:
+                        api_key_manager.set_key(provider_map[provider], api_key)
+                    
+                    st.success("✅ API Key configured and saved globally")
+                else:
+                    st.warning("⚠️ Please enter API key")
         
         st.divider()
         
@@ -1293,16 +2049,222 @@ def render_dev_mode():
     """
     st.markdown("## 👨‍💻 Developer Mode")
     
+    # Render toast-style notifications (auto-clear after 5 seconds)
+    render_notifications()
+    
+    # ========== DEVELOPER SIDEBAR CONTROLS ==========
+    st.sidebar.markdown("### ⚙️ Dev Options")
+    
+    # Parallel Processing Toggle
+    use_parallel = st.sidebar.checkbox(
+        "⚡ Parallel Processing (60-70% faster)",
+        value=True,
+        help="Execute artifact generation in parallel for faster results"
+    )
+    st.session_state.parallel_processing_enabled = use_parallel
+    
+    # ========== PARALLEL PROCESSING WARNINGS ==========
+    # Check model capabilities and show warnings
+    if use_parallel:
+        from utils.comprehensive_fallbacks import safe_parallel
+        
+        # Get current provider from session state
+        provider_name = st.session_state.get('provider', 'Gemini')
+        
+        # Strip any prefixes or suffixes (like ✅ or 🎓 Local:)
+        if provider_name.startswith("🎓 Local:"):
+            provider_name = "Local Model"
+        elif " ✅" in provider_name:
+            provider_name = provider_name.replace(" ✅", "").strip()
+        
+        # Check if model supports parallel
+        can_parallel, max_concurrent, reason = safe_parallel(
+            provider_name,
+            ['design', 'jira'],  # Example artifacts
+            use_parallel
+        )
+        
+        if can_parallel:
+            st.sidebar.success(f"✅ {reason}")
+        else:
+            st.sidebar.warning(f"⚠️ {reason}")
+            st.sidebar.info("System will automatically fall back to sequential processing")
+    
+    # Enhanced RAG Toggle
+    use_enhanced_rag = st.sidebar.checkbox(
+        "🧠 Enhanced RAG (100 chunks)",
+        value=True,
+        help="Use enhanced RAG system with 100 chunks and flexible context windows"
+    )
+    st.session_state.use_enhanced_rag = use_enhanced_rag
+    
+    st.sidebar.divider()
+    
+    # Auto-Ingestion Status
+    with st.sidebar.expander("🔄 Auto-Ingestion Status", expanded=False):
+        from rag.auto_ingestion import get_auto_ingestion_status
+        try:
+            status = get_auto_ingestion_status()
+            if status.get('enabled', False):
+                if status.get('is_running', False):
+                    st.success("✅ Auto-ingestion running")
+                    st.write(f"**Events processed:** {status.get('events_processed', 0)}")
+                    st.write(f"**Files indexed:** {status.get('files_indexed', 0)}")
+                    st.write("✅ **Survives app refreshes!**")
+                    
+                    # Manual controls
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("⏸️ Pause", help="Temporarily pause auto-ingestion"):
+                            from rag.auto_ingestion import stop_auto_ingestion
+                            stop_auto_ingestion()
+                            st.rerun()
+                    
+                    with col2:
+                        if st.button("🔄 Refresh Now", help="Force immediate RAG refresh"):
+                            try:
+                                import subprocess
+                                import sys
+                                from pathlib import Path
+                                
+                                result = subprocess.run([
+                                    sys.executable, 
+                                    str(Path(__file__).parent.parent / "rag" / "ingest.py")
+                                ], capture_output=True, text=True, cwd=Path(__file__).parent.parent)
+                                
+                                if result.returncode == 0:
+                                    st.success("✅ RAG index refreshed!")
+                                else:
+                                    st.error(f"❌ RAG refresh failed: {result.stderr}")
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"❌ Error: {e}")
+                else:
+                    st.warning("⚠️ Auto-ingestion enabled but not running")
+                    if st.button("▶️ Start Auto-Ingestion"):
+                        from rag.auto_ingestion import start_auto_ingestion
+                        if start_auto_ingestion():
+                            st.success("Auto-ingestion started!")
+                            st.rerun()
+                        else:
+                            st.error("Failed to start auto-ingestion")
+            else:
+                st.info("ℹ️ Auto-ingestion disabled")
+                st.caption("Enable in rag/config.yaml to automatically update RAG index")
+        except Exception as e:
+            st.error(f"❌ Auto-ingestion error: {e}")
+    
+    local_finetuning_system = None
+    persistent_training_manager = None
+    st.sidebar.markdown("### 🎓 Local Fine-Tuning")
+    try:
+        from components.local_finetuning import local_finetuning_system as _local_finetuning_system
+        from components.persistent_training import persistent_training_manager as _persistent_training_manager
+    except Exception:
+        st.sidebar.info("Fine-tuning components unavailable in this environment.")
+    else:
+        local_finetuning_system = _local_finetuning_system
+        persistent_training_manager = _persistent_training_manager
+        current_model = local_finetuning_system.current_model
+        if current_model:
+            model_info = current_model.get('info')
+            display_name = model_info.name if model_info else current_model.get('key', 'Local Model')
+            st.sidebar.success(f"Loaded locally: {display_name}")
+        else:
+            st.sidebar.info("Open the **Fine-Tuning** tab to configure local training.")
+
+        active_jobs = persistent_training_manager.get_active_jobs()
+        if active_jobs:
+            st.sidebar.markdown("**📊 Active Training Jobs**")
+            for job in active_jobs:
+                status = f"{job.progress:.1%}" if job.status == "running" else job.status
+                st.sidebar.info(f"⏳ {job.model_name} — {status}")
+        else:
+            st.sidebar.caption("No background training jobs running.")
+        
+        # Manual Resume Section
+        st.sidebar.markdown("---")
+        st.sidebar.markdown("### 🔄 Resume Training")
+        
+    if not local_finetuning_system or not persistent_training_manager:
+        st.sidebar.caption("Fine-tuning components not available for resume.")
+    else:
+        try:
+            is_currently_training = local_finetuning_system.is_training()
+        except Exception:
+            is_currently_training = False
+        
+        if is_currently_training:
+            st.sidebar.success("✅ Training is currently running!")
+            st.sidebar.caption("No resume needed - training is active")
+        else:
+            # Get interrupted jobs
+            interrupted_jobs = persistent_training_manager.get_active_jobs()
+            
+            if interrupted_jobs:
+                st.sidebar.info(f"Found {len(interrupted_jobs)} interrupted job(s)")
+                for job in interrupted_jobs:
+                    with st.sidebar.container():
+                        st.markdown(f"**{job.model_name}**")
+                        st.caption(f"Job: {job.job_id}")
+                        if job.progress > 0:
+                            st.caption(f"Progress: {job.progress:.1%} (will resume from checkpoint)")
+                        else:
+                            st.caption(f"Progress: {job.progress:.1%}")
+                        st.caption(f"Status: {job.status}")
+                        from pathlib import Path
+                        checkpoint_dir = Path(f"./finetuned_models/{job.model_name}")
+                        checkpoints = list(checkpoint_dir.glob("checkpoint-*") ) if checkpoint_dir.exists() else []
+                        if checkpoints:
+                            latest_checkpoint = max(checkpoints, key=lambda x: int(x.name.split('-')[1]))
+                            checkpoint_step = int(latest_checkpoint.name.split('-')[1])
+                            st.caption(f"✓ Checkpoint available at step {checkpoint_step}")
+                        else:
+                            st.caption(f"⚠️ No checkpoints - will restart training")
+                        if st.button("🔄 Resume Training", key=f"resume_{job.job_id}", use_container_width=True):
+                            try:
+                                if local_finetuning_system.is_training():
+                                    st.sidebar.error("❌ Training is already running!")
+                                    return
+                                if checkpoints:
+                                    with st.spinner(f"Resuming from step {checkpoint_step}..."):
+                                        success = persistent_training_manager.resume_training_job(job.job_id)
+                                        if success:
+                                            st.sidebar.success(f"✅ Training resumed from step {checkpoint_step}!")
+                                            st.rerun()
+                                        else:
+                                            st.sidebar.error("❌ Failed to resume training")
+                                else:
+                                    with st.spinner("Starting fresh training (no checkpoints)..."):
+                                        success = persistent_training_manager.resume_training_job(job.job_id)
+                                        if success:
+                                            st.sidebar.success("✅ Training started!")
+                                            st.rerun()
+                                        else:
+                                            st.sidebar.error("❌ Failed to start training")
+                            except Exception as e:
+                                if "already running" in str(e):
+                                    st.sidebar.error("❌ Training is already running!")
+                                else:
+                                    st.sidebar.error(f"❌ Resume error: {str(e)}")
+                        st.markdown("---")
+            else:
+                st.sidebar.info("No interrupted training jobs found")
+    
+    # ========== MAIN DEV TABS (SIMPLIFIED) ==========
     tabs = st.tabs([
         "📝 Input",
         "🎯 Generate",
         "📊 Outputs",
         "🎨 Interactive Editor",
         "✏️ Code Editor",
+        "🎓 Fine-Tuning",
         "🧪 Tests",
         "📤 Export",
         "📚 Versions",
         "📈 Metrics",
+        "🔗 Knowledge Graph",
+        "🔍 Pattern Mining",
     ])
     
     with tabs[0]:
@@ -1321,20 +2283,59 @@ def render_dev_mode():
         render_code_editor_tab()
     
     with tabs[5]:
-        render_test_generator_tab()
+        # Fine-Tuning Tab
+        st.markdown("### 🎓 Local Fine-Tuning")
+        st.markdown("Train the AI on your project's code and patterns")
+        try:
+            from components.local_finetuning import render_local_finetuning_ui
+            render_local_finetuning_ui()
+        except ImportError as e:
+            st.error(f"Fine-tuning component not available: {e}")
+        except Exception as e:
+            st.error(f"Fine-tuning error: {e}")
+            import traceback
+            with st.expander("Error Details"):
+                st.code(traceback.format_exc())
     
     with tabs[6]:
-        render_export_tab()
+        render_test_generator_tab()
     
     with tabs[7]:
+        render_export_tab()
+    
+    with tabs[8]:
         from components.version_history import render_version_history
         render_version_history()
     
-    with tabs[8]:
+    with tabs[9]:
         if render_metrics_dashboard:
             render_metrics_dashboard()
         else:
             st.info("📊 Metrics tracking available after generations")
+    
+    with tabs[10]:
+        st.markdown("### 🔗 Knowledge Graph")
+        st.markdown("Analyze component relationships and system architecture")
+        
+        try:
+            from components.knowledge_graph import render_knowledge_graph_ui
+            render_knowledge_graph_ui()
+        except ImportError as e:
+            st.error(f"Knowledge Graph component not available: {e}")
+        except Exception as e:
+            st.error(f"Knowledge Graph error: {e}")
+    
+    with tabs[11]:
+        st.markdown("### 🔍 Pattern Mining")
+        st.markdown("Extract code patterns, anti-patterns, and architectural insights")
+        
+        try:
+            from components.pattern_mining import render_pattern_mining_ui
+            render_pattern_mining_ui()
+        except ImportError as e:
+            st.error(f"Pattern Mining component not available: {e}")
+        except Exception as e:
+            st.error(f"Pattern Mining error: {e}")
 
 def render_dev_input_tab():
     """Render developer input tab"""
@@ -1358,13 +2359,36 @@ def render_dev_input_tab():
     
     if uploaded_file:
         content = uploaded_file.read().decode('utf-8')
+        stripped_content = content.strip()
+
+        if not stripped_content:
+            st.error("❌ Meeting notes are empty. Previous outputs were not cleared.")
+            return
+
+        if len(stripped_content) < AppConfig.MIN_MEETING_NOTES_LENGTH:
+            st.warning(
+                f"⚠️ Meeting notes are very short ({len(stripped_content)} chars). "
+                "Add more detail for best results."
+            )
+
         prior = notes_path.read_text(encoding='utf-8') if notes_path.exists() else ""
-        notes_path.write_text(content, encoding='utf-8')
-        # Clear old outputs and invalidate cache if notes changed
-        if content.strip() != prior.strip():
-            clear_feature_outputs()
+        changed = stripped_content != prior.strip()
+
+        if changed:
             invalidate_cache_for_notes()
-            st.info("🧹 Cleared previous outputs and cache because meeting notes changed.")
+            clear_feature_outputs()
+
+        notes_path.write_text(content, encoding='utf-8')
+
+        if changed:
+            cached_feature_name = cache_feature_name(content)
+            st.info(
+                "🧹 Cleared previous outputs and cache because meeting notes changed. "
+                f"Detected feature: `{cached_feature_name}`"
+            )
+        else:
+            cache_feature_name(content)
+
         st.success("✅ Meeting notes uploaded!")
     
     if notes_path.exists():
@@ -1561,9 +2585,38 @@ def render_granular_generation_tab():
 
     def _dispatch(artifact: str):
         suffix = get_rag_suffix()
-        provider = st.session_state.get('provider', 'Groq (FREE & FAST)')
-        api_key = st.session_state.get('api_key')
-        provider_info = AppConfig.AI_PROVIDERS[provider]
+        runtime_context, error = resolve_provider_runtime()
+        if error or not runtime_context:
+            st.error(f"❌ {error}")
+            return
+        provider_key_value = runtime_context['credential']
+        provider_config_key = runtime_context['config_key']
+        if runtime_context['provider_type'] == 'remote' and not provider_key_value:
+            st.error("❌ Please configure API key in sidebar first")
+            return
+
+        alternate_models: List[str] = []
+        if runtime_context.get('provider_type') == 'local':
+            local_model_meta = runtime_context.get('local_model') or {}
+            alternate_models.extend(
+                value for value in [
+                    local_model_meta.get('model_id'),
+                    local_model_meta.get('model_name'),
+                    local_model_meta.get('base_model')
+                ]
+                if value
+            )
+        else:
+            provider_info = runtime_context.get('provider_info') or {}
+            alternate_models.extend(
+                value for value in [
+                    provider_info.get('name'),
+                    provider_info.get('model'),
+                    provider_info.get('model_name')
+                ]
+                if value
+            )
+
         if is_background_mode() and enqueue_job:
             notes_path = AppConfig.INPUTS_DIR / AppConfig.MEETING_NOTES_FILE
             if not notes_path.exists():
@@ -1573,8 +2626,10 @@ def render_granular_generation_tab():
                 f"gen_{artifact}",
                 job_generate_artifact,
                 artifact_type=artifact,
-                provider_key=api_key,
-                provider_name=provider_info['config_key'],
+                provider_key=provider_key_value,
+                provider_config_key=provider_config_key,
+                provider_label=runtime_context.get('provider_label', provider_config_key),
+                alternate_models=alternate_models,
                 meeting_notes=notes_path.read_text(encoding='utf-8'),
                 rag_suffix=suffix,
                 force_refresh=True,
@@ -1602,10 +2657,35 @@ def render_granular_generation_tab():
         if st.button("🎨 Generate Developer Visual Prototype", use_container_width=True, key="btn_visual_proto_dev"):
             _dispatch("visual_prototype_dev")
 
-        if st.button("🔄 Generate All Diagrams", use_container_width=True, key="btn_all_diagrams"):
-            _dispatch("all_diagrams")
-
     with col2:
+        st.markdown("""
+        <div class="content-card">
+            <h4 style="color: #1f2937;">📊 Individual Diagrams</h4>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.caption("Generate diagrams one at a time to avoid rate limits")
+        
+        if st.button("🔵 System Overview", use_container_width=True, key="btn_sys_overview"):
+            _dispatch("system_overview")
+        
+        if st.button("🔄 Data Flow", use_container_width=True, key="btn_data_flow"):
+            _dispatch("data_flow")
+        
+        if st.button("👤 User Flow", use_container_width=True, key="btn_user_flow"):
+            _dispatch("user_flow")
+        
+        if st.button("🧩 Component Diagram", use_container_width=True, key="btn_components"):
+            _dispatch("components_diagram")
+        
+        if st.button("📡 API Sequence", use_container_width=True, key="btn_api_seq"):
+            _dispatch("api_sequence")
+    
+    st.divider()
+    
+    col3, col4 = st.columns(2)
+    
+    with col3:
         st.markdown("""
         <div class="content-card">
             <h4 style="color: #1f2937;">📝 Documentation & API</h4>
@@ -1621,24 +2701,37 @@ def render_granular_generation_tab():
         if st.button("⚙️ Generate Workflows", use_container_width=True, key="btn_workflows"):
             _dispatch("workflows")
 
-    st.divider()
+    with col4:
+        st.markdown("""
+        <div class="content-card">
+            <h4 style="color: #1f2937;">⚠️ Batch Operations</h4>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        st.warning("⚠️ Batch generation may hit rate limits with Gemini. Use individual buttons above instead.")
 
-    st.markdown("### 🚀 Full Workflow")
-    st.info("ℹ️ This will generate all core artifacts")
+        if st.button("🔥 Generate Core Artifacts", use_container_width=True, key="btn_core_batch"):
+            st.info("Generating: ERD, Architecture, API Docs, JIRA, Workflows...")
+            for art in ["erd", "architecture", "api_docs", "jira", "workflows"]:
+                _dispatch(art)
+            st.success("✅ Core artifacts complete!")
+        
+        if st.button("🎨 Generate Prototypes", use_container_width=True, key="btn_proto_batch"):
+            st.info("Generating: Code & Visual Prototypes...")
+            for art in ["code_prototype", "visual_prototype_dev"]:
+                _dispatch(art)
+            st.success("✅ Prototypes complete!")
 
-    if st.button("🔥 Generate Everything", use_container_width=True, type="primary"):
-        # Sequential dispatch of core artifacts only
-        for art in [
-            "erd", "architecture", "all_diagrams",
-            "api_docs", "jira", "workflows",
-            "code_prototype", "visual_prototype_dev"
-        ]:
-            _dispatch(art)
-        st.success("✅ Full generation complete!")
 
 def render_dev_outputs_tab():
     """Render developer outputs tab"""
     st.markdown("### 📊 Generated Outputs")
+    
+    # Show notification if outputs were just updated
+    if st.session_state.get('outputs_updated', False):
+        st.session_state.outputs_updated = False
+        update_time = st.session_state.get('outputs_updated_time', 'just now')
+        st.success(f"✅ New outputs available! (Generated at {update_time})")
     
     # Show last generation info
     if 'last_generation' in st.session_state and st.session_state.last_generation:
@@ -1661,33 +2754,15 @@ def render_dev_outputs_tab():
         if diagram_files:
             has_outputs = True
             with st.expander("📊 Diagrams", expanded=True):
+                # Import diagram viewer
+                from components.diagram_viewer import render_diagram_viewer
+                
+                # Get meeting notes from session state
+                meeting_notes = st.session_state.get('meeting_notes', '')
+                
                 for diagram_file in diagram_files:
-                    st.markdown(f"#### 📈 {diagram_file.stem.replace('_', ' ').title()}")
-                    
-                    try:
-                        diagram_content = diagram_file.read_text(encoding='utf-8')
-                        
-                        # Create Mermaid Live link
-                        state = {
-                            "code": diagram_content,
-                            "mermaid": {"theme": "default"},
-                            "autoSync": True,
-                            "updateDiagram": True
-                        }
-                        state_json = json.dumps(state)
-                        compressed = zlib.compress(state_json.encode('utf-8'))
-                        encoded = base64.urlsafe_b64encode(compressed).decode('utf-8')
-                        live_link = f"https://mermaid.live/edit#pako:{encoded}"
-                        
-                        col1, col2 = st.columns([4, 1])
-                        with col1:
-                            st.code(diagram_content, language="mermaid")
-                        with col2:
-                            st.link_button("🔗 Open in Mermaid Live", live_link, use_container_width=True)
-                        
-                        st.divider()
-                    except Exception as e:
-                        st.error(f"Error loading {diagram_file.name}: {str(e)}")
+                    # Use rich diagram viewer with tabs
+                    render_diagram_viewer(diagram_file, meeting_notes)
     
     # Documentation (generic) - with black background
     docs_dir = outputs_dir / "documentation"
@@ -1804,36 +2879,12 @@ def render_dev_outputs_tab():
                         st.success("✅ Prototype updated! Showing latest version.")
                     
                     try:
-                        # ULTRA-AGGRESSIVE: Force fresh read ALWAYS
-                        import random
+                        # Deterministic cache busting based on file metadata
+                        # Changes ONLY when file actually changes (no random)
+                        cache_buster = get_file_cache_buster(dev_visual)
                         
-                        # CRITICAL: Check if file was modified since last read
-                        current_mtime = dev_visual.stat().st_mtime
-                        last_known_mtime = st.session_state.get('dev_prototype_force_mtime', 0)
-                        
-                        if current_mtime > last_known_mtime:
-                            st.info("🔄 New version detected, reloading...")
-                            st.session_state.dev_prototype_force_mtime = current_mtime
-                        
-                        # Force fresh read by always reading file (no caching)
+                        # Read file content
                         html_content = dev_visual.read_text(encoding='utf-8')
-                        
-                        # ULTRA-AGGRESSIVE cache busting: Use ALL factors + random
-                        # 1. File modification time (changes when file is written)
-                        # 2. File size (different if content changed)
-                        # 3. Session timestamp (unique per save)
-                        # 4. Session cache buster (from interactive editor)
-                        # 5. Content hash (detects ANY change)
-                        # 6. Random salt (ensures uniqueness)
-                        file_mtime = dev_visual.stat().st_mtime
-                        file_size = dev_visual.stat().st_size
-                        content_hash = abs(hash(html_content))
-                        random_salt = random.randint(1000000, 9999999)
-                        last_modified = st.session_state.get('prototype_last_modified', datetime.now().isoformat())
-                        session_buster = st.session_state.get('prototype_cache_buster_dev', 0)
-                        
-                        # Create ULTRA-unique cache buster string
-                        cache_buster = f"{file_mtime}_{file_size}_{last_modified}_{session_buster}_{content_hash}_{random_salt}"
                         
                         # Vary height significantly to force iframe reload (750-900px range)
                         unique_height = 750 + (abs(hash(cache_buster)) % 150)
@@ -1841,13 +2892,13 @@ def render_dev_outputs_tab():
                         # Debug info (toggle with checkbox)
                         show_debug = st.checkbox("🔍 Show Debug Info", key="debug_dev_proto", value=False)
                         if show_debug:
+                            file_stat = dev_visual.stat()
                             st.code(f"""
 File: {dev_visual}
-Size: {file_size} bytes
-Modified: {datetime.fromtimestamp(file_mtime)}
-Session timestamp: {last_modified}
+Size: {file_stat.st_size} bytes
+Modified: {datetime.fromtimestamp(file_stat.st_mtime)}
 Height: {unique_height}px
-Cache buster: {cache_buster[:100]}...
+Cache buster: {cache_buster}
                             """, language="text")
                         
                         # NUCLEAR OPTION: Force complete iframe reload by using unique key
@@ -1899,123 +2950,25 @@ Cache buster: {cache_buster[:100]}...
         """)
 
 def _require_api_key() -> bool:
-    if not st.session_state.get('api_key'):
-        st.warning("⚠️ Please configure API key in sidebar first")
-        return False
-    return True
+    provider = st.session_state.get('provider')
+    if is_local_provider(provider):
+        return True
+    if st.session_state.get('api_key'):
+        return True
+    st.warning("⚠️ Please configure API key in sidebar first")
+    return False
 
 def _build_llm_callable(system_prompt: str = "You are a testing expert. Generate only code."):
     def _call(prompt: str) -> str:
-        provider = st.session_state.get('provider', 'Groq (FREE & FAST)')
-        api_key = st.session_state.get('api_key')
-        provider_info = AppConfig.AI_PROVIDERS[provider]
-        config = {provider_info['config_key']: api_key}
-        agent = get_or_create_agent(config)
-        return asyncio.run(agent._call_ai(prompt, system_prompt))
+        runtime_context, error = resolve_provider_runtime()
+        if error or not runtime_context:
+            raise RuntimeError(error or "Unable to resolve provider configuration")
+        agent = get_or_create_agent(runtime_context['config'])
+        return run_async(agent._call_ai(prompt, system_prompt))
     return _call
 
-def render_tests_tab():
-    """Render tests generator tab"""
-    st.markdown("### 🧪 Test Generation")
-    if not _require_api_key():
-        return
-    if render_test_generator is None:
-        st.info("Test generator component unavailable")
-        return
-    llm = _build_llm_callable("You are a senior QA engineer. Generate only test code.")
-    render_test_generator(llm)
 
-def render_editor_tab():
-    """Render in-app code editor for outputs"""
-    st.markdown("### 🧰 Edit Generated Files")
-    outputs_dir = AppConfig.OUTPUTS_DIR
-    if render_code_editor is None:
-        st.info("Code editor component unavailable")
-        return
-    if not outputs_dir.exists():
-        st.info("No generated files yet.")
-        return
-    # Collect editable files
-    editable = {}
-    for sub in ["documentation", "visualizations", "prototypes", "workflows"]:
-        d = outputs_dir / sub
-        if d.exists():
-            for f in d.glob("**/*"):
-                if f.is_file() and f.suffix.lower() in {".md", ".mmd", ".txt", ".html", ".py", ".ts", ".js", ".json"}:
-                    rel = str(f.relative_to(outputs_dir))
-                    try:
-                        editable[rel] = f.read_text(encoding='utf-8')
-                    except Exception:
-                        pass
-    if not editable:
-        st.info("No editable files found yet.")
-        return
-    selected = st.selectbox("Select file", list(editable.keys()))
-    content = editable[selected]
-    lang_map = {
-        ".md": "markdown",
-        ".mmd": "mermaid",
-        ".txt": "plaintext",
-        ".html": "html",
-        ".py": "python",
-        ".ts": "typescript",
-        ".js": "javascript",
-        ".json": "json",
-    }
-    ext = Path(selected).suffix.lower()
-    language = lang_map.get(ext, "plaintext")
-    edited = None
-    if render_code_editor is not None:
-        edited = render_code_editor(content, language=language, height=550, theme="vs-dark")
-    else:
-        edited = st.text_area("Editor", value=content, height=500)
-    col1, col2 = st.columns([1,1])
-    with col1:
-        if st.button("💾 Save", use_container_width=True, type="primary"):
-            target = outputs_dir / selected
-            to_write = edited if isinstance(edited, str) and edited is not None else content
-            target.write_text(to_write, encoding='utf-8')
-            st.success("Saved!")
-    with col2:
-        to_download = edited if isinstance(edited, str) and edited is not None else content
-        st.download_button("⬇️ Download", to_download, file_name=Path(selected).name, use_container_width=True)
 
-def render_export_tab():
-    """Render export manager"""
-    if render_export_manager is None:
-        st.info("Export component unavailable")
-        return
-    render_export_manager()
-
-def render_metrics_tab():
-    """Render metrics dashboard"""
-    if render_metrics_dashboard is None:
-        st.info("Metrics component unavailable")
-        return
-    render_metrics_dashboard()
-
-def render_activity_tab():
-    """Render activity monitoring tab"""
-    st.markdown("### 📈 RAG Activity & Performance")
-    
-    if not st.session_state.rag_logs:
-        st.info("No activity yet. Start generating!")
-        return
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric("Total Generations", len(st.session_state.rag_logs))
-    with col2:
-        st.metric("Estimated Cost", f"${st.session_state.generation_cost:.2f}")
-    with col3:
-        st.metric("Cache Hit Rate", "78%")
-    
-    st.divider()
-    
-    st.markdown("#### Recent Activity")
-    for log in reversed(st.session_state.rag_logs):
-        st.text(log)
 
 # =============================================================================
 # INTELLIGENT CACHING SYSTEM
@@ -2125,15 +3078,19 @@ def render_code_editor_tab():
     st.markdown("### ✏️ Code Editor")
     st.markdown("Edit generated code files directly and save your changes.")
     
-    # List available code files from prototypes
+    # List available code files from prototypes (check both singular and plural)
     code_files = []
-    proto_dir = AppConfig.OUTPUTS_DIR / "prototypes"
+    proto_dirs = [
+        AppConfig.OUTPUTS_DIR / "prototype",  # New location (singular)
+        AppConfig.OUTPUTS_DIR / "prototypes"  # Legacy location (plural)
+    ]
     
-    if proto_dir.exists():
-        for ext in ['*.ts', '*.py', '*.cs', '*.js', '*.tsx', '*.jsx', '*.html', '*.css']:
-            for file_path in proto_dir.rglob(ext):
-                if file_path.is_file() and 'test' not in file_path.name.lower():
-                    code_files.append(file_path)
+    for proto_dir in proto_dirs:
+        if proto_dir.exists():
+            for ext in ['*.ts', '*.py', '*.cs', '*.js', '*.tsx', '*.jsx', '*.html', '*.css']:
+                for file_path in proto_dir.rglob(ext):
+                    if file_path.is_file() and 'test' not in file_path.name.lower():
+                        code_files.append(file_path)
     
     if not code_files:
         st.info("📝 No code files found. Generate a code prototype first!")
@@ -2151,7 +3108,7 @@ def render_code_editor_tab():
     selected_file = st.selectbox(
         "📁 Select File to Edit",
         code_files,
-        format_func=lambda x: str(x.relative_to(proto_dir)),
+        format_func=lambda x: str(x.relative_to(AppConfig.OUTPUTS_DIR)),
         key="code_editor_file_selector"
     )
     
@@ -2259,15 +3216,19 @@ def render_test_generator_tab():
         st.warning("⚠️ Test generator component not available")
         return
     
-    # Auto-detect generated code files
-    proto_dir = AppConfig.OUTPUTS_DIR / "prototypes"
+    # Auto-detect generated code files (check both singular and plural)
+    proto_dirs = [
+        AppConfig.OUTPUTS_DIR / "prototype",  # New location (singular)
+        AppConfig.OUTPUTS_DIR / "prototypes"  # Legacy location (plural)
+    ]
     code_files = []
     
-    if proto_dir.exists():
-        for ext in ['.py', '.ts', '.js', '.cs', '.tsx', '.jsx']:
-            for file_path in proto_dir.rglob(f"*{ext}"):
-                if file_path.is_file() and 'test' not in file_path.name.lower():
-                    code_files.append(file_path)
+    for proto_dir in proto_dirs:
+        if proto_dir.exists():
+            for ext in ['.py', '.ts', '.js', '.cs', '.tsx', '.jsx']:
+                for file_path in proto_dir.rglob(f"*{ext}"):
+                    if file_path.is_file() and 'test' not in file_path.name.lower():
+                        code_files.append(file_path)
     
     if not code_files:
         st.info("📝 No code files found. Generate a code prototype first!")
@@ -2279,7 +3240,7 @@ def render_test_generator_tab():
     selected_file = st.selectbox(
         "Select file to generate tests for:",
         options=code_files,
-        format_func=lambda x: str(x.relative_to(proto_dir))
+        format_func=lambda x: str(x.relative_to(AppConfig.OUTPUTS_DIR))
     )
     
     if selected_file:
@@ -2300,18 +3261,13 @@ def render_test_generator_tab():
                     code = selected_file.read_text(encoding='utf-8')
                     
                     # Get AI configuration
-                    provider = st.session_state.get('provider', 'Groq (FREE & FAST)')
-                    api_key = st.session_state.get('api_key')
-                    
-                    if not api_key:
-                        st.error("❌ Please configure API key in sidebar first")
+                    runtime_context, error = resolve_provider_runtime()
+                    if error or not runtime_context:
+                        st.error(f"❌ {error}")
                         return
                     
-                    provider_info = AppConfig.AI_PROVIDERS[provider]
-                    config = {provider_info['config_key']: api_key}
-                    
                     # Get or create cached agent
-                    agent = get_or_create_agent(config)
+                    agent = get_or_create_agent(runtime_context['config'])
                     
                     # Determine test framework based on language
                     ext = selected_file.suffix
@@ -2346,7 +3302,7 @@ Output ONLY the test code with no explanations or markdown formatting.
 """
                     
                     import asyncio
-                    tests = asyncio.run(agent._call_ai(prompt, "You are an expert test engineer"))
+                    tests = run_async(agent._call_ai(prompt, "You are an expert test engineer"))
                     
                     # Strip markdown artifacts
                     tests = strip_markdown_artifacts(tests)
@@ -2496,6 +3452,29 @@ def render_pm_mode():
     """Render product/PM mode interface"""
     st.markdown("## 📊 Product/PM Mode")
     
+    # Render toast-style notifications (auto-clear after 5 seconds)
+    render_notifications()
+    
+    # ========== PM SIDEBAR CONTROLS ==========
+    st.sidebar.markdown("### ⚙️ PM Options")
+    
+    # Enhanced RAG Toggle
+    use_enhanced_rag_pm = st.sidebar.checkbox(
+        "🧠 Enhanced RAG (100 chunks)",
+        value=True,
+        key="pm_enhanced_rag",
+        help="Use enhanced RAG system with 100 chunks for better context"
+    )
+    
+    # Auto-Mermaid Toggle
+    auto_mermaid_pm = st.sidebar.checkbox(
+        "🔧 Auto-Correct Mermaid Diagrams",
+        value=True,
+        key="pm_auto_mermaid",
+        help="Automatically validate and fix Mermaid diagram syntax"
+    )
+    
+    # ========== PM TABS ==========
     tabs = st.tabs(["💡 Idea", "🤖 Ask AI", "📊 Outputs", "🎨 Interactive Editor"])
     
     with tabs[0]:
@@ -2655,17 +3634,15 @@ def render_ask_ai_tab():
 # PM power tools helpers
 
 def _pm_generate_estimations():
-    provider = st.session_state.get('provider', 'Groq (FREE & FAST)')
-    api_key = st.session_state.get('api_key')
-    provider_info = AppConfig.AI_PROVIDERS[provider]
-    config = {provider_info['config_key']: api_key}
-    agent = get_or_create_agent(config)
+    agent, _ = get_current_agent()
+    if not agent:
+        return
     notes_path = AppConfig.INPUTS_DIR / AppConfig.MEETING_NOTES_FILE
     notes = notes_path.read_text(encoding='utf-8') if notes_path.exists() else ""
     # RAG first with extended context
     ext_ctx = get_extended_project_context()
     import asyncio
-    asyncio.run(agent.retrieve_rag_context(f"estimations {notes} {ext_ctx}"))
+    run_async(agent.retrieve_rag_context(f"estimations {notes} {ext_ctx}"))
     prompt = f"""
 Create a realistic delivery plan for the described feature using the project's stack and patterns.
 Output:
@@ -2679,7 +3656,7 @@ Output:
 PROJECT CONTEXT (RAG):
 {agent.rag_context[:3000]}
 """
-    res = asyncio.run(agent._call_ai(prompt, "You are an expert delivery manager. Output in Markdown."))
+    res = run_async(agent._call_ai(prompt, "You are an expert delivery manager. Output in Markdown."))
     if res:
         p = AppConfig.OUTPUTS_DIR / "documentation" / "estimations.md"
         p.parent.mkdir(exist_ok=True)
@@ -2688,21 +3665,19 @@ PROJECT CONTEXT (RAG):
 
 
 def _pm_generate_personas_journeys():
-    provider = st.session_state.get('provider', 'Groq (FREE & FAST)')
-    api_key = st.session_state.get('api_key')
-    provider_info = AppConfig.AI_PROVIDERS[provider]
-    config = {provider_info['config_key']: api_key}
-    agent = get_or_create_agent(config)
+    agent, _ = get_current_agent()
+    if not agent:
+        return
     ext_ctx = get_extended_project_context()
     import asyncio
-    asyncio.run(agent.retrieve_rag_context(f"personas journeys {ext_ctx}"))
+    run_async(agent.retrieve_rag_context(f"personas journeys {ext_ctx}"))
     prompt = f"""
 Generate 3 personas and their user journeys for the proposed feature. Output Markdown with tables and journey steps.
 
 PROJECT CONTEXT (RAG):
 {agent.rag_context[:3000]}
 """
-    res = asyncio.run(agent._call_ai(prompt, "You are an expert UX researcher. Output in Markdown."))
+    res = run_async(agent._call_ai(prompt, "You are an expert UX researcher. Output in Markdown."))
     if res:
         p = AppConfig.OUTPUTS_DIR / "documentation" / "personas_journeys.md"
         p.parent.mkdir(exist_ok=True)
@@ -2711,21 +3686,19 @@ PROJECT CONTEXT (RAG):
 
 
 def _pm_generate_scoring():
-    provider = st.session_state.get('provider', 'Groq (FREE & FAST)')
-    api_key = st.session_state.get('api_key')
-    provider_info = AppConfig.AI_PROVIDERS[provider]
-    config = {provider_info['config_key']: api_key}
-    agent = get_or_create_agent(config)
+    agent, _ = get_current_agent()
+    if not agent:
+        return
     ext_ctx = get_extended_project_context()
     import asyncio
-    asyncio.run(agent.retrieve_rag_context(f"feature scoring {ext_ctx}"))
+    run_async(agent.retrieve_rag_context(f"feature scoring {ext_ctx}"))
     prompt = f"""
 Create a feature scoring matrix (Impact, Effort, Risk, Confidence) with formulas and a ranked list. Output Markdown tables.
 
 PROJECT CONTEXT (RAG):
 {agent.rag_context[:3000]}
 """
-    res = asyncio.run(agent._call_ai(prompt, "You are a PM. Output Markdown tables only."))
+    res = run_async(agent._call_ai(prompt, "You are a PM. Output Markdown tables only."))
     if res:
         p = AppConfig.OUTPUTS_DIR / "documentation" / "feature_scoring.md"
         p.parent.mkdir(exist_ok=True)
@@ -2734,21 +3707,19 @@ PROJECT CONTEXT (RAG):
 
 
 def _pm_package_backlog():
-    provider = st.session_state.get('provider', 'Groq (FREE & FAST)')
-    api_key = st.session_state.get('api_key')
-    provider_info = AppConfig.AI_PROVIDERS[provider]
-    config = {provider_info['config_key']: api_key}
-    agent = get_or_create_agent(config)
+    agent, _ = get_current_agent()
+    if not agent:
+        return
     ext_ctx = get_extended_project_context()
     import asyncio
-    asyncio.run(agent.retrieve_rag_context(f"backlog {ext_ctx}"))
+    run_async(agent.retrieve_rag_context(f"backlog {ext_ctx}"))
     prompt = f"""
 Package backlog into Epics, Stories, Subtasks based on the idea and repository patterns. Output Markdown ready to import.
 
 PROJECT CONTEXT (RAG):
 {agent.rag_context[:3000]}
 """
-    res = asyncio.run(agent._call_ai(prompt, "You are a PM. Output Markdown only."))
+    res = run_async(agent._call_ai(prompt, "You are a PM. Output Markdown only."))
     if res:
         p = AppConfig.OUTPUTS_DIR / "documentation" / "backlog_pack.md"
         p.parent.mkdir(exist_ok=True)
@@ -2781,36 +3752,12 @@ def render_pm_outputs_tab():
                 st.session_state.pm_prototype_updated = False
                 st.success("✅ Prototype updated! Showing latest version.")
             
-            # ULTRA-AGGRESSIVE: Force fresh read ALWAYS
-            import random
+            # Deterministic cache busting based on file metadata
+            # Changes ONLY when file actually changes (no random)
+            cache_buster = get_file_cache_buster(pm_proto)
             
-            # CRITICAL: Check if file was modified since last read
-            current_mtime = pm_proto.stat().st_mtime
-            last_known_mtime = st.session_state.get('pm_prototype_force_mtime', 0)
-            
-            if current_mtime > last_known_mtime:
-                st.info("🔄 New version detected, reloading...")
-                st.session_state.pm_prototype_force_mtime = current_mtime
-            
-            # Force fresh read by always reading file (no caching)
+            # Read file content
             html_content = pm_proto.read_text(encoding='utf-8')
-            
-            # ULTRA-AGGRESSIVE cache busting: Use ALL factors + random
-            # 1. File modification time (changes when file is written)
-            # 2. File size (different if content changed)
-            # 3. Session timestamp (unique per save)
-            # 4. Session cache buster (from interactive editor)
-            # 5. Content hash (detects ANY change)
-            # 6. Random salt (ensures uniqueness)
-            file_mtime = pm_proto.stat().st_mtime
-            file_size = pm_proto.stat().st_size
-            content_hash = abs(hash(html_content))
-            random_salt = random.randint(1000000, 9999999)
-            last_modified = st.session_state.get('prototype_last_modified', datetime.now().isoformat())
-            session_buster = st.session_state.get('prototype_cache_buster_pm', 0)
-            
-            # Create ULTRA-unique cache buster string
-            cache_buster = f"{file_mtime}_{file_size}_{last_modified}_{session_buster}_{content_hash}_{random_salt}"
             
             # Vary height significantly to force iframe reload (750-900px range)
             unique_height = 750 + (abs(hash(cache_buster)) % 150)
@@ -2818,13 +3765,13 @@ def render_pm_outputs_tab():
             # Debug info (toggle with checkbox)
             show_debug = st.checkbox("🔍 Show Debug Info", key="debug_pm_proto", value=False)
             if show_debug:
+                file_stat = pm_proto.stat()
                 st.code(f"""
 File: {pm_proto}
-Size: {file_size} bytes
-Modified: {datetime.fromtimestamp(file_mtime)}
-Session timestamp: {last_modified}
+Size: {file_stat.st_size} bytes
+Modified: {datetime.fromtimestamp(file_stat.st_mtime)}
 Height: {unique_height}px
-Cache buster: {cache_buster[:100]}...
+Cache buster: {cache_buster}
                 """, language="text")
             
         # NUCLEAR OPTION: Force complete iframe reload by using unique key
@@ -2976,16 +3923,9 @@ def render_dev_interactive_editor_tab():
         feature_context = notes_path.read_text(encoding='utf-8')
     
     # Get AI agent
-    provider = st.session_state.get('provider', 'Groq (FREE & FAST)')
-    api_key = st.session_state.get('api_key')
-    
-    if not api_key:
-        st.error("❌ Please configure API key in sidebar first!")
+    agent, _ = get_current_agent()
+    if not agent:
         return
-    
-    provider_info = AppConfig.AI_PROVIDERS[provider]
-    config = {provider_info['config_key']: api_key}
-    agent = get_or_create_agent(config)
     
     # Render quick modifications
     if initial_html:
@@ -3082,16 +4022,9 @@ def render_pm_interactive_editor_tab():
         feature_context = notes_path.read_text(encoding='utf-8')
     
     # Get AI agent
-    provider = st.session_state.get('provider', 'Groq (FREE & FAST)')
-    api_key = st.session_state.get('api_key')
-    
-    if not api_key:
-        st.error("❌ Please configure API key in sidebar first!")
+    agent, _ = get_current_agent()
+    if not agent:
         return
-    
-    provider_info = AppConfig.AI_PROVIDERS[provider]
-    config = {provider_info['config_key']: api_key}
-    agent = get_or_create_agent(config)
     
     # Render quick modifications
     if initial_html:
@@ -3107,13 +4040,133 @@ def render_pm_interactive_editor_tab():
 # GENERATION FUNCTIONS
 # =============================================================================
 
+def generate_with_validation_silent(artifact_type: str, generate_fn, meeting_notes: str, outputs_dir: Path, use_ui: bool = False):
+    """
+    THREAD-SAFE validation wrapper for background jobs with OUTPUT VALIDATOR INTEGRATION.
+    
+    This is a UI-less version of generate_with_validation that:
+    1. Runs the generation function
+    2. Validates the output using ai/output_validator.py
+    3. Auto-retries if validation fails
+    4. Falls back to cloud if local validation fails (for Ollama)
+    5. Logs results (no Streamlit UI calls)
+    6. Saves validation reports
+    
+    Args:
+        artifact_type: Type of artifact (erd, architecture, etc.)
+        generate_fn: Function that generates the artifact (callable, not async)
+        meeting_notes: Meeting notes for context
+        outputs_dir: Directory to save outputs
+        use_ui: If True, show UI (only works in main thread)
+    
+    Returns:
+        Generated content (str) or None
+    """
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    
+    # Use integrated OutputValidator
+    try:
+        from ai.output_validator import OutputValidator
+        validator = OutputValidator()
+    except Exception as e:
+        logger.warning(f"Failed to load OutputValidator, using fallback: {e}")
+        from validation.output_validator import ArtifactValidator
+        validator = ArtifactValidator()
+    
+    use_validation = True  # Always validate in background
+    max_retries = 2
+    
+    result = None
+    validation_result = None
+    attempt = 0
+    
+    while attempt <= max_retries:
+        # Generate
+        try:
+            result = generate_fn()  # Execute the callable
+        except Exception as e:
+            logger.error(f"Generation attempt {attempt + 1} failed: {str(e)}")
+            if attempt < max_retries:
+                attempt += 1
+                continue
+            else:
+                return None
+        
+        # Check if generation returned valid content
+        if not result or (isinstance(result, str) and len(result.strip()) == 0):
+            logger.warning(f"Generation attempt {attempt + 1} returned empty result")
+            if attempt < max_retries:
+                attempt += 1
+                continue
+            else:
+                logger.error("All generation attempts failed to produce content")
+                return None
+        
+        # Validate
+        if use_validation and result:
+            # OutputValidator returns (ValidationResult, issues, score) tuple
+            from ai.output_validator import OutputValidator, ValidationResult
+            validator_instance = OutputValidator()
+            validation_status, validation_issues, validation_score = validator_instance.validate(
+                artifact_type, result, {'meeting_notes': meeting_notes}
+            )
+            
+            # Create a validation result object for compatibility
+            class ValidationResultWrapper:
+                def __init__(self, status, issues, score):
+                    self.status = status
+                    self.score = score
+                    self.is_valid = status != ValidationResult.FAIL
+                    self.errors = [issue for issue in issues if "error" in issue.lower() or "missing" in issue.lower()]
+                    self.warnings = [issue for issue in issues if issue not in self.errors]
+                    self.suggestions = []
+            
+            validation_result = ValidationResultWrapper(validation_status, validation_issues, validation_score)
+            
+            logger.info(f"Validation: {artifact_type} - Score: {validation_result.score:.1f}/100, Valid: {validation_result.is_valid}")
+            
+            # Check if retry needed
+            if validation_result.score < 70 and attempt < max_retries:
+                logger.warning(f"Quality score below threshold. Retrying... ({attempt + 1}/{max_retries})")
+                attempt += 1
+                continue
+        
+        # Success - exit loop
+        break
+    
+    # Save validation report if available
+    if use_validation and validation_result and result:
+        validation_dir = outputs_dir / "validation"
+        validation_dir.mkdir(exist_ok=True)
+        report = f"""# Validation Report: {artifact_type.upper()}
+
+Score: {validation_result.score:.1f}/100
+Status: {'✅ VALID' if validation_result.is_valid else '⚠️ NEEDS IMPROVEMENT'}
+Attempts: {attempt + 1}
+
+## Errors
+{chr(10).join(f'- {e}' for e in validation_result.errors) if validation_result.errors else 'None'}
+
+## Warnings
+{chr(10).join(f'- {w}' for w in validation_result.warnings) if validation_result.warnings else 'None'}
+
+## Suggestions
+{chr(10).join(f'- {s}' for s in validation_result.suggestions) if validation_result.suggestions else 'None'}
+"""
+        (validation_dir / f"{artifact_type}_validation.md").write_text(report, encoding='utf-8')
+    
+    return result
+
+
 def generate_with_validation(artifact_type: str, generate_fn, meeting_notes: str, outputs_dir: Path):
     """
-    Wrapper that adds validation and auto-retry to any generation function.
+    UI-FRIENDLY validation wrapper with INTEGRATED OUTPUT VALIDATOR.
     
     This ensures consistent quality across all artifact types by:
     1. Running the generation function
-    2. Validating the output
+    2. Validating using ai/output_validator.py (artifact-specific rules)
     3. Auto-retrying if validation fails (up to max_retries)
     4. Displaying quality metrics in UI
     5. Saving validation reports
@@ -3127,6 +4180,15 @@ def generate_with_validation(artifact_type: str, generate_fn, meeting_notes: str
     Returns:
         Generated content (str) or None
     """
+    # Use integrated OutputValidator
+    try:
+        from ai.output_validator import OutputValidator
+        validator_class = OutputValidator
+    except Exception as e:
+        st.warning(f"⚠️ Using fallback validator: {e}")
+        from validation.output_validator import ArtifactValidator
+        validator_class = ArtifactValidator
+    
     use_validation = st.session_state.get('use_validation', True)
     max_retries = st.session_state.get('max_retries', 2)
     
@@ -3136,8 +4198,15 @@ def generate_with_validation(artifact_type: str, generate_fn, meeting_notes: str
     
     while attempt <= max_retries:
         # Generate
+        import inspect
+        is_async = inspect.iscoroutinefunction(generate_fn)
+        
         if attempt == 0:
-            result = asyncio.run(generate_fn())
+            # Check if function is async or sync
+            if is_async:
+                result = run_async(generate_fn())
+            else:
+                result = generate_fn()  # Call directly if not async
         else:
             # Retry with feedback
             st.info(f"🔄 Retry attempt {attempt}/{max_retries}...")
@@ -3147,13 +4216,41 @@ def generate_with_validation(artifact_type: str, generate_fn, meeting_notes: str
             
             # For retry, we regenerate (could enhance generate_fn to accept feedback)
             st.markdown(f"**Feedback for improvement:**\n{feedback}")
-            result = asyncio.run(generate_fn())
+            if is_async:
+                result = run_async(generate_fn())
+            else:
+                result = generate_fn()  # Call directly if not async
+        
+        # Check if generation returned valid content
+        if not result or (isinstance(result, str) and len(result.strip()) == 0):
+            st.warning(f"⚠️ Generation attempt {attempt + 1} returned empty result")
+            if attempt < max_retries:
+                attempt += 1
+                continue
+            else:
+                st.error("❌ All generation attempts failed to produce content")
+                return None
         
         # Validate if enabled
         if use_validation and result:
-            from validation.output_validator import ArtifactValidator
-            validator = ArtifactValidator()
-            validation_result = validator.validate(artifact_type, result, {'meeting_notes': meeting_notes})
+            validator = validator_class()
+            # OutputValidator returns (ValidationResult, issues, score) tuple
+            validation_status, validation_issues, validation_score = validator.validate(
+                artifact_type, result, {'meeting_notes': meeting_notes}
+            )
+            
+            # Create a validation result object for compatibility
+            class ValidationResultWrapper:
+                def __init__(self, status, issues, score):
+                    self.status = status
+                    self.score = score
+                    self.is_valid = status != ValidationResult.FAIL
+                    self.errors = [issue for issue in issues if "error" in issue.lower() or "missing" in issue.lower()]
+                    self.warnings = [issue for issue in issues if issue not in self.errors]
+                    self.suggestions = []
+            
+            from ai.output_validator import ValidationResult
+            validation_result = ValidationResultWrapper(validation_status, validation_issues, validation_score)
             
             # Show validation results
             col1, col2 = st.columns([1, 3])
@@ -3180,7 +4277,7 @@ def generate_with_validation(artifact_type: str, generate_fn, meeting_notes: str
                             st.markdown(f"- {suggestion}")
             
             # Check if retry needed
-            if validator.should_retry(validation_result) and attempt < max_retries:
+            if validation_result.score < 70 and attempt < max_retries:
                 st.warning(f"Quality score below threshold. Retrying... ({attempt + 1}/{max_retries})")
                 attempt += 1
                 continue
@@ -3270,18 +4367,13 @@ def generate_single_artifact(artifact_type: str):
             meeting_notes = notes_path.read_text(encoding='utf-8')
             
             # Get AI config
-            provider = st.session_state.get('provider', 'Groq (FREE & FAST)')
-            api_key = st.session_state.get('api_key')
-            
-            if not api_key:
-                st.error("❌ Please configure API key in sidebar!")
+            runtime_context, error = resolve_provider_runtime()
+            if error or not runtime_context:
+                st.error(f"❌ {error}")
                 return
             
-            provider_info = AppConfig.AI_PROVIDERS[provider]
-            config = {provider_info['config_key']: api_key}
-            
             # Get or create cached agent (avoid re-initialization)
-            agent = get_or_create_agent(config)
+            agent = get_or_create_agent(runtime_context['config'])
             agent.meeting_notes = meeting_notes
             
             # Smart caching decision
@@ -3316,8 +4408,30 @@ def generate_single_artifact(artifact_type: str):
                 if result:
                     viz_dir = outputs_dir / "visualizations"
                     viz_dir.mkdir(exist_ok=True)
-                    (viz_dir / "erd_diagram.mmd").write_text(result, encoding='utf-8')
+                    mmd_file = viz_dir / "erd_diagram.mmd"
+                    mmd_file.write_text(result, encoding='utf-8')
+                    
+                    # Generate HTML visualization with RAG context
+                    try:
+                        from components.mermaid_html_renderer import mermaid_html_renderer
+                        html_content = run_async(
+                            mermaid_html_renderer.generate_html_visualization_with_gemini(
+                                result, meeting_notes, "erd", agent.rag_context, agent=agent
+                            )
+                        )
+                        html_file = mmd_file.with_suffix('.html')
+                        html_file.write_text(html_content, encoding='utf-8')
+                        st.success("✅ Generated ERD diagram + HTML visualization (with RAG context)")
+                    except Exception as e:
+                        st.warning(f"⚠️ ERD generated, but HTML creation failed: {str(e)}")
+                    
+                    # Update session state for outputs tab
+                    st.session_state.last_generation.append("erd")
+                    st.session_state.outputs_updated = True
+                    st.session_state.outputs_updated_time = datetime.now().isoformat()
+                    
                 track_generation("erd")
+                st.rerun()
             elif artifact_type == "architecture":
                 result = generate_with_validation(
                     "architecture",
@@ -3329,8 +4443,30 @@ def generate_single_artifact(artifact_type: str):
                 if result:
                     viz_dir = outputs_dir / "visualizations"
                     viz_dir.mkdir(exist_ok=True)
-                    (viz_dir / "architecture_diagram.mmd").write_text(result, encoding='utf-8')
+                    mmd_file = viz_dir / "architecture_diagram.mmd"
+                    mmd_file.write_text(result, encoding='utf-8')
+                    
+                    # Generate HTML visualization
+                    try:
+                        from components.mermaid_html_renderer import mermaid_html_renderer
+                        html_content = run_async(
+                            mermaid_html_renderer.generate_html_visualization_with_gemini(
+                                result, meeting_notes, "architecture", agent.rag_context, agent=agent
+                            )
+                        )
+                        html_file = mmd_file.with_suffix('.html')
+                        html_file.write_text(html_content, encoding='utf-8')
+                        st.success("✅ Generated Architecture diagram + HTML visualization")
+                    except Exception as e:
+                        st.warning(f"⚠️ Architecture generated, but HTML creation failed: {str(e)}")
+                    
+                    # Update session state for outputs tab
+                    st.session_state.last_generation.append("architecture")
+                    st.session_state.outputs_updated = True
+                    st.session_state.outputs_updated_time = datetime.now().isoformat()
+                    
                 track_generation("architecture")
+                st.rerun()
             elif artifact_type == "api_docs":
                 result = generate_with_validation(
                     "api_docs",
@@ -3343,11 +4479,19 @@ def generate_single_artifact(artifact_type: str):
                     docs_dir = outputs_dir / "documentation"
                     docs_dir.mkdir(exist_ok=True)
                     (docs_dir / "api.md").write_text(result, encoding='utf-8')
+                    
+                    # Update session state for outputs tab
+                    st.session_state.last_generation.append("api_docs")
+                    st.session_state.outputs_updated = True
+                    st.session_state.outputs_updated_time = datetime.now().isoformat()
+                    st.success("✅ API Documentation generated!")
+                    
                 track_generation("api_docs")
+                st.rerun()
             elif artifact_type == "jira":
                 # Ensure meeting notes are processed first for higher fidelity
                 try:
-                    asyncio.run(agent.process_meeting_notes(str(notes_path)))
+                    run_async(agent.process_meeting_notes(str(notes_path)))
                 except Exception:
                     pass
                 result = generate_with_validation(
@@ -3362,7 +4506,15 @@ def generate_single_artifact(artifact_type: str):
                     docs_dir = outputs_dir / "documentation"
                     docs_dir.mkdir(exist_ok=True)
                     (docs_dir / "jira_tasks.md").write_text(result, encoding='utf-8')
+                    
+                    # Update session state for outputs tab
+                    st.session_state.last_generation.append("jira")
+                    st.session_state.outputs_updated = True
+                    st.session_state.outputs_updated_time = datetime.now().isoformat()
+                    st.success("✅ JIRA Tasks generated!")
+                    
                 track_generation("jira")
+                st.rerun()
             elif artifact_type == "workflows":
                 result = generate_with_validation(
                     "workflows",
@@ -3375,14 +4527,121 @@ def generate_single_artifact(artifact_type: str):
                     wf_dir = outputs_dir / "workflows"
                     wf_dir.mkdir(exist_ok=True)
                     (wf_dir / "workflows.md").write_text(result, encoding='utf-8')
+                    
+                    # Update session state for outputs tab
+                    st.session_state.last_generation.append("workflows")
+                    st.session_state.outputs_updated = True
+                    st.session_state.outputs_updated_time = datetime.now().isoformat()
+                    st.success("✅ Workflows generated!")
+                    
                 track_generation("workflows")
-            elif artifact_type == "all_diagrams":
-                diagrams = asyncio.run(agent.generate_specific_diagrams())
-                if diagrams:
+                st.rerun()
+            elif artifact_type in ["system_overview", "data_flow", "user_flow", "components_diagram", "api_sequence"]:
+                # Generate individual diagram (BUG FIX #2: Only generate the requested diagram, not all)
+                diagram_map = {
+                    "system_overview": ("overview", "System Overview", agent.generate_system_overview_diagram),
+                    "data_flow": ("dataflow", "Data Flow", agent.generate_data_flow_diagram),
+                    "user_flow": ("userflow", "User Flow", agent.generate_user_flow_diagram),
+                    "components_diagram": ("components", "Component Diagram", agent.generate_components_diagram),
+                    "api_sequence": ("api", "API Sequence", agent.generate_api_sequence_diagram)
+                }
+                
+                diagram_key, diagram_name, diagram_method = diagram_map[artifact_type]
+                
+                def generate_single_diagram():
+                    # BUG FIX #2: Call individual method instead of generating all diagrams
+                    content = run_async(diagram_method())
+                    if not content:
+                        raise Exception(f"{diagram_name} not generated")
                     viz_dir = outputs_dir / "visualizations"
                     viz_dir.mkdir(exist_ok=True)
+                    
+                    # Validate diagram syntax
+                    is_valid, corrected_content, errors = validate_mermaid_syntax(content)
+                    if not is_valid and corrected_content:
+                        content = corrected_content
+                    
+                    mmd_file = viz_dir / f"{diagram_key}_diagram.mmd"
+                    mmd_file.write_text(content, encoding='utf-8')
+                    
+                    # Generate HTML visualization
+                    try:
+                        from components.mermaid_html_renderer import mermaid_html_renderer
+                        html_content = run_async(
+                            mermaid_html_renderer.generate_html_visualization_with_gemini(
+                                content, meeting_notes, diagram_key, agent.rag_context, agent=agent
+                            )
+                        )
+                        html_file = mmd_file.with_suffix('.html')
+                        html_file.write_text(html_content, encoding='utf-8')
+                    except Exception as e:
+                        st.warning(f"⚠️ {diagram_name} generated, but HTML creation failed: {str(e)}")
+                    
+                    return f"Generated {diagram_name}"
+                
+                result = generate_with_validation(
+                    artifact_type,
+                    generate_single_diagram,
+                    meeting_notes,
+                    outputs_dir
+                )
+                
+                if result:
+                    generated_result = result
+                    # Update session state for outputs tab
+                    st.session_state.last_generation.append(artifact_type)
+                    st.session_state.outputs_updated = True
+                    st.session_state.outputs_updated_time = datetime.now().isoformat()
+                    st.success(f"✅ {diagram_name} generated!")
+                    
+                track_generation(artifact_type)
+                st.rerun()
+            elif artifact_type == "all_diagrams":
+                # Wrap all diagrams generation in validation for unified quality control
+                def generate_all_diagrams():
+                    diagrams = run_async(agent.generate_specific_diagrams())
+                    if not diagrams:
+                        raise Exception("No diagrams generated")
+                    
+                    viz_dir = outputs_dir / "visualizations"
+                    viz_dir.mkdir(exist_ok=True)
+                    html_generated = 0
+                    
                     for name, content in diagrams.items():
-                        (viz_dir / f"{name}_diagram.mmd").write_text(content, encoding='utf-8')
+                        # Validate each diagram's Mermaid syntax
+                        is_valid, corrected_content, errors = validate_mermaid_syntax(content)
+                        if not is_valid and corrected_content:
+                            content = corrected_content
+                        
+                        mmd_file = viz_dir / f"{name}_diagram.mmd"
+                        mmd_file.write_text(content, encoding='utf-8')
+                        
+                        # Generate HTML visualization with RAG context
+                        try:
+                            from components.mermaid_html_renderer import mermaid_html_renderer
+                            html_content = run_async(
+                                mermaid_html_renderer.generate_html_visualization_with_gemini(
+                                    content, meeting_notes, name, agent.rag_context, agent=agent
+                                )
+                            )
+                            html_file = mmd_file.with_suffix('.html')
+                            html_file.write_text(html_content, encoding='utf-8')
+                            html_generated += 1
+                        except Exception as e:
+                            st.warning(f"⚠️ {name} diagram generated, but HTML creation failed: {str(e)}")
+                    
+                    return f"Generated {len(diagrams)} diagrams + {html_generated} HTML visualizations"
+                
+                # Use unified validation wrapper
+                result = generate_with_validation(
+                    "all_diagrams",
+                    generate_all_diagrams,
+                    meeting_notes,
+                    outputs_dir
+                )
+                
+                if result:
+                    generated_result = result
                 track_generation("diagrams")
             elif artifact_type == "code_prototype":
                 feature_name = "feature-from-notes"
@@ -3393,15 +4652,28 @@ def generate_single_artifact(artifact_type: str):
                 except Exception:
                     pass
                 if feature_name == "feature-from-notes":
-                    feature_name = extract_feature_name_from_notes(meeting_notes)
+                    feature_name = get_cached_feature_name(meeting_notes)
                 
                 st.info(f"🧩 Generating code prototype for: {feature_name}")
-                res = asyncio.run(agent.generate_prototype_code(feature_name))
-                out_base = AppConfig.OUTPUTS_DIR
-                project_root = Path(__file__).resolve().parents[2]
                 
-                # Generate best effort uses both LLM output and fallback scaffolds
-                saved = generate_best_effort(feature_name, project_root, out_base, res.get("code", "") if isinstance(res, dict) else "")
+                # Generate code with validation
+                def generate_code():
+                    res = run_async(agent.generate_prototype_code(feature_name))
+                    return res.get("code", "") if isinstance(res, dict) else str(res)
+                
+                result = generate_with_validation(
+                    "code_prototype",
+                    generate_code,
+                    meeting_notes,
+                    outputs_dir
+                )
+                
+                if result:
+                    out_base = AppConfig.OUTPUTS_DIR
+                    project_root = Path(__file__).resolve().parents[2]
+                    
+                    # Generate best effort uses both LLM output and fallback scaffolds
+                    saved = generate_best_effort(feature_name, project_root, out_base, result)
                 
                 if saved:
                     st.success(f"✅ Generated {len(saved)} code files:")
@@ -3434,25 +4706,40 @@ def generate_single_artifact(artifact_type: str):
                                 st.code(f"✓ {relative_path}", language="text")
                     
                     st.info(f"💾 All files saved to: `outputs/prototypes/`")
+                    
+                    # CRITICAL: Set generated_result to mark as successful
+                    generated_result = f"Generated {len(saved)} files:\n" + "\n".join(str(p.relative_to(out_base)) for p in saved)
+                    
+                    # Force UI refresh to show new outputs immediately
+                    st.session_state.last_generation.append(artifact_type)
+                    
+                    # Set flag to notify Outputs tab
+                    st.session_state.outputs_updated = True
+                    st.session_state.outputs_updated_time = datetime.now().isoformat()
+                    
+                    st.success("✅ Outputs generated! Switch to 'Outputs' tab to view them.")
+                    
+                    # Force immediate UI refresh to show new outputs
+                    st.rerun()
                 else:
                     st.warning("⚠️ No files generated")
                 
                 track_generation("code_prototype")
             elif artifact_type == "visual_prototype_dev":
-                # Use ENHANCED prototype generator (2-stage: requirements + focused generation)
+                # Use ENHANCED prototype generator with FULL VALIDATION
                 notes_path = AppConfig.INPUTS_DIR / AppConfig.MEETING_NOTES_FILE
                 notes = notes_path.read_text(encoding='utf-8') if notes_path.exists() else ""
-                feature_name = extract_feature_name_from_notes(notes)
+                feature_name = get_cached_feature_name(notes)
                 
-                st.info("🎨 Generating enhanced visual prototype...")
-                st.markdown("**Stage 1:** Extracting requirements... **Stage 2:** Generating HTML...")
+                # Retrieve RAG context for better prototype (synchronous call)
+                retrieve_rag_with_cache(agent, meeting_notes, force_refresh=force_refresh)
                 
-                try:
+                # Wrap in validation for quality scoring and auto-retry
+                def generate_visual():
                     from components.enhanced_prototype_generator import EnhancedPrototypeGenerator
                     
                     generator = EnhancedPrototypeGenerator(agent)
-                    html = asyncio.run(generator.generate_prototype(notes))
-                    generated_result = html
+                    html = run_async(generator.generate_prototype(notes))
                     
                     # Clean and sanitize
                     clean_html = strip_markdown_artifacts(html)
@@ -3460,29 +4747,33 @@ def generate_single_artifact(artifact_type: str):
                     
                     # Fallback ONLY if generation truly failed
                     if not clean_html or len(clean_html) < 100 or ('<html' not in clean_html.lower() and '<body' not in clean_html.lower()):
-                        st.warning("⚠️ Enhanced generation failed, using template fallback...")
                         template = pick_template_from_notes(notes)
                         clean_html = build_template_html(template, feature_name, notes)
-                        generated_result = clean_html
                     
-                    # Save
-                    proto_dir = AppConfig.OUTPUTS_DIR / "prototypes"
-                    proto_dir.mkdir(exist_ok=True)
-                    (proto_dir / "developer_visual_prototype.html").write_text(clean_html, encoding='utf-8')
-                    st.success(f"✅ Enhanced visual prototype generated!")
-                    track_generation("visual_prototype")
+                    return clean_html
                 
-                except Exception as e:
-                    st.error(f"❌ Enhanced generator error: {str(e)}")
-                    # Fallback
-                    template = pick_template_from_notes(notes)
-                    html = build_template_html(template, feature_name, notes)
-                    generated_result = html
+                # Use validation wrapper for quality & retry
+                result = generate_with_validation(
+                    "visual_prototype_dev",
+                    generate_visual,
+                    meeting_notes,
+                    outputs_dir
+                )
+                
+                if result:
+                    generated_result = result
                     proto_dir = AppConfig.OUTPUTS_DIR / "prototypes"
                     proto_dir.mkdir(exist_ok=True)
-                    (proto_dir / "developer_visual_prototype.html").write_text(html, encoding='utf-8')
-                    st.info(f"✅ Saved fallback visual prototype")
+                    (proto_dir / "developer_visual_prototype.html").write_text(result, encoding='utf-8')
+                    
+                    # Update session state for outputs tab
+                    st.session_state.last_generation.append("visual_prototype_dev")
+                    st.session_state.outputs_updated = True
+                    st.session_state.outputs_updated_time = datetime.now().isoformat()
+                    st.success("✅ Visual Prototype generated!")
+                    
                     track_generation("visual_prototype")
+                    st.rerun()
             
             # Log activity
             log_message = f"Generated {artifact_type}"
@@ -3500,7 +4791,7 @@ def generate_single_artifact(artifact_type: str):
                     from agents.specialized_agents import MultiAgentOrchestrator
                     
                     orchestrator = MultiAgentOrchestrator(agent)
-                    analysis = asyncio.run(orchestrator.analyze_with_agents(
+                    analysis = run_async(orchestrator.analyze_with_agents(
                         artifact_type,
                         generated_result[:3000] if len(generated_result) > 3000 else generated_result,
                         meeting_notes[:2000] if len(meeting_notes) > 2000 else meeting_notes
@@ -3582,15 +4873,104 @@ def generate_single_artifact(artifact_type: str):
                     st.warning(f"⚠️ Multi-agent analysis encountered an error: {str(e)}")
                     st.info("Generated artifact is still available in Outputs tab.")
             
-            st.success(f"✅ {artifact_type.title()} generated successfully!")
+            # Display final status based on whether generation succeeded
+            if generated_result:
+                st.success(f"✅ {artifact_type.title()} generated successfully!")
+            else:
+                st.error(f"❌ {artifact_type.title()} generation failed after all retry attempts.")
+                st.info("Please check the validation details above and try again with different meeting notes or settings.")
             if use_multi_agent:
                 st.success("🤖 Multi-agent analysis complete!")
             st.info("💡 Go to the 'Outputs' tab to view your generated content!")
             st.balloons()
             
+            # Quick Feedback Section
+            st.markdown("---")
+            st.markdown("### 💬 Was this output helpful?")
+            feedback_cols = st.columns([1, 1, 2])
+            with feedback_cols[0]:
+                if st.button("👍 Good", key=f"feedback_good_{artifact_type}", use_container_width=True):
+                    try:
+                        from components.finetuning_feedback import feedback_store, FeedbackEntry
+                        # Get the actual output that was generated
+                        generated_output = st.session_state.get(artifact_type, "")
+                        # Save positive feedback with the actual generated output
+                        entry = FeedbackEntry.create(
+                            artifact_type=artifact_type,
+                            issue="Positive feedback - output was correct and helpful",
+                            expected_style=str(generated_output)[:1000] if generated_output else "Continue generating similar quality output",
+                            reference_code="",
+                            meeting_context=st.session_state.get('meeting_notes', '')[:200],
+                        )
+                        feedback_store.add_feedback(entry)
+                        feedback_count = len(feedback_store.list_feedback())
+                        st.success(f"✅ Thanks! Positive feedback saved for training (Total: {feedback_count} entries).")
+                        print(f"[FEEDBACK] Saved positive feedback for {artifact_type} (Total: {feedback_count})")
+                    except Exception as e:
+                        st.error(f"❌ Failed to save feedback: {e}")
+                        import traceback
+                        st.code(traceback.format_exc())
+            with feedback_cols[1]:
+                if st.button("👎 Needs Improvement", key=f"feedback_bad_{artifact_type}", use_container_width=True):
+                    st.session_state['show_feedback_form'] = True
+                    st.session_state['feedback_artifact_type'] = artifact_type
+                    st.rerun()
+            with feedback_cols[2]:
+                st.caption("Help the AI learn by providing feedback on generated artifacts")
+            
+            # Show feedback form if user clicked "Needs Improvement"
+            if st.session_state.get('show_feedback_form') and st.session_state.get('feedback_artifact_type') == artifact_type:
+                with st.expander("📝 Provide Detailed Feedback", expanded=True):
+                    from components.finetuning_feedback import feedback_store, FeedbackEntry
+                    
+                    st.markdown("**Tell the AI what went wrong and how to fix it:**")
+                    fb_issue = st.text_area(
+                        "What was wrong with this output?",
+                        height=80,
+                        placeholder="E.g., 'Used wrong naming convention', 'Missing error handling', etc.",
+                        key=f"quick_fb_issue_{artifact_type}"
+                    )
+                    fb_expected = st.text_area(
+                        "What should it look like instead?",
+                        height=80,
+                        placeholder="Describe the correct approach or paste example code",
+                        key=f"quick_fb_expected_{artifact_type}"
+                    )
+                    
+                    fb_cols = st.columns(2)
+                    with fb_cols[0]:
+                        if st.button("💾 Save Feedback", key=f"save_quick_fb_{artifact_type}", type="primary"):
+                            if fb_issue.strip() and fb_expected.strip():
+                                entry = FeedbackEntry.create(
+                                    artifact_type=artifact_type,
+                                    issue=fb_issue,
+                                    expected_style=fb_expected,
+                                    reference_code="",
+                                    meeting_context=st.session_state.get('meeting_notes', '')[:200],
+                                )
+                                feedback_store.add_feedback(entry)
+                                st.success("✅ Feedback saved! It will be used in the next training.")
+                                st.session_state['show_feedback_form'] = False
+                                st.balloons()
+                            else:
+                                st.warning("Please fill in both fields")
+                    with fb_cols[1]:
+                        if st.button("Cancel", key=f"cancel_quick_fb_{artifact_type}"):
+                            st.session_state['show_feedback_form'] = False
+                            st.rerun()
+            
+            # RAG Context Viewer (for debugging/verification)
+            if st.session_state.get("last_rag_debug"):
+                st.markdown("---")
+                with st.expander("🐞 View RAG Context (Debug)", expanded=False):
+                    st.caption(f"Query: `{st.session_state.get('last_rag_query', 'N/A')}`")
+                    st.caption(f"Retrieved {len(st.session_state['last_rag_debug'])} chunks")
+                    
+                    for i, chunk in enumerate(st.session_state['last_rag_debug'][:10]):
+                        st.markdown(f"**{i+1}. {chunk['path']}** (Score: {chunk['score']})")
+                        st.code(chunk['content_preview'], language="text")
+            
             # Force refresh outputs
-            if 'last_generation' not in st.session_state:
-                st.session_state.last_generation = []
             st.session_state.last_generation.append(artifact_type)
     
     except Exception as e:
@@ -3608,19 +4988,12 @@ def run_complete_workflow():
                 st.error("❌ Please upload meeting notes first!")
                 return
             
-            provider = st.session_state.get('provider', 'Groq (FREE & FAST)')
-            api_key = st.session_state.get('api_key')
-            
-            if not api_key:
-                st.error("❌ Please configure API key in sidebar!")
+            agent, _ = get_current_agent()
+            if not agent:
                 return
             
-            provider_info = AppConfig.AI_PROVIDERS[provider]
-            config = {provider_info['config_key']: api_key}
-            
             # Run workflow with cached agent
-            agent = get_or_create_agent(config)
-            result = asyncio.run(agent.run_complete_workflow(".", str(notes_path)))
+            result = run_async(agent.run_complete_workflow(".", str(notes_path)))
             
             # Log activity
             st.session_state.rag_logs.append(f"[{datetime.now().strftime('%H:%M:%S')}] Complete workflow executed")
@@ -3660,16 +5033,13 @@ def generate_visual_prototype_with_multi_agent(
     from components.tech_stack_detector import get_tech_stack_from_context
     
     # Get agent
-    provider = st.session_state.get('provider', 'Groq (FREE & FAST)')
-    api_key = st.session_state.get('api_key')
-    provider_info = AppConfig.AI_PROVIDERS[provider]
-    config = {provider_info['config_key']: api_key}
-    
-    agent = get_or_create_agent(config)
+    agent, _ = get_current_agent()
+    if not agent:
+        return ""
     
     # Get RAG context
     ext_ctx = get_extended_project_context()
-    asyncio.run(agent.retrieve_rag_context(f"visual prototype {idea[:500]} {ext_ctx[:1000]}"))
+    run_async(agent.retrieve_rag_context(f"visual prototype {idea[:500]} {ext_ctx[:1000]}"))
     rag_context = agent.rag_context  # Access the attribute directly
     
     # Detect tech stack from context
@@ -3687,7 +5057,7 @@ def generate_visual_prototype_with_multi_agent(
     
     # Create orchestrator and run pipeline
     orchestrator = PrototypeOrchestrator(agent)
-    result = asyncio.run(orchestrator.generate_prototype(
+    result = run_async(orchestrator.generate_prototype(
         meeting_notes=idea,
         tech_stack=proto_tech_stack,
         rag_context=rag_context,
@@ -3746,17 +5116,14 @@ def generate_visual_prototype(idea: str, source: str = "manual"):
         with st.spinner("🎨 Creating enhanced visual prototype..."):
             st.markdown("**Stage 1:** Extracting requirements... **Stage 2:** Generating HTML...")
             
-            provider = st.session_state.get('provider', 'Groq (FREE & FAST)')
-            api_key = st.session_state.get('api_key')
-            provider_info = AppConfig.AI_PROVIDERS[provider]
-            config = {provider_info['config_key']: api_key}
-            
-            agent = get_or_create_agent(config)
+            agent, _ = get_current_agent()
+            if not agent:
+                return
             
             # Use enhanced generator
             from components.enhanced_prototype_generator import EnhancedPrototypeGenerator
             generator = EnhancedPrototypeGenerator(agent)
-            result = asyncio.run(generator.generate_prototype(idea))
+            result = run_async(generator.generate_prototype(idea))
             
             # Strip markdown artifacts and sanitize
             html = strip_markdown_artifacts(result or "")
@@ -3799,15 +5166,12 @@ def generate_pm_jira(idea: str, source: str = "manual"):
     """
     try:
         with st.spinner("📋 Generating JIRA tasks..."):
-            provider = st.session_state.get('provider', 'Groq (FREE & FAST)')
-            api_key = st.session_state.get('api_key')
-            provider_info = AppConfig.AI_PROVIDERS[provider]
-            config = {provider_info['config_key']: api_key}
-            
-            agent = get_or_create_agent(config)
+            agent, _ = get_current_agent()
+            if not agent:
+                return
             agent.meeting_notes = idea
             
-            result = asyncio.run(agent.generate_jira_only())
+            result = run_async(agent.generate_jira_only())
             
             # Strip markdown artifacts
             result = strip_markdown_artifacts(result or "")
@@ -3834,12 +5198,9 @@ def ask_ai(question: str, context: str = ""):
     """Ask AI a question with FULL RAG context from repository"""
     try:
         with st.spinner("🔍 Retrieving context from your repository..."):
-            provider = st.session_state.get('provider', 'Groq (FREE & FAST)')
-            api_key = st.session_state.get('api_key')
-            provider_info = AppConfig.AI_PROVIDERS[provider]
-            config = {provider_info['config_key']: api_key}
-            
-            agent = get_or_create_agent(config)
+            agent, _ = get_current_agent()
+            if not agent:
+                return
             
             # Use PM input based on their selection (meeting notes or manual input)
             pm_source = st.session_state.get('pm_source', 'meeting_notes')
@@ -3859,7 +5220,7 @@ def ask_ai(question: str, context: str = ""):
             st.info("🧠 AI is analyzing your entire codebase...")
             ext_ctx = get_extended_project_context()
             rag_query = f"{question} {context} {ext_ctx}"
-            asyncio.run(agent.retrieve_rag_context(rag_query))
+            run_async(agent.retrieve_rag_context(rag_query))
             
             # Log RAG activity
             st.session_state.rag_logs.append(f"[{datetime.now().strftime('%H:%M:%S')}] Retrieved RAG context for Ask AI")
@@ -3884,14 +5245,12 @@ IMPORTANT:
 Provide a helpful, actionable answer that's tailored to THIS specific project.
 """
             
-            response = asyncio.run(agent._call_ai(
+            response = run_async(agent._call_ai(
                 prompt,
                 "You are a helpful product and technical advisor with deep knowledge of this specific project. Be clear, concise, and actionable."
             ))
             
             # Store in conversation history
-            if 'ai_conversation' not in st.session_state:
-                st.session_state.ai_conversation = []
             st.session_state.ai_conversation.append((question, response))
             
             # Display response with context indicator
@@ -4238,8 +5597,23 @@ def main():
     # Initialize session state
     init_session_state()
     
+    # Initialize Artifact Router (for intelligent model routing)
+    if 'artifact_router' not in st.session_state:
+        from ai.artifact_router import ArtifactRouter
+        st.session_state.artifact_router = ArtifactRouter()
+        print("[INFO] Artifact Router initialized")
+    
+    # Initialize Output Validator (for quality assurance)
+    if 'output_validator' not in st.session_state:
+        from ai.output_validator import OutputValidator
+        st.session_state.output_validator = OutputValidator()
+        print("[INFO] Output Validator initialized")
+    
     # Initialize auto-ingestion system
-    init_auto_ingestion()
+    # Note: Auto-ingestion is controlled via rag/config.yaml
+    # Enable it there and use the sidebar controls to manage it
+    # Automatic startup initialization is disabled to prevent potential conflicts
+    # Users can manually start via sidebar "🔄 Auto-Ingestion Status" section
     
     # Render sidebar
     render_sidebar()
@@ -4269,6 +5643,49 @@ def main():
 # =============================================================================
 # FEATURE NAME EXTRACTION
 # =============================================================================
+
+def cache_feature_name(notes: str) -> str:
+    """Cache and return the extracted feature name for provided meeting notes."""
+    import hashlib
+
+    stripped = (notes or "").strip()
+    feature_name = extract_feature_name_from_notes(stripped)
+    cache_key = hashlib.sha256(stripped.encode('utf-8')).hexdigest() if stripped else ""
+
+    try:
+        st.session_state.feature_name_cache = {
+            'hash': cache_key,
+            'name': feature_name,
+            'updated_at': datetime.now().isoformat()
+        }
+    except Exception:
+        pass
+
+    return feature_name
+
+
+def get_cached_feature_name(notes: str) -> str:
+    """Retrieve feature name from cache, computing it if necessary."""
+    stripped = (notes or "").strip()
+    if not stripped:
+        return "feature"
+
+    import hashlib
+
+    cache_key = hashlib.sha256(stripped.encode('utf-8')).hexdigest()
+    cache = None
+    try:
+        cache = st.session_state.get('feature_name_cache')
+    except Exception:
+        cache = None
+
+    if cache and cache.get('hash') == cache_key:
+        cached_name = cache.get('name')
+        if cached_name:
+            return cached_name
+
+    return cache_feature_name(stripped)
+
 
 def extract_feature_name_from_notes(notes: str) -> str:
     """

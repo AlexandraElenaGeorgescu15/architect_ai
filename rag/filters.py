@@ -18,8 +18,14 @@ def allow_file(path: Path, cfg) -> bool:
     except Exception:
         return False
     if not any(str(path).endswith(ext) for ext in cfg["allow_extensions"]): return False
+    
+    # Check ignore patterns using pathlib's match() which handles ** globbing
+    path_str = str(path).replace('\\', '/')  # Normalize path separators
     for pat in cfg["ignore_globs"]:
-        if fnmatch.fnmatch(str(path), pat): return False
+        # Use Path.match() for proper ** glob support
+        if path.match(pat) or fnmatch.fnmatch(path_str, pat):
+            return False
+    
     return True
 
 def sanitize(text: str) -> str:

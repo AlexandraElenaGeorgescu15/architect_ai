@@ -516,7 +516,7 @@ class ArtifactValidator:
     # Helper Methods
     # =========================================================================
     
-    def should_retry(self, result: ValidationResult) -> bool:
+    def should_retry(self, result: Optional[ValidationResult]) -> bool:
         """
         Determine if generation should be retried based on validation result.
         
@@ -531,6 +531,9 @@ class ArtifactValidator:
         Returns:
             True if should retry, False otherwise
         """
+        if result is None:
+            return True
+        
         if not result.is_valid:
             return True
         
@@ -546,7 +549,7 @@ class ArtifactValidator:
         
         return has_critical
     
-    def get_retry_feedback(self, result: ValidationResult, artifact_type: str) -> str:
+    def get_retry_feedback(self, result: Optional[ValidationResult], artifact_type: str) -> str:
         """
         Generate feedback to send to AI for retry attempt.
         
@@ -559,6 +562,12 @@ class ArtifactValidator:
         Returns:
             Feedback string for AI
         """
+        if result is None:
+            return (
+                "The previous generation returned empty output. "
+                f"Please regenerate a complete {artifact_type} that follows the repository conventions and meeting notes."
+            )
+
         feedback_parts = [
             f"The generated {artifact_type} did not pass validation (score: {result.score:.1f}/100).",
             "",

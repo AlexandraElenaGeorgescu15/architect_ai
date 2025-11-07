@@ -32,6 +32,8 @@ class MermaidHTMLRenderer:
     def __init__(self):
         self.mermaid_js_url = "https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"
         self.comparison_history = []
+        # Latest pre-tokenization RAG debug entries (for transparency)
+        self.last_rag_debug: List[Dict[str, str]] = []
     
     def render_mermaid_as_html(self, mermaid_content: str, diagram_id: str = None) -> str:
         """Render Mermaid diagram as HTML with embedded Mermaid.js"""
@@ -196,23 +198,41 @@ class MermaidHTMLRenderer:
         if meeting_notes:
             agent.meeting_notes = meeting_notes
         
-        # If RAG context not provided, retrieve it
-        if not rag_context and meeting_notes:
+        context_text = ""
+
+        if rag_context:
             try:
-                # Retrieve RAG context for better HTML generation
+                from components.enhanced_rag import ContextAssembly  # type: ignore
+                if isinstance(rag_context, ContextAssembly):
+                    context_text = rag_context.context_text or ""
+                elif isinstance(rag_context, dict) and 'context_text' in rag_context:
+                    context_text = rag_context.get('context_text', '')
+                else:
+                    context_text = str(rag_context)
+            except Exception:
+                context_text = str(rag_context)
+
+        if not context_text:
+            enhanced = getattr(agent, 'enhanced_rag_context', None)
+            if enhanced is not None:
+                context_text = getattr(enhanced, 'context_text', '') or ""
+        if not context_text:
+            context_text = getattr(agent, 'rag_context', '') or ""
+
+        if not context_text and meeting_notes:
+            try:
                 from rag.retrieve import vector_search, bm25_search, merge_rerank
                 from rag.context_optimizer import optimize_context
                 
-                # Get relevant context from repository
                 if agent.collection:
                     vector_results = vector_search(meeting_notes, agent.collection, top_k=10)
                     bm25_results = bm25_search(meeting_notes, agent.cfg, top_k=10)
                     merged = merge_rerank(vector_results, bm25_results, top_k=10)
-                    rag_context = optimize_context(merged, max_tokens=2000)
-                    print(f"[OK] Retrieved RAG context for HTML generation ({len(merged)} chunks)")
+
+                    self.last_rag_debug = []
+                    context_text = optimize_context(merged, max_tokens=2000)
             except Exception as e:
-                print(f"[WARN] Could not retrieve RAG context for HTML: {e}")
-                rag_context = ""
+                print(f"[WARN] Could not retrieve supplemental RAG context for HTML: {e}")
         
         prompt = f"""
         Create a beautiful, interactive HTML visualization based on the following information.
@@ -235,7 +255,7 @@ class MermaidHTMLRenderer:
         {meeting_notes if meeting_notes else "No specific meeting notes - analyze the repository context"}
         
         ACTUAL REPOSITORY CODE & STRUCTURE (Use this as the SOURCE OF TRUTH):
-        {rag_context if rag_context else "No repository context available"}
+        {context_text if context_text else "No repository context available"}
         
         YOUR TASK:
         1. Analyze the repository context and meeting notes
@@ -547,7 +567,7 @@ def render_mermaid_html_comparison():
     )
     
     # Generate buttons
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     
     with col1:
         if st.button("🎨 Generate HTML with Gemini", type="primary"):
@@ -575,7 +595,7 @@ def render_mermaid_html_comparison():
                     st.error(f"❌ Error generating HTML: {str(e)}")
     
     with col2:
-        if st.button("🔄 Render Mermaid as HTML"):
+        if st.button("🔄 Render with Mermaid.js (no AI)"):
             if not mermaid_content.strip():
                 st.warning("Please enter a Mermaid diagram")
                 return
@@ -593,16 +613,17 @@ def render_mermaid_html_comparison():
                 
             except Exception as e:
                 st.error(f"❌ Error rendering Mermaid: {str(e)}")
-    
-    with col3:
-        if st.button("📊 Create Comparison"):
-            if not mermaid_content.strip():
-                st.warning("Please enter a Mermaid diagram")
-                return
-            
-            if 'comparison_result' not in st.session_state:
-                st.warning("Please generate HTML first")
-                return
+
+    # Optional RAG debug viewer
+    if 'rag_debug' in st.session_state:
+        with st.expander("🐞 View RAG Debug (pre-tokenization)", expanded=False):
+            entries = st.session_state.get('rag_debug') or []
+            if not entries:
+                st.caption("No RAG results captured for this request.")
+            else:
+                for i, entry in enumerate(entries, start=1):
+                    st.markdown(f"**{i}. {entry.get('path','')} (score {entry.get('score','')})**")
+                    st.code(entry.get('content_preview',''), language='text')
     
     # Display results
     if 'comparison_result' in st.session_state:

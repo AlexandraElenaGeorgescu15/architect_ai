@@ -39,11 +39,21 @@ def detect_stack(base: Path) -> Dict[str, bool]:
         for _ in base.glob("**/*.xaml"):
             has_wpf = True
             break
-    has_fastapi = any((p.exists() and 'fastapi' in p.read_text(encoding='utf-8')) for p in base.glob("**/*.py"))
-    has_flask = any((p.exists() and 'from flask' in p.read_text(encoding='utf-8')) for p in base.glob("**/*.py"))
-    has_django = (base / "manage.py").exists() or any('django' in p.read_text(encoding='utf-8') for p in base.glob("**/settings.py"))
-    has_express = (pkg.exists() and ('"express"' in pkg.read_text(encoding='utf-8'))) or any((p.exists() and 'express()' in p.read_text(encoding='utf-8')) for p in base.glob("**/*.js"))
-    has_spring = (base / "pom.xml").exists() or any((p.exists() and 'spring-boot-starter' in p.read_text(encoding='utf-8')) for p in base.glob("**/pom.xml"))
+    # Safe file reading helper
+    def safe_read(path):
+        try:
+            return path.read_text(encoding='utf-8')
+        except (UnicodeDecodeError, PermissionError, OSError):
+            try:
+                return path.read_text(encoding='latin-1')
+            except Exception:
+                return ""
+    
+    has_fastapi = any((p.exists() and 'fastapi' in safe_read(p)) for p in base.glob("**/*.py"))
+    has_flask = any((p.exists() and 'from flask' in safe_read(p)) for p in base.glob("**/*.py"))
+    has_django = (base / "manage.py").exists() or any('django' in safe_read(p) for p in base.glob("**/settings.py"))
+    has_express = (pkg.exists() and ('"express"' in safe_read(pkg))) or any((p.exists() and 'express()' in safe_read(p)) for p in base.glob("**/*.js"))
+    has_spring = (base / "pom.xml").exists() or any((p.exists() and 'spring-boot-starter' in safe_read(p)) for p in base.glob("**/pom.xml"))
     has_streamlit = (base / "architect_ai_cursor_poc" / "app").exists()
     return {
         "has_angular": has_angular,
@@ -94,33 +104,63 @@ def scaffold_angular(feature_name: str, out_root: Path) -> List[Path]:
     ang_root = out_root / "prototype" / "angular" / "src" / "app"
     pages = ang_root / "pages"
     pages.mkdir(parents=True, exist_ok=True)
-    comp_base = pages / f"{feat}.component"
+    comp_base = pages / f"{feat}"
     comp_ts = comp_base.with_suffix(".ts")
     comp_html = comp_base.with_suffix(".html")
     comp_scss = comp_base.with_suffix(".scss")
+    
+    # Generate PascalCase class name from feature name
+    class_name = ''.join(word.capitalize() for word in feat.replace('-', ' ').split())
+    
     comp_ts.write_text(f"""
 import {{ Component }} from '@angular/core';
 
 @Component({{
   selector: 'app-{feat}',
   standalone: true,
-  templateUrl: './{feat}.component.html',
-  styleUrls: ['./{feat}.component.scss']
+  templateUrl: './{feat}.html',
+  styleUrls: ['./{feat}.scss']
 }})
-export class {feat.capitalize()}Component {{
-  title = '{feat.capitalize()} Prototype';
+export class {class_name}Component {{
+  title = '{feature_name.replace('-', ' ').title()}';
+  
+  // TODO: Add your component logic here
+  
+  onSubmit() {{
+    console.log('Form submitted');
+    // TODO: Implement submission logic
+  }}
 }}
 """.strip(), encoding='utf-8')
     comp_html.write_text(f"""
 <div class="container">
   <h1>{{{{ title }}}}</h1>
-  <p>Generated prototype for {feat}.</p>
-  <button class="btn">Primary Action</button>
+  <p>Generated prototype for {feature_name.replace('-', ' ')}.</p>
+  
+  <!-- TODO: Add your form/UI elements here -->
+  <button class="btn" (click)="onSubmit()">Submit</button>
 </div>
 """.strip(), encoding='utf-8')
     comp_scss.write_text("""
-.container { padding: 1rem; }
-.btn { background: #667eea; color: #fff; border: 0; padding: .5rem 1rem; border-radius: .5rem; }
+.container { 
+  padding: 2rem; 
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.btn { 
+  background: #667eea; 
+  color: #fff; 
+  border: 0; 
+  padding: .75rem 1.5rem; 
+  border-radius: .5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  
+  &:hover {
+    background: #5568d3;
+  }
+}
 """.strip(), encoding='utf-8')
     saved += [comp_ts, comp_html, comp_scss]
     readme = out_root / "prototype" / "angular" / "README.md"
@@ -137,34 +177,69 @@ Standalone component for {feat}. Copy under your Angular app and add a lazy rout
 def scaffold_dotnet_api(feature_name: str, out_root: Path) -> List[Path]:
     saved: List[Path] = []
     feat = _sanitize(feature_name)
+    feat_pascal = "".join(w.capitalize() for w in feat.split("-"))
     api_root = out_root / "prototype" / "api"
-    ctrl = api_root / "Controllers" / f"{feat.capitalize()}Controller.cs"
-    dto = api_root / "Dtos" / f"{feat.capitalize()}Dto.cs"
+    ctrl = api_root / "Controllers" / f"{feat_pascal}Controller.cs"
+    dto = api_root / "Dtos" / f"{feat_pascal}Dto.cs"
     ctrl.parent.mkdir(parents=True, exist_ok=True)
     dto.parent.mkdir(parents=True, exist_ok=True)
     ctrl.write_text(f"""
 using Microsoft.AspNetCore.Mvc;
+using Prototype.Dtos;
 
 namespace Prototype.Controllers {{
     [ApiController]
     [Route("api/[controller]")]
-    public class {feat.capitalize()}Controller : ControllerBase {{
+    public class {feat_pascal}Controller : ControllerBase {{
+        // TODO: Inject your service/repository here
+        
         [HttpGet]
-        public IActionResult Get() => Ok(new [] {{ "ok" }});
+        public IActionResult GetAll() {{
+            // TODO: Implement GetAll logic
+            return Ok(new [] {{ new {feat_pascal}Dto {{ Id = 1, Name = "Sample" }} }});
+        }}
+        
+        [HttpGet("{{id}}")]
+        public IActionResult GetById(int id) {{
+            // TODO: Implement GetById logic
+            return Ok(new {feat_pascal}Dto {{ Id = id, Name = "Sample" }});
+        }}
+        
+        [HttpPost]
+        public IActionResult Create([FromBody] {feat_pascal}Dto dto) {{
+            // TODO: Implement Create logic
+            return CreatedAtAction(nameof(GetById), new {{ id = dto.Id }}, dto);
+        }}
     }}
 }}
 """.strip(), encoding='utf-8')
     dto.write_text(f"""
 namespace Prototype.Dtos {{
-    public class {feat.capitalize()}Dto {{
+    public class {feat_pascal}Dto {{
         public int Id {{ get; set; }}
         public string Name {{ get; set; }} = string.Empty;
+        // TODO: Add more properties based on your requirements
     }}
 }}
 """.strip(), encoding='utf-8')
     saved += [ctrl, dto]
     api_readme = api_root / "README.md"
-    api_readme.write_text("# API Prototype\nAdd to your .NET project and wire Program.cs.", encoding='utf-8')
+    api_readme.write_text(f"""# .NET API Prototype - {feat_pascal}
+
+## Files Generated
+- Controllers/{feat_pascal}Controller.cs - API controller with CRUD operations
+- Dtos/{feat_pascal}Dto.cs - Data transfer object
+
+## Integration
+1. Copy files to your ASP.NET Core project
+2. Update DTO properties to match your data model
+3. Inject your service/repository into the controller
+
+## Endpoints
+- GET /api/{feat_pascal} - Get all items
+- GET /api/{feat_pascal}/{{id}} - Get item by ID
+- POST /api/{feat_pascal} - Create new item
+""".strip(), encoding='utf-8')
     saved.append(api_readme)
     return saved
 

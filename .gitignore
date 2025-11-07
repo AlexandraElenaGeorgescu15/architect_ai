@@ -45,8 +45,21 @@ env/
 logs/
 *.log
 
-# Outputs (optional - uncomment if you don't want to commit outputs)
-# outputs/
+# Outputs
+outputs/
+
+# Model files (too large for Git)
+models/
+finetuned_models/
+finetune_datasets/
+training_jobs/
+
+# RAG indexes (too large for Git)
+rag/index/
+
+# Inputs and suggestions (generated content)
+inputs/
+suggestions/
 
 # Temporary files
 *.tmp

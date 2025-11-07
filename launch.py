@@ -14,6 +14,11 @@ import subprocess
 import platform
 from pathlib import Path
 
+# ===== DISABLE CHROMADB TELEMETRY GLOBALLY (BEFORE ANY IMPORTS) =====
+os.environ["ANONYMIZED_TELEMETRY"] = "False"
+os.environ["CHROMA_TELEMETRY"] = "False"
+os.environ["CHROMA_DISABLE_TELEMETRY"] = "True"
+
 
 def main():
     """Launch Architect.AI with proper environment setup"""
@@ -28,14 +33,18 @@ def main():
     # ASCII Art Banner (safe characters only)
     banner = """
     ============================================================
-       Architect.AI v2.1 - Production Dual-Mode System
+       Architect.AI v3.1 - Seamless Enterprise Edition
     ============================================================
     
     Starting the application with:
-      - Developer Mode (Technical diagrams, ERD, code)
-      - Product/PM Mode (Visual playground, Ask AI)
+      - Automatic Everything (No manual toggles)
+      - LLM-Generated HTML Diagrams (Pure HTML, no Mermaid.js)
+      - Intelligent RAG (Auto-adapts to model capabilities)
+      - Smart Parallel Processing (Auto-fallback for limited models)
+      - Local & Cloud AI Support (Ollama, Groq, Gemini, OpenAI)
+      - Fine-Tuning System (LoRA/QLoRA with checkpoint resume)
     
-    Version: 2.1.0
+    Version: 3.1.0 - Seamless Enterprise
     Contact: alestef81@gmail.com
     
     """

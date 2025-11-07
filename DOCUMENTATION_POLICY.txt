@@ -1,0 +1,87 @@
+================================================================================
+DOCUMENTATION POLICY - ARCHITECT.AI v2.5.6
+================================================================================
+
+KEEP (6 PERMANENT DOCS)
+================================================================================
+1. README.md
+   ├─ Overview, features, quick start
+   ├─ User-facing documentation
+   └─ VERSION NUMBER HERE ↑
+
+2. IMPLEMENTATION_COMPLETE.md
+   ├─ Current implementation status
+   ├─ What's working, what needs fixes
+   └─ Feature checklist
+
+3. TECHNICAL_DOCUMENTATION.md
+   ├─ Technical deep-dive
+   ├─ System architecture (text)
+   └─ Implementation details
+
+4. ARCHITECTURE_VISUAL.html
+   ├─ Visual system diagram
+   └─ Beautiful architecture rendering
+
+5. STATUS_DASHBOARD.html
+   ├─ Project status at a glance
+   └─ Feature completion dashboard
+
+6. TECHNICAL_WORKFLOW_DEMO.html
+   ├─ Step-by-step workflow
+   └─ Interactive demo
+
+AFTER EACH TODO COMPLETION
+================================================================================
+[ ] 1. UPDATE PERMANENT DOCS
+    - README.md: Add features, bump version
+    - IMPLEMENTATION_COMPLETE.md: Update status table
+    - TECHNICAL_DOCUMENTATION.md: Add technical details
+    - Other docs as needed
+
+[ ] 2. DELETE TEMPORARY DOCS
+    - Remove *_REALITY_CHECK.md
+    - Remove *_STATUS.md
+    - Remove *_SUMMARY.md
+    - Remove duplicate analysis docs
+
+[ ] 3. VERIFY LIMITS
+    - Exactly 6 permanent docs in root
+    - No orphaned documentation
+    - No duplicated information
+
+CURSOR RULE
+================================================================================
+See: .cursor/rules/documentation.mdc
+     (Contains full documentation management policy)
+
+VERSION BUMPING
+================================================================================
+- v2.5.6 → v2.5.7 (minor feature)
+- v2.5.7 → v2.6.0 (major phase)
+- v2.6.0 → v3.0.0 (breaking changes)
+
+Update in: README.md header + IMPLEMENTATION_COMPLETE.md footer
+
+DO NOT CREATE
+================================================================================
+❌ *_REALITY_CHECK.md (temporary analysis)
+❌ *_STATUS.md (temporary status)
+❌ *_SUMMARY.md (temporary summary)
+❌ FEATURE_*.md (goes in IMPLEMENTATION_COMPLETE.md)
+❌ PHASE_*.md (goes in README.md)
+❌ More than 6 docs in root
+
+DOCUMENTATION LOCATIONS
+================================================================================
+Implementation Status    → IMPLEMENTATION_COMPLETE.md
+Architecture            → ARCHITECTURE_VISUAL.html
+Technical Details       → TECHNICAL_DOCUMENTATION.md
+Quick Start             → README.md
+Visual Workflow         → TECHNICAL_WORKFLOW_DEMO.html
+Project Overview        → STATUS_DASHBOARD.html
+
+================================================================================
+Last Updated: November 20, 2025
+Status: Clean and Organized ✅
+================================================================================

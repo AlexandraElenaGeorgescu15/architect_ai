@@ -28,7 +28,34 @@ ignore_globs:
   - "coverage/**"
   - "**/*.min.js"
   - "**/*.min.css"
-  - "architect_ai_cursor_poc/**"  # Exclude the tool itself from indexing
+  - "**/*.md"  # Exclude all markdown files (documentation)
+  - "app/**"  # Exclude Architect AI app code
+  - "agents/**"  # Exclude Architect AI agents
+  - "ai/**"  # Exclude Architect AI models
+  - "components/**"  # Exclude Architect AI components
+  - "rag/**"  # Exclude RAG system code
+  - "utils/**"  # Exclude utility code
+  - "scripts/**"  # Exclude scripts
+  - "config/**"  # Exclude config
+  - "db/**"  # Exclude database models
+  - "services/**"  # Exclude services
+  - "workers/**"  # Exclude workers
+  - "monitoring/**"  # Exclude monitoring
+  - "logs/**"  # Exclude logs
+  - "outputs/**"  # Exclude outputs
+  - "finetuned_models/**"  # Exclude AI models
+  - "finetune_datasets/**"  # Exclude datasets
+  - "training_jobs/**"  # Exclude training data
+  - "analysis/**"  # Exclude analysis code
+  - "context/**"  # Exclude context
+  - "core/**"  # Exclude core
+  - "models/**"  # Exclude models
+  - "suggestions/**"  # Exclude suggestions
+  - "tenants/**"  # Exclude tenants
+  - "validation/**"  # Exclude validation
+  - "versioning/**"  # Exclude versioning
+  - "secrets/**"  # Exclude secrets
+  - "nginx/**"  # Exclude nginx
   - "**/rag/index/**"  # Exclude RAG index data
   - "**/bin/**"
   - "**/obj/**"
@@ -114,9 +141,10 @@ api:
   cors_origins: ["*"]
 
 # Auto-ingestion settings
+# NOTE: Place your project code in the 'inputs/' directory for analysis
 auto_ingestion:
   enabled: true
-  watch_directories: ["."]  # Can specify multiple
+  watch_directories: ["inputs"]  # Only watch user project code, not the tool itself
   debounce_seconds: 5
   batch_size: 10
   max_file_size_mb: 1.5
@@ -127,6 +155,13 @@ auto_ingestion:
     - "**/build/**"
     - "**/coverage/**"
     - "**/rag/index/**"  # Exclude RAG index data
+    - "app/**"  # Exclude Architect AI app
+    - "agents/**"
+    - "ai/**"
+    - "components/**"
+    - "rag/**"
+    - "utils/**"
+    - "scripts/**"
 
 # Background worker settings
 background_worker:

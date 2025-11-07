@@ -1,8 +1,0 @@
-graph TD
-PhonePanelPage --> PhoneFilters
-PhonePanelPage --> PhoneList
-PhonePanelPage --> AddPhoneDialog
-PhonePanelPage --> PhoneService
-PhoneList --> PhoneCard
-AddPhoneDialog --> API
-API --> Database

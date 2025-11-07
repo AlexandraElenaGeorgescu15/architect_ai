@@ -10,10 +10,15 @@ import time
 import logging
 import threading
 from pathlib import Path
-from typing import Dict, List, Optional, Callable, Set
+from typing import Dict, List, Optional, Callable, Set, TYPE_CHECKING
 from dataclasses import dataclass
 from datetime import datetime
 import hashlib
+
+if TYPE_CHECKING:
+    from watchdog.observers import Observer as ObserverType
+else:
+    ObserverType = object
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileModifiedEvent, FileCreatedEvent, FileDeletedEvent, FileMovedEvent
@@ -220,7 +225,7 @@ class RAGFileWatcher:
     def __init__(self, cfg: Optional[Dict] = None):
         self.cfg = cfg or load_cfg()
         self.logger = logging.getLogger(__name__)
-        self.observer: Optional[Observer] = None
+        self.observer = None  # type: ignore[var-annotated]
         self.is_running = False
         self.event_handler: Optional[RAGFileEventHandler] = None
         

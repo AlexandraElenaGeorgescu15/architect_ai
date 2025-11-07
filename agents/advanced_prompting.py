@@ -345,14 +345,19 @@ Provide your answer:"""
         
         # Count occurrences
         counter = Counter(normalized)
+        
+        # Guard against empty responses
+        if not counter:
+            return responses[0] if responses else "", 0.0
+        
         most_common = counter.most_common(1)[0]
         
         # Find original response
         consensus_normalized = most_common[0]
-        consensus = next(r for r in responses if r.lower().strip() == consensus_normalized)
+        consensus = next((r for r in responses if r.lower().strip() == consensus_normalized), "")
         
         # Calculate confidence
-        confidence = most_common[1] / len(responses)
+        confidence = most_common[1] / len(responses) if responses else 0.0
         
         return consensus, confidence
 

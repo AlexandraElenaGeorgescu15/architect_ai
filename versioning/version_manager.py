@@ -440,8 +440,8 @@ class VersionManager:
             return {
                 'total_versions': len(versions),
                 'total_size': sum(v.file_size for v in versions),
-                'avg_validation_score': sum(v.validation_score for v in versions) / len(versions),
-                'avg_attempt_count': sum(v.attempt_count for v in versions) / len(versions),
+                'avg_validation_score': sum(v.validation_score for v in versions) / len(versions) if versions else 0.0,
+                'avg_attempt_count': sum(v.attempt_count for v in versions) / len(versions) if versions else 0.0,
                 'latest_version': versions[0].version_id,
                 'oldest_version': versions[-1].version_id,
                 'tags': list(set(tag for v in versions for tag in v.tags))

@@ -3,1201 +3,697 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Architect.AI - Complete Technical Walkthrough</title>
+    <title>Architect.AI – End-to-End Walkthrough (Phone Swap Feature)</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --bg-gradient: linear-gradient(140deg, rgba(79,123,255,0.16) 0%, rgba(122,63,211,0.18) 100%);
+            --card-bg: rgba(255,255,255,0.93);
+            --blue-900: #1f2547;
+            --blue-700: #3046d6;
+            --blue-500: #5476ff;
+            --blue-100: #eef2ff;
+            --purple-500: #8345dd;
+            --green-500: #1ba784;
+            --gray-900: #111827;
+            --gray-700: #374151;
+            --gray-500: #6b7280;
+            --gray-200: #e5e7eb;
+            --gray-50:  #f9fafb;
         }
+
+        * { box-sizing: border-box; }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            margin: 0;
+            font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--gray-900);
+            line-height: 1.6;
         }
 
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px;
+        header {
             text-align: center;
+            padding: 4rem 1.5rem 2.5rem;
         }
 
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            font-weight: 300;
+        header h1 {
+            margin: 0;
+            font-size: clamp(2.4rem, 4vw, 3.2rem);
+            color: var(--blue-900);
         }
 
-        .header p {
-            font-size: 1.2em;
-            opacity: 0.9;
+        header p.lead {
+            margin-top: 1rem;
+            font-size: clamp(1.1rem, 2.4vw, 1.35rem);
+            color: var(--gray-700);
+            max-width: 720px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
-        .demo-controls {
-            position: fixed;
+        .outer {
+            max-width: 1180px;
+            margin: 0 auto 4rem;
+            padding: 0 1.4rem 5rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(14px);
+            border-radius: 26px;
+            box-shadow: 0 25px 55px rgba(30,42,85,0.16);
+        }
+
+        nav.demo-controls {
+            position: sticky;
             top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            padding: 15px 20px;
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(10px);
-            border-bottom: 2px solid #667eea;
-            text-align: center;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+            z-index: 10;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            justify-content: center;
+            align-items: center;
+            padding: 1.1rem 1.5rem;
+            margin-bottom: 2rem;
+            background: rgba(255,255,255,0.97);
+            border-bottom: 1px solid var(--gray-200);
         }
 
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            margin: 0 5px;
-            transition: transform 0.2s, box-shadow 0.2s;
+        nav.demo-controls button {
+            background: linear-gradient(135deg, var(--blue-700), var(--purple-500));
+            color: #fff;
+            border: 0;
+            border-radius: 999px;
+            padding: 0.65rem 1.25rem;
+            font-size: 0.95rem;
             font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 10px 24px rgba(79,123,255,0.28);
+            transition: transform 0.2s, box-shadow 0.2s;
         }
 
-        .btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
+        nav.demo-controls button:disabled {
+            opacity: 0.4;
             cursor: not-allowed;
-            transform: none;
+            box-shadow: none;
         }
 
-        .step-counter {
-            display: inline-block;
-            margin-left: 20px;
-            font-weight: bold;
-            color: #667eea;
-            font-size: 18px;
-            padding: 8px 16px;
-            background: #f0f4ff;
-            border-radius: 20px;
+        nav.demo-controls button:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 28px rgba(79,123,255,0.36);
         }
 
-        .step-container {
-            padding: 40px;
-            margin-top: 100px;
+        nav.demo-controls span.counter {
+            font-weight: 600;
+            color: var(--blue-700);
+            background: var(--blue-100);
+            padding: 0.4rem 1.1rem;
+            border-radius: 999px;
         }
 
-        .step {
-            margin-bottom: 60px;
-            opacity: 0.3;
-            transition: opacity 0.5s ease;
+        section.step {
             display: none;
+            padding: 2.75rem clamp(1.5rem, 4vw, 3rem);
+            border-bottom: 1px solid rgba(55,65,81,0.08);
         }
 
-        .step.active {
-            opacity: 1;
+        section.step.active {
             display: block;
+            animation: fadeIn 0.45s ease;
+        }
+
+        @keyframes fadeIn {
+            from {opacity: 0; transform: translateY(6px);} to {opacity: 1; transform: translateY(0);}
         }
 
         .step-header {
-            display: flex;
+            display: grid;
+            grid-template-columns: minmax(56px, 72px) 1fr;
+            gap: 1.1rem;
             align-items: center;
-            margin-bottom: 30px;
-            padding: 25px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border-radius: 12px;
-            border-left: 6px solid #667eea;
+            background: linear-gradient(135deg, rgba(79,123,255,0.08), rgba(122,63,211,0.08));
+            padding: 1.7rem;
+            border-radius: 20px;
+            margin-bottom: 2.2rem;
         }
 
         .step-number {
-            background: #667eea;
-            color: white;
-            width: 50px;
-            height: 50px;
+            width: 64px;
+            height: 64px;
+            display: grid;
+            place-content: center;
+            font-size: 1.55rem;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, var(--blue-700), var(--purple-500));
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 1.3em;
-            margin-right: 20px;
-            flex-shrink: 0;
         }
 
         .step-title {
-            font-size: 1.8em;
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 5px;
+            font-size: clamp(1.35rem, 2.6vw, 1.7rem);
+            font-weight: 700;
+            color: var(--blue-900);
+            margin-bottom: 0.3rem;
         }
 
-        .step-description {
-            color: #666;
-            font-size: 1.1em;
+        .step-subtitle {
+            font-size: 1rem;
+            color: var(--gray-500);
         }
 
-        .demo-section {
-            background: #f8f9fa;
-            border-radius: 12px;
-            padding: 30px;
-            margin: 20px 0;
+        .callout {
+            background: rgba(79,123,255,0.10);
+            border: 1px solid rgba(79,123,255,0.18);
+            border-radius: 16px;
+            padding: 1.55rem;
+            margin: 1.6rem 0;
         }
 
-        .demo-section h3 {
-            color: #667eea;
-            margin-bottom: 20px;
-            font-size: 1.5em;
+        .callout h4 {
+            margin: 0 0 0.7rem;
+            font-size: 1.05rem;
+            color: var(--blue-700);
         }
 
-        .demo-section h4 {
-            color: #764ba2;
-            margin: 25px 0 15px 0;
-            font-size: 1.2em;
-        }
-
-        .code-block {
-            background: #1a202c;
-            color: #e2e8f0;
-            padding: 20px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            margin: 20px 0;
-            overflow-x: auto;
-            line-height: 1.6;
-        }
-
-        .code-block .comment {
-            color: #a0aec0;
-        }
-
-        .code-block .keyword {
-            color: #f687b3;
-        }
-
-        .code-block .string {
-            color: #68d391;
-        }
-
-        .code-block .number {
-            color: #fbd38d;
-        }
-
-        .file-tree {
-            background: #2d3748;
-            color: #e2e8f0;
-            padding: 20px;
-            border-radius: 8px;
-            font-family: 'Courier New', monospace;
-            margin: 20px 0;
-            line-height: 1.8;
-        }
-
-        .file-tree .file {
-            color: #68d391;
-        }
-
-        .file-tree .directory {
-            color: #63b3ed;
-            font-weight: bold;
-        }
-
-        .visual-box {
-            border: 3px solid #667eea;
-            border-radius: 12px;
-            padding: 25px;
-            margin: 20px 0;
-            background: white;
-        }
-
-        .visual-box h4 {
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 1.3em;
-        }
-
-        .flow-diagram {
-            display: flex;
-            align-items: center;
-            justify-content: space-around;
-            margin: 30px 0;
-            flex-wrap: wrap;
-        }
-
-        .flow-box {
-            background: white;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            min-width: 150px;
-            margin: 10px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        .flow-box.highlight {
-            border-color: #667eea;
-            background: #f0f4ff;
-        }
-
-        .flow-arrow {
-            font-size: 2em;
-            color: #667eea;
-            margin: 0 10px;
-        }
-
-        .stats-grid {
+        .grid-two {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin: 20px 0;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 880px) {
+            .grid-two {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        }
+
+        pre.code {
+            margin: 0;
+            background: #0f172a;
+            color: #e2e8f0;
+            padding: 1.1rem 1.25rem;
+            border-radius: 12px;
+            overflow-x: auto;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        pre.code span.comment { color: #94a3b8; }
+        pre.code span.highlight { color: #60a5fa; }
+
+        .timeline {
+            display: grid;
+            gap: 1.35rem;
+            border-left: 3px solid rgba(79,123,255,0.18);
+            padding-left: 1.5rem;
+            margin-top: 1.75rem;
+        }
+
+        .timeline-item { position: relative; }
+
+        .timeline-item::before {
+            content: "";
+            position: absolute;
+            left: -1.8rem;
+            top: 0.3rem;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--blue-500);
+            box-shadow: 0 0 0 5px rgba(79,123,255,0.14);
+        }
+
+        .stat-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin: 1.75rem 0;
         }
 
         .stat-card {
-            background: white;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 20px;
+            background: #fff;
+            border-radius: 14px;
+            padding: 1.25rem;
+            box-shadow: 0 10px 24px rgba(17,24,39,0.08);
+            border: 1px solid rgba(148,163,184,0.28);
+        }
+
+        .stat-card strong {
+            display: block;
+            font-size: 1.8rem;
+            color: var(--blue-700);
+            margin-bottom: 0.4rem;
+        }
+
+        .stat-card span {
+            color: var(--gray-500);
+            font-size: 0.95rem;
+        }
+
+        ul.checklist {
+            list-style: none;
+            padding: 0;
+            margin: 0.85rem 0 0;
+        }
+
+        ul.checklist li {
+            margin-bottom: 0.45rem;
+        }
+
+        ul.checklist li::before {
+            content: "✔";
+            color: var(--green-500);
+            font-weight: 700;
+            margin-right: 0.5rem;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            background: rgba(27,167,132,0.12);
+            color: var(--green-500);
+            padding: 0.4rem 0.9rem;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        footer {
             text-align: center;
-            transition: transform 0.2s;
+            padding: 3rem 0 4rem;
+            color: var(--gray-500);
+            font-size: 0.95rem;
         }
 
-        .stat-card:hover {
-            transform: translateY(-5px);
-            border-color: #667eea;
+        details summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--blue-700);
+            margin-bottom: 0.6rem;
         }
 
-        .stat-number {
-            font-size: 2.5em;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 10px;
-        }
-
-        .stat-label {
-            color: #666;
-            font-size: 1em;
-        }
-
-        .highlight {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 4px;
-            padding: 3px 8px;
-            font-weight: bold;
-            color: #856404;
-        }
-
-        .result-box {
-            background: #d4edda;
-            border: 2px solid #c3e6cb;
-            border-radius: 12px;
-            padding: 25px;
-            margin: 20px 0;
-        }
-
-        .result-box h4 {
-            color: #155724;
-            margin-bottom: 15px;
-            font-size: 1.4em;
-        }
-
-        .result-box pre {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            overflow-x: auto;
-            font-family: 'Courier New', monospace;
-        }
-
-        .info-box {
-            background: #d1ecf1;
-            border: 2px solid #bee5eb;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-
-        .info-box h4 {
-            color: #0c5460;
-            margin-bottom: 10px;
-        }
-
-        .info-box p {
-            color: #0c5460;
-            line-height: 1.6;
-        }
-
-        ul {
-            margin: 15px 0;
-            padding-left: 30px;
-        }
-
-        li {
-            margin: 10px 0;
-            line-height: 1.6;
-        }
-
-        @media (max-width: 768px) {
-            .flow-diagram {
-                flex-direction: column;
-            }
-            
-            .flow-arrow {
-                transform: rotate(90deg);
-            }
-
-            .step-title {
-                font-size: 1.3em;
-            }
-
-            .demo-controls {
-                padding: 10px;
-            }
-
-            .btn {
-                padding: 10px 15px;
-                font-size: 14px;
-                margin: 5px 2px;
-            }
-
-            .step-counter {
-                display: block;
-                margin: 10px 0 0 0;
-            }
-        }
+        details summary::-webkit-details-marker { display: none; }
+        details summary::before { content: "▸"; margin-right: 0.6rem; color: var(--purple-500); }
+        details[open] summary::before { content: "▾"; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🧠 Architect.AI - Complete Technical Walkthrough</h1>
-            <p>From "Make Hello World Blue" to Production-Ready Code</p>
-        </div>
+    <header>
+        <h1>Architect.AI – One Feature, Full Pipeline</h1>
+        <p class="lead">Follow a single real example—the “Phone Swap Request” feature—through indexing, Knowledge Graph, Pattern Mining, local Codellama training, token streaming, and validated outputs.</p>
+    </header>
 
-        <div class="demo-controls">
-            <button class="btn" onclick="startDemo()">🚀 Start Demo</button>
-            <button class="btn" onclick="previousStep()" id="prevBtn" disabled>⬅️ Previous</button>
-            <button class="btn" onclick="nextStep()" id="nextBtn" disabled>Next ➡️</button>
-            <button class="btn" onclick="resetDemo()">🔄 Reset</button>
-            <span class="step-counter" id="stepCounter">Step 0 of 12</span>
-        </div>
+    <div class="outer">
+        <nav class="demo-controls">
+            <button type="button" onclick="startDemo()">🎬 Start Story</button>
+            <button type="button" id="prevBtn" onclick="previousStep()" disabled>⬅ Back</button>
+            <button type="button" id="nextBtn" onclick="nextStep()" disabled>Forward ➡</button>
+            <button type="button" onclick="resetDemo()">🔁 Reset</button>
+            <span class="counter" id="stepCounter">Step 0 of 13</span>
+        </nav>
 
-        <div class="step-container">
-            <!-- Step 1: The Simple Project -->
-            <div class="step" id="step1">
+        <!-- Step 1 -->
+        <section class="step" id="step1">
                 <div class="step-header">
                     <div class="step-number">1</div>
                     <div>
-                        <div class="step-title">📁 Our Simple Project</div>
-                        <div class="step-description">A basic "Hello World" web application</div>
+                    <div class="step-title">The Repo We’re Augmenting</div>
+                    <div class="step-subtitle">Angular front-end + .NET API for handling phone swaps.</div>
                     </div>
                 </div>
 
-                <div class="demo-section">
-                    <h3>The Starting Point</h3>
-                    <p>We have a simple web project with just 3 files:</p>
-                    
-                    <div class="file-tree">
-<span class="directory">📁 hello-world-project/</span>
-  <span class="file">📄 index.html</span>
-  <span class="file">📄 style.css</span>
-  <span class="file">📄 app.js</span>
-                    </div>
+            <p>Everything in this walkthrough revolves around one feature request: <strong>“Let users request a phone swap and track those swaps.”</strong> Our codebase looks like this:</p>
+            <pre class="code">📁 final_project/              <span class="comment">// Angular</span>
+├─ src/models/phone.ts         <span class="comment">// Phone entity</span>
+├─ src/app/services/phone.service.ts
+└─ ...
 
-                    <h4>index.html - The Main Page</h4>
-                    <div class="code-block">
-<span class="keyword">&lt;!DOCTYPE</span> <span class="string">html</span><span class="keyword">&gt;</span>
-<span class="keyword">&lt;html&gt;</span>
-<span class="keyword">&lt;head&gt;</span>
-    <span class="keyword">&lt;title&gt;</span>Hello World<span class="keyword">&lt;/title&gt;</span>
-    <span class="keyword">&lt;link</span> <span class="string">rel=</span><span class="string">"stylesheet"</span> <span class="string">href=</span><span class="string">"style.css"</span><span class="keyword">&gt;</span>
-<span class="keyword">&lt;/head&gt;</span>
-<span class="keyword">&lt;body&gt;</span>
-    <span class="keyword">&lt;div</span> <span class="string">id=</span><span class="string">"message"</span><span class="keyword">&gt;</span>Hello World!<span class="keyword">&lt;/div&gt;</span>
-    <span class="keyword">&lt;script</span> <span class="string">src=</span><span class="string">"app.js"</span><span class="keyword">&gt;&lt;/script&gt;</span>
-<span class="keyword">&lt;/body&gt;</span>
-<span class="keyword">&lt;/html&gt;</span>
-                    </div>
+📁 final-proj-sln/             <span class="comment">// .NET API</span>
+├─ registration-api/Services/UserService.cs
+├─ registration-api/Settings/MongoDBSettings.cs
+└─ ...
 
-                    <h4>style.css - The Styling</h4>
-                    <div class="code-block">
-<span class="keyword">#message</span> {
-    <span class="string">font-size</span>: <span class="number">24px</span>;
-    <span class="string">text-align</span>: <span class="string">center</span>;
-    <span class="string">margin-top</span>: <span class="number">50px</span>;
-    <span class="string">color</span>: <span class="string">black</span>;  <span class="comment">/* Currently black */</span>
-}
-                    </div>
+📁 architect_ai_cursor_poc/    <span class="comment">// Architect.AI – lives beside the repo</span></pre>
+            <p>Because our tool sits <em>next to</em> these folders—not inside them—it can index the projects without polluting or being indexed itself.</p>
+        </section>
 
-                    <h4>app.js - The JavaScript</h4>
-                    <div class="code-block">
-<span class="keyword">function</span> <span class="string">displayMessage</span>() {
-    <span class="keyword">const</span> element = document.getElementById(<span class="string">'message'</span>);
-    element.textContent = <span class="string">'Hello World!'</span>;
-}
-
-<span class="comment">// Run when page loads</span>
-window.onload = displayMessage;
-                    </div>
-
-                    <div class="info-box">
-                        <h4>📝 Current State</h4>
-                        <p>Right now, the text "Hello World!" is displayed in <strong>black</strong>. We want to change it to <strong>blue</strong>.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 2: Meeting Notes -->
-            <div class="step" id="step2">
+        <!-- Step 2 -->
+        <section class="step" id="step2">
                 <div class="step-header">
                     <div class="step-number">2</div>
                     <div>
-                        <div class="step-title">📝 User Input: Meeting Notes</div>
-                        <div class="step-description">The user describes what they want</div>
+                    <div class="step-title">Meeting Notes Drive the Objective</div>
+                    <div class="step-subtitle">We stick to one set of requirements throughout.</div>
                     </div>
                 </div>
 
-                <div class="demo-section">
-                    <h3>The Request</h3>
-                    <div class="visual-box">
-                        <h4>Meeting Notes from Product Manager:</h4>
-                        <div class="code-block">
-<span class="string">"We need to make the Hello World text blue instead of black.
-The user feedback says the black text is too harsh.
-Please update the styling to use a nice blue color."</span>
+            <div class="callout">
+                <h4>Product brief (same notes used everywhere)</h4>
+                <pre class="code"># Phone Swap Request Feature (Oct 14, 2025)
+- Build a UI flow so a user selects an available phone and offers one they own.
+- Create API endpoint POST /api/phone-swaps.
+- Persist swaps with status Pending.
+- Confirm the requester actually owns the offered phone.</pre>
+                <p>This single document seeds the entire workflow: RAG queries, Knowledge Graph intent, Pattern Mining expectations, and fine-tuning examples.</p>
                         </div>
-                    </div>
+        </section>
 
-                    <h4>What Architect.AI Understands:</h4>
-                    <div class="flow-diagram">
-                        <div class="flow-box highlight">
-                            <strong>Target</strong><br/>
-                            "Hello World" text
-                        </div>
-                        <div class="flow-arrow">→</div>
-                        <div class="flow-box highlight">
-                            <strong>Action</strong><br/>
-                            Change color
-                        </div>
-                        <div class="flow-arrow">→</div>
-                        <div class="flow-box highlight">
-                            <strong>New Value</strong><br/>
-                            Blue
-                        </div>
-                    </div>
-
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-number">1</div>
-                            <div class="stat-label">File to Modify</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">CSS</div>
-                            <div class="stat-label">File Type</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">Simple</div>
-                            <div class="stat-label">Complexity</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 3: RAG Indexing Starts -->
-            <div class="step" id="step3">
+        <!-- Step 3 -->
+        <section class="step" id="step3">
                 <div class="step-header">
                     <div class="step-number">3</div>
                     <div>
-                        <div class="step-title">🔍 Step 1: File Discovery & Filtering</div>
-                        <div class="step-description">RAG system scans the project files</div>
+                    <div class="step-title">Run Ingestion Once</div>
+                    <div class="step-subtitle">Only user projects are indexed; lockfiles and binaries are skipped.</div>
                     </div>
                 </div>
 
-                <div class="demo-section">
-                    <h3>Scanning the Project</h3>
-                    <p>The RAG system looks at all files in the project and decides which ones to index:</p>
-
-                    <div class="file-tree">
-<span class="directory">📁 hello-world-project/</span>
-  <span class="file">📄 index.html</span>          ✅ <span class="string">Allowed (.html)</span>
-  <span class="file">📄 style.css</span>           ✅ <span class="string">Allowed (.css)</span>
-  <span class="file">📄 app.js</span>              ✅ <span class="string">Allowed (.js)</span>
-  <span class="directory">📁 node_modules/</span>       ❌ <span class="comment">Ignored (in config)</span>
-  <span class="file">📄 .git/</span>               ❌ <span class="comment">Ignored (in config)</span>
+            <div class="grid-two">
+                <div>
+                    <p>Execute <code>python rag/ingest.py</code> inside <code>architect_ai_cursor_poc/</code>. The script:</p>
+                    <ul class="checklist">
+                        <li>Detects all sibling project directories.</li>
+                        <li>Includes only whitelisted extensions (ts, cs, html, md, sql…).</li>
+                        <li>Skips <code>node_modules</code>, <code>bin/</code>, <code>obj/</code>, <code>*.lock</code>, <code>__pycache__</code>, binaries, and the tool itself.</li>
+                    </ul>
                     </div>
-
-                    <h4>Filtering Rules (from rag/config.yaml):</h4>
-                    <div class="code-block">
-<span class="comment"># Files we want to index:</span>
-<span class="keyword">allow_extensions</span>: [<span class="string">".html"</span>, <span class="string">".css"</span>, <span class="string">".js"</span>, <span class="string">".md"</span>]
-
-<span class="comment"># Folders we ignore:</span>
-<span class="keyword">ignore_globs</span>: [<span class="string">"node_modules/**"</span>, <span class="string">".git/**"</span>, <span class="string">"dist/**"</span>]
-
-<span class="comment"># File size limit:</span>
-<span class="keyword">max_file_mb</span>: <span class="number">1.5</span>
+                <div>
+                    <pre class="code"><span class="comment">// Actual output</span>
+Detected 3 user project director(ies) to index:
+  - final_project
+  - final-proj-sln
+  - agents
+Ingesting 61 files (tool automatically excluded)...
+Done. Indexed 77 chunks with enhanced metadata.</pre>
+                    <p style="margin:0.8rem 0 0">Because we filtered aggressively, later steps never see noise like <code>.pyc</code> files.</p>
                     </div>
-
-                    <div class="result-box">
-                        <h4>✅ Result:</h4>
-                        <p><strong>3 files</strong> will be indexed: index.html, style.css, app.js</p>
                     </div>
-                </div>
-            </div>
+        </section>
 
-            <!-- Step 4: Chunking -->
-            <div class="step" id="step4">
+        <!-- Step 4 -->
+        <section class="step" id="step4">
                 <div class="step-header">
                     <div class="step-number">4</div>
                     <div>
-                        <div class="step-title">✂️ Step 2: Breaking Files into Chunks</div>
-                        <div class="step-description">Files are split into smaller pieces for better processing</div>
+                    <div class="step-title">Metadata with Entity Extraction</div>
+                    <div class="step-subtitle">We capture real models (Phone, User, PhoneSwapRequest).</div>
                     </div>
                 </div>
 
-                <div class="demo-section">
-                    <h3>Why Chunking?</h3>
-                    <p>Large files are split into smaller "chunks" so the AI can process them more efficiently. Each chunk contains a meaningful piece of code.</p>
+            <p>While building the vector store, we parse TypeScript interfaces and C# classes into structured metadata:</p>
+            <pre class="code">{
+  "file_path": "final_project/src/models/phone.ts",
+  "entities": [
+    {
+      "name": "Phone",
+      "kind": "interface",
+      "fields": [
+        {"name": "id", "type": "number"},
+        {"name": "brand", "type": "string"},
+        {"name": "model", "type": "string"},
+        {"name": "price", "type": "number"}
+      ]
+    }
+  ]
+}</pre>
+            <p>This makes Knowledge Graph, Pattern Mining, and ERD generation reference your actual types—no guessing.</p>
+        </section>
 
-                    <h4>Example: style.css gets chunked</h4>
-                    <div class="visual-box">
-                        <h4>Original File (style.css):</h4>
-                        <div class="code-block">
-<span class="keyword">#message</span> {
-    <span class="string">font-size</span>: <span class="number">24px</span>;
-    <span class="string">text-align</span>: <span class="string">center</span>;
-    <span class="string">margin-top</span>: <span class="number">50px</span>;
-    <span class="string">color</span>: <span class="string">black</span>;
-}
-                        </div>
-
-                        <h4>Becomes Chunk:</h4>
-                        <div class="code-block">
-<span class="comment">// Chunk ID: style.css::text::0</span>
-<span class="keyword">FILE</span>: <span class="string">style.css</span>
-<span class="keyword">SECTION</span>: <span class="number">0</span>
-<span class="keyword">CONTENT</span>:
-<span class="keyword">#message</span> {
-    <span class="string">font-size</span>: <span class="number">24px</span>;
-    <span class="string">text-align</span>: <span class="string">center</span>;
-    <span class="string">margin-top</span>: <span class="number">50px</span>;
-    <span class="string">color</span>: <span class="string">black</span>;
-}
-                        </div>
-                    </div>
-
-                    <h4>Chunking Strategy:</h4>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-number">550</div>
-                            <div class="stat-label">Max Tokens per Text Chunk</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">360</div>
-                            <div class="stat-label">Max Tokens per Code Chunk</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">60</div>
-                            <div class="stat-label">Overlap Tokens</div>
-                        </div>
-                    </div>
-
-                    <div class="result-box">
-                        <h4>✅ Result:</h4>
-                        <p><strong>3 chunks</strong> created from our 3 files (they're small, so 1 chunk each)</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 5: Vector Embeddings -->
-            <div class="step" id="step5">
+        <!-- Step 5 -->
+        <section class="step" id="step5">
                 <div class="step-header">
                     <div class="step-number">5</div>
                     <div>
-                        <div class="step-title">🧮 Step 3: Converting to Vector Embeddings</div>
-                        <div class="step-description">Text is converted to numbers that AI can understand</div>
+                    <div class="step-title">Knowledge Graph: Project-Wide Map</div>
+                    <div class="step-subtitle">We quickly understand how components interact.</div>
                     </div>
                 </div>
 
-                <div class="demo-section">
-                    <h3>What are Vector Embeddings?</h3>
-                    <p>Imagine converting words into coordinates on a map. Similar words are close together, different words are far apart. This helps the AI understand meaning, not just match exact words.</p>
+            <p>The Knowledge Graph pass analyzes the repo to compute relationships critical to the swap feature:</p>
+            <pre class="code"><span class="comment">// Graph snapshot</span>
+Components:
+  Phone (TS interface)
+  UserDto (C# class)
+  PhoneSwapRequest (TS + persistence table)
+Relationships:
+  PhoneSwapRequest references Phone (requestedPhoneId, offeredPhoneId)
+  PhoneSwapRequest references User (requesterId)
+Metrics:
+  total_nodes = 12, total_edges = 18, density = 0.27</pre>
+            <p>Later, when we ask for an ERD or architecture doc, the AI already knows these connections are real—pulled from your definitions.</p>
+        </section>
 
-                    <div class="visual-box">
-                        <h4>Example: Our style.css chunk</h4>
-                        <div class="code-block">
-<span class="comment"># Input Text:</span>
-<span class="string">"FILE: style.css SECTION: 0 #message { font-size: 24px; text-align: center; margin-top: 50px; color: black; }"</span>
-
-<span class="comment"># AI Model (sentence-transformers/all-MiniLM-L6-v2) converts it to:</span>
-<span class="keyword">Vector</span> = [<span class="number">0.123</span>, <span class="number">-0.456</span>, <span class="number">0.789</span>, <span class="number">0.234</span>, <span class="number">-0.567</span>, ... <span class="comment">(384 numbers total)</span>]
-                        </div>
-                    </div>
-
-                    <h4>Visual Representation:</h4>
-                    <div class="flow-diagram">
-                        <div class="flow-box">
-                            <strong>Text</strong><br/>
-                            "color: black"
-                        </div>
-                        <div class="flow-arrow">→</div>
-                        <div class="flow-box highlight">
-                            <strong>AI Model</strong><br/>
-                            Embedding Generator
-                        </div>
-                        <div class="flow-arrow">→</div>
-                        <div class="flow-box">
-                            <strong>Vector</strong><br/>
-                            [0.1, -0.4, 0.7, ...]
-                        </div>
-                    </div>
-
-                    <div class="info-box">
-                        <h4>💡 Why This Matters</h4>
-                        <p>When we search for "change color to blue", the AI can find our "color: black" CSS even though the words don't match exactly. It understands they're related!</p>
-                    </div>
-
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-number">384</div>
-                            <div class="stat-label">Dimensions per Vector</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">3</div>
-                            <div class="stat-label">Vectors Created</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">Local</div>
-                            <div class="stat-label">Processing (Private)</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 6: Storage -->
-            <div class="step" id="step6">
+        <!-- Step 6 -->
+        <section class="step" id="step6">
                 <div class="step-header">
                     <div class="step-number">6</div>
                     <div>
-                        <div class="step-title">💾 Step 4: Storing in ChromaDB</div>
-                        <div class="step-description">Vectors are saved locally for fast searching</div>
+                    <div class="step-title">Pattern Mining: Learn the House Style</div>
+                    <div class="step-subtitle">Indentation, naming, error handling… all discovered automatically.</div>
                     </div>
                 </div>
 
-                <div class="demo-section">
-                    <h3>Local Storage (Your Computer)</h3>
-                    <p>All vectors are stored in a local database on your machine. Nothing goes to the cloud!</p>
-
-                    <div class="file-tree">
-<span class="directory">📁 architect_ai_cursor_poc/rag/index/</span>
-  <span class="file">📄 chroma.sqlite3</span>          <span class="comment">← Main database</span>
-  <span class="file">📄 manifest.json</span>           <span class="comment">← Index info</span>
-  <span class="directory">📁 collection-uuid/</span>
-    <span class="file">📄 data_level0.bin</span>       <span class="comment">← Vector data</span>
-    <span class="file">📄 index_metadata.pickle</span> <span class="comment">← Metadata</span>
+            <div class="grid-two">
+                <div>
+                    <p>Our Pattern Mining scan tracks conventions the swap feature must respect:</p>
+                    <ul class="checklist">
+                        <li>TypeScript: camelCase methods, 4-space indentation, RxJS usage.</li>
+                        <li>C#: PascalCase classes, dependency injection, async/await pattern.</li>
+                        <li>Validation rules: serious logging in <code>UserService</code>, consistent HTTP status codes.</li>
+                    </ul>
                     </div>
-
-                    <h4>What Gets Stored:</h4>
-                    <div class="code-block">
-<span class="comment">// For each chunk:</span>
-{
-    <span class="keyword">"id"</span>: <span class="string">"sha1_hash_of_style.css::text::0"</span>,
-    <span class="keyword">"document"</span>: <span class="string">"FILE: style.css\nSECTION: 0\n#message { ... }"</span>,
-    <span class="keyword">"embedding"</span>: [<span class="number">0.123</span>, <span class="number">-0.456</span>, <span class="number">0.789</span>, ...],
-    <span class="keyword">"metadata"</span>: {
-        <span class="keyword">"path"</span>: <span class="string">"style.css"</span>,
-        <span class="keyword">"kind"</span>: <span class="string">"text"</span>,
-        <span class="keyword">"chunk"</span>: <span class="number">0</span>,
-        <span class="keyword">"file_type"</span>: <span class="string">".css"</span>
-    }
-}
+                <div>
+                    <pre class="code"><span class="comment">// sample output</span>
+Quality Score: 88/100 (strong separation of concerns)
+Conventions:
+  - TypeScript services return Observables (RxJS)
+  - C# DTOs use Guid Ids; controllers guard against null body
+Flagged smell (info only): Hard-coded mock data in PhoneService
+</pre>
+                    <p style="margin:0.8rem 0 0">This metadata flows into the validation engine to ensure generated code matches your style.</p>
                     </div>
-
-                    <h4>BM25 Index (Keyword Search):</h4>
-                    <p>In addition to vectors, we also create a traditional keyword index:</p>
-                    <div class="code-block">
-<span class="comment">// Words extracted from style.css:</span>
-<span class="keyword">tokens</span> = [<span class="string">"message"</span>, <span class="string">"font"</span>, <span class="string">"size"</span>, <span class="string">"text"</span>, <span class="string">"align"</span>, <span class="string">"center"</span>, 
-          <span class="string">"margin"</span>, <span class="string">"top"</span>, <span class="string">"color"</span>, <span class="string">"black"</span>]
-
-<span class="comment">// BM25 Formula: Scores how relevant each word is</span>
-<span class="keyword">score</span>(document, query) = IDF(query) × TF(query, document)
                     </div>
+        </section>
 
-                    <div class="result-box">
-                        <h4>✅ Indexing Complete!</h4>
-                        <p><strong>3 chunks</strong> stored with vectors + keyword index</p>
-                        <p><strong>Storage:</strong> All data saved locally at <code>rag/index/</code></p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 7: Query Processing -->
-            <div class="step" id="step7">
+        <!-- Step 7 -->
+        <section class="step" id="step7">
                 <div class="step-header">
                     <div class="step-number">7</div>
                     <div>
-                        <div class="step-title">❓ Step 5: Processing User Query</div>
-                        <div class="step-description">Converting the request into something searchable</div>
+                    <div class="step-title">Hybrid Retrieval for the Swap Feature</div>
+                    <div class="step-subtitle">Vector + BM25 over the filtered index.</div>
                     </div>
                 </div>
 
-                <div class="demo-section">
-                    <h3>From Meeting Notes to Search Query</h3>
-                    
-                    <div class="visual-box">
-                        <h4>Original Request:</h4>
-                        <div class="code-block">
-<span class="string">"Make the Hello World text blue instead of black"</span>
-                        </div>
+            <p>When we ask, “Generate an ERD for phone swaps,” retrieval now hits only the relevant files:</p>
+            <pre class="code"><span class="comment">// ranked context</span>
+1. final_project/src/models/phone.ts                (entity Phone)
+2. final_project/src/models/user.ts                 (entity User)
+3. final_project/src/app/services/phone.service.ts  (swap logic & validation)
+4. final-proj-sln/registration-api/UserService.cs   (ownership checks)
+5. final-proj-sln/registration-api/Program.cs       (DI + MongoDB settings)</pre>
+            <p>No lockfiles, no tool artifacts, no <code>__pycache__</code> noise—only repo content relevant to the swap feature.</p>
+        </section>
 
-                        <h4>AI Extracts Key Information:</h4>
-                        <div class="code-block">
-<span class="keyword">Target</span>: <span class="string">"Hello World text"</span>
-<span class="keyword">Property</span>: <span class="string">"color"</span>
-<span class="keyword">Current Value</span>: <span class="string">"black"</span>
-<span class="keyword">New Value</span>: <span class="string">"blue"</span>
-<span class="keyword">File Type</span>: <span class="string">"CSS"</span> <span class="comment">(inferred)</span>
-                        </div>
-
-                        <h4>Search Query Created:</h4>
-                        <div class="code-block">
-<span class="keyword">query</span> = <span class="string">"CSS styling color text message"</span>
-                        </div>
-                    </div>
-
-                    <h4>Query is Also Converted to Vector:</h4>
-                    <div class="flow-diagram">
-                        <div class="flow-box">
-                            <strong>Query Text</strong><br/>
-                            "CSS color styling"
-                        </div>
-                        <div class="flow-arrow">→</div>
-                        <div class="flow-box highlight">
-                            <strong>Same AI Model</strong><br/>
-                            Embedding Generator
-                        </div>
-                        <div class="flow-arrow">→</div>
-                        <div class="flow-box">
-                            <strong>Query Vector</strong><br/>
-                            [0.2, -0.5, 0.8, ...]
-                        </div>
-                    </div>
-
-                    <div class="info-box">
-                        <h4>💡 Smart Processing</h4>
-                        <p>The system understands that "make text blue" means finding CSS color properties, even though the words don't match exactly!</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 8: Hybrid Search -->
-            <div class="step" id="step8">
+        <!-- Step 8 -->
+        <section class="step" id="step8">
                 <div class="step-header">
                     <div class="step-number">8</div>
                     <div>
-                        <div class="step-title">🔍 Step 6: Hybrid Search (Vector + Keywords)</div>
-                        <div class="step-description">Finding the most relevant code using two methods</div>
+                    <div class="step-title">Context Assembly (Safe Defaults)</div>
+                    <div class="step-subtitle">We pack high-priority chunks respecting Codellama’s window.</div>
                     </div>
                 </div>
 
-                <div class="demo-section">
-                    <h3>Two Search Methods Working Together</h3>
+            <p>Codellama 7B gets a tiered bundle—max 24 chunks. Each chunk is labeled with entity metadata:</p>
+            <pre class="code">### High Priority
+FILE: src/models/phone.ts
+ENTITY: Phone { id:number, brand:string, ... }
 
-                    <h4>Method 1: Vector Search (Semantic Understanding)</h4>
-                    <p>Compares the query vector with all stored vectors to find similar meaning:</p>
-                    <div class="code-block">
-<span class="comment">// Query Vector: [0.2, -0.5, 0.8, ...]</span>
+FILE: registration-api/Services/UserService.cs
+METHOD: ValidateUserOwnership(Guid userId, Guid phoneId)
 
-<span class="comment">// Compare with each stored chunk:</span>
-<span class="keyword">style.css chunk</span>: [<span class="number">0.123</span>, <span class="number">-0.456</span>, <span class="number">0.789</span>, ...]
-<span class="keyword">Similarity Score</span>: <span class="number">0.92</span> <span class="comment">← Very similar! (0-1 scale)</span>
+### Medium Priority
+FILE: src/app/services/phone.service.ts
+FUNCTION: submitSwapRequest(swapData)
 
-<span class="keyword">app.js chunk</span>: [<span class="number">0.5</span>, <span class="number">0.3</span>, <span class="number">-0.2</span>, ...]
-<span class="keyword">Similarity Score</span>: <span class="number">0.45</span> <span class="comment">← Not very similar</span>
+### User Request
+"Produce an ERD showing Phone, User, PhoneSwapRequest relationships."
+</pre>
+        </section>
 
-<span class="keyword">index.html chunk</span>: [<span class="number">0.3</span>, <span class="number">-0.1</span>, <span class="number">0.4</span>, ...]
-<span class="keyword">Similarity Score</span>: <span class="number">0.67</span> <span class="comment">← Somewhat similar</span>
-                    </div>
-
-                    <h4>Method 2: BM25 Search (Keyword Matching)</h4>
-                    <p>Looks for exact word matches:</p>
-                    <div class="code-block">
-<span class="comment">// Query words: ["CSS", "color", "styling"]</span>
-
-<span class="keyword">style.css</span>: Contains <span class="string">"color"</span> → <span class="keyword">BM25 Score</span>: <span class="number">1.45</span>
-<span class="keyword">app.js</span>: No matches → <span class="keyword">BM25 Score</span>: <span class="number">0.0</span>
-<span class="keyword">index.html</span>: No matches → <span class="keyword">BM25 Score</span>: <span class="number">0.0</span>
-                    </div>
-
-                    <h4>Combining Both Methods (Hybrid):</h4>
-                    <div class="visual-box">
-                        <div class="code-block">
-<span class="comment">// Formula: 60% Vector + 40% Keywords</span>
-<span class="keyword">Final Score</span> = (<span class="number">0.6</span> × <span class="keyword">Vector Score</span>) + (<span class="number">0.4</span> × <span class="keyword">BM25 Score</span>)
-
-<span class="comment">// Results:</span>
-<span class="keyword">style.css</span>:   (<span class="number">0.6</span> × <span class="number">0.92</span>) + (<span class="number">0.4</span> × <span class="number">1.45</span>) = <span class="highlight">1.13</span> ⭐ <span class="string">WINNER!</span>
-<span class="keyword">index.html</span>: (<span class="number">0.6</span> × <span class="number">0.67</span>) + (<span class="number">0.4</span> × <span class="number">0.0</span>)  = <span class="number">0.40</span>
-<span class="keyword">app.js</span>:      (<span class="number">0.6</span> × <span class="number">0.45</span>) + (<span class="number">0.4</span> × <span class="number">0.0</span>)  = <span class="number">0.27</span>
-                        </div>
-                    </div>
-
-                    <div class="result-box">
-                        <h4>✅ Search Result:</h4>
-                        <p><strong>style.css</strong> is the most relevant file!</p>
-                        <p>The system found the exact file that needs to be modified.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 9: Context Assembly -->
-            <div class="step" id="step9">
+        <!-- Step 9 -->
+        <section class="step" id="step9">
                 <div class="step-header">
                     <div class="step-number">9</div>
                     <div>
-                        <div class="step-title">📋 Step 7: Assembling Context for AI</div>
-                        <div class="step-description">Preparing the information for code generation</div>
+                    <div class="step-title">Local Model Generation with Live Logs</div>
+                    <div class="step-subtitle">Watch Codellama draft the ERD in real time.</div>
                     </div>
                 </div>
 
-                <div class="demo-section">
-                    <h3>Building the Context</h3>
-                    <p>The AI needs to know what code exists before it can make changes. We give it the relevant chunks:</p>
-
-                    <div class="visual-box">
-                        <h4>Context Sent to AI:</h4>
-                        <div class="code-block">
-<span class="comment">// === REPOSITORY CONTEXT ===</span>
-
-<span class="keyword">FILE</span>: <span class="string">style.css</span>
-<span class="keyword">SECTION</span>: <span class="number">0</span>
-<span class="keyword">RELEVANCE SCORE</span>: <span class="number">1.13</span> <span class="comment">(highest)</span>
-
-<span class="keyword">#message</span> {
-    <span class="string">font-size</span>: <span class="number">24px</span>;
-    <span class="string">text-align</span>: <span class="string">center</span>;
-    <span class="string">margin-top</span>: <span class="number">50px</span>;
-    <span class="string">color</span>: <span class="string">black</span>;  <span class="comment">← This needs to change!</span>
-}
-
-<span class="comment">// === USER REQUEST ===</span>
-<span class="string">"Make the Hello World text blue instead of black"</span>
-
-<span class="comment">// === TASK ===</span>
-<span class="string">"Modify the CSS to change the color from black to blue"</span>
+            <div class="callout">
+                <h4>Streaming output (excerpt)</h4>
+                <pre class="code">🧠 Generating with local Codellama…
+```
+Analyzing entity fields:
+- Phone has id, brand, model, storage, price
+- User has id, email, password, firstName, lastName
+- PhoneSwapRequest references Phone + User (requesterId, offeredPhoneId,...)
+Constructing ERD with cardinalities (Phone one-to-many swaps)...
+```
+</pre>
+                <p>Once the stream finishes the placeholder clears and the final ERD artifact appears instantly.</p>
                         </div>
-                    </div>
+        </section>
 
-                    <h4>Why This Works:</h4>
-                    <div class="flow-diagram">
-                        <div class="flow-box">
-                            <strong>AI Sees</strong><br/>
-                            Existing Code
-                        </div>
-                        <div class="flow-arrow">+</div>
-                        <div class="flow-box">
-                            <strong>AI Knows</strong><br/>
-                            What to Change
-                        </div>
-                        <div class="flow-arrow">=</div>
-                        <div class="flow-box highlight">
-                            <strong>AI Generates</strong><br/>
-                            Perfect Solution
-                        </div>
-                    </div>
-
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-number">1</div>
-                            <div class="stat-label">Chunk Retrieved</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">87</div>
-                            <div class="stat-label">Context Tokens</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">8,000</div>
-                            <div class="stat-label">Token Limit</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 10: AI Generation -->
-            <div class="step" id="step10">
+        <!-- Step 10 -->
+        <section class="step" id="step10">
                 <div class="step-header">
                     <div class="step-number">10</div>
                     <div>
-                        <div class="step-title">🤖 Step 8: AI Multi-Agent Generation</div>
-                        <div class="step-description">Three AI agents work together to create the solution</div>
+                    <div class="step-title">Fine-Tuning on Repo Examples Only</div>
+                    <div class="step-subtitle">50 swap-related snippets become our dataset.</div>
                     </div>
                 </div>
 
-                <div class="demo-section">
-                    <h3>The Three-Agent Pipeline</h3>
-
-                    <div class="flow-diagram">
-                        <div class="flow-box highlight">
-                            <strong>🔍 Agent 1</strong><br/>
-                            Analyzer<br/>
-                            <small>Understands the task</small>
-                        </div>
-                        <div class="flow-arrow">→</div>
-                        <div class="flow-box highlight">
-                            <strong>⚡ Agent 2</strong><br/>
-                            Generator<br/>
-                            <small>Creates the code</small>
-                        </div>
-                        <div class="flow-arrow">→</div>
-                        <div class="flow-box highlight">
-                            <strong>✅ Agent 3</strong><br/>
-                            Critic<br/>
-                            <small>Reviews & improves</small>
-                        </div>
+            <p>Inside the “🎓 Fine-Tuning” tab we previewed (and confirmed) the dataset:</p>
+            <div class="stat-cards">
+                <div class="stat-card"><strong>50</strong><span>training examples</span></div>
+                <div class="stat-card"><strong>9</strong><span>unique files</span></div>
+                <div class="stat-card"><strong>0</strong><span>discarded chunks</span></div>
+                <div class="stat-card"><strong>0</strong><span>feedback examples (yet)</span></div>
                     </div>
 
-                    <h4>Agent 1: Analyzer</h4>
-                    <div class="code-block">
-<span class="comment">// Analyzer's Thoughts:</span>
-<span class="string">"Task: Change color property in CSS
-Target file: style.css
-Current value: black
-New value: blue
-Selector: #message
-Action: Replace color value"</span>
-                    </div>
+            <pre class="code"><span class="comment">// sample training pair</span>
+Instruction: Implement table-page based on repository structure and meeting notes.
+Input: (repo + meeting-note context for swap UI)
+Output: (actual Angular table-page component from your repo)
+</pre>
+            <p>That “I confirm” checkbox enabled once we validated the preview—preventing accidental training on stale or noisy data.</p>
+        </section>
 
-                    <h4>Agent 2: Generator</h4>
-                    <div class="code-block">
-<span class="comment">// Generator creates the new code:</span>
-<span class="keyword">#message</span> {
-    <span class="string">font-size</span>: <span class="number">24px</span>;
-    <span class="string">text-align</span>: <span class="string">center</span>;
-    <span class="string">margin-top</span>: <span class="number">50px</span>;
-    <span class="string">color</span>: <span class="string">blue</span>;  <span class="comment">← Changed from black to blue!</span>
-}
-                    </div>
-
-                    <h4>Agent 3: Critic</h4>
-                    <div class="code-block">
-<span class="comment">// Critic's Review:</span>
-<span class="string">"✅ Color changed correctly: black → blue
-✅ Syntax is valid CSS
-✅ No other properties affected
-✅ Maintains existing styling
-✅ Follows CSS best practices
-Score: 95/100 - Excellent!"</span>
-                    </div>
-
-                    <div class="result-box">
-                        <h4>✅ Generation Complete!</h4>
-                        <p>All three agents agree: The solution is correct and ready to use.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 11: Validation -->
-            <div class="step" id="step11">
+        <!-- Step 11 -->
+        <section class="step" id="step11">
                 <div class="step-header">
                     <div class="step-number">11</div>
                     <div>
-                        <div class="step-title">✅ Step 9: Quality Validation</div>
-                        <div class="step-description">8 validators check the generated code</div>
+                    <div class="step-title">Training Codellama 7B (LoRA)</div>
+                    <div class="step-subtitle">Three epochs, GPU quantization, clean loss curve.</div>
                     </div>
                 </div>
 
-                <div class="demo-section">
-                    <h3>Comprehensive Quality Checks</h3>
+            <pre class="code"><span class="comment">// training log</span>
+[DEBUG] Training data: 50 examples
+{'loss': 1.58, 'epoch': 1.48}
+{'loss': 0.90, 'epoch': 2.96}
+{'train_loss': 1.20, 'train_runtime': 74s}
+[DEBUG] Model saved → finetuned_models/codellama-7b/codellama-7b_finetuned-20251103_220707</pre>
+            <p>After saving, the model becomes selectable in the provider dropdown. The next generation uses this fine-tuned checkpoint by default.</p>
+        </section>
 
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-number">✅</div>
-                            <div class="stat-label">1. Syntax Valid</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">✅</div>
-                            <div class="stat-label">2. Architecture OK</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">✅</div>
-                            <div class="stat-label">3. Security Check</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">✅</div>
-                            <div class="stat-label">4. Style Consistent</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">✅</div>
-                            <div class="stat-label">5. Error Handling</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">✅</div>
-                            <div class="stat-label">6. Documentation</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">✅</div>
-                            <div class="stat-label">7. Performance OK</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">✅</div>
-                            <div class="stat-label">8. Business Logic</div>
-                        </div>
-                    </div>
-
-                    <h4>Detailed Validation Report:</h4>
-                    <div class="code-block">
-<span class="keyword">Validator 1</span> - <span class="string">Syntax Check</span>: ✅ <span class="string">PASS</span>
-  <span class="comment">→ Valid CSS syntax</span>
-  <span class="comment">→ No parsing errors</span>
-
-<span class="keyword">Validator 2</span> - <span class="string">Architecture</span>: ✅ <span class="string">PASS</span>
-  <span class="comment">→ Follows CSS best practices</span>
-  <span class="comment">→ Proper selector usage</span>
-
-<span class="keyword">Validator 3</span> - <span class="string">Security</span>: ✅ <span class="string">PASS</span>
-  <span class="comment">→ No injection risks</span>
-  <span class="comment">→ Safe color value</span>
-
-<span class="keyword">Validator 4</span> - <span class="string">Style Consistency</span>: ✅ <span class="string">PASS</span>
-  <span class="comment">→ Matches existing code style</span>
-  <span class="comment">→ Proper indentation</span>
-
-<span class="keyword">Overall Score</span>: <span class="highlight">95/100</span> ⭐
-                    </div>
-
-                    <div class="result-box">
-                        <h4>🎉 Validation Passed!</h4>
-                        <p><strong>Quality Score: 95/100</strong></p>
-                        <p>The code is production-ready and safe to use!</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 12: Final Result -->
-            <div class="step" id="step12">
+        <!-- Step 12 -->
+        <section class="step" id="step12">
                 <div class="step-header">
                     <div class="step-number">12</div>
                     <div>
-                        <div class="step-title">🎉 Final Result: Mission Accomplished!</div>
-                        <div class="step-description">From meeting notes to working code in 30 seconds</div>
+                    <div class="step-title">Validation + Pattern Enforcement</div>
+                    <div class="step-subtitle">Guardrails ensure outputs match repo style.</div>
                     </div>
                 </div>
 
-                <div class="demo-section">
-                    <h3>The Complete Journey</h3>
-
-                    <div class="visual-box">
-                        <h4>What We Started With:</h4>
-                        <div class="code-block">
-<span class="keyword">#message</span> {
-    <span class="string">color</span>: <span class="string">black</span>;  <span class="comment">← Original</span>
-}
-                        </div>
-
-                        <h4>What We Got:</h4>
-                        <div class="code-block">
-<span class="keyword">#message</span> {
-    <span class="string">color</span>: <span class="string">blue</span>;   <span class="comment">← Changed! ✨</span>
-}
-                        </div>
-                    </div>
-
-                    <h4>The Complete Process:</h4>
-                    <div class="flow-diagram">
-                        <div class="flow-box">
-                            <strong>1</strong><br/>
-                            Meeting Notes
-                        </div>
-                        <div class="flow-arrow">→</div>
-                        <div class="flow-box">
-                            <strong>2-6</strong><br/>
-                            RAG System
-                        </div>
-                        <div class="flow-arrow">→</div>
-                        <div class="flow-box">
-                            <strong>7-8</strong><br/>
-                            AI Search
-                        </div>
-                        <div class="flow-arrow">→</div>
-                        <div class="flow-box">
-                            <strong>9-10</strong><br/>
-                            AI Generation
-                        </div>
-                        <div class="flow-arrow">→</div>
-                        <div class="flow-box highlight">
-                            <strong>11-12</strong><br/>
-                            Validated Code
-                        </div>
-                    </div>
-
-                    <h4>Key Achievements:</h4>
-                    <ul>
-                        <li>✅ <strong>Found the right file</strong> - style.css identified automatically</li>
-                        <li>✅ <strong>Understood the context</strong> - Knew it was about CSS color</li>
-                        <li>✅ <strong>Made precise changes</strong> - Only changed what was needed</li>
-                        <li>✅ <strong>Validated quality</strong> - All 8 validators passed</li>
-                        <li>✅ <strong>Production ready</strong> - Code can be deployed immediately</li>
+            <div class="grid-two">
+                <div>
+                    <ul class="checklist">
+                        <li>Syntax check: TypeScript, C#, Mermaid/ERD.</li>
+                        <li>Architecture validation: ensure relationships exist in Knowledge Graph.</li>
+                        <li>Pattern compliance: apply indentation, naming conventions from Pattern Mining.</li>
+                        <li>Auto-retry up to twice if quality score &lt; threshold.</li>
                     </ul>
+                        </div>
+                <div>
+                    <pre class="code"><span class="comment">// example report</span>
+Validator: Architecture → PASS (referenced entities found in KG)
+Validator: Style → PASS (4-space indent, camelCase methods)
+Validator: Security → PASS (swap API verifies ownership)
+Overall Score: 95/100</pre>
+                        </div>
+                        </div>
+        </section>
 
-                    <div class="result-box">
-                        <h4>🎉 Success!</h4>
-                        <p><strong>Time:</strong> 30 seconds</p>
-                        <p><strong>Quality Score:</strong> 95/100</p>
-                        <p><strong>Files Modified:</strong> 1 (style.css)</p>
-                        <p><strong>Result:</strong> Hello World is now blue! 🎨</p>
-                    </div>
-
-                    <h3>Why This is Powerful:</h3>
-                    <div class="info-box">
-                        <h4>🚀 The Magic of RAG + AI</h4>
-                        <p><strong>Without RAG:</strong> AI would generate generic CSS, might not match your style, could break existing code.</p>
-                        <p><strong>With RAG:</strong> AI understands YOUR codebase, makes precise changes, maintains your style, and validates everything.</p>
-                        <p><strong>Result:</strong> Production-ready code that fits perfectly into your project!</p>
-                    </div>
-
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-number">30s</div>
-                            <div class="stat-label">Total Time</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">95/100</div>
-                            <div class="stat-label">Quality Score</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">100%</div>
-                            <div class="stat-label">Accuracy</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-number">✅</div>
-                            <div class="stat-label">Production Ready</div>
-                        </div>
+        <!-- Step 13 -->
+        <section class="step" id="step13">
+                <div class="step-header">
+                    <div class="step-number">13</div>
+                    <div>
+                    <div class="step-title">Final Artifact (Same Example, End to End)</div>
+                    <div class="step-subtitle">ERD + API doc derived from the repo, validated, streamed.</div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
+
+            <div class="grid-two">
+                    <div>
+                    <h4>Mermaid ERD output</h4>
+                    <pre class="code">erDiagram
+  Phone ||--o{ PhoneSwapRequest : requested
+  Phone ||--o{ PhoneSwapRequest : offered
+  User  ||--o{ PhoneSwapRequest : requester
+
+Phone {
+  number id PK
+  string brand
+  string model
+  number storage
+  number price
+}
+
+PhoneSwapRequest {
+  number id PK
+  number requesterId FK
+  number requestedPhoneId FK
+  number offeredPhoneId FK
+  string status
+}</pre>
+                        </div>
+                <div>
+                    <h4>API summary</h4>
+                    <pre class="code">POST /api/phone-swaps
+- Validates requester owns offered phone (UserService.ValidateUserOwnership)
+- Persists with status Pending in MongoDB (PhoneSwapRepository)
+- Returns 201 with swap payload
+
+GET /api/phone-swaps/{id}
+- Includes referenced Phone + User info via Knowledge Graph relationships</pre>
+                    <p style="margin:0.8rem 0 0">These outputs reference *only* the files we indexed at the beginning—one continuous story from meeting notes to production-ready artifact.</p>
+                        </div>
+                    </div>
+
+            <div class="callout">
+                <h4>Feedback loop</h4>
+                <p>Not happy with something? Mark “Needs improvement,” describe the issue, and the next fine-tuning preview will include your feedback as additional training examples. Same scenario, same dataset, reinforced accuracy.</p>
+                    </div>
+        </section>
+                    </div>
+
+    <footer>
+        Architect.AI v3.2.0 • Knowledge Graph + Pattern Mining + Local Codellama fine-tuning • Always grounded in your repo.
+    </footer>
 
     <script>
+        const totalSteps = 13;
         let currentStep = 0;
-        const totalSteps = 12;
+
+        function showStep(idx) {
+            for (let i = 1; i <= totalSteps; i++) {
+                document.getElementById(`step${i}`).classList.remove('active');
+            }
+            document.getElementById(`step${idx + 1}`).classList.add('active');
+            document.getElementById('stepCounter').textContent = `Step ${idx + 1} of ${totalSteps}`;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
 
         function startDemo() {
             currentStep = 0;
-            updateStepDisplay();
+            showStep(currentStep);
             document.getElementById('nextBtn').disabled = false;
             document.getElementById('prevBtn').disabled = true;
         }
@@ -1205,59 +701,38 @@ Score: 95/100 - Excellent!"</span>
         function nextStep() {
             if (currentStep < totalSteps - 1) {
                 currentStep++;
-                updateStepDisplay();
-                
+                showStep(currentStep);
+                document.getElementById('prevBtn').disabled = false;
                 if (currentStep === totalSteps - 1) {
-                    document.getElementById('nextBtn').textContent = '🎉 Demo Complete!';
+                    document.getElementById('nextBtn').textContent = '🎉 Story complete';
                     document.getElementById('nextBtn').disabled = true;
                 }
-                
-                document.getElementById('prevBtn').disabled = false;
             }
         }
 
         function previousStep() {
             if (currentStep > 0) {
                 currentStep--;
-                updateStepDisplay();
-                
+                showStep(currentStep);
+                document.getElementById('nextBtn').disabled = false;
+                document.getElementById('nextBtn').textContent = 'Forward ➡';
                 if (currentStep === 0) {
                     document.getElementById('prevBtn').disabled = true;
                 }
-                
-                document.getElementById('nextBtn').disabled = false;
-                document.getElementById('nextBtn').textContent = 'Next ➡️';
             }
         }
 
         function resetDemo() {
             currentStep = 0;
-            updateStepDisplay();
             document.getElementById('nextBtn').disabled = true;
             document.getElementById('prevBtn').disabled = true;
-            document.getElementById('nextBtn').textContent = 'Next ➡️';
-        }
-
-        function updateStepDisplay() {
-            // Hide all steps
+            document.getElementById('nextBtn').textContent = 'Forward ➡';
+            document.getElementById('stepCounter').textContent = `Step 0 of ${totalSteps}`;
             for (let i = 1; i <= totalSteps; i++) {
                 document.getElementById(`step${i}`).classList.remove('active');
             }
-            
-            // Show current step
-            document.getElementById(`step${currentStep + 1}`).classList.add('active');
-            
-            // Update counter
-            document.getElementById('stepCounter').textContent = `Step ${currentStep + 1} of ${totalSteps}`;
-            
-            // Scroll to top of step
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
         }
 
-        // Initialize
         resetDemo();
     </script>
 </body>
