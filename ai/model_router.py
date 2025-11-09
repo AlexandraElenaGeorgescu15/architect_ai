@@ -99,8 +99,8 @@ class ModelRouter:
         self.local_model_map = {
             # Persistent models (instant response)
             'code': 'codellama:7b-instruct-q4_K_M',
-            'html': 'codellama:7b-instruct-q4_K_M',
-            'documentation': 'codellama:7b-instruct-q4_K_M',
+            'html': 'llama3:8b-instruct-q4_K_M',  # Changed from codellama for better HTML generation
+            'documentation': 'llama3:8b-instruct-q4_K_M',  # Changed from codellama for better natural language
             'jira': 'llama3:8b-instruct-q4_K_M',
             'tasks': 'llama3:8b-instruct-q4_K_M',
             'planning': 'llama3:8b-instruct-q4_K_M',
@@ -109,7 +109,7 @@ class ModelRouter:
             'mermaid': 'mistral:7b-instruct-q4_K_M',
             'diagram': 'mistral:7b-instruct-q4_K_M',
             'erd': 'mistral:7b-instruct-q4_K_M',
-            'architecture': 'mistral:7b-instruct-q4_K_M',
+            'architecture': 'llama3:8b-instruct-q4_K_M',  # Changed from mistral for better complex diagrams
             'flowchart': 'mistral:7b-instruct-q4_K_M',
             'sequence': 'mistral:7b-instruct-q4_K_M'
         }

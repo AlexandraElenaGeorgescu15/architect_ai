@@ -1,0 +1,84 @@
+{
+  "ollama_adaptive_loop": {
+    "import": "PASS",
+    "initialization": "PASS",
+    "feedback_recording": "PASS",
+    "events_recorded": 5,
+    "reward_calculator": "PASS",
+    "statistics": "PASS",
+    "stats": {
+      "total_feedback": 5,
+      "avg_reward": 0.06000000000000001,
+      "feedback_by_type": {
+        "success": 1,
+        "user_correction": 1,
+        "validation_failure": 1,
+        "explicit_positive": 1,
+        "explicit_negative": 1
+      },
+      "training_batches_created": 0,
+      "total_training_examples": 0,
+      "avg_validation_score": 62.0
+    },
+    "storage": "PASS"
+  },
+  "huggingface_pipeline": {
+    "import": "PASS",
+    "initialization": "PASS",
+    "available_models": [
+      "codellama-7b",
+      "llama3-8b",
+      "mistral-7b",
+      "deepseek-coder-6.7b",
+      "mermaid-mistral-7b"
+    ],
+    "environment": {
+      "status": "PASS",
+      "details": {
+        "os": "Windows",
+        "has_cuda": true,
+        "has_bitsandbytes": false,
+        "ready": false,
+        "message": "\u26a0\ufe0f Only 12.0GB VRAM detected. Recommend 12GB+ for 7B models with LoRA. Training may be slower or fail with OOM errors. Consider: (1) Reduce batch size to 1, (2) Use 4-bit quantization, or (3) Switch to cloud provider.",
+        "vram_gb": 11.99365234375
+      }
+    },
+    "system_info": {
+      "status": "PASS",
+      "details": {
+        "ram_gb": 31.692127227783203,
+        "cpu_count": 32,
+        "disk_free_gb": 502.9278030395508,
+        "python_version": "3.8+",
+        "cuda_available": true,
+        "bitsandbytes_available": false,
+        "environment_ready": false
+      }
+    },
+    "dataset_builder": {
+      "status": "PASS",
+      "examples_generated": 486,
+      "report": {
+        "total": 486,
+        "feedback": 0,
+        "files": 49
+      }
+    },
+    "training_config": "PASS",
+    "lr_validation": "SKIP: No model loaded",
+    "checkpoint_management": {
+      "status": "PASS",
+      "existing_models": 0
+    },
+    "incremental_training": {
+      "status": "PASS",
+      "downloaded_models": 2
+    }
+  },
+  "timestamp": "2025-11-07T21:23:35.466136",
+  "summary": {
+    "ollama_adaptive_loop": "PASS",
+    "huggingface_pipeline": "PASS",
+    "overall": "PASS"
+  }
+}

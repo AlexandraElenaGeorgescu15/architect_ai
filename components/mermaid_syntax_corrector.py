@@ -726,7 +726,14 @@ def render_mermaid_syntax_corrector():
             return
         
         with st.spinner("Validating and correcting syntax..."):
-            result = mermaid_corrector.correct_diagram(diagram_content)
+            # Run async function synchronously in Streamlit
+            import asyncio
+            try:
+                loop = asyncio.get_event_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+            result = loop.run_until_complete(mermaid_corrector.correct_diagram(diagram_content))
         
         # Display results
         col1, col2 = st.columns(2)

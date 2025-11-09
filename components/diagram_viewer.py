@@ -9,7 +9,7 @@ import zlib
 import base64
 from pathlib import Path
 from typing import Optional
-import asyncio
+from utils.async_utils import run_async
 
 
 def _resolve_runtime_agent():
@@ -127,201 +127,22 @@ def render_diagram_viewer(diagram_file: Path, meeting_notes: str = ""):
                         st.info("No HTML content was generated. The Gemini generation may have failed.")
                         st.caption("Try regenerating the diagram or check your API key.")
         
-        # Tab 3: Interactive Editor
+                # Tab 3: Interactive Editor
         with tab3:
-            # Editor type selection
-            editor_type = st.radio(
-                "Choose Editor Type:",
-                ["✏️ Code Editor", "🎨 Visual HTML Editor (AI-Generated)"],
-                key=f"editor_type_{diagram_file.stem}",
-                horizontal=True
+            st.markdown("### ✏️ Interactive Mermaid Canvas Editor")
+            st.caption("Edit the diagram code and see live preview. Save your changes when done.")
+            
+            # Use our own mermaid_editor component
+            from components.mermaid_editor import render_mermaid_editor
+            
+            edited_content = render_mermaid_editor(
+                initial_code=diagram_content,
+                key=f"canvas_editor_{diagram_file.stem}"
             )
             
-            if editor_type == "🎨 Visual HTML Editor (AI-Generated)":
-                # AI-Generated Visual HTML Editor
-                st.info("🎨 **AI-Generated Visual Diagram Editor**")
-                st.caption("Gemini will generate an interactive HTML editor based on your diagram context")
-                
-                if st.button("🪄 Generate Visual Editor", key=f"gen_visual_{diagram_file.stem}", type="primary"):
-                    with st.spinner("Generating visual editor with Gemini AI..."):
-                        try:
-                            from components.mermaid_html_renderer import mermaid_html_renderer
-
-                            agent = _resolve_runtime_agent()
-                            if agent is None:
-                                st.error("❌ No AI agent available. Configure a provider in the sidebar and try again.")
-                                return
-
-                            meeting_summary = "\n".join(meeting_notes.strip().splitlines()[:5]) if meeting_notes else ""
-                            editor_prompt = f"""
-You are building an INTERACTIVE diagram editor for the Architect.AI workspace.
-
-PROJECT CONTEXT:
-- Diagram name: {diagram_file.stem}
-- Meeting notes summary: {meeting_summary or 'N/A'}
-
-MERMAID SOURCE (authoritative):
-{diagram_content}
-
-REQUIREMENTS:
-1. Parse the Mermaid definition and render nodes/edges visually (drag + drop).
-2. Provide an Inspector panel to edit node titles, descriptions, and connection labels.
-3. Allow adding/removing nodes and edges in the UI with buttons.
-4. Keep styling consistent with Architect.AI (dark gradient background, rounded cards, Segoe UI typography).
-5. Include real-time Mermaid preview + "Export Mermaid" button that prints the updated definition.
-6. Use vanilla HTML/CSS/JS (no external CDN). Embed everything in one document.
-7. Persist edits in memory (e.g., using JSON structure) so users can make multiple adjustments before exporting.
-8. Highlight differences compared to the original Mermaid whenever the preview updates.
-
-OUTPUT: A single production-ready HTML document (doctype included) containing markup, styles, and scripts.
-"""
-
-                            async def generate_editor() -> str:
-                                return await agent._call_ai(
-                                    editor_prompt,
-                                    "You are an expert frontend engineer delivering polished interactive editors."
-                                )
-
-                            editor_html = asyncio.run(generate_editor())
-                            
-                            # Clean HTML
-                            if '```html' in editor_html:
-                                editor_html = editor_html.split('```html')[1].split('```')[0]
-                            elif '```' in editor_html:
-                                editor_html = editor_html.split('```')[1].split('```')[0]
-                            
-                            # Ensure proper HTML structure
-                            if not editor_html.strip().startswith('<!DOCTYPE'):
-                                editor_html = f"<!DOCTYPE html>\n{editor_html}"
-
-                            if '<html' not in editor_html.lower() or '</html>' not in editor_html.lower():
-                                raise ValueError("Generated editor HTML is incomplete. Please try again.")
-                            
-                            # Save the editor HTML
-                            editor_file = diagram_file.parent / f"{diagram_file.stem}_editor.html"
-                            editor_file.write_text(editor_html, encoding='utf-8')
-                            
-                            st.success("✅ Visual editor generated!")
-                            st.session_state[f'visual_editor_html_{diagram_file.stem}'] = editor_html
-                            st.rerun()
-                            
-                        except Exception as e:
-                            st.error(f"❌ Error generating visual editor: {str(e)}")
-                            st.info("💡 Tip: Make sure you have an AI API key configured")
-                
-                # Show generated editor if it exists
-                editor_key = f'visual_editor_html_{diagram_file.stem}'
-                editor_file = diagram_file.parent / f"{diagram_file.stem}_editor.html"
-                
-                if editor_key in st.session_state or editor_file.exists():
-                    st.markdown("---")
-                    st.markdown("**🎨 Interactive Visual Editor:**")
-                    
-                    # Load HTML if not in session state
-                    if editor_key not in st.session_state and editor_file.exists():
-                        st.session_state[editor_key] = editor_file.read_text(encoding='utf-8')
-                    
-                    # Display the visual editor
-                    if editor_key in st.session_state:
-                        st.components.v1.html(st.session_state[editor_key], height=800, scrolling=True)
-                        
-                        col1, col2 = st.columns(2)
-                        with col1:
-                            if st.button("🔄 Regenerate Editor", key=f"regen_editor_{diagram_file.stem}"):
-                                if editor_key in st.session_state:
-                                    del st.session_state[editor_key]
-                                if editor_file.exists():
-                                    editor_file.unlink()
-                                st.rerun()
-                        with col2:
-                            if st.button("📥 Download Editor HTML", key=f"dl_editor_{diagram_file.stem}"):
-                                st.download_button(
-                                    label="Download",
-                                    data=st.session_state[editor_key],
-                                    file_name=f"{diagram_file.stem}_editor.html",
-                                    mime="text/html"
-                                )
-                else:
-                    st.info("👆 Click 'Generate Visual Editor' to create an AI-powered interactive editor")
-            
-            else:  # Code Editor
-                st.markdown("**Edit Diagram Code**")
-                st.caption("Make changes below and save to update the diagram")
-            
-            # Editable text area (available regardless of editor type)
-            edited_content = st.text_area(
-                "Diagram Code:",
-                value=diagram_content,
-                height=400,
-                key=f"editor_{diagram_file.stem}"
-            )
-            
+            # Action buttons below the editor
+            st.markdown("---")
             col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                if st.button("💾 Save Changes", key=f"save_{diagram_file.stem}", type="primary"):
-                    try:
-                        # Save edited content
-                        diagram_file.write_text(edited_content, encoding='utf-8')
-                        
-                        # Regenerate HTML if it existed
-                        if has_html:
-                            from components.mermaid_html_renderer import mermaid_html_renderer
-                            import asyncio
-                            
-                            with st.spinner("Regenerating HTML visualization..."):
-                                try:
-                                    new_html = asyncio.run(
-                                    mermaid_html_renderer.generate_html_visualization_with_gemini(
-                                        edited_content,
-                                        meeting_notes,
-                                        diagram_file.stem,
-                                        agent=_resolve_runtime_agent()
-                                    )
-                                    )
-                                    html_file.write_text(new_html, encoding='utf-8')
-                                    st.success("✅ Diagram and HTML updated!")
-                                except Exception as e:
-                                    st.warning(f"⚠️ Diagram saved, but HTML regeneration failed: {str(e)}")
-                        else:
-                            st.success("✅ Diagram saved!")
-                        
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"❌ Error saving: {str(e)}")
-            
-            with col2:
-                if st.button("🔄 Reset", key=f"reset_{diagram_file.stem}"):
-                    st.rerun()
-            
-            with col3:
-                if st.button("🎨 Generate HTML", key=f"gen_html_{diagram_file.stem}"):
-                    from components.mermaid_html_renderer import mermaid_html_renderer
-                    import asyncio
-                    
-                    with st.spinner("Generating HTML visualization..."):
-                        try:
-                            html_context_agent = _resolve_runtime_agent()
-                            context_payload = ""
-                            if html_context_agent and getattr(html_context_agent, 'enhanced_rag_context', None):
-                                context_payload = getattr(html_context_agent.enhanced_rag_context, 'context_text', '') or ""
-                            if not context_payload and html_context_agent:
-                                context_payload = getattr(html_context_agent, 'rag_context', '') or ""
-                            context_payload = context_payload or meeting_notes
-                            new_html = asyncio.run(
-                                mermaid_html_renderer.generate_html_visualization_with_gemini(
-                                    edited_content,
-                                    meeting_notes,
-                                    diagram_file.stem,
-                                    context_payload,
-                                    agent=html_context_agent
-                                )
-                            )
-                            html_file.write_text(new_html, encoding='utf-8')
-                            st.success("✅ HTML generated!")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(f"❌ Error generating HTML: {str(e)}")
         
         # Tab 4: Export
         with tab4:

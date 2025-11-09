@@ -235,55 +235,71 @@ class MermaidHTMLRenderer:
                 print(f"[WARN] Could not retrieve supplemental RAG context for HTML: {e}")
         
         prompt = f"""
-        Create a beautiful, interactive HTML visualization based on the following information.
+        Create a beautiful, interactive HTML visualization for a NEW FEATURE based on meeting notes.
         
-        YOU DECIDE: Analyze the context and meeting notes below, then create the BEST type of diagram that represents this information.
-        You can create:
-        - An ERD (Entity Relationship Diagram) for database models
-        - A System Architecture diagram for services/components
-        - A Flowchart for processes and workflows
-        - A Sequence diagram for API interactions
-        - A Component diagram for frontend structure
-        - Or ANY other diagram type that best fits the information
+        **PRIMARY CONTEXT - NEW FEATURE FROM MEETING NOTES:**
+        {meeting_notes if meeting_notes else "No specific meeting notes provided"}
         
-        REFERENCE MERMAID STRUCTURE (optional - you can improve or change the diagram type):
-        ```
-        {mermaid_content if mermaid_content else "No Mermaid diagram provided - create from scratch"}
-        ```
-        
-        FEATURE REQUIREMENTS FROM MEETING NOTES:
-        {meeting_notes if meeting_notes else "No specific meeting notes - analyze the repository context"}
-        
-        ACTUAL REPOSITORY CODE & STRUCTURE (Use this as the SOURCE OF TRUTH):
+        **REFERENCE - Existing Repository Structure (for technical patterns only):**
         {context_text if context_text else "No repository context available"}
         
-        YOUR TASK:
-        1. Analyze the repository context and meeting notes
-        2. Decide which diagram type best represents this information
-        3. Create a modern, interactive HTML visualization with:
-           - Professional color scheme (blues, grays, whites with gradients)
-           - Smooth CSS animations and hover effects
-           - Mobile-responsive design
-           - Clear header with title
-           - Interactive tooltips showing details from the actual codebase
-           - Proper spacing and visual hierarchy
+        **OPTIONAL REFERENCE - Mermaid diagram structure:**
+        ```
+        {mermaid_content if mermaid_content else "No Mermaid diagram provided"}
+        ```
+        
+        **CRITICAL REQUIREMENTS:**
+        1. **FEATURE-FOCUSED**: The diagram MUST visualize the NEW FEATURE described in the meeting notes above, NOT the existing codebase
+        2. If meeting notes describe a "Phone Swap Request Feature", create diagrams about phone swaps, not about existing user/phone tables
+        3. Use repository context ONLY for understanding technical patterns (API structure, naming conventions, tech stack)
+        4. Choose the BEST diagram type for the NEW feature:
+           - ERD: For new database tables/relationships the feature requires
+           - System Architecture: For new services/components/endpoints
+           - Flowchart: For user workflows and business processes
+           - Sequence: For API request/response flows
+           - Component: For frontend UI structure
+        
+        **YOUR TASK:**
+        1. Read the meeting notes and identify the NEW FEATURE being requested
+        2. Decide which diagram type best explains this NEW feature
+        3. Create a modern, interactive HTML visualization showing:
+           - The NEW feature's structure (NOT existing codebase)
+           - Professional design (blues, grays, gradients)
+           - Hover effects and smooth animations
+           - Mobile-responsive layout
+           - Clear title describing the NEW feature
            - Footer with generation metadata
-        4. **CRITICAL**: Use ACTUAL names from the repository context (real table names, API endpoints, component names, etc.)
-        5. Make it accurate and technically correct based on the repository code
+        4. Use realistic names from the meeting notes (e.g., "PhoneSwapRequest", "POST /api/phone-swaps")
+        5. Reference existing repository only for technical consistency (API patterns, naming style)
+        
+        **CRITICAL OUTPUT REQUIREMENT:** 
+        - Output ONLY the complete HTML code
+        - Start with <!DOCTYPE html>
+        - End with </html>
+        - DO NOT include any explanations, analysis, or commentary before or after the HTML
+        - DO NOT wrap in markdown code blocks (no ```html)
+        - Just the raw HTML code, nothing else
         
         OUTPUT: Complete, self-contained HTML page with embedded CSS and JavaScript. No external dependencies or libraries.
         """
         
         try:
+            # Use visual_prototype_dev artifact type to get llama3 model (better at HTML)
             html_content = await agent._call_ai(
                 prompt, 
-                "You are an expert web developer who creates accurate, context-aware HTML visualizations. Use the repository context to ensure technical accuracy."
+                "You are an expert web developer who creates accurate, context-aware HTML visualizations. Use the repository context to ensure technical accuracy.",
+                artifact_type="visual_prototype_dev"  # Uses llama3 instead of codellama
             )
             
             # Check if we got valid content
             if not html_content or len(html_content.strip()) < 100:
-                print("[WARN] Gemini returned insufficient content for HTML visualization, using static fallback")
-                return self._create_fallback_html(mermaid_content, meeting_notes, diagram_type)
+                print("[WARN] Generated HTML is too short, retrying with different model...")
+                # Retry with different system message
+                html_content = await agent._call_ai(
+                    prompt,
+                    "Generate ONLY valid HTML code. Start with <!DOCTYPE html> and end with </html>. No explanations.",
+                    artifact_type="visual_prototype_dev"
+                )
             
             # Clean up the HTML content
             html_content = self._clean_html_content(html_content)
@@ -293,25 +309,52 @@ class MermaidHTMLRenderer:
                 print("[WARN] Generated HTML lacks proper structure, using static fallback")
                 return self._create_fallback_html(mermaid_content, meeting_notes, diagram_type)
             
-            print(f"[OK] Generated custom HTML visualization with Gemini")
+            # Additional validation: check for basic HTML elements
+            has_body = '<body' in html_content.lower()
+            has_head = '<head' in html_content.lower()
+            
+            if not (has_body and has_head):
+                print("[WARN] Generated HTML missing body or head, using static fallback")
+                return self._create_fallback_html(mermaid_content, meeting_notes, diagram_type)
+            
+            print(f"[OK] Generated custom HTML visualization with enhanced model")
             return html_content
             
         except Exception as e:
-            print(f"[WARN] Gemini HTML generation failed ({str(e)}), using static fallback")
+            print(f"[WARN] HTML generation failed ({str(e)}), using static fallback")
             return self._create_fallback_html(mermaid_content, meeting_notes, diagram_type)
     
     def _clean_html_content(self, html_content: str) -> str:
-        """Clean and validate HTML content"""
+        """Clean and validate HTML content - extract only HTML from AI explanations"""
         
-        # Remove any markdown code blocks
-        if html_content.startswith('```html'):
-            html_content = html_content[7:]
-        if html_content.endswith('```'):
-            html_content = html_content[:-3]
+        # Remove markdown code blocks
+        if '```html' in html_content:
+            # Extract content between ```html and ```
+            start = html_content.find('```html') + 7
+            end = html_content.find('```', start)
+            if end > start:
+                html_content = html_content[start:end]
+        elif '```' in html_content:
+            # Try generic code block
+            start = html_content.find('```') + 3
+            end = html_content.find('```', start)
+            if end > start:
+                html_content = html_content[start:end]
+        
+        # If there's explanatory text before <!DOCTYPE html>, remove it
+        doctype_index = html_content.find('<!DOCTYPE html>')
+        if doctype_index > 0:
+            # Found doctype but not at start - extract from there
+            html_content = html_content[doctype_index:]
+        elif '<html' in html_content.lower():
+            # No doctype but has <html> tag - extract from there
+            html_index = html_content.lower().find('<html')
+            if html_index > 0:
+                html_content = '<!DOCTYPE html>\n' + html_content[html_index:]
         
         # Ensure proper HTML structure
-        if not html_content.strip().startswith('<!DOCTYPE html>'):
-            html_content = f"<!DOCTYPE html>\n{html_content}"
+        if not html_content.strip().startswith('<!DOCTYPE html>') and '<html' in html_content.lower():
+            html_content = f"<!DOCTYPE html>\n{html_content.strip()}"
         
         return html_content.strip()
     

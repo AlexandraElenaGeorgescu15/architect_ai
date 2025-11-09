@@ -2,6 +2,17 @@
 import os, json, sys
 from pathlib import Path
 
+# Enable UTF-8 output on Windows for emoji/Unicode
+if sys.platform == 'win32':
+    try:
+        import io
+        if not isinstance(sys.stdout, io.TextIOWrapper) or sys.stdout.encoding != 'utf-8':
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+        if not isinstance(sys.stderr, io.TextIOWrapper) or sys.stderr.encoding != 'utf-8':
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+    except (AttributeError, OSError, ValueError):
+        pass
+
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -11,6 +22,7 @@ from rag.chunkers import chunk_text, chunk_code
 from rag.utils import EmbeddingBackend, chroma_client
 from rag.metadata_enhancer import get_metadata_enhancer
 from rag.filters import CODE_EXTS
+from components._tool_detector import should_exclude_path
 
 def read_file(p:Path)->str:
     try:
@@ -48,11 +60,11 @@ def main():
     # Get all files that pass the filters (including ignore_globs)
     all_files = [p for p in root.rglob("*") if allow_file(p, cfg)]
     
-    # Additional filter: Exclude the tool itself if we're at project root
+    # Additional filter: Exclude the tool itself using intelligent detection
     files = []
     for p in all_files:
-        # Skip if file is inside architect_ai_cursor_poc (the tool)
-        if 'architect_ai_cursor_poc' in str(p.relative_to(root)):
+        # Skip if file is inside the tool directory (intelligent detection)
+        if should_exclude_path(p):
             continue
         files.append(p)
     

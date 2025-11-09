@@ -3,6 +3,7 @@ Multi-Agent System - Specialized Agents Working Together
 Each agent has specific expertise and they collaborate
 """
 
+import asyncio
 from typing import List, Dict, Optional
 from dataclasses import dataclass
 from enum import Enum
@@ -172,8 +173,9 @@ Output as JSON:
                 )
                 tasks.append(task)
             return tasks
-        except:
+        except (json.JSONDecodeError, KeyError, ValueError) as e:
             # Fallback: create basic tasks
+            print(f"[WARN] Task parsing failed: {e}, using fallback tasks")
             return [
                 AgentTask(AgentRole.ARCHITECT, "Design system", context),
                 AgentTask(AgentRole.DATABASE, "Design database", context)

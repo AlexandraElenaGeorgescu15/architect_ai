@@ -74,15 +74,34 @@ class ERDGenerator:
         tables = ERDGenerator.extract_table_mentions(meeting_notes)
         
         prompt = f"""
-You are a database architect. Generate an ERD (Entity Relationship Diagram) in Mermaid format.
+You are a database architect. Generate an ERD (Entity Relationship Diagram) in Mermaid format for a NEW FEATURE.
 
-MEETING NOTES:
+CRITICAL INSTRUCTIONS - FOCUS ON THE NEW FEATURE:
+- Analyze the MEETING NOTES below to identify the NEW FEATURE being requested
+- Create entities and fields REQUIRED BY THIS NEW FEATURE
+- Use RAG CONTEXT only for understanding existing database patterns (naming conventions, field types)
+- DO NOT diagram the existing codebase - diagram the NEW FEATURE ONLY
+- Extract specific requirements from meeting notes (e.g., "Phone Swap Request Feature" → PhoneSwapRequest entity)
+- Include ALL relevant fields for the NEW feature (minimum 3-5 fields per entity)
+- Use proper data types: int, string, decimal, date, boolean, etc.
+
+**NEW FEATURE REQUIREMENTS (PRIMARY CONTEXT):**
 {meeting_notes}
 
-RAG CONTEXT (existing data models):
+**EXISTING DATABASE PATTERNS (for reference only):**
 {rag_context}
 
-DETECTED TABLES: {', '.join(tables) if tables else 'Extract from notes'}
+DETECTED TABLES FROM NOTES: {', '.join(tables) if tables else 'Extract from meeting notes'}
+
+**DIAGRAM FOCUS:**
+1. If meeting notes describe "Phone Swap Request Feature":
+   - Create PhoneSwapRequest entity with fields: requesterId, requestedPhoneId, offeredPhoneId, status, requestDate, etc.
+   - Show relationships to existing User/Phone entities (if mentioned)
+   - DO NOT create generic User/Phone diagrams - focus on the SWAP REQUEST
+2. If meeting notes describe a new registration API:
+   - Create entities for the NEW registration flow
+   - Reference existing patterns but diagram the NEW feature
+3. Use meeting notes as the SOURCE OF TRUTH for what to diagram
 
 OUTPUT RULES (CRITICAL):
 1. First line MUST be: erDiagram
@@ -95,38 +114,30 @@ OUTPUT RULES (CRITICAL):
    - ENTITY1 ||--o{{ ENTITY2 : "relationship"
    - Use: ||--|| (one-to-one), ||--o{{ (one-to-many), }}--o{{ (many-to-many)
 5. Include primary keys (PK) and foreign keys (FK)
-6. Maximum 8 entities
+6. Maximum 8 entities (focus on NEW feature entities)
 7. Show only essential fields (3-5 per entity)
 
-VALID EXAMPLE:
-erDiagram
-    USER ||--o{{ ORDER : places
-    USER {{
-        int id PK
-        string email
-        string name
-    }}
-    ORDER ||--|{{ ORDER_ITEM : contains
-    ORDER {{
-        int id PK
-        int user_id FK
-        date created_at
-    }}
-    PRODUCT ||--o{{ ORDER_ITEM : "ordered in"
-    PRODUCT {{
-        int id PK
-        string name
-        decimal price
-    }}
-    ORDER_ITEM {{
-        int id PK
-        int order_id FK
-        int product_id FK
-        int quantity
-    }}
+EXAMPLES:
+✅ Good (Phone Swap Feature): 
+PhoneSwapRequest {{ 
+    int id PK 
+    int requesterId FK
+    int requestedPhoneId FK
+    int offeredPhoneId FK
+    string status
+    datetime requestDate
+    string reason
+}}
+
+❌ Bad (existing codebase focus):
+User {{ int id PK, string email }}
+Phone {{ int id PK, string model }}
+
+**REMEMBER**: Diagram the NEW FEATURE from meeting notes, not the existing codebase!
 
 Generate a complete ERD diagram following these EXACT rules.
-Focus on the entities and relationships discussed in the meeting notes.
+Output ONLY the Mermaid ERD code. Start with 'erDiagram'.
+NO markdown blocks, NO explanations after the diagram.
 """
         return prompt
     

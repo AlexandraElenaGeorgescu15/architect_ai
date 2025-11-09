@@ -213,6 +213,15 @@ class EnhancedRAGSystem:
         # Retrieve chunks from RAG system
         chunks = await self._retrieve_chunks_from_rag(query, max_chunks)
         
+        # Log retrieval results
+        print(f"[ENHANCED_RAG] Retrieved {len(chunks)} chunks from RAG system (requested: {max_chunks})")
+        if len(chunks) == 0:
+            print("[ENHANCED_RAG] ⚠️ WARNING: No chunks retrieved! RAG index may be empty or query didn't match.")
+        elif len(chunks) < max_chunks:
+            print(f"[ENHANCED_RAG] ℹ️ Retrieved {len(chunks)} chunks (less than requested {max_chunks})")
+        else:
+            print(f"[ENHANCED_RAG] ✅ Successfully retrieved {len(chunks)} chunks")
+        
         # Organize chunks into tiers
         context_tiers = self._organize_chunks_into_tiers(chunks, query)
         
@@ -307,55 +316,53 @@ class EnhancedRAGSystem:
         }
     
     async def _retrieve_chunks_from_rag(self, query: str, max_chunks: int) -> List[Dict[str, Any]]:
-        """Retrieve chunks from the RAG system"""
+        """Retrieve chunks from the RAG system using the actual retrieval implementation"""
         
         try:
-            # Import RAG system here to avoid circular imports
-            from rag.retriever import get_rag_retriever
+            # Use the actual RAG retrieval system (same as UniversalArchitectAgent)
+            from rag.retrieve import vector_search, bm25_search, merge_rerank, load_docs_from_chroma
+            from rag.utils import chroma_client, BM25Index
+            from rag.filters import load_cfg
             
-            retriever = get_rag_retriever()
+            cfg = load_cfg()
+            client = chroma_client(cfg["store"]["path"])
+            collection = client.get_or_create_collection("repo", metadata={"hnsw:space": "cosine"})
+            docs = load_docs_from_chroma(collection)
+            bm25 = BM25Index(docs)
             
-            # Retrieve chunks with enhanced parameters
-            chunks = await retriever.retrieve_chunks(
-                query=query,
-                max_chunks=max_chunks,
-                similarity_threshold=0.7,
-                use_hybrid_search=True,
-                include_metadata=True
-            )
+            # Use hybrid search (vector + BM25) like the agent does
+            # Scale up k values for enhanced RAG (100 chunks)
+            k_vector = min(max_chunks * 2, 200)  # Get more vector results
+            k_bm25 = min(max_chunks * 2, 200)    # Get more BM25 results
+            k_final = max_chunks                  # Final merged results
             
-            return self._filter_chunks(chunks)
+            vec_hits = vector_search(collection, query, k_vector)
+            bm25_hits = bm25_search(bm25, query, k_bm25)
+            merged_hits = merge_rerank(vec_hits, bm25_hits, k_final)
             
-        except Exception as e:
-            # Fallback to basic retrieval
-            return await self._fallback_chunk_retrieval(query, max_chunks)
-    
-    async def _fallback_chunk_retrieval(self, query: str, max_chunks: int) -> List[Dict[str, Any]]:
-        """Fallback chunk retrieval using real RAG system when enhanced retrieval fails"""
-        
-        try:
-            # Use real RAG retrieval system (not mock)
-            from rag.retrieve import retrieve_context
+            print(f"[ENHANCED_RAG] Hybrid search results: {len(vec_hits)} vector hits, {len(bm25_hits)} BM25 hits, {len(merged_hits)} merged hits")
             
-            # Get real chunks from the RAG system
-            real_chunks = retrieve_context(query, top_k=max_chunks)
-            
-            # Ensure chunks have the expected format
+            # Format chunks to expected structure
             formatted_chunks = []
-            for chunk in real_chunks:
+            for doc, score in merged_hits:
                 formatted_chunk = {
-                    'content': chunk.get('content', ''),
-                    'metadata': chunk.get('metadata', {}),
-                    'similarity_score': chunk.get('similarity_score', 0.85)
+                    'content': doc.get('content', ''),
+                    'metadata': doc.get('meta', {}),
+                    'similarity_score': float(score)
                 }
                 formatted_chunks.append(formatted_chunk)
             
-            return self._filter_chunks(formatted_chunks)
+            filtered = self._filter_chunks(formatted_chunks)
+            print(f"[ENHANCED_RAG] After filtering: {len(filtered)} chunks (filtered out {len(formatted_chunks) - len(filtered)} chunks)")
+            
+            return filtered
             
         except Exception as e:
-            # If RAG system is completely unavailable, log error and return empty (don't create mock data)
-            print(f"Warning: Could not retrieve real RAG chunks: {e}")
-            print("RAG system may not be initialized. Please run 'python rag/ingest.py' to index your repository.")
+            # If RAG system is completely unavailable, log error and return empty
+            print(f"[ENHANCED_RAG] Warning: Could not retrieve RAG chunks: {e}")
+            print("[ENHANCED_RAG] RAG system may not be initialized. Please run 'python rag/ingest.py' to index your repository.")
+            import traceback
+            print(f"[ENHANCED_RAG] Traceback: {traceback.format_exc()}")
             return []
 
     def _filter_chunks(self, chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

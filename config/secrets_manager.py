@@ -191,3 +191,95 @@ def get_secrets_manager() -> SecretsManager:
         _secrets_manager_instance = SecretsManager()
     return _secrets_manager_instance
 
+
+class APIKeyManager:
+    """
+    Helper class for managing API keys with environment variable fallback.
+    
+    Tries to load API keys from:
+    1. Environment variables
+    2. Encrypted secrets file
+    3. Returns None if not found
+    """
+    
+    def __init__(self):
+        self.secrets = get_secrets_manager()
+    
+    def get_key(self, provider: str, env_var_name: str = None) -> Optional[str]:
+        """
+        Get API key for a provider.
+        
+        Args:
+            provider: Provider name (groq, openai, gemini, anthropic)
+            env_var_name: Environment variable name to check (e.g., GEMINI_API_KEY)
+            
+        Returns:
+            API key or None if not found
+        """
+        # Try environment variable first
+        if env_var_name:
+            env_key = os.getenv(env_var_name)
+            if env_key:
+                return env_key
+        
+        # Try default environment variable names
+        default_env_vars = {
+            'groq': 'GROQ_API_KEY',
+            'openai': 'OPENAI_API_KEY',
+            'gemini': 'GEMINI_API_KEY',
+            'anthropic': 'ANTHROPIC_API_KEY',
+            'google': 'GEMINI_API_KEY',
+        }
+        
+        if provider.lower() in default_env_vars:
+            env_key = os.getenv(default_env_vars[provider.lower()])
+            if env_key:
+                return env_key
+        
+        # Try encrypted secrets file
+        return self.secrets.get_key(provider)
+    
+    def set_key(self, provider: str, key: str) -> bool:
+        """
+        Set API key for a provider.
+        
+        Args:
+            provider: Provider name
+            key: API key value
+            
+        Returns:
+            True if successful
+        """
+        return self.secrets.set_key(provider, key)
+    
+    def get_all_keys(self) -> Dict[str, str]:
+        """
+        Get all available API keys from environment and secrets.
+        
+        Returns:
+            Dictionary of provider -> API key
+        """
+        keys = {}
+        
+        # Load from secrets file
+        keys.update(self.secrets.load_keys())
+        
+        # Override with environment variables
+        env_providers = {
+            'GROQ_API_KEY': 'groq',
+            'OPENAI_API_KEY': 'openai',
+            'GEMINI_API_KEY': 'gemini',
+            'ANTHROPIC_API_KEY': 'anthropic',
+        }
+        
+        for env_var, provider in env_providers.items():
+            value = os.getenv(env_var)
+            if value:
+                keys[provider] = value
+        
+        return keys
+
+
+# Global API key manager instance
+api_key_manager = APIKeyManager()
+

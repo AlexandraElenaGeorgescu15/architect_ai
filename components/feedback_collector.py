@@ -26,6 +26,8 @@ class FeedbackEntry:
     is_local: bool
     generation_time: float
     feedback_id: str
+    validation_score: float = 0.0  # Quality score (0-100)
+    is_generic_content: bool = False  # Whether content is generic/placeholder
 
 
 class FeedbackCollector:
@@ -63,8 +65,10 @@ class FeedbackCollector:
         model_used: str,
         is_local: bool,
         generation_time: float,
-        correction: Optional[str] = None
-    ) -> str:
+        correction: Optional[str] = None,
+        validation_score: float = 0.0,
+        is_generic_content: bool = False
+    ) -> Optional[str]:
         """
         Save user feedback for later training.
         
@@ -79,10 +83,28 @@ class FeedbackCollector:
             is_local: True if local Ollama model
             generation_time: Time taken in seconds
             correction: User's corrected version (optional)
+            validation_score: Quality score (0-100)
+            is_generic_content: Whether content is generic/placeholder
             
         Returns:
-            feedback_id: Unique ID for this feedback
+            feedback_id: Unique ID for this feedback, or None if discarded
         """
+        # QUALITY GATE: Only accept high-quality feedback for training
+        # This prevents contaminating the training data with bad examples
+        
+        # Check 1: For "good" rating, validation score must be > 70
+        if rating == "good" and validation_score < 70.0:
+            print(f"[FEEDBACK_COLLECTOR] ⛔ Discarded 'good' feedback with low score ({validation_score:.1f} < 70.0)")
+            print(f"[FEEDBACK_COLLECTOR]    Artifact: {artifact_type}, Model: {model_used}")
+            return None
+        
+        # Check 2: Must not be generic/placeholder content
+        if is_generic_content and rating == "good":
+            print(f"[FEEDBACK_COLLECTOR] ⛔ Discarded generic content (not project-specific)")
+            print(f"[FEEDBACK_COLLECTOR]    Artifact: {artifact_type}, Model: {model_used}, Score: {validation_score:.1f}")
+            return None
+        
+        # Quality checks passed - record feedback
         # Generate unique ID
         feedback_id = f"{artifact_type}_{int(time.time() * 1000)}"
         
@@ -99,7 +121,9 @@ class FeedbackCollector:
             model_used=model_used,
             is_local=is_local,
             generation_time=generation_time,
-            feedback_id=feedback_id
+            feedback_id=feedback_id,
+            validation_score=validation_score,
+            is_generic_content=is_generic_content
         )
         
         # Save to appropriate directory
@@ -108,6 +132,8 @@ class FeedbackCollector:
         
         with open(feedback_file, 'w', encoding='utf-8') as f:
             json.dump(asdict(entry), f, indent=2, ensure_ascii=False)
+        
+        print(f"[FEEDBACK_COLLECTOR] ✅ Saved {rating} feedback: {feedback_id} (score: {validation_score:.1f})")
         
         return feedback_id
     

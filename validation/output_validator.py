@@ -29,12 +29,14 @@ class ValidationResult:
         errors: List of validation errors
         warnings: List of non-critical issues
         suggestions: List of improvement suggestions
+        is_generic_content: Whether the content is generic/placeholder (not project-specific)
     """
     is_valid: bool
     score: float  # 0-100
     errors: List[str]
     warnings: List[str]
     suggestions: List[str]
+    is_generic_content: bool = False  # Flag for generic content detection
     
     def __str__(self) -> str:
         status = "✅ VALID" if self.is_valid else "❌ INVALID"
@@ -62,6 +64,78 @@ class ArtifactValidator:
             'code_prototype': self.validate_code,
             'visual_prototype_dev': self.validate_html,
         }
+    
+    def _detect_generic_content(self, content: str, context: Dict = None) -> Tuple[bool, List[str]]:
+        """
+        Detect generic/placeholder content that is not project-specific.
+        
+        Returns:
+            Tuple of (is_generic, list_of_issues)
+        """
+        issues = []
+        is_generic = False
+        content_lower = content.lower()
+        
+        # Only flag truly generic placeholder entities (not common domain entities)
+        # Removed legitimate entities like 'user', 'registration api', 'angular', etc.
+        generic_entities = [
+            'example entity', 'sample entity', 'placeholder', 'todo', 'tbd',
+            'replace me', 'your entity here', 'entity name'
+        ]
+        
+        # Generic patterns (very strict - only obvious placeholders)
+        generic_patterns = [
+            r'node\s+\d+\s*->\s*node\s+\d+',  # node 1 -> node 2
+            r'example\s+\d+',
+            r'sample\s+\d+',
+            r'placeholder\s+\d+',
+        ]
+        
+        # Placeholder nodes (single letters are OK, just not chains of them)
+        placeholder_nodes = [
+            'node 1', 'node 2', 'node 3', 'node 4', 'node 5',
+            'example', 'sample', 'placeholder', 'todo'
+        ]
+        
+        # Check for generic entities
+        for entity in generic_entities:
+            if entity in content_lower:
+                issues.append(f"Generic placeholder detected: {entity}")
+                is_generic = True
+        
+        # Check for generic patterns
+        for pattern in generic_patterns:
+            if re.search(pattern, content_lower):
+                issues.append(f"Generic placeholder pattern detected: {pattern}")
+                is_generic = True
+        
+        # Check for placeholder nodes (require many to flag)
+        placeholder_count = sum(1 for placeholder in placeholder_nodes if placeholder in content_lower)
+        if placeholder_count >= 5:  # Increased from 3 to 5 - more lenient
+            issues.append(f"Multiple placeholder nodes detected ({placeholder_count})")
+            is_generic = True
+        
+        # Removed file path checking - these are legitimate in architecture diagrams
+        
+        # Relaxed ERD field checking - having just id and name is sometimes legitimate
+        # Only flag if ALL entities have only these fields
+        if 'erd' in content_lower or 'erDiagram' in content_lower:
+            entity_blocks = re.findall(r'\{[^}]+\}', content)
+            generic_entity_count = 0
+            for block in entity_blocks:
+                fields = re.findall(r'\w+\s+\w+', block)
+                if len(fields) <= 2:
+                    # Check if fields are just "id" and "name"
+                    field_names = [f.split()[1].lower() for f in fields]
+                    if set(field_names) <= {'id', 'name', 'pk', 'fk'}:
+                        generic_entity_count += 1
+            
+            # Only flag if ALL entities are generic (not just one or two)
+            if entity_blocks and generic_entity_count == len(entity_blocks) and len(entity_blocks) >= 2:
+                issues.append("All entities have only generic fields (id, name) - likely generic")
+                is_generic = True
+        
+        return is_generic, issues
     
     def validate(self, artifact_type: str, content: str, context: Dict = None) -> ValidationResult:
         """
@@ -95,10 +169,11 @@ class ArtifactValidator:
         Validate ERD diagram (Mermaid format).
         
         Checks:
-        - Is valid Mermaid syntax
+        - Is valid Mermaid syntax (PROGRAMMATIC)
         - Has entities and relationships
         - Entities have attributes
         - Relationships are properly defined
+        - Context-aware: Checks if entities match requirements in RAG/meeting notes
         """
         errors = []
         warnings = []
@@ -110,6 +185,26 @@ class ArtifactValidator:
             errors.append("ERD diagram is too short or empty")
             score -= 50
             return ValidationResult(False, max(0, score), errors, warnings, suggestions)
+        
+        # STEP 1: PROGRAMMATIC SYNTAX VALIDATION (catches errors AI might miss)
+        try:
+            from components.mermaid_syntax_corrector import validate_mermaid_syntax
+            is_valid_syntax, error_msg, syntax_errors = validate_mermaid_syntax(content)
+            
+            if not is_valid_syntax:
+                errors.append(f"Syntax error: {error_msg}")
+                score -= 30
+                if syntax_errors:
+                    for syntax_error in syntax_errors[:3]:  # Show first 3 errors
+                        errors.append(f"Syntax: {syntax_error}")
+                        score -= 5
+        except Exception as e:
+            # Fallback to basic regex check
+            pass
+        
+        # NOTE: Syntax correction with MermaidSyntaxCorrector happens AFTER validation
+        # We skip it here to avoid "coroutine never awaited" warnings
+        # The diagram fixer is called separately in the generation flow
         
         # Check for Mermaid ERD syntax
         if 'erDiagram' not in content and 'graph' not in content:
@@ -138,23 +233,57 @@ class ArtifactValidator:
             warnings.append("Entities should have attributes defined")
             score -= 10
         
+        # NEW: Context-aware validation (check if entities match requirements)
+        if context.get('rag_context') or context.get('user_request'):
+            combined_context = f"{context.get('rag_context', '')} {context.get('user_request', '')}".lower()
+            
+            # Extract expected entities from context (common nouns in caps or plurals)
+            expected_entities = set()
+            for word in re.findall(r'\b[A-Z][a-z]+(?:s)?\b', combined_context):
+                if len(word) > 3:  # Filter short words
+                    expected_entities.add(word.rstrip('s'))  # Remove plural
+            
+            # Check if generated entities cover expected ones
+            entity_names = [e.split('{')[0].strip() for e in entities]
+            entity_names_lower = [e.lower() for e in entity_names]
+            
+            missing_entities = []
+            for expected in expected_entities:
+                if expected.lower() not in entity_names_lower and expected.lower() not in combined_context.count(expected.lower()) < 2:
+                    # Only flag if mentioned multiple times in context
+                    if combined_context.count(expected.lower()) >= 2:
+                        missing_entities.append(expected)
+            
+            if missing_entities and len(missing_entities) <= 3:
+                warnings.append(f"May be missing entities mentioned in requirements: {', '.join(missing_entities[:3])}")
+                score -= 5
+        
+        # STEP 2: GENERIC CONTENT DETECTION (CRITICAL - FAIL IF GENERIC)
+        is_generic, generic_issues = self._detect_generic_content(content, context)
+        if is_generic:
+            errors.extend([f"❌ GENERIC CONTENT: {issue}" for issue in generic_issues[:3]])  # Show first 3 issues
+            score = 0  # FAIL VALIDATION - Generic content is unacceptable
+            errors.append("⛔ VALIDATION FAILED: Content is generic/placeholder, not project-specific. Regenerate with actual project context.")
+        
         # Suggestions
         if len(entities) < 5:
             suggestions.append("Consider adding more entities for completeness")
         if 'id' not in content.lower():
             suggestions.append("Ensure entities have primary key (id) fields")
         
-        return ValidationResult(True, max(0, score), errors, warnings, suggestions)
+        return ValidationResult(True, max(0, score), errors, warnings, suggestions, is_generic_content=is_generic)
     
     def validate_architecture(self, content: str, context: Dict) -> ValidationResult:
         """
         Validate architecture diagram.
         
         Checks:
+        - PROGRAMMATIC: Valid Mermaid syntax
         - Has components/nodes
         - Has connections/edges
         - Proper layer separation
         - Clear data flow
+        - Context-aware: Validates against mentioned technologies/components
         """
         errors = []
         warnings = []
@@ -165,6 +294,25 @@ class ArtifactValidator:
             errors.append("Architecture diagram is too short or empty")
             score -= 50
             return ValidationResult(False, max(0, score), errors, warnings, suggestions)
+        
+        # STEP 1: PROGRAMMATIC SYNTAX VALIDATION
+        try:
+            from components.mermaid_syntax_corrector import validate_mermaid_syntax
+            is_valid_syntax, error_msg, syntax_errors = validate_mermaid_syntax(content)
+            
+            if not is_valid_syntax:
+                errors.append(f"Syntax error: {error_msg}")
+                score -= 30
+                if syntax_errors:
+                    for syntax_error in syntax_errors[:3]:
+                        errors.append(f"Syntax: {syntax_error}")
+                        score -= 5
+        except Exception:
+            pass
+        
+        # NOTE: Syntax correction with MermaidSyntaxCorrector happens AFTER validation
+        # We skip it here to avoid "coroutine never awaited" warnings
+        # The diagram fixer is called separately in the generation flow
         
         # Check for Mermaid syntax
         if 'graph' not in content and 'flowchart' not in content:
@@ -189,13 +337,36 @@ class ArtifactValidator:
             warnings.append("Consider showing architectural layers (UI, API, DB)")
             score -= 10
         
+        # NEW: Context-aware validation (check for mentioned technologies)
+        if context.get('rag_context') or context.get('user_request'):
+            combined_context = f"{context.get('rag_context', '')} {context.get('user_request', '')}".lower()
+            
+            # Common tech stack keywords to look for
+            tech_keywords = ['react', 'angular', 'vue', 'node', 'express', 'django', 'flask', 'spring',
+                           'postgres', 'mysql', 'mongodb', 'redis', 'kafka', 'nginx', 'docker', 'kubernetes']
+            
+            mentioned_tech = [tech for tech in tech_keywords if tech in combined_context]
+            included_tech = [tech for tech in mentioned_tech if tech in content.lower()]
+            missing_tech = [tech for tech in mentioned_tech if tech not in content.lower()]
+            
+            if missing_tech and len(missing_tech) <= 3:
+                warnings.append(f"Requirements mention {', '.join(missing_tech[:3])} but not shown in diagram")
+                score -= 8
+        
+        # STEP 2: GENERIC CONTENT DETECTION (CRITICAL - FAIL IF GENERIC)
+        is_generic, generic_issues = self._detect_generic_content(content, context)
+        if is_generic:
+            errors.extend([f"❌ GENERIC CONTENT: {issue}" for issue in generic_issues[:3]])
+            score = 0  # FAIL VALIDATION - Generic content is unacceptable
+            errors.append("⛔ VALIDATION FAILED: Content is generic/placeholder, not project-specific. Regenerate with actual project context.")
+        
         # Suggestions
         if 'api' not in content.lower():
             suggestions.append("Consider showing API endpoints or services")
         if len(nodes) > 15:
             suggestions.append("Complex architecture - consider creating multiple diagrams")
         
-        return ValidationResult(True, max(0, score), errors, warnings, suggestions)
+        return ValidationResult(True, max(0, score), errors, warnings, suggestions, is_generic_content=is_generic)
     
     def validate_api_docs(self, content: str, context: Dict) -> ValidationResult:
         """
@@ -252,7 +423,14 @@ class ArtifactValidator:
         if not has_auth:
             suggestions.append("Consider documenting authentication requirements")
         
-        return ValidationResult(True, max(0, score), errors, warnings, suggestions)
+        # STEP 2: GENERIC CONTENT DETECTION (CRITICAL - FAIL IF GENERIC)
+        is_generic, generic_issues = self._detect_generic_content(content, context)
+        if is_generic:
+            errors.extend([f"❌ GENERIC CONTENT: {issue}" for issue in generic_issues[:3]])
+            score = 0  # FAIL VALIDATION - Generic content is unacceptable
+            errors.append("⛔ VALIDATION FAILED: Content is generic/placeholder, not project-specific. Regenerate with actual project context.")
+        
+        return ValidationResult(True, max(0, score), errors, warnings, suggestions, is_generic_content=is_generic)
     
     def validate_jira(self, content: str, context: Dict) -> ValidationResult:
         """
@@ -300,13 +478,20 @@ class ArtifactValidator:
             warnings.append("Task descriptions seem brief")
             score -= 5
         
+        # STEP 2: GENERIC CONTENT DETECTION (CRITICAL - FAIL IF GENERIC)
+        is_generic, generic_issues = self._detect_generic_content(content, context)
+        if is_generic:
+            errors.extend([f"❌ GENERIC CONTENT: {issue}" for issue in generic_issues[:3]])
+            score = 0  # FAIL VALIDATION - Generic content is unacceptable
+            errors.append("⛔ VALIDATION FAILED: Content is generic/placeholder, not project-specific. Regenerate with actual project context.")
+        
         # Suggestions
         if 'priority' not in content.lower():
             suggestions.append("Consider adding priority levels")
         if 'estimate' not in content.lower():
             suggestions.append("Consider adding story point estimates")
         
-        return ValidationResult(True, max(0, score), errors, warnings, suggestions)
+        return ValidationResult(True, max(0, score), errors, warnings, suggestions, is_generic_content=is_generic)
     
     def validate_workflows(self, content: str, context: Dict) -> ValidationResult:
         """
@@ -351,7 +536,14 @@ class ArtifactValidator:
         if 'environment' not in content.lower() and 'env' not in content.lower():
             suggestions.append("Consider documenting environment variables")
         
-        return ValidationResult(True, max(0, score), errors, warnings, suggestions)
+        # STEP 2: GENERIC CONTENT DETECTION (CRITICAL - FAIL IF GENERIC)
+        is_generic, generic_issues = self._detect_generic_content(content, context)
+        if is_generic:
+            errors.extend([f"❌ GENERIC CONTENT: {issue}" for issue in generic_issues[:3]])
+            score = 0  # FAIL VALIDATION - Generic content is unacceptable
+            errors.append("⛔ VALIDATION FAILED: Content is generic/placeholder, not project-specific. Regenerate with actual project context.")
+        
+        return ValidationResult(True, max(0, score), errors, warnings, suggestions, is_generic_content=is_generic)
     
     def validate_diagrams(self, content: str, context: Dict) -> ValidationResult:
         """
@@ -438,10 +630,11 @@ class ArtifactValidator:
         Validate HTML prototype.
         
         Checks:
-        - Valid HTML structure
+        - PROGRAMMATIC: Valid HTML syntax (balanced tags, proper nesting)
         - Has DOCTYPE
         - Includes CSS/styling
         - No broken tags
+        - Context-aware: Validates UI elements match requirements
         """
         errors = []
         warnings = []
@@ -452,6 +645,39 @@ class ArtifactValidator:
             errors.append("HTML prototype is too short")
             score -= 50
             return ValidationResult(False, max(0, score), errors, warnings, suggestions)
+        
+        # STEP 1: PROGRAMMATIC SYNTAX VALIDATION
+        # Check for balanced tags
+        tag_pattern = r'<(\w+)(?:\s[^>]*)?>|</(\w+)>'
+        tags_stack = []
+        tag_matches = re.finditer(tag_pattern, content, re.IGNORECASE)
+        
+        self_closing_tags = {'img', 'br', 'hr', 'input', 'meta', 'link', 'area', 'base', 'col', 'embed', 'param', 'source', 'track', 'wbr'}
+        
+        for match in tag_matches:
+            opening_tag = match.group(1)
+            closing_tag = match.group(2)
+            
+            if opening_tag:
+                tag_lower = opening_tag.lower()
+                if tag_lower not in self_closing_tags:
+                    tags_stack.append(tag_lower)
+            elif closing_tag:
+                tag_lower = closing_tag.lower()
+                if not tags_stack:
+                    errors.append(f"Unmatched closing tag: </{tag_lower}>")
+                    score -= 10
+                elif tags_stack[-1] != tag_lower:
+                    errors.append(f"Tag mismatch: expected </{tags_stack[-1]}>, got </{tag_lower}>")
+                    score -= 10
+                    tags_stack.pop()
+                else:
+                    tags_stack.pop()
+        
+        if tags_stack:
+            unclosed = ', '.join(f"<{tag}>" for tag in tags_stack[:3])
+            errors.append(f"Unclosed tags: {unclosed}")
+            score -= 15
         
         # Check for DOCTYPE
         if '<!DOCTYPE' not in content and '<!doctype' not in content:
@@ -470,6 +696,51 @@ class ArtifactValidator:
         if not has_css:
             warnings.append("No styling found")
             score -= 15
+        
+        # Check for interactivity
+        has_js = '<script' in content or 'onclick=' in content
+        if not has_js:
+            warnings.append("No JavaScript/interactivity found")
+            score -= 10
+        
+        # NEW: Context-aware validation (check for required UI elements)
+        if context.get('rag_context') or context.get('user_request'):
+            combined_context = f"{context.get('rag_context', '')} {context.get('user_request', '')}".lower()
+            
+            # Common UI element keywords
+            ui_elements = {
+                'form': ['<form', '<input', '<button'],
+                'table': ['<table', '<tr', '<td'],
+                'list': ['<ul', '<ol', '<li'],
+                'nav': ['<nav', 'navigation'],
+                'header': ['<header'],
+                'footer': ['<footer'],
+                'card': ['class="card"', 'class=\'card\''],
+                'modal': ['modal', 'dialog'],
+                'dropdown': ['<select', 'dropdown']
+            }
+            
+            missing_elements = []
+            for element_name, element_patterns in ui_elements.items():
+                if element_name in combined_context:
+                    # Check if any pattern for this element exists in HTML
+                    if not any(pattern in content.lower() for pattern in element_patterns):
+                        missing_elements.append(element_name)
+            
+            if missing_elements and len(missing_elements) <= 3:
+                warnings.append(f"Requirements mention {', '.join(missing_elements[:3])} but not found in HTML")
+                score -= 10
+        
+        # Check for responsiveness
+        is_responsive = 'viewport' in content or 'media' in content or 'responsive' in content
+        if not is_responsive:
+            suggestions.append("Consider adding responsive design (viewport meta tag)")
+        
+        # Suggestions
+        if 'title' not in content.lower():
+            suggestions.append("Add a <title> tag for better SEO")
+        
+        return ValidationResult(True, max(0, score), errors, warnings, suggestions)
         
         # Check for balanced tags
         open_tags = len(re.findall(r'<(\w+)', content))

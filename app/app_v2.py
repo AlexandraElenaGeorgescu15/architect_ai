@@ -20,11 +20,18 @@ Author: Alexandra Georgescu (alestef81@gmail.com)
 License: Proprietary - Internal use only
 """
 
-import os
-# ===== DISABLE CHROMADB TELEMETRY GLOBALLY (BEFORE ANY IMPORTS) =====
-os.environ["ANONYMIZED_TELEMETRY"] = "False"
-os.environ["CHROMA_TELEMETRY"] = "False"
-os.environ["CHROMA_DISABLE_TELEMETRY"] = "True"
+import sys
+from pathlib import Path
+
+# Add parent directory to path (only if needed)
+parent_dir = str(Path(__file__).parent.parent)
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+# Use centralized configuration for ChromaDB and environment
+from config.settings import configure_chromadb_telemetry, load_environment
+configure_chromadb_telemetry()
+load_environment()
 
 import streamlit as st
 import asyncio
@@ -32,13 +39,9 @@ import json
 import base64
 import zlib
 import time
-from pathlib import Path
+import os
 from datetime import datetime
 from typing import Optional, Dict, Any, Tuple, List
-import sys
-
-# Add parent directory to path
-sys.path.append(str(Path(__file__).parent.parent))
 
 # Import async utilities to fix event loop errors
 from utils.async_utils import run_async
@@ -46,6 +49,8 @@ from utils.async_utils import run_async
 from ai.artifact_router import ArtifactRouter, ArtifactType
 # Import output validator for quality assurance
 from ai.output_validator import OutputValidator
+# Import mermaid editor for interactive diagram editing
+from components.mermaid_editor import render_mermaid_editor
 
 # Note: Auto-update architecture documentation feature was removed
 # to prevent startup crashes. If needed, run manually via utils/architecture_updater.py
@@ -503,6 +508,15 @@ def job_generate_artifact(
                 p = outputs_dir / "prototypes" / "developer_visual_prototype.html"
                 p.parent.mkdir(exist_ok=True)
                 p.write_text(res, encoding='utf-8')
+                
+                # IMMEDIATE SESSION STATE SYNC - Update prototype tracking flags
+                import streamlit as st
+                import time
+                st.session_state.prototype_last_modified = datetime.now().isoformat()
+                st.session_state.dev_prototype_updated = True
+                st.session_state.prototype_cache_buster_dev = st.session_state.get('prototype_cache_buster_dev', 0) + 1
+                st.session_state.dev_prototype_force_mtime = time.time()
+                
                 result_path = str(p)
         elif artifact_type == "openapi":
             # Generate OpenAPI YAML via LLM with context
@@ -1866,7 +1880,7 @@ def render_sidebar():
                     st.session_state.api_key = api_key
                     
                     # Store in global API key manager for persistence across agent instances
-                    from config.api_key_manager import api_key_manager
+                    from config.secrets_manager import api_key_manager
                     provider_map = {
                         "Ollama (Local)": "ollama",
                         "Groq (FREE & FAST)": "groq",
@@ -1987,8 +2001,9 @@ def render_sidebar():
                 f.stat().st_size for f in AppConfig.OUTPUTS_DIR.rglob('*') if f.is_file()
             ) / (1024 * 1024)  # Convert to MB
             st.metric("Storage Used", f"{outputs_size:.1f} MB")
-        except:
+        except (OSError, PermissionError) as e:
             st.metric("Storage Used", "0.0 MB")
+            print(f"[WARN] Could not calculate storage size: {e}")
         
         if st.button("🧹 Clear All Outputs", help="Delete all generated artifacts", use_container_width=True):
             try:
@@ -2760,9 +2775,40 @@ def render_dev_outputs_tab():
                 # Get meeting notes from session state
                 meeting_notes = st.session_state.get('meeting_notes', '')
                 
-                for diagram_file in diagram_files:
-                    # Use rich diagram viewer with tabs
-                    render_diagram_viewer(diagram_file, meeting_notes)
+                for idx, diagram_file in enumerate(diagram_files):
+                    st.markdown(f"### 📊 {diagram_file.stem.replace('_', ' ').title()}")
+                    
+                    # Create tabs: AI View | Edit & Preview
+                    view_tab, edit_tab = st.tabs(["🤖 AI View", "✏️ Edit & Preview"])
+                    
+                    with view_tab:
+                        # Use rich diagram viewer with tabs
+                        render_diagram_viewer(diagram_file, meeting_notes)
+                    
+                    with edit_tab:
+                        # Interactive Mermaid editor
+                        st.markdown("**Interactive Editor** - Edit the diagram code and see live preview")
+                        try:
+                            mermaid_code = diagram_file.read_text(encoding='utf-8')
+                            updated_code = render_mermaid_editor(
+                                initial_code=mermaid_code,
+                                key=f"mermaid_editor_{idx}_{diagram_file.stem}"
+                            )
+                            
+                            # Save button to update the file
+                            col1, col2 = st.columns([1, 4])
+                            with col1:
+                                if st.button("💾 Save Changes", key=f"save_diagram_{idx}"):
+                                    try:
+                                        diagram_file.write_text(updated_code, encoding='utf-8')
+                                        st.success(f"✅ Saved {diagram_file.name}")
+                                        st.rerun()
+                                    except Exception as e:
+                                        st.error(f"❌ Save failed: {str(e)}")
+                        except Exception as e:
+                            st.error(f"Error loading diagram: {str(e)}")
+                    
+                    st.divider()
     
     # Documentation (generic) - with black background
     docs_dir = outputs_dir / "documentation"
@@ -3437,8 +3483,8 @@ def render_export_tab():
                                 file_name=file.name,
                                 key=f"dl_{file.stem}_{hash(str(file))}"
                             )
-                        except:
-                            st.caption("(binary)")
+                        except (UnicodeDecodeError, ValueError) as e:
+                            st.caption(f"(binary or unreadable: {type(e).__name__})")
                 
                 if len(files) > 20:
                     st.caption(f"... and {len(files) - 20} more files")
@@ -4127,14 +4173,49 @@ def generate_with_validation_silent(artifact_type: str, generate_fn, meeting_not
             
             logger.info(f"Validation: {artifact_type} - Score: {validation_result.score:.1f}/100, Valid: {validation_result.is_valid}")
             
-            # Check if retry needed
-            if validation_result.score < 70 and attempt < max_retries:
-                logger.warning(f"Quality score below threshold. Retrying... ({attempt + 1}/{max_retries})")
-                attempt += 1
-                continue
+            # 🚀 REMOVED OLD RETRY LOGIC - Smart generator handles retries internally
+            # The smart generation orchestrator already does:
+            # 1. Try local models (with quality validation)
+            # 2. If local fails validation, automatically fall back to cloud
+            # 3. Capture cloud responses for fine-tuning
+            # So we don't need app-level retry logic anymore
         
         # Success - exit loop
         break
+    
+    # Save fine-tuning dataset if cloud model generated quality output
+    if use_validation and validation_result and result and validation_result.score >= 80:
+        try:
+            # Determine if this was a cloud model generation (attempt > 0 means local failed and retried)
+            is_cloud_generation = attempt > 0
+            
+            if is_cloud_generation:
+                import json
+                from datetime import datetime
+                
+                finetune_dir = Path("finetune_datasets") / "cloud_outputs"
+                finetune_dir.mkdir(parents=True, exist_ok=True)
+                
+                # Create fine-tuning dataset entry
+                dataset_entry = {
+                    "timestamp": datetime.now().isoformat(),
+                    "artifact_type": str(artifact_type),
+                    "prompt": f"Generate {artifact_type} for: {meeting_notes[:500]}...",  # First 500 chars
+                    "completion": result,
+                    "validation_score": validation_result.score,
+                    "validation_status": str(validation_result.status.value) if hasattr(validation_result.status, 'value') else str(validation_result.status),
+                    "attempts": attempt + 1,
+                    "source": "cloud_fallback"
+                }
+                
+                # Save to JSONL file (append mode)
+                dataset_file = finetune_dir / f"{artifact_type}_quality_outputs.jsonl"
+                with open(dataset_file, 'a', encoding='utf-8') as f:
+                    f.write(json.dumps(dataset_entry) + '\n')
+                
+                logger.info(f"Saved fine-tuning dataset entry for {artifact_type} (score: {validation_result.score})")
+        except Exception as e:
+            logger.warning(f"Failed to save fine-tuning dataset: {e}")
     
     # Save validation report if available
     if use_validation and validation_result and result:
@@ -4766,6 +4847,12 @@ def generate_single_artifact(artifact_type: str):
                     proto_dir.mkdir(exist_ok=True)
                     (proto_dir / "developer_visual_prototype.html").write_text(result, encoding='utf-8')
                     
+                    # IMMEDIATE SESSION STATE SYNC - Update prototype tracking flags
+                    st.session_state.prototype_last_modified = datetime.now().isoformat()
+                    st.session_state.dev_prototype_updated = True
+                    st.session_state.prototype_cache_buster_dev = st.session_state.get('prototype_cache_buster_dev', 0) + 1
+                    st.session_state.dev_prototype_force_mtime = time.time()
+                    
                     # Update session state for outputs tab
                     st.session_state.last_generation.append("visual_prototype_dev")
                     st.session_state.outputs_updated = True
@@ -5143,11 +5230,20 @@ def generate_visual_prototype(idea: str, source: str = "manual"):
             out.parent.mkdir(exist_ok=True)
             out.write_text(html, encoding='utf-8')
             
+            # IMMEDIATE SESSION STATE SYNC - Update prototype tracking flags
+            st.session_state.prototype_last_modified = datetime.now().isoformat()
+            st.session_state.pm_prototype_updated = True
+            st.session_state.prototype_cache_buster_pm = st.session_state.get('prototype_cache_buster_pm', 0) + 1
+            st.session_state.pm_prototype_force_mtime = time.time()
+            
             source_label = "meeting notes" if source == "meeting_notes" else "manual input"
             st.session_state.rag_logs.append(f"[{datetime.now().strftime('%H:%M:%S')}] PM visual prototype generated from {source_label}")
             
             st.success(f"✅ Enhanced visual prototype generated from {source_label}!")
             st.info(f"📁 Saved to: prototypes/pm_visual_prototype.html")
+            
+            # Force rerun to show in editor immediately
+            st.rerun()
             st.balloons()
     
     except Exception as e:
@@ -5562,7 +5658,8 @@ def clear_feature_outputs():
                         if d.exists() and d != p:
                             try:
                                 d.rmdir()
-                            except:
+                            except (OSError, PermissionError):
+                                # Directory not empty or permission denied
                                 pass
         except Exception:
             pass

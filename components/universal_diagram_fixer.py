@@ -38,57 +38,152 @@ class UniversalDiagramFixer:
         self.current_type = None
         self.errors_fixed = []
     
-    def fix_diagram(self, content: str) -> Tuple[str, List[str]]:
+    def fix_diagram(self, content: str, max_passes: int = 3) -> Tuple[str, List[str]]:
         """
-        Fix any Mermaid diagram syntax issues.
+        Fix any Mermaid diagram syntax issues with MULTIPLE validation passes.
         
         Args:
             content: Raw Mermaid diagram content (possibly with errors)
+            max_passes: Maximum number of correction passes (default: 3 for aggressive fixing)
             
         Returns:
             Tuple of (fixed_content, list_of_fixes_applied)
         """
         self.errors_fixed = []
+        previous_content = None
         
-        # Step 1: Clean markdown wrappers
-        content = self._remove_markdown_blocks(content)
+        # MULTIPLE PASSES for stubborn syntax errors
+        for pass_num in range(max_passes):
+            if content == previous_content:
+                # No changes in this pass, we're done
+                if pass_num > 0:
+                    self.errors_fixed.append(f"Converged after {pass_num + 1} passes")
+                break
+            
+            previous_content = content
+            pass_fixes = []
+            
+            # Step 1: Clean markdown wrappers
+            content = self._remove_markdown_blocks(content)
+            
+            # Step 2: Detect diagram type
+            diagram_type = self._detect_diagram_type(content)
+            self.current_type = diagram_type
+            
+            if not diagram_type:
+                pass_fixes.append(f"[Pass {pass_num + 1}] Could not detect diagram type - added default flowchart header")
+                content = "flowchart TD\n" + content
+                diagram_type = 'flowchart'
+                self.current_type = 'flowchart'
+            
+            # Step 3: Apply type-specific fixes
+            if diagram_type == 'erdiagram':
+                content = self._fix_erd_diagram(content)
+            elif diagram_type in ['flowchart', 'graph']:
+                content = self._fix_flowchart_diagram(content)
+            elif diagram_type == 'sequencediagram':
+                content = self._fix_sequence_diagram(content)
+            elif diagram_type == 'classdiagram':
+                content = self._fix_class_diagram(content)
+            elif diagram_type == 'statediagram':
+                content = self._fix_state_diagram(content)
+            elif diagram_type == 'gantt':
+                content = self._fix_gantt_diagram(content)
+            elif diagram_type == 'pie':
+                content = self._fix_pie_diagram(content)
+            elif diagram_type == 'journey':
+                content = self._fix_journey_diagram(content)
+            
+            # Step 4: General cleanup
+            content = self._general_cleanup(content)
+            
+            # Collect fixes from this pass
+            if pass_num == max_passes - 1 or content != previous_content:
+                pass_fixes.extend(self.errors_fixed)
+            self.errors_fixed = pass_fixes
         
-        # Step 2: Detect diagram type
-        diagram_type = self._detect_diagram_type(content)
-        self.current_type = diagram_type
-        
-        if not diagram_type:
-            self.errors_fixed.append("Could not detect diagram type - added default flowchart header")
-            content = "flowchart TD\n" + content
-            diagram_type = 'flowchart'
-            self.current_type = 'flowchart'
-        
-        # Step 3: Apply type-specific fixes
-        if diagram_type == 'erdiagram':
-            content = self._fix_erd_diagram(content)
-        elif diagram_type in ['flowchart', 'graph']:
-            content = self._fix_flowchart_diagram(content)
-        elif diagram_type == 'sequencediagram':
-            content = self._fix_sequence_diagram(content)
-        elif diagram_type == 'classdiagram':
-            content = self._fix_class_diagram(content)
-        elif diagram_type == 'statediagram':
-            content = self._fix_state_diagram(content)
-        elif diagram_type == 'gantt':
-            content = self._fix_gantt_diagram(content)
-        elif diagram_type == 'pie':
-            content = self._fix_pie_diagram(content)
-        elif diagram_type == 'journey':
-            content = self._fix_journey_diagram(content)
-        
-        # Step 4: General cleanup
-        content = self._general_cleanup(content)
+        if len(self.errors_fixed) > 0:
+            print(f"[MERMAID_FIX] Applied {len(self.errors_fixed)} fixes across {min(pass_num + 1, max_passes)} passes")
         
         return content, self.errors_fixed
     
     def _remove_markdown_blocks(self, content: str) -> str:
         """Remove markdown code blocks (```mermaid, ```html, etc.) and RAG context pollution"""
+        import re
         content = content.strip()
+        
+        # Remove ALL common LLM artifacts and explanatory text patterns
+        explanatory_patterns = [
+            r'Here is the corrected.*?:',
+            r'Here\'s the.*?:',
+            r'I\'ve corrected.*?:',
+            r'The corrected.*?:',
+            r'This diagram shows.*?:',
+            r'This is the.*?:',
+            r'Here is.*?:',
+            r'Here\'s.*?:',
+            r'The following.*?:',
+            r'Below is.*?:',
+            r'Above is.*?:',
+            r'Generated.*?:',
+            r'Output.*?:',
+            r'Result.*?:',
+            r'Corrected.*?:',
+            r'Fixed.*?:',
+            r'Updated.*?:',
+            r'Here you go.*?:',
+            r'As requested.*?:',
+        ]
+        for pattern in explanatory_patterns:
+            content = re.sub(pattern, '', content, flags=re.IGNORECASE | re.MULTILINE)
+        
+        # Remove numbered explanations: "1. The generated...", "2. Otherwise...", etc.
+        content = re.sub(r'^\d+\.\s+[A-Z][^:]*:.*$', '', content, flags=re.MULTILINE | re.IGNORECASE)
+        content = re.sub(r'^\d+\.\s+[A-Z].*$', '', content, flags=re.MULTILINE)
+        
+        # Remove ALL stray HTML closing tags (anywhere in content)
+        html_tag_patterns = [
+            r'</div>\s*',
+            r'</p>\s*',
+            r'</span>\s*',
+            r'</body>\s*',
+            r'</html>\s*',
+            r'</head>\s*',
+            r'</script>\s*',
+            r'</style>\s*',
+            r'</\w+>',  # Any closing tag
+        ]
+        for pattern in html_tag_patterns:
+            content = re.sub(pattern, '', content, flags=re.IGNORECASE | re.MULTILINE)
+        
+        # Remove HTML opening tags that shouldn't be in diagrams
+        content = re.sub(r'<div[^>]*>', '', content, flags=re.IGNORECASE)
+        content = re.sub(r'<p[^>]*>', '', content, flags=re.IGNORECASE)
+        content = re.sub(r'<span[^>]*>', '', content, flags=re.IGNORECASE)
+        
+        # Remove duplicate content (common with local models)
+        # Split by diagram declaration and keep only first occurrence
+        lines = content.split('\n')
+        seen_declarations = set()
+        cleaned_lines = []
+        skip_until_next_diagram = False
+        
+        for line in lines:
+            line_lower = line.strip().lower()
+            # Check if this is a diagram declaration
+            if any(line_lower.startswith(dt) for dt in ['erdiagram', 'flowchart', 'graph', 'sequencediagram', 'classdiagram', 'statediagram']):
+                if line in seen_declarations:
+                    # Duplicate found, skip everything after this
+                    skip_until_next_diagram = True
+                    self.errors_fixed.append(f"Removed duplicate diagram section starting with: {line}")
+                    break
+                seen_declarations.add(line)
+                skip_until_next_diagram = False
+            
+            if not skip_until_next_diagram:
+                cleaned_lines.append(line)
+        
+        content = '\n'.join(cleaned_lines)
         
         # CRITICAL: Remove RAG context pollution that local models sometimes include
         # Look for common RAG pollution patterns
@@ -127,20 +222,12 @@ class UniversalDiagramFixer:
             content = '\n'.join(lines[diagram_start_idx:])
             self.errors_fixed.append(f"Removed {diagram_start_idx} lines of RAG context pollution before diagram")
         
-        # Remove opening markdown blocks
-        if content.startswith('```'):
-            lines = content.split('\n')
-            # Remove first line if it's a code block marker
-            if lines[0].startswith('```'):
-                content = '\n'.join(lines[1:])
-                self.errors_fixed.append("Removed opening markdown code block")
+        # Remove ALL markdown code blocks (```mermaid, ```, etc.)
+        content = re.sub(r'```[\w\-]*\s*\n?', '', content, flags=re.MULTILINE)
+        content = re.sub(r'\n?```\s*$', '', content, flags=re.MULTILINE)
+        content = re.sub(r'```', '', content)
         
-        # Remove closing markdown blocks
-        if content.endswith('```'):
-            content = content[:-3].strip()
-            self.errors_fixed.append("Removed closing markdown code block")
-        
-        return content
+        return content.strip()
     
     def _detect_diagram_type(self, content: str) -> Optional[str]:
         """Detect the type of Mermaid diagram"""
@@ -243,49 +330,78 @@ class UniversalDiagramFixer:
     
     def _fix_flowchart_diagram(self, content: str) -> str:
         """Fix flowchart/graph diagram syntax"""
+        import re
         lines = content.strip().split('\n')
         fixed_lines = []
+        seen_header = False
         
-        first_line = lines[0].strip()
-        
-        # Ensure proper header
-        if first_line.startswith('flowchart '):
-            fixed_lines.append(first_line)
-        elif first_line.startswith('graph '):
-            fixed_lines.append(first_line)
-        else:
-            fixed_lines.append('flowchart TD')
-            self.errors_fixed.append("Added missing flowchart header")
-        
-        # Process nodes and connections
-        for i, line in enumerate(lines[1:] if fixed_lines else lines):
+        for line in lines:
             line = line.strip()
             
+            # Skip empty lines and markdown blocks
             if not line or line.startswith('```'):
                 continue
+            
+            # Skip duplicate flowchart/graph declarations
+            line_lower = line.lower()
+            if ('flowchart' in line_lower or 'graph' in line_lower):
+                if seen_header:
+                    self.errors_fixed.append(f"Removed duplicate header: {line}")
+                    continue
+                else:
+                    fixed_lines.append(line)
+                    seen_header = True
+                    continue
+            
+            # Add header if missing
+            if not seen_header:
+                fixed_lines.append('flowchart TD')
+                seen_header = True
+                self.errors_fixed.append("Added missing flowchart TD header")
             
             # Fix common syntax issues
             # Issue 1: Missing quotes in labels with spaces
             if '[' in line and ']' in line:
-                # Check if label has spaces but no quotes
                 match = re.search(r'\[([^\]]+)\]', line)
                 if match:
                     label = match.group(1)
                     if ' ' in label and not (label.startswith('"') or label.startswith("'")):
                         line = line.replace(f'[{label}]', f'["{label}"]')
-                        if i == 0:  # Only log once
-                            self.errors_fixed.append("Added quotes to labels with spaces")
+                        self.errors_fixed.append("Added quotes to labels with spaces")
             
             # Issue 2: Fix arrow syntax
             line = re.sub(r'--+>', '-->', line)  # Multiple dashes to standard arrow
             line = re.sub(r'==+>', '==>', line)  # Bold arrows
             
-            # Issue 3: Fix node IDs (remove special characters)
-            # This is complex, so we'll just validate it exists
-            if '-->' in line or '---' in line:
-                fixed_lines.append('    ' + line)
+            # Issue 3: Remove explanatory text lines (comprehensive patterns)
+            explanatory_line_patterns = [
+                r'^[A-Z][a-z].*:',  # "Start:", "Here is", etc.
+                r'^This diagram.*',  # "This diagram shows..."
+                r'^The following.*',  # "The following..."
+                r'^Below is.*',  # "Below is..."
+                r'^Above is.*',  # "Above is..."
+                r'^Generated.*',  # "Generated..."
+                r'^Output.*',  # "Output..."
+                r'^Result.*',  # "Result..."
+                r'^Corrected.*',  # "Corrected..."
+                r'^Fixed.*',  # "Fixed..."
+                r'^Updated.*',  # "Updated..."
+                r'^\d+\.\s+[A-Z]',  # "1. The generated...", "2. Otherwise..."
+            ]
+            is_explanatory = any(re.match(pattern, line, re.IGNORECASE) for pattern in explanatory_line_patterns)
+            if is_explanatory:
+                self.errors_fixed.append(f"Removed explanatory text: {line}")
+                continue
+            
+            # Issue 4: Fix node IDs (remove special characters)
+            if '-->' in line or '---' in line or '[' in line:
+                if not line.startswith('    '):
+                    line = '    ' + line
+                fixed_lines.append(line)
             elif line and not line.startswith(('flowchart', 'graph')):
-                fixed_lines.append('    ' + line)
+                if not line.startswith('    '):
+                    line = '    ' + line
+                fixed_lines.append(line)
         
         if len(fixed_lines) <= 1:
             self.errors_fixed.append("Flowchart appears empty - added sample node")
@@ -456,15 +572,16 @@ class UniversalDiagramFixer:
 universal_diagram_fixer = UniversalDiagramFixer()
 
 
-def fix_any_diagram(content: str) -> Tuple[str, List[str]]:
+def fix_any_diagram(content: str, max_passes: int = 3) -> Tuple[str, List[str]]:
     """
-    Convenience function to fix any Mermaid diagram.
+    Convenience function to fix any Mermaid diagram with AGGRESSIVE multi-pass correction.
     
     Args:
         content: Raw diagram content
+        max_passes: Number of correction passes (default: 3 for stubborn syntax errors)
         
     Returns:
         Tuple of (fixed_content, list_of_fixes_applied)
     """
-    return universal_diagram_fixer.fix_diagram(content)
+    return universal_diagram_fixer.fix_diagram(content, max_passes=max_passes)
 

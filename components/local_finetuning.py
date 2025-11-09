@@ -3,6 +3,20 @@ Local Fine-Tuning System with LoRA/QLoRA
 Provides local model fine-tuning with model selection and training management
 """
 
+import sys
+# Enable UTF-8 output on Windows
+if sys.platform == 'win32':
+    try:
+        import io
+        # Check if already wrapped
+        if not isinstance(sys.stdout, io.TextIOWrapper) or sys.stdout.encoding != 'utf-8':
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+        if not isinstance(sys.stderr, io.TextIOWrapper) or sys.stderr.encoding != 'utf-8':
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+    except (AttributeError, OSError, ValueError):
+        # Already wrapped, closed, or not available
+        pass
+
 import streamlit as st
 import asyncio
 from typing import Dict, List, Tuple, Optional, Any
@@ -180,6 +194,20 @@ class LocalFineTuningSystem:
         try:
             import torch
             status["has_cuda"] = torch.cuda.is_available()
+            
+            # Check VRAM if GPU available
+            if status["has_cuda"]:
+                vram_gb = torch.cuda.get_device_properties(0).total_memory / (1024**3)
+                status["vram_gb"] = vram_gb
+                
+                if vram_gb < 12:
+                    status["message"] = (
+                        f"⚠️ Only {vram_gb:.1f}GB VRAM detected. Recommend 12GB+ for 7B models with LoRA. "
+                        f"Training may be slower or fail with OOM errors. "
+                        f"Consider: (1) Reduce batch size to 1, (2) Use 4-bit quantization, or (3) Switch to cloud provider."
+                    )
+                    status["ready"] = False
+                    return status
         except Exception:
             status["has_cuda"] = False
 
@@ -582,6 +610,14 @@ class LocalFineTuningSystem:
         
         if self.training_thread and self.training_thread.is_alive():
             raise Exception("Training already in progress")
+        
+        # Validate learning rate to prevent model divergence
+        if not (2e-5 <= config.learning_rate <= 1e-3):
+            raise ValueError(
+                f"Learning rate {config.learning_rate:.2e} is outside safe range [2e-5, 1e-3]. "
+                f"Extreme learning rates can cause model divergence. "
+                f"Recommended range: 2e-5 (conservative) to 5e-4 (aggressive)."
+            )
         
         # Clear previous state before starting new training
         with self._state_lock:

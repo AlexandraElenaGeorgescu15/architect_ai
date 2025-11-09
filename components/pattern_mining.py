@@ -329,10 +329,12 @@ class PatternDetector:
     def _is_singleton_pattern(self, content: str) -> bool:
         """Check if code contains singleton pattern"""
         patterns = [
-            r'class\s+\w+.*:\s*\n.*__instance\s*=',
-            r'def\s+__new__.*:\s*\n.*if.*__instance',
+            r'class\s+\w+.*:\s*\n.*_instance\s*=',  # Single or double underscore
+            r'def\s+__new__.*:\s*\n.*if.*_instance',  # Single or double underscore
             r'@singleton',
-            r'getInstance\s*\('
+            r'getInstance\s*\(',
+            r'_instance\s*=\s*None',  # Explicit None assignment
+            r'if\s+cls\._instance\s+is\s+None',  # Explicit singleton check
         ]
         return any(re.search(pattern, content, re.MULTILINE | re.DOTALL) for pattern in patterns)
     

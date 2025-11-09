@@ -44,11 +44,13 @@ class ArtifactType(Enum):
 class ModelMapping:
     """Model mapping configuration for an artifact type"""
     artifact_type: str
-    base_model: str  # Base Ollama model name
+    base_model: str  # Base Ollama model name (primary)
+    priority_models: Optional[List[str]] = None  # Priority list of models to try
     fine_tuned_model: Optional[str] = None  # Fine-tuned model name if available
     task_type: str = "code"  # Task type for routing
     description: str = ""
     persistent: bool = True  # Whether model stays loaded in VRAM
+    min_quality_score: int = 80  # Minimum quality score threshold
 
 
 class ArtifactModelMapper:
@@ -63,135 +65,169 @@ class ArtifactModelMapper:
     
     # Base model mappings (Ollama models)
     BASE_MODEL_MAPPINGS: Dict[str, ModelMapping] = {
-        # Mermaid/Diagram artifacts (using mistral:7b - good for structured text generation)
+        # Mermaid/Diagram artifacts - ENHANCED with priority models
         ArtifactType.ERD.value: ModelMapping(
             artifact_type=ArtifactType.ERD.value,
             base_model="mistral:7b-instruct-q4_K_M",
+            priority_models=["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M", "codellama:7b-instruct-q4_K_M"],
             task_type="mermaid",
             description="Entity Relationship Diagrams",
-            persistent=False  # Swap model
+            persistent=False,  # Swap model
+            min_quality_score=80
         ),
         ArtifactType.ARCHITECTURE.value: ModelMapping(
             artifact_type=ArtifactType.ARCHITECTURE.value,
-            base_model="mistral:7b-instruct-q4_K_M",
+            base_model="llama3:8b-instruct-q4_K_M",  # Changed from mistral for better complex diagrams
+            priority_models=["llama3:8b-instruct-q4_K_M", "mistral:7b-instruct-q4_K_M", "codellama:7b-instruct-q4_K_M"],
             task_type="mermaid",
             description="Architecture diagrams",
-            persistent=False
+            persistent=False,
+            min_quality_score=80
         ),
         ArtifactType.DATA_FLOW.value: ModelMapping(
             artifact_type=ArtifactType.DATA_FLOW.value,
             base_model="mistral:7b-instruct-q4_K_M",
+            priority_models=["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
             task_type="mermaid",
             description="Data flow diagrams",
-            persistent=False
+            persistent=False,
+            min_quality_score=80
         ),
         ArtifactType.USER_FLOW.value: ModelMapping(
             artifact_type=ArtifactType.USER_FLOW.value,
             base_model="mistral:7b-instruct-q4_K_M",
+            priority_models=["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
             task_type="mermaid",
             description="User flow diagrams",
-            persistent=False
+            persistent=False,
+            min_quality_score=80
         ),
         ArtifactType.SYSTEM_OVERVIEW.value: ModelMapping(
             artifact_type=ArtifactType.SYSTEM_OVERVIEW.value,
-            base_model="mistral:7b-instruct-q4_K_M",
+            base_model="llama3:8b-instruct-q4_K_M",  # Changed to llama3 for better complex overviews
+            priority_models=["llama3:8b-instruct-q4_K_M", "mistral:7b-instruct-q4_K_M"],
             task_type="mermaid",
             description="System overview diagrams",
-            persistent=False
+            persistent=False,
+            min_quality_score=80
         ),
         ArtifactType.COMPONENTS_DIAGRAM.value: ModelMapping(
             artifact_type=ArtifactType.COMPONENTS_DIAGRAM.value,
-            base_model="mistral:7b-instruct-q4_K_M",
+            base_model="llama3:8b-instruct-q4_K_M",  # Changed to llama3 for better component relationships
+            priority_models=["llama3:8b-instruct-q4_K_M", "mistral:7b-instruct-q4_K_M"],
             task_type="mermaid",
             description="Component diagrams",
-            persistent=False
+            persistent=False,
+            min_quality_score=80
         ),
         ArtifactType.API_SEQUENCE.value: ModelMapping(
             artifact_type=ArtifactType.API_SEQUENCE.value,
             base_model="mistral:7b-instruct-q4_K_M",
+            priority_models=["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
             task_type="mermaid",
             description="API sequence diagrams",
-            persistent=False
+            persistent=False,
+            min_quality_score=80
         ),
         ArtifactType.ALL_DIAGRAMS.value: ModelMapping(
             artifact_type=ArtifactType.ALL_DIAGRAMS.value,
             base_model="mistral:7b-instruct-q4_K_M",
+            priority_models=["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
             task_type="mermaid",
             description="All diagram types",
-            persistent=False
+            persistent=False,
+            min_quality_score=80
         ),
         
         # Code artifacts
         ArtifactType.CODE_PROTOTYPE.value: ModelMapping(
             artifact_type=ArtifactType.CODE_PROTOTYPE.value,
             base_model="codellama:7b-instruct-q4_K_M",
+            priority_models=["codellama:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
             task_type="code",
             description="Code prototypes",
-            persistent=True
+            persistent=True,
+            min_quality_score=80
         ),
         
-        # HTML/Visual artifacts
+        # HTML/Visual artifacts - CHANGED to llama3 (better at HTML generation)
         ArtifactType.VISUAL_PROTOTYPE_DEV.value: ModelMapping(
             artifact_type=ArtifactType.VISUAL_PROTOTYPE_DEV.value,
-            base_model="codellama:7b-instruct-q4_K_M",
+            base_model="llama3:8b-instruct-q4_K_M",  # Changed from codellama
+            priority_models=["llama3:8b-instruct-q4_K_M", "mistral:7b-instruct-q4_K_M", "codellama:7b-instruct-q4_K_M"],
             task_type="html",
             description="Visual prototypes (HTML)",
-            persistent=True
+            persistent=True,
+            min_quality_score=80
         ),
         
         # Documentation artifacts
         ArtifactType.API_DOCS.value: ModelMapping(
             artifact_type=ArtifactType.API_DOCS.value,
             base_model="codellama:7b-instruct-q4_K_M",
+            priority_models=["codellama:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
             task_type="documentation",
             description="API documentation",
-            persistent=True
+            persistent=True,
+            min_quality_score=80
         ),
         ArtifactType.DOCUMENTATION.value: ModelMapping(
             artifact_type=ArtifactType.DOCUMENTATION.value,
-            base_model="codellama:7b-instruct-q4_K_M",
+            base_model="llama3:8b-instruct-q4_K_M",  # Changed to llama3 for better natural language
+            priority_models=["llama3:8b-instruct-q4_K_M", "codellama:7b-instruct-q4_K_M"],
             task_type="documentation",
             description="General documentation",
-            persistent=True
+            persistent=True,
+            min_quality_score=80
         ),
         
         # Project Management artifacts
         ArtifactType.JIRA.value: ModelMapping(
             artifact_type=ArtifactType.JIRA.value,
             base_model="llama3:8b-instruct-q4_K_M",
+            priority_models=["llama3:8b-instruct-q4_K_M", "mistral:7b-instruct-q4_K_M"],
             task_type="jira",
             description="JIRA tasks",
-            persistent=True
+            persistent=True,
+            min_quality_score=80
         ),
         ArtifactType.WORKFLOWS.value: ModelMapping(
             artifact_type=ArtifactType.WORKFLOWS.value,
             base_model="llama3:8b-instruct-q4_K_M",
+            priority_models=["llama3:8b-instruct-q4_K_M", "mistral:7b-instruct-q4_K_M"],
             task_type="planning",
             description="Workflows",
-            persistent=True
+            persistent=True,
+            min_quality_score=80
         ),
         
         # API artifacts
         ArtifactType.OPENAPI.value: ModelMapping(
             artifact_type=ArtifactType.OPENAPI.value,
             base_model="codellama:7b-instruct-q4_K_M",
+            priority_models=["codellama:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
             task_type="code",
             description="OpenAPI specifications",
-            persistent=True
+            persistent=True,
+            min_quality_score=80
         ),
         ArtifactType.API_CLIENT_PYTHON.value: ModelMapping(
             artifact_type=ArtifactType.API_CLIENT_PYTHON.value,
             base_model="codellama:7b-instruct-q4_K_M",
+            priority_models=["codellama:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
             task_type="code",
             description="Python API clients",
-            persistent=True
+            persistent=True,
+            min_quality_score=80
         ),
         ArtifactType.API_CLIENT_TYPESCRIPT.value: ModelMapping(
             artifact_type=ArtifactType.API_CLIENT_TYPESCRIPT.value,
             base_model="codellama:7b-instruct-q4_K_M",
+            priority_models=["codellama:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
             task_type="code",
             description="TypeScript API clients",
-            persistent=True
+            persistent=True,
+            min_quality_score=80
         ),
     }
     
@@ -241,13 +277,15 @@ class ArtifactModelMapper:
         # Get base mapping
         mapping = self.BASE_MODEL_MAPPINGS.get(artifact_type)
         if not mapping:
-            # Default to code model
+            # Default to code model with priority list
             mapping = ModelMapping(
                 artifact_type=artifact_type,
                 base_model="codellama:7b-instruct-q4_K_M",
+                priority_models=["codellama:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
                 task_type="code",
                 description=f"{artifact_type} generation",
-                persistent=True
+                persistent=True,
+                min_quality_score=80
             )
         
         # Check for fine-tuned model
@@ -305,6 +343,32 @@ class ArtifactModelMapper:
         mapping = self.get_model_for_artifact(artifact_type)
         return mapping.persistent
     
+    def get_priority_models(self, artifact_type: str) -> List[str]:
+        """
+        Get priority list of models for artifact type.
+        
+        Args:
+            artifact_type: Type of artifact to generate
+            
+        Returns:
+            List of model names in priority order
+        """
+        mapping = self.get_model_for_artifact(artifact_type)
+        return mapping.priority_models or [mapping.base_model]
+    
+    def get_quality_threshold(self, artifact_type: str) -> int:
+        """
+        Get minimum quality threshold for artifact type.
+        
+        Args:
+            artifact_type: Type of artifact to generate
+            
+        Returns:
+            Minimum quality score (0-100)
+        """
+        mapping = self.get_model_for_artifact(artifact_type)
+        return mapping.min_quality_score
+    
     def list_required_models(self) -> List[str]:
         """
         List all required base models for all artifact types.
@@ -315,6 +379,8 @@ class ArtifactModelMapper:
         models = set()
         for mapping in self.BASE_MODEL_MAPPINGS.values():
             models.add(mapping.base_model)
+            if mapping.priority_models:
+                models.update(mapping.priority_models)
         return sorted(list(models))
 
 
