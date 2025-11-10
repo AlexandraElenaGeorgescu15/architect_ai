@@ -102,9 +102,11 @@ class EnhancedPrototypeGenerator:
         )
         
         # Generate HTML with proper system prompt
+        # ✅ FIXED: Pass artifact_type to enable smart generator
         html = await self.agent._call_ai(
             prompt,
-            system_prompt=f"You are an expert frontend developer creating a functional, beautiful prototype for: {requirements['feature_name']}. Output ONLY valid HTML code, no explanations."
+            system_prompt=f"You are an expert frontend developer creating a functional, beautiful prototype for: {requirements['feature_name']}. Output ONLY valid HTML code, no explanations.",
+            artifact_type="html_diagram"  # Enable smart generator with local-first + validation
         )
         
         return html

@@ -313,26 +313,8 @@ def job_generate_artifact(
                 outputs_dir
             )
             
-            # If Ollama failed validation and not forced local, try cloud fallback
-            if use_ollama and not res and not force_local_only:
-                print(f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Local model validation failed, falling back to cloud...")
-                # Switch to cloud provider temporarily
-                original_provider = st.session_state.get('provider') if hasattr(st, 'session_state') else None
-                try:
-                    if hasattr(st, 'session_state'):
-                        st.session_state['provider'] = "Groq (FREE & FAST)"
-                    # Recreate agent with cloud provider
-                    cloud_agent = UniversalArchitectAgent({})
-                    cloud_agent.meeting_notes = meeting_notes
-                    # Retry with cloud
-                    res = run_async(cloud_agent.generate_erd_only(artifact_type="erd"))
-                    if res:
-                        print(f"[{datetime.now().strftime('%H:%M:%S')}] ✅ Cloud fallback succeeded")
-                except Exception as e:
-                    print(f"[{datetime.now().strftime('%H:%M:%S')}] ❌ Cloud fallback failed: {e}")
-                finally:
-                    if hasattr(st, 'session_state') and original_provider:
-                        st.session_state['provider'] = original_provider
+            # 🚀 REMOVED OLD CLOUD FALLBACK - Smart generator handles it internally
+            
             if res:
                 p = outputs_dir / "visualizations" / "erd_diagram.mmd"
                 p.parent.mkdir(exist_ok=True)
@@ -2727,15 +2709,55 @@ def render_granular_generation_tab():
 
         if st.button("🔥 Generate Core Artifacts", use_container_width=True, key="btn_core_batch"):
             st.info("Generating: ERD, Architecture, API Docs, JIRA, Workflows...")
-            for art in ["erd", "architecture", "api_docs", "jira", "workflows"]:
-                _dispatch(art)
-            st.success("✅ Core artifacts complete!")
+            
+            # 🔥 FIX: Add error handling and continue on failure
+            artifacts = ["erd", "architecture", "api_docs", "jira", "workflows"]
+            succeeded = []
+            failed = []
+            
+            for art in artifacts:
+                try:
+                    st.write(f"⏳ Generating {art}...")
+                    _dispatch(art)
+                    succeeded.append(art)
+                    st.write(f"✅ {art} complete")
+                except Exception as e:
+                    failed.append(art)
+                    st.error(f"❌ {art} failed: {str(e)[:100]}")
+                    # Continue to next artifact instead of stopping
+                    continue
+            
+            # Summary
+            if succeeded:
+                st.success(f"✅ {len(succeeded)}/{len(artifacts)} artifacts complete: {', '.join(succeeded)}")
+            if failed:
+                st.warning(f"⚠️ {len(failed)} artifacts failed: {', '.join(failed)}")
         
         if st.button("🎨 Generate Prototypes", use_container_width=True, key="btn_proto_batch"):
             st.info("Generating: Code & Visual Prototypes...")
-            for art in ["code_prototype", "visual_prototype_dev"]:
-                _dispatch(art)
-            st.success("✅ Prototypes complete!")
+            
+            # 🔥 FIX: Add error handling and continue on failure
+            artifacts = ["code_prototype", "visual_prototype_dev"]
+            succeeded = []
+            failed = []
+            
+            for art in artifacts:
+                try:
+                    st.write(f"⏳ Generating {art}...")
+                    _dispatch(art)
+                    succeeded.append(art)
+                    st.write(f"✅ {art} complete")
+                except Exception as e:
+                    failed.append(art)
+                    st.error(f"❌ {art} failed: {str(e)[:100]}")
+                    # Continue to next artifact instead of stopping
+                    continue
+            
+            # Summary
+            if succeeded:
+                st.success(f"✅ {len(succeeded)}/{len(artifacts)} artifacts complete: {', '.join(succeeded)}")
+            if failed:
+                st.warning(f"⚠️ {len(failed)} artifacts failed: {', '.join(failed)}")
 
 
 def render_dev_outputs_tab():

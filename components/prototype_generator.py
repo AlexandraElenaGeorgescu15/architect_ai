@@ -72,6 +72,7 @@ def detect_stack(base: Path) -> Dict[str, bool]:
 
 
 def parse_llm_files(response: str) -> List[Tuple[str, str]]:
+    """Parse LLM response for file blocks in the standard format."""
     files: List[Tuple[str, str]] = []
     # Matches blocks like === FILE: path === ... === END FILE ===
     pattern = re.compile(r"===\s*FILE:\s*(.*?)\s*===\s*([\s\S]*?)\s*===\s*END FILE\s*===", re.MULTILINE)
@@ -80,7 +81,74 @@ def parse_llm_files(response: str) -> List[Tuple[str, str]]:
         content = m.group(2)
         if path:
             files.append((path, content))
+            print(f"[PARSE] Found file: {path} ({len(content)} chars)")
     return files
+
+
+def extract_code_from_markdown(response: str, feature_name: str, out_root: Path) -> List[Path]:
+    """
+    Extract code from markdown code blocks when strict format isn't used.
+    This catches cases where LLM generates code but doesn't use === FILE: === markers.
+    """
+    saved: List[Path] = []
+    
+    # Look for code blocks with language hints
+    typescript_pattern = re.compile(r"```(?:typescript|ts)\n([\s\S]*?)```", re.MULTILINE)
+    html_pattern = re.compile(r"```(?:html|angular)\n([\s\S]*?)```", re.MULTILINE)
+    scss_pattern = re.compile(r"```(?:scss|css)\n([\s\S]*?)```", re.MULTILINE)
+    csharp_pattern = re.compile(r"```(?:csharp|cs|c#)\n([\s\S]*?)```", re.MULTILINE)
+    
+    feat = _sanitize(feature_name)
+    
+    # Extract TypeScript/Angular component
+    ts_matches = typescript_pattern.findall(response)
+    if ts_matches:
+        # Find the one with @Component decorator
+        for ts_code in ts_matches:
+            if '@Component' in ts_code or 'Component' in ts_code:
+                comp_ts = out_root / "prototypes" / "llm" / "frontend" / "src" / "app" / "components" / f"{feat}.component.ts"
+                comp_ts.parent.mkdir(parents=True, exist_ok=True)
+                comp_ts.write_text(ts_code.strip(), encoding='utf-8')
+                saved.append(comp_ts)
+                print(f"[EXTRACT] Saved TypeScript component: {comp_ts.name}")
+                break
+    
+    # Extract HTML template
+    html_matches = html_pattern.findall(response)
+    if html_matches:
+        # Take the largest HTML block (likely the main template)
+        html_code = max(html_matches, key=len)
+        if len(html_code) > 50:  # Must be substantial
+            comp_html = out_root / "prototypes" / "llm" / "frontend" / "src" / "app" / "components" / f"{feat}.component.html"
+            comp_html.parent.mkdir(parents=True, exist_ok=True)
+            comp_html.write_text(html_code.strip(), encoding='utf-8')
+            saved.append(comp_html)
+            print(f"[EXTRACT] Saved HTML template: {comp_html.name}")
+    
+    # Extract SCSS/CSS
+    scss_matches = scss_pattern.findall(response)
+    if scss_matches:
+        scss_code = max(scss_matches, key=len)
+        if len(scss_code) > 20:
+            comp_scss = out_root / "prototypes" / "llm" / "frontend" / "src" / "app" / "components" / f"{feat}.component.scss"
+            comp_scss.parent.mkdir(parents=True, exist_ok=True)
+            comp_scss.write_text(scss_code.strip(), encoding='utf-8')
+            saved.append(comp_scss)
+            print(f"[EXTRACT] Saved SCSS styles: {comp_scss.name}")
+    
+    # Extract C# controller
+    cs_matches = csharp_pattern.findall(response)
+    if cs_matches:
+        for cs_code in cs_matches:
+            if 'Controller' in cs_code or 'ApiController' in cs_code:
+                controller = out_root / "prototypes" / "llm" / "backend" / "Controllers" / f"{feat.replace('-', '')}Controller.cs"
+                controller.parent.mkdir(parents=True, exist_ok=True)
+                controller.write_text(cs_code.strip(), encoding='utf-8')
+                saved.append(controller)
+                print(f"[EXTRACT] Saved C# controller: {controller.name}")
+                break
+    
+    return saved
 
 
 def save_llm_files(response: str, out_root: Path) -> List[Path]:
@@ -447,12 +515,39 @@ public class {feat.capitalize()}Controller {{
 # ---------------- SELECTION ----------------
 
 def generate_best_effort(feature_name: str, base: Path, out_root: Path, llm_response: str = "") -> List[Path]:
+    """
+    Generate prototype files from LLM response with smart fallback.
+    
+    Priority:
+    1. Try to parse LLM multi-file format (=== FILE: === markers)
+    2. If that fails but we have substantial content, try to extract code blocks
+    3. Only fall back to skeleton generation as last resort
+    """
     saved: List[Path] = []
-    # Try to save LLM files first
+    
+    # DEBUG: Log what we're receiving
+    print(f"[PROTOTYPE_GEN] Feature: {feature_name}")
+    print(f"[PROTOTYPE_GEN] LLM response length: {len(llm_response)} chars")
+    print(f"[PROTOTYPE_GEN] Has === FILE: markers: {'=== FILE:' in llm_response}")
+    
+    # Try to save LLM files first (strict format)
     if llm_response and "=== FILE:" in llm_response:
         saved = save_llm_files(llm_response, out_root)
         if saved:
+            print(f"[PROTOTYPE_GEN] ✅ Saved {len(saved)} files from LLM format")
             return saved
+        else:
+            print(f"[PROTOTYPE_GEN] ⚠️  '=== FILE:' found but no files parsed")
+    
+    # Try to extract code from markdown blocks if response has code
+    if llm_response and len(llm_response) > 200:
+        extracted = extract_code_from_markdown(llm_response, feature_name, out_root)
+        if extracted:
+            print(f"[PROTOTYPE_GEN] ✅ Extracted {len(extracted)} files from markdown blocks")
+            return extracted
+    
+    # Last resort: generate skeleton files
+    print(f"[PROTOTYPE_GEN] ⚠️  Falling back to skeleton generation (LLM output insufficient)")
     stack = detect_stack(base)
     # UI-first decision
     if stack["has_angular"]:

@@ -308,6 +308,59 @@ class SmartGenerationOrchestrator:
     8. Fine-tuned models improve over time
     """
     
+    def _build_context_prompt(
+        self,
+        prompt: str,
+        meeting_notes: str = "",
+        rag_context: str = "",
+        feature_requirements: Dict = None,
+        artifact_type: str = ""
+    ) -> str:
+        """
+        Build comprehensive prompt with ALL available context.
+        
+        This is CRITICAL - the AI needs to see:
+        - User's request (prompt)
+        - Meeting notes (what was discussed)
+        - RAG context (retrieved project docs, patterns, etc.)
+        - Feature requirements (specific requirements)
+        
+        Without this, outputs are generic and ignore project context.
+        """
+        parts = []
+        
+        # Start with user request
+        parts.append(prompt)
+        
+        # Add meeting notes (high priority context)
+        if meeting_notes and len(meeting_notes.strip()) > 0:
+            parts.append("\n## Meeting Notes & Requirements")
+            parts.append(meeting_notes)
+        
+        # Add RAG context (retrieved relevant docs/patterns)
+        if rag_context and len(rag_context.strip()) > 0:
+            parts.append("\n## Retrieved Context (Project Documentation & Patterns)")
+            # Limit RAG context to avoid token overflow
+            max_rag_chars = 3000
+            if len(rag_context) > max_rag_chars:
+                parts.append(rag_context[:max_rag_chars] + "\n...[truncated]")
+            else:
+                parts.append(rag_context)
+        
+        # Add feature requirements if available
+        if feature_requirements and len(feature_requirements) > 0:
+            parts.append("\n## Feature Requirements")
+            for key, value in feature_requirements.items():
+                parts.append(f"- {key}: {value}")
+        
+        # Add instruction to use the context
+        parts.append("\n## Instructions")
+        parts.append(f"Generate the {artifact_type} using ALL the context above.")
+        parts.append("Make it specific to this project, not generic.")
+        parts.append("Reference entities, features, and requirements from the meeting notes and context.")
+        
+        return "\n".join(parts)
+    
     def __init__(
         self,
         ollama_client,
@@ -326,47 +379,60 @@ class SmartGenerationOrchestrator:
         self.validator = output_validator
         self.min_quality_threshold = min_quality_threshold
         
-        # Artifact type → Priority local models mapping
-        # SUPPORTS BOTH: "erd" (old) and "mermaid_erd" (new) naming
+        # 🔥 INTELLIGENT MODEL ROUTING - Task-based model selection
+        # Different tasks need different model capabilities:
+        # - ERD/Simple diagrams: Fast, structured models (mistral, llama3)
+        # - Architecture/Complex: Reasoning models (mistral-nemo, larger models)
+        # - Code/Prototypes: Code-specialized models (qwen-coder, codellama, deepseek)
+        # - Documentation: General-purpose models (llama3, mistral)
+        
         self.artifact_models = {
-            # Diagrams (both naming conventions)
-            "erd": ["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
-            "mermaid_erd": ["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
-            "architecture": ["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
-            "mermaid_architecture": ["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
+            # Simple diagrams - Fast, good at structured data
+            "erd": ["mistral:7b-instruct-q4_K_M", "llama3.2:3b"],
+            "mermaid_erd": ["mistral:7b-instruct-q4_K_M", "llama3.2:3b"],
+            
+            # Architecture - Needs reasoning and planning
+            "architecture": ["mistral-nemo:12b-instruct-2407-q4_K_M", "mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
+            "mermaid_architecture": ["mistral-nemo:12b-instruct-2407-q4_K_M", "mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
+            "system_overview": ["mistral-nemo:12b-instruct-2407-q4_K_M", "mistral:7b-instruct-q4_K_M"],
+            "components_diagram": ["mistral-nemo:12b-instruct-2407-q4_K_M", "mistral:7b-instruct-q4_K_M"],
+            
+            # Sequence diagrams - Moderate complexity
             "api_sequence": ["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
             "mermaid_sequence": ["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
-            "class_diagram": ["mistral:7b-instruct-q4_K_M", "codellama:7b-instruct-q4_K_M"],
-            "mermaid_class": ["mistral:7b-instruct-q4_K_M", "codellama:7b-instruct-q4_K_M"],
+            
+            # Class/State diagrams - Code understanding helpful
+            "class_diagram": ["qwen2.5-coder:7b-instruct-q4_K_M", "codellama:7b-instruct-q4_K_M", "mistral:7b-instruct-q4_K_M"],
+            "mermaid_class": ["qwen2.5-coder:7b-instruct-q4_K_M", "codellama:7b-instruct-q4_K_M", "mistral:7b-instruct-q4_K_M"],
             "state_diagram": ["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
             "mermaid_state": ["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
+            
+            # Flowcharts - General purpose
             "flowchart": ["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
             "mermaid_flowchart": ["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
-            "system_overview": ["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
             "data_flow": ["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
             "user_flow": ["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
-            "components_diagram": ["mistral:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
             
-            # HTML/Visual prototypes (use specialized code models)
+            # HTML/Visual prototypes - NEEDS CODE MODELS (complex HTML/CSS/JS)
             "html_diagram": ["qwen2.5-coder:14b-instruct-q4_K_M", "qwen2.5-coder:7b-instruct-q4_K_M", "deepseek-coder:6.7b-instruct-q4_K_M"],
             "visual_prototype": ["qwen2.5-coder:14b-instruct-q4_K_M", "qwen2.5-coder:7b-instruct-q4_K_M", "deepseek-coder:6.7b-instruct-q4_K_M"],
             "visual_prototype_dev": ["qwen2.5-coder:14b-instruct-q4_K_M", "qwen2.5-coder:7b-instruct-q4_K_M", "deepseek-coder:6.7b-instruct-q4_K_M"],
             
-            # Code prototypes
-            "code_prototype": ["codellama:7b-instruct-q4_K_M", "qwen2.5-coder:7b-instruct-q4_K_M"],
-            "typescript_code": ["codellama:7b-instruct-q4_K_M", "qwen2.5-coder:7b-instruct-q4_K_M"],
-            "csharp_code": ["codellama:7b-instruct-q4_K_M", "qwen2.5-coder:7b-instruct-q4_K_M"],
+            # Code prototypes - CODE MODELS FIRST
+            "code_prototype": ["qwen2.5-coder:7b-instruct-q4_K_M", "codellama:7b-instruct-q4_K_M", "deepseek-coder:6.7b-instruct-q4_K_M"],
+            "typescript_code": ["qwen2.5-coder:7b-instruct-q4_K_M", "codellama:7b-instruct-q4_K_M"],
+            "csharp_code": ["qwen2.5-coder:7b-instruct-q4_K_M", "codellama:7b-instruct-q4_K_M"],
             
-            # Documentation
-            "jira_stories": ["llama3:8b-instruct-q4_K_M"],
-            "api_docs": ["llama3:8b-instruct-q4_K_M", "codellama:7b-instruct-q4_K_M"],
-            "workflows": ["llama3:8b-instruct-q4_K_M"],
-            "documentation": ["llama3:8b-instruct-q4_K_M"],
+            # Documentation - General purpose, good at writing
+            "jira_stories": ["llama3:8b-instruct-q4_K_M", "mistral:7b-instruct-q4_K_M"],
+            "api_docs": ["llama3:8b-instruct-q4_K_M", "qwen2.5-coder:7b-instruct-q4_K_M"],
+            "workflows": ["llama3:8b-instruct-q4_K_M", "mistral:7b-instruct-q4_K_M"],
+            "documentation": ["llama3:8b-instruct-q4_K_M", "mistral:7b-instruct-q4_K_M"],
             
-            # PM Mode
-            "pm_analysis": ["llama3:8b-instruct-q4_K_M"],
-            "pm_planning": ["llama3:8b-instruct-q4_K_M"],
-            "pm_tasks": ["llama3:8b-instruct-q4_K_M"],
+            # PM Mode - Planning and analysis
+            "pm_analysis": ["mistral-nemo:12b-instruct-2407-q4_K_M", "llama3:8b-instruct-q4_K_M"],
+            "pm_planning": ["mistral-nemo:12b-instruct-2407-q4_K_M", "llama3:8b-instruct-q4_K_M"],
+            "pm_tasks": ["llama3:8b-instruct-q4_K_M", "mistral:7b-instruct-q4_K_M"],
         }
         
         # Artifact type → Validation type mapping (supports both naming conventions)
@@ -420,6 +486,8 @@ class SmartGenerationOrchestrator:
         cloud_fallback_fn: Optional[callable] = None,
         temperature: float = 0.2,
         meeting_notes: str = "",
+        rag_context: str = "",  # ✅ ADDED
+        feature_requirements: Dict = None,  # ✅ ADDED
         context: Dict = None,
         ui_callback: Optional[callable] = None,
         **kwargs
@@ -431,11 +499,13 @@ class SmartGenerationOrchestrator:
         
         Args:
             artifact_type: Type of artifact (e.g., "mermaid_erd", "code_prototype")
-            prompt: Generation prompt
+            prompt: Generation prompt (user's request)
             system_message: System message (optional)
             cloud_fallback_fn: Cloud generation function (async callable)
             temperature: Generation temperature
-            meeting_notes: Meeting notes for semantic validation
+            meeting_notes: Meeting notes for context and validation
+            rag_context: Retrieved RAG context (project docs, patterns, etc.)
+            feature_requirements: Feature requirements dict
             context: Additional context dict
             ui_callback: Optional callback for UI updates (callable that takes message string)
             **kwargs: Additional arguments
@@ -445,6 +515,12 @@ class SmartGenerationOrchestrator:
         """
         start_time = time.time()
         attempts = []
+        
+        # Extract from kwargs if not passed directly
+        if not rag_context and kwargs.get('rag_context'):
+            rag_context = kwargs.get('rag_context', "")
+        if not feature_requirements and kwargs.get('feature_requirements'):
+            feature_requirements = kwargs.get('feature_requirements', {})
         
         def _log(message: str, to_ui: bool = True):
             """Log to terminal and optionally to UI"""
@@ -459,12 +535,36 @@ class SmartGenerationOrchestrator:
         _log(f"[SMART_GEN] Starting generation for: {artifact_type}")
         _log(f"{'='*60}", to_ui=False)
         
+        # 🔥 BUILD COMPREHENSIVE PROMPT WITH ALL CONTEXT
+        # This is critical - AI needs to see ALL available intelligence
+        full_context_prompt = self._build_context_prompt(
+            prompt=prompt,
+            meeting_notes=meeting_notes,
+            rag_context=rag_context,
+            feature_requirements=feature_requirements,
+            artifact_type=artifact_type
+        )
+        
+        # 🔬 COMPREHENSIVE DEBUG LOGGING
+        _log(f"[DEBUG] Context added: meeting_notes={len(meeting_notes)} chars, rag={len(rag_context)} chars, requirements={len(feature_requirements or {})}", to_ui=False)
+        _log(f"[DEBUG_PROMPT] Full prompt length: {len(full_context_prompt)} chars", to_ui=False)
+        _log(f"[DEBUG_PROMPT] Contains 'Meeting Notes': {'Meeting Notes' in full_context_prompt}", to_ui=False)
+        _log(f"[DEBUG_PROMPT] Contains 'Retrieved Context': {'Retrieved Context' in full_context_prompt}", to_ui=False)
+        _log(f"[DEBUG_PROMPT] First 300 chars of full prompt:\n{full_context_prompt[:300]}...", to_ui=False)
+        
         # Get priority models for this artifact type
         priority_models = self.artifact_models.get(artifact_type, ["llama3:8b-instruct-q4_K_M"])
         validation_type = self.validation_map.get(artifact_type, "DOCUMENTATION")
         
-        _log(f"🎯 Using {len(priority_models)} local model(s): {', '.join(priority_models)}")
-        _log(f"📋 Validation: {validation_type} | Quality threshold: {self.min_quality_threshold}/100")
+        # Check if local models are available
+        if self.ollama_client:
+            _log(f"🎯 Using {len(priority_models)} local model(s): {', '.join(priority_models)}")
+            _log(f"📋 Validation: {validation_type} | Quality threshold: {self.min_quality_threshold}/100")
+        else:
+            _log(f"☁️ CLOUD-ONLY MODE - Ollama not available, skipping local models")
+            _log(f"📋 Validation: {validation_type}")
+            # Skip local model attempts, go straight to cloud
+            priority_models = []
         
         # Try each local model in priority order
         for i, model_name in enumerate(priority_models):
@@ -490,9 +590,10 @@ class SmartGenerationOrchestrator:
                     _log(f"📝 Using enhanced HTML prototype prompt with strict validation rules")
                 
                 _log(f"🤖 Generating with {model_name}...")
+                # 🔥 USE FULL CONTEXT PROMPT (includes RAG, meeting notes, requirements)
                 response = await self.ollama_client.generate(
                     model_name=model_name,
-                    prompt=prompt,
+                    prompt=full_context_prompt,  # ✅ CHANGED from `prompt` to `full_context_prompt`
                     system_message=enhanced_system_message,
                     temperature=temperature
                 )
@@ -624,12 +725,25 @@ class SmartGenerationOrchestrator:
         
         # Try cloud fallback
         try:
-            print(f"[CLOUD_FALLBACK] Calling cloud provider...")
+            _log(f"☁️ Calling cloud provider...")
             cloud_start = time.time()
             
+            # Enhance system message for cloud too (same as local models)
+            enhanced_system_message = system_message or ""
+            if artifact_type in ["erd", "mermaid_erd"]:
+                enhanced_system_message = MERMAID_ERD_PROMPT + "\n\n" + (system_message or "")
+            elif artifact_type in ["architecture", "mermaid_architecture", "system_overview", "components_diagram"]:
+                enhanced_system_message = MERMAID_ARCHITECTURE_PROMPT + "\n\n" + (system_message or "")
+            elif artifact_type in ["api_sequence", "mermaid_sequence"]:
+                enhanced_system_message = MERMAID_SEQUENCE_PROMPT + "\n\n" + (system_message or "")
+            elif artifact_type in ["visual_prototype_dev", "html_diagram", "visual_prototype"]:
+                enhanced_system_message = HTML_PROTOTYPE_PROMPT + "\n\n" + (system_message or "")
+                _log(f"📝 Using enhanced HTML prototype prompt for cloud generation")
+            
+            # 🔥 USE FULL CONTEXT PROMPT for cloud too (not just bare prompt)
             cloud_content = await cloud_fallback_fn(
-                prompt=prompt,
-                system_message=system_message,
+                prompt=full_context_prompt,  # ✅ CHANGED from `prompt` to `full_context_prompt`
+                system_message=enhanced_system_message,
                 artifact_type=artifact_type,
                 temperature=temperature
             )
@@ -662,16 +776,24 @@ class SmartGenerationOrchestrator:
                 }
                 attempts.append(cloud_attempt)
                 
-                # Save cloud response for fine-tuning
-                await self._save_for_finetuning(
-                    artifact_type=artifact_type,
-                    prompt=prompt,
-                    system_message=system_message or "",
-                    cloud_response=cloud_content,
-                    quality_score=quality_score,
-                    local_model_failed=priority_models[0] if priority_models else "unknown",
-                    meeting_notes=meeting_notes
-                )
+                # 🔥 SAVE CLOUD RESPONSE FOR FINE-TUNING (with full context)
+                try:
+                    await self._save_for_finetuning(
+                        artifact_type=artifact_type,
+                        prompt=full_context_prompt,  # ✅ CHANGED - save full prompt with context
+                        system_message=enhanced_system_message,  # ✅ CHANGED - save enhanced system message
+                        cloud_response=cloud_content,
+                        quality_score=quality_score,
+                        local_model_failed=priority_models[0] if priority_models else "unknown",
+                        meeting_notes=meeting_notes
+                    )
+                    _log(f"💾 Saved cloud response for fine-tuning (quality: {quality_score}/100)")
+                    print(f"[DEBUG_FINETUNE] ✅ Successfully saved to {self.finetuning_data_dir}")
+                    print(f"[DEBUG_FINETUNE]    Quality: {quality_score}/100, Failed model: {priority_models[0] if priority_models else 'unknown'}")
+                except Exception as e:
+                    print(f"[DEBUG_FINETUNE] ❌ Failed to save fine-tuning data: {e}")
+                    import traceback
+                    traceback.print_exc()
                 
                 total_time = time.time() - start_time
                 

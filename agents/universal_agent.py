@@ -134,6 +134,64 @@ class GenerationResult:
 class UniversalArchitectAgent:
     """Full-featured universal architect agent with RAG"""
     
+    # Class-level cache for Ollama health check (reduces redundant HTTP calls)
+    _ollama_health_cache = None
+    _ollama_health_cache_time = 0
+    _HEALTH_CACHE_TTL = 5  # Cache health check for 5 seconds
+    
+    @classmethod
+    def _get_or_create_ollama_client(cls):
+        """
+        Get or create Ollama client with health check caching.
+        
+        Returns:
+            OllamaClient instance if available, None otherwise
+        
+        Uses class-level cache with 5-second TTL to prevent redundant health checks
+        during batch generation (10 agents = 1 health check instead of 10).
+        """
+        import time
+        current_time = time.time()
+        
+        # Check if cache is valid
+        if cls._ollama_health_cache is not None and (current_time - cls._ollama_health_cache_time) < cls._HEALTH_CACHE_TTL:
+            # Use cached result
+            if cls._ollama_health_cache:
+                print(f"[DEBUG] Using cached Ollama client (cache age: {current_time - cls._ollama_health_cache_time:.1f}s)")
+            else:
+                print(f"[DEBUG] Using cached 'Ollama unavailable' result (cache age: {current_time - cls._ollama_health_cache_time:.1f}s)")
+            return cls._ollama_health_cache
+        
+        # Cache expired or empty - perform health check
+        print("[DEBUG] Performing Ollama health check (cache expired or empty)")
+        try:
+            from ai.ollama_client import OllamaClient
+            import httpx
+            
+            # Quick health check
+            response = httpx.get("http://localhost:11434/api/tags", timeout=1.0)
+            if response.status_code == 200:
+                ollama_client = OllamaClient()
+                print("[DEBUG] ✅ Ollama healthy - created client")
+                
+                # Cache the successful result
+                cls._ollama_health_cache = ollama_client
+                cls._ollama_health_cache_time = current_time
+                return ollama_client
+            else:
+                print(f"[DEBUG] ❌ Ollama server returned {response.status_code}")
+                cls._ollama_health_cache = None
+                cls._ollama_health_cache_time = current_time
+                return None
+                
+        except Exception as e:
+            print(f"[DEBUG] ❌ Ollama not available: {e}")
+            
+            # Cache the failure result
+            cls._ollama_health_cache = None
+            cls._ollama_health_cache_time = current_time
+            return None
+    
     def __init__(self, config: Dict[str, Any] = None):
         self.config = config or {}
         self.client = None
@@ -186,8 +244,45 @@ class UniversalArchitectAgent:
         # Initialize advanced AI systems
         self._initialize_advanced_systems()
         
-        # 🚀 SMART GENERATION SYSTEM - Local-First with Cloud Fallback
-        self.smart_generator = None  # Lazy-initialized when Ollama client is ready
+        # 🚀 SMART GENERATION SYSTEM - Initialize ALWAYS
+        # Smart generator provides enhanced prompts, validation, and routing
+        # It works with BOTH local (Ollama) and cloud-only setups
+        self.smart_generator = None
+        try:
+            from ai.smart_generation import get_smart_generator
+            from ai.output_validator import get_validator
+            
+            # Try to get Ollama client for local-first routing
+            # If Ollama not available, smart generator still works (cloud-only mode)
+            ollama_client = None
+            
+            # Check if this agent instance has Ollama
+            if hasattr(self, 'ollama_client') and self.ollama_client:
+                ollama_client = self.ollama_client
+                print("[DEBUG] Using existing Ollama client from this agent")
+            else:
+                # Try to create Ollama client (for local models)
+                # Use cached health check to avoid redundant HTTP calls
+                ollama_client = self._get_or_create_ollama_client()
+            
+            # Initialize smart generator (works with OR without Ollama)
+            self.smart_generator = get_smart_generator(
+                ollama_client=ollama_client,  # Can be None for cloud-only
+                output_validator=get_validator(),
+                min_quality_threshold=80
+            )
+            
+            if ollama_client:
+                print(f"[🚀 SMART GEN] Initialized with LOCAL+CLOUD support ({self.client_type} agent)")
+            else:
+                print(f"[🚀 SMART GEN] Initialized in CLOUD-ONLY mode ({self.client_type} agent)")
+                print("[ℹ️  INFO] Install Ollama for local-first generation: https://ollama.com/download")
+                
+        except Exception as e:
+            import traceback
+            print(f"[ERROR] Smart generation system failed to initialize: {e}")
+            traceback.print_exc()
+            self.smart_generator = None
     
     def _initialize_ai_client(self):
         """Initialize AI client (supports Local Fine-tuned, OpenAI, Gemini, Groq) with global key persistence"""
@@ -255,22 +350,6 @@ class UniversalArchitectAgent:
                     self.client_type = 'ollama'
                     self.ollama_client = ollama_client
                     self.model_router = get_router(self.config, ollama_client)
-                    
-                    # 🚀 Initialize Smart Generation System (Local-First with Cloud Fallback)
-                    try:
-                        from ai.smart_generation import get_smart_generator
-                        from ai.output_validator import get_validator
-                        
-                        self.smart_generator = get_smart_generator(
-                            ollama_client=ollama_client,
-                            output_validator=get_validator(),
-                            min_quality_threshold=80
-                        )
-                        if not already_logged:
-                            print("[🚀 SMART GEN] Initialized - Local-first with quality validation")
-                    except Exception as e:
-                        print(f"[WARN] Smart generation system failed to initialize: {e}")
-                        self.smart_generator = None
                     
                     if not already_logged:
                         print("[OK] Connected to Ollama (Local Models)")
@@ -559,18 +638,94 @@ USER REQUEST:
                     except Exception:
                         pass  # Ignore if Streamlit not available
                 
-                # Define cloud fallback function that uses existing cloud logic below
+                # Define cloud fallback function with intelligent provider routing
                 async def cloud_fallback_fn(prompt, system_message, artifact_type, **kwargs):
-                    # This will use the cloud provider logic further down
-                    return await self._call_cloud_provider(full_prompt, system_prompt, artifact_type)
+                    """
+                    Smart cloud routing:
+                    - Complex tasks (architecture, prototypes, sequences) → Gemini 2.0 Flash
+                    - Simple tasks (ERD, docs) → Current provider (Groq/OpenAI)
+                    """
+                    # Define complex tasks that benefit from Gemini's capabilities
+                    COMPLEX_TASKS = [
+                        "architecture", "mermaid_architecture", "system_overview", 
+                        "components_diagram", "visual_prototype_dev", "visual_prototype",
+                        "html_diagram", "api_sequence", "mermaid_sequence",
+                        "full_system", "prototype"
+                    ]
+                    
+                    # Check if we should use Gemini for this task
+                    use_gemini = artifact_type in COMPLEX_TASKS
+                    
+                    if use_gemini:
+                        # Try to use Gemini if available
+                        try:
+                            # Save current provider
+                            original_provider = self.client_type
+                            original_client = self.client
+                            
+                            # Check if Gemini is configured
+                            try:
+                                from config.secrets_manager import api_key_manager
+                                gemini_key = api_key_manager.get_key('gemini')
+                                
+                                if gemini_key:
+                                    print(f"[SMART_ROUTING] 🎯 Complex task '{artifact_type}' → Using Gemini 2.0 Flash")
+                                    
+                                    # Temporarily switch to Gemini
+                                    import google.generativeai as genai
+                                    genai.configure(api_key=gemini_key)
+                                    self.client = genai.GenerativeModel('gemini-2.0-flash-exp')
+                                    self.client_type = 'gemini'
+                                    
+                                    # Generate with Gemini
+                                    result = await self._call_cloud_provider(prompt, system_message, artifact_type)
+                                    
+                                    # Restore original provider
+                                    self.client = original_client
+                                    self.client_type = original_provider
+                                    
+                                    return result
+                                else:
+                                    print(f"[SMART_ROUTING] Gemini not configured, using {original_provider}")
+                            except Exception as e:
+                                print(f"[SMART_ROUTING] Failed to switch to Gemini: {e}, using {original_provider}")
+                                # Restore on error
+                                self.client = original_client
+                                self.client_type = original_provider
+                        except Exception as e:
+                            print(f"[SMART_ROUTING] Error in Gemini routing: {e}")
+                    
+                    # Use current provider (Groq/OpenAI or fallback)
+                    return await self._call_cloud_provider(prompt, system_message, artifact_type)
                 
-                # Debug: Verify meeting notes are populated
+                
+                # Debug: Verify meeting notes and RAG context are populated
+                print(f"\n{'='*70}")
+                print(f"[DEBUG_AGENT] 🔬 Context verification before smart_generator.generate()")
+                print(f"{'='*70}")
                 if self.meeting_notes:
-                    print(f"[DEBUG] Meeting notes available ({len(self.meeting_notes)} chars): {self.meeting_notes[:100]}...")
+                    print(f"[DEBUG_AGENT] ✅ Meeting notes: {len(self.meeting_notes)} chars")
+                    print(f"[DEBUG_AGENT]    Preview: {self.meeting_notes[:150]}...")
                 else:
-                    print(f"[WARN] No meeting notes provided - semantic validation may not work correctly")
+                    print(f"[WARN] ❌ No meeting notes provided - semantic validation may not work correctly")
+                
+                if self.rag_context:
+                    print(f"[DEBUG_AGENT] ✅ RAG context: {len(self.rag_context)} chars")
+                    print(f"[DEBUG_AGENT]    Preview: {self.rag_context[:150]}...")
+                else:
+                    print(f"[WARN] ❌ No RAG context - outputs may be generic")
+                
+                if self.feature_requirements:
+                    print(f"[DEBUG_AGENT] ✅ Feature requirements: {len(self.feature_requirements)} items")
+                else:
+                    print(f"[DEBUG_AGENT] ⚠️  No feature requirements")
+                
+                print(f"[DEBUG_AGENT] Artifact type: {artifact_type}")
+                print(f"[DEBUG_AGENT] Full prompt length: {len(full_prompt)} chars")
+                print(f"{'='*70}\n")
                 
                 # Use smart generator with UI callback (tries local models first, cloud fallback if needed)
+                # CRITICAL: Pass ALL context (RAG + meeting notes + requirements)
                 result = await self.smart_generator.generate(
                     artifact_type=artifact_type,
                     prompt=full_prompt,
@@ -578,7 +733,13 @@ USER REQUEST:
                     cloud_fallback_fn=cloud_fallback_fn,
                     temperature=0.2,
                     meeting_notes=self.meeting_notes,
-                    context={"meeting_notes": self.meeting_notes},
+                    rag_context=self.rag_context,  # ✅ ADDED
+                    feature_requirements=self.feature_requirements,  # ✅ ADDED
+                    context={
+                        "meeting_notes": self.meeting_notes,
+                        "rag_context": self.rag_context,  # ✅ ADDED
+                        "feature_requirements": self.feature_requirements  # ✅ ADDED
+                    },
                     ui_callback=ui_callback
                 )
                 
@@ -586,668 +747,376 @@ USER REQUEST:
                     print(f"[SMART_GEN] ✅ Success! Model: {result.model_used}, Quality: {result.quality_score}/100, Cloud: {result.used_cloud_fallback}")
                     return result.content
                 else:
-                    print(f"[SMART_GEN] ⚠️ Failed: {result.validation_errors}")
-                    # Fall through to old logic as fallback
+                    print(f"[SMART_GEN] ⚠️ Failed after trying all models: {result.validation_errors}")
+                    # Return None - no fallback to OLD logic
+                    return None
                     
             except Exception as e:
                 import traceback
                 print(f"[ERROR] Smart generator failed: {e}")
                 traceback.print_exc()
-                # Fall through to old logic
+                # Return None - no fallback to broken OLD logic
+                return None
         
-        if check_force_cloud:
-            print(f"[FORCE_CLOUD] Skipping local models, using cloud provider directly...")
-            # Jump to cloud fallback section below
-        # Try Ollama provider with automatic model selection (OLD LOGIC - Fallback)
-        elif self.client_type == 'ollama' and hasattr(self, 'model_router') and artifact_type and not self.smart_generator:
-            from config.artifact_model_mapping import get_artifact_mapper
-            
-            mapper = get_artifact_mapper()
-            task_type = mapper.get_task_type(artifact_type)
-            model_name = mapper.get_model_name(artifact_type, prefer_fine_tuned=True)
-            
-            # Try local model first
-            try:
-                print(f"[MODEL_ROUTING] Trying LOCAL model for {artifact_type}...")
-                response = await self.model_router.generate(
-                    task_type=task_type,
-                    prompt=full_prompt,
-                    system_message=system_prompt,
-                    temperature=0.2
-                )
-                
-                if response.success:
-                    local_attempt_result = response.content
-                    
-                    # NEW: Validate quality for sensitive artifacts
-                    if should_validate_quality:
-                        from validation.output_validator import ArtifactValidator
-                        
-                        validator = ArtifactValidator()
-                        # Include RAG context (which contains meeting notes, docs, etc.) for validation
-                        validation_context = {
-                            'rag_context': self.rag_context,
-                            'user_request': prompt,
-                            'artifact_type': artifact_type
-                        }
-                        
-                        validation_result = validator.validate(artifact_type, local_attempt_result, validation_context)
-                        
-                        print(f"[VALIDATION] Local model quality: {validation_result.score:.1f}/100")
-                        
-                        # 🚀 STEP 2: RECORD FEEDBACK FOR ADAPTIVE LEARNING
-                        if self.adaptive_loop:
-                            feedback_type = FeedbackType.SUCCESS if validation_result.score >= 70.0 else FeedbackType.VALIDATION_FAILURE
-                            
-                            self.adaptive_loop.record_feedback(
-                                input_data=original_prompt,
-                                ai_output=local_attempt_result,
-                                artifact_type=artifact_type or "unknown",
-                                model_used=model_name,
-                                validation_score=validation_result.score,
-                                feedback_type=feedback_type,
-                                context={
-                                    'noise_score': noise_score,
-                                    'rag_context_length': len(self.rag_context),
-                                    'validation_errors': validation_result.errors,
-                                    'validation_warnings': validation_result.warnings,
-                                    'cleaned': noise_score > 0.3
-                                }
-                            )
-                        
-                        # Check if quality meets threshold (get from artifact mapper, default 80)
-                        from config.artifact_model_mapping import get_artifact_mapper
-                        mapper = get_artifact_mapper()
-                        quality_threshold = mapper.get_quality_threshold(artifact_type) if artifact_type else 80
-                        
-                        if validation_result.score >= quality_threshold:
-                            print(f"[MODEL_ROUTING] ✅ Local model PASSED validation ({validation_result.score:.1f}/100 >= {quality_threshold})")
-                            # Add successful local generation to fine-tuning feedback
-                            try:
-                                from components.finetuning_feedback import feedback_store, FeedbackEntry
-                                entry = FeedbackEntry.create(
-                                    artifact_type=artifact_type or "unknown",
-                                    issue="AUTO_POSITIVE: High-quality generation",
-                                    expected_style=local_attempt_result,
-                                    reference_code="",
-                                    meeting_context=original_prompt
-                                )
-                                feedback_store.add_feedback(entry)
-                                print("[FINETUNE] ✅ Added successful LOCAL generation to fine-tuning feedback store")
-                            except Exception as _ft_err:
-                                print(f"[WARN] Could not record fine-tuning feedback (LOCAL): {_ft_err}")
-                            return local_attempt_result
-                        else:
-                            print(f"[MODEL_ROUTING] ⚠️ Local model quality too low ({validation_result.score:.1f}/100 < {quality_threshold}). Falling back to cloud...")
-                            print(f"[VALIDATION] Errors: {', '.join(validation_result.errors[:3])}")
-                            # Fall through to cloud providers below
-                    else:
-                        # Not a quality-sensitive artifact, accept result
-                        return local_attempt_result
-                else:
-                    # Local model failed to generate
-                    print(f"[WARN] Local model generation failed: {response.error_message}. Falling back to cloud...")
-                    # Fall through to cloud providers below
-            except Exception as e:
-                print(f"[WARN] Ollama generation failed: {e}. Falling back to cloud...")
-                # Fall through to cloud providers
+        # 🔥 REMOVED OLD FALLBACK LOGIC - Smart generator is the only path now
+        # If smart generator not available, fail gracefully
+        if not self.smart_generator:
+            print(f"[ERROR] Smart generator not initialized - cannot generate {artifact_type}")
+            print(f"[ERROR] This should never happen - check initialization logs")
+            return None
         
-        # Cloud fallback: Try cloud providers when local fails OR quality too low
-        if self.client_type == 'ollama' or (self.client_type == 'local_finetuned' and not hasattr(self, 'client')):
-            # Local failed, try cloud providers in order of preference
-            from config.artifact_model_mapping import get_artifact_mapper
-            from config.secrets_manager import api_key_manager
-            
-            mapper = get_artifact_mapper()
-            
-            # Select best cloud model for artifact type
-            if artifact_type:
-                task_type = mapper.get_task_type(artifact_type)
-                
-                # Smart cloud model selection based on artifact type
-                cloud_providers = []
-                
-                # Diagrams: Gemini Flash (free, fast)
-                if task_type == 'mermaid':
-                    cloud_providers = [
-                        ('gemini', 'gemini-2.0-flash-exp'),
-                        ('groq', 'llama-3.3-70b-versatile'),
-                        ('openai', 'gpt-4')
-                    ]
-                # Code/HTML: Groq (fast, free) or GPT-4 (quality)
-                elif task_type in ['code', 'html']:
-                    cloud_providers = [
-                        ('groq', 'llama-3.3-70b-versatile'),
-                        ('gemini', 'gemini-2.0-flash-exp'),
-                        ('openai', 'gpt-4')
-                    ]
-                # Documentation: Gemini (free) or Groq (fast)
-                elif task_type == 'documentation':
-                    cloud_providers = [
-                        ('gemini', 'gemini-2.0-flash-exp'),
-                        ('groq', 'llama-3.3-70b-versatile'),
-                        ('openai', 'gpt-4')
-                    ]
-                # JIRA/Workflows: Groq (fast) or Gemini (free)
-                elif task_type in ['jira', 'planning']:
-                    cloud_providers = [
-                        ('groq', 'llama-3.3-70b-versatile'),
-                        ('gemini', 'gemini-2.0-flash-exp'),
-                        ('openai', 'gpt-4')
-                    ]
-                else:
-                    # Default: Try all in order
-                    cloud_providers = [
-                        ('groq', 'llama-3.3-70b-versatile'),
-                        ('gemini', 'gemini-2.0-flash-exp'),
-                        ('openai', 'gpt-4')
-                    ]
-                
-                # Compress context AGGRESSIVELY for cloud models to avoid token limit errors
-                # OpenAI GPT-4: 8192 tokens total (prompt + completion)
-                # With 4000 for completion, we need ~3000 for prompt (12K chars)
-                from ai.smart_model_selector import ContextOptimizer
-                compressed_prompt = await ContextOptimizer.compress_prompt_for_cloud(full_prompt, max_tokens=3000)
-                print(f"[CONTEXT_COMPRESSION] Reduced prompt from {len(full_prompt)} to {len(compressed_prompt)} chars")
-                
-                # Try each cloud provider until one works
-                for provider_name, model_name in cloud_providers:
-                    try:
-                        api_key = api_key_manager.get_key(provider_name)
-                        if not api_key:
-                            continue  # Skip if no API key
-                        
-                        # Try this cloud provider
-                        if provider_name == 'groq':
-                            from groq import AsyncGroq
-                            client = AsyncGroq(api_key=api_key)
-                            messages = []
-                            if system_prompt:
-                                messages.append({"role": "system", "content": system_prompt})
-                            messages.append({"role": "user", "content": compressed_prompt})
-                            
-                            response = await client.chat.completions.create(
-                                model="llama-3.3-70b-versatile",
-                                messages=messages,
-                                temperature=0.2,
-                                max_tokens=8000
-                            )
-                            result = response.choices[0].message.content
-                            print(f"[OK] Cloud fallback succeeded using Groq")
-                            
-                            # 🚀 Record cloud model feedback
-                            try:
-                                if self.adaptive_loop:
-                                    self.adaptive_loop.record_feedback(
-                                        input_data=original_prompt,
-                                        ai_output=result,
-                                        artifact_type=artifact_type or "unknown",
-                                        model_used="groq/llama-3.3-70b",
-                                        validation_score=None,  # Cloud output not auto-validated
-                                        feedback_type=FeedbackType.CLOUD_FALLBACK,
-                                        context={
-                                            'noise_score': noise_score,
-                                            'reason': 'local_failed_or_low_quality',
-                                            'cleaned': noise_score > 0.3
-                                        }
-                                    )
-                            except Exception as _feedback_err:
-                                print(f"[WARN] Could not record adaptive feedback: {_feedback_err}")
-                            
-                            return result
-                        
-                        elif provider_name == 'gemini':
-                            import google.generativeai as genai
-                            genai.configure(api_key=api_key)
-                            model = genai.GenerativeModel('gemini-2.0-flash-exp')
-                            
-                            # Build prompt with compressed context
-                            combined_prompt = compressed_prompt
-                            if system_prompt:
-                                combined_prompt = f"{system_prompt}\n\n{compressed_prompt}"
-                            
-                            response = await model.generate_content_async(combined_prompt)
-                            result = response.text
-                            print(f"[OK] Cloud fallback succeeded using Gemini")
-                            
-                            # 🚀 Record cloud model feedback
-                            try:
-                                if self.adaptive_loop:
-                                    self.adaptive_loop.record_feedback(
-                                        input_data=original_prompt,
-                                        ai_output=result,
-                                        artifact_type=artifact_type or "unknown",
-                                        model_used="gemini/2.0-flash-exp",
-                                        validation_score=None,
-                                        feedback_type=FeedbackType.CLOUD_FALLBACK,
-                                        context={
-                                            'noise_score': noise_score,
-                                            'reason': 'local_failed_or_low_quality',
-                                            'cleaned': noise_score > 0.3
-                                        }
-                                    )
-                            except Exception as _feedback_err:
-                                print(f"[WARN] Could not record adaptive feedback: {_feedback_err}")
-                            
-                            return result
-                        
-                        elif provider_name == 'openai':
-                            from openai import AsyncOpenAI
-                            client = AsyncOpenAI(api_key=api_key)
-                            messages = []
-                            if system_prompt:
-                                messages.append({"role": "system", "content": system_prompt})
-                            messages.append({"role": "user", "content": compressed_prompt})
-
-                            # Hard fail-safe to fit OpenAI context window
-                            try:
-                                from ai.smart_model_selector import fit_openai_messages_to_context
-                                trimmed_messages, prompt_tokens = fit_openai_messages_to_context(
-                                    messages=messages,
-                                    model_name="gpt-4",
-                                    context_window=8192,
-                                    max_completion_tokens=4000,
-                                    safety_margin=200,
-                                )
-                                if prompt_tokens > 0:
-                                    print(f"[TOKEN_GUARD] OpenAI prompt tokens: {prompt_tokens} (<= 3992 target)")
-                                messages = trimmed_messages
-                            except Exception as _guard_err:
-                                print(f"[WARN] Token guard failed (OpenAI): {_guard_err}. Proceeding without additional trimming.")
-
-                            response = await client.chat.completions.create(
-                                model="gpt-4",
-                                messages=messages,
-                                temperature=0.2,
-                                max_tokens=4000
-                            )
-                            result = response.choices[0].message.content
-                            print(f"[OK] Cloud fallback succeeded using OpenAI GPT-4")
-                            
-                            # Try to record as positive example for finetuning if quality is high
-                            try:
-                                from validation.output_validator import ArtifactValidator
-                                validator = ArtifactValidator()
-                                validation_context = {
-                                    'rag_context': self.rag_context,
-                                    'user_request': original_prompt,
-                                    'artifact_type': artifact_type
-                                }
-                                vres = validator.validate(artifact_type or "unknown", result, validation_context)
-                                if vres.score >= 80.0:
-                                    from components.finetuning_feedback import feedback_store, FeedbackEntry
-                                    entry = FeedbackEntry.create(
-                                        artifact_type=artifact_type or "unknown",
-                                        issue="AUTO_POSITIVE: High-quality generation",
-                                        expected_style=result,
-                                        reference_code="",
-                                        meeting_context=original_prompt
-                                    )
-                                    feedback_store.add_feedback(entry)
-                                    print("[FINETUNE] ✅ Added successful OpenAI generation to fine-tuning feedback store")
-                            except Exception as _ft_err:
-                                print(f"[WARN] Could not record fine-tuning feedback (OpenAI): {_ft_err}")
-                            
-                            # 🚀 Record cloud model feedback (after return to avoid blocking)
-                            try:
-                                if self.adaptive_loop:
-                                    self.adaptive_loop.record_feedback(
-                                        input_data=original_prompt,
-                                        ai_output=result,
-                                        artifact_type=artifact_type or "unknown",
-                                        model_used="openai/gpt-4",
-                                        validation_score=None,
-                                        feedback_type=FeedbackType.CLOUD_FALLBACK,
-                                        context={
-                                            'noise_score': noise_score,
-                                            'reason': 'local_failed_or_low_quality',
-                                            'cleaned': noise_score > 0.3
-                                        }
-                                    )
-                            except Exception as _feedback_err:
-                                print(f"[WARN] Could not record adaptive feedback: {_feedback_err}")
-                            
-                            return result
-                    except Exception as e:
-                        print(f"[WARN] Cloud provider {provider_name} failed: {e}. Trying next...")
-                        continue
-                
-                # All cloud providers failed
-                raise Exception("All cloud providers failed. Please check API keys in secrets store.")
+        # This should never be reached (smart generator handles everything)
+        print(f"[WARN] Reached end of generate_with_llm without return - this is unexpected")
+        return None
+    
+    async def _call_cloud_provider(self, prompt: str, system_prompt: str = None, artifact_type: str = None) -> str:
+        """
+        Helper method to call cloud providers with smart selection and compression.
+        Used by SmartGenerationOrchestrator for cloud fallback.
         
-        if self.client_type == 'ollama' and hasattr(self, 'ollama_client'):
-            # Direct Ollama call (fallback if router not available)
-            try:
-                # Use default model or get from mapper
-                if artifact_type:
-                    from config.artifact_model_mapping import get_artifact_mapper
-                    mapper = get_artifact_mapper()
-                    model_name = mapper.get_model_name(artifact_type)
-                else:
-                    model_name = "codellama:7b-instruct-q4_K_M"  # Default
-                
-                response = await self.ollama_client.generate(
-                    model_name=model_name,
-                    prompt=full_prompt,
-                    system_message=system_prompt,
-                    temperature=0.2
-                )
-                
-                if response.success:
-                    return response.content
-                else:
-                    raise Exception(f"Ollama generation failed: {response.error_message}")
-            except Exception as e:
-                print(f"[WARN] Ollama generation failed: {e}. Falling back to cloud...")
-                # Explicitly try cloud fallback
-                try:
-                    from config.secrets_manager import api_key_manager
-                    
-                    # Compress context AGGRESSIVELY for cloud models to avoid token limit errors
-                    # Target 3000 tokens (12K chars) to stay well under 8192 token limit
-                    from ai.smart_model_selector import ContextOptimizer
-                    compressed_prompt = await ContextOptimizer.compress_prompt_for_cloud(full_prompt, max_tokens=3000)
-                    print(f"[CONTEXT_COMPRESSION] Ollama fallback → Cloud: {len(full_prompt)} → {len(compressed_prompt)} chars")
-                    
-                    # Try cloud providers in order
-                    cloud_providers = [
-                        ('groq', 'llama-3.3-70b-versatile'),
-                        ('gemini', 'gemini-2.0-flash-exp'),
-                        ('openai', 'gpt-4')
-                    ]
-                    
-                    for provider_name, model_name in cloud_providers:
-                        try:
-                            api_key = api_key_manager.get_key(provider_name)
-                            if not api_key:
-                                continue
-                            
-                            if provider_name == 'groq':
-                                from groq import AsyncGroq
-                                client = AsyncGroq(api_key=api_key)
-                                messages = []
-                                if system_prompt:
-                                    messages.append({"role": "system", "content": system_prompt})
-                                messages.append({"role": "user", "content": compressed_prompt})
-                                
-                                response = await client.chat.completions.create(
-                                    model="llama-3.3-70b-versatile",
-                                    messages=messages,
-                                    temperature=0.2,
-                                    max_tokens=8000
-                                )
-                                result = response.choices[0].message.content
-                                print(f"[OK] Cloud fallback succeeded using Groq")
-                                return result
-                            
-                            elif provider_name == 'gemini':
-                                import google.generativeai as genai
-                                genai.configure(api_key=api_key)
-                                model = genai.GenerativeModel('gemini-2.0-flash-exp')
-                                
-                                combined_prompt = compressed_prompt
-                                if system_prompt:
-                                    combined_prompt = f"{system_prompt}\n\n{compressed_prompt}"
-                                
-                                response = await model.generate_content_async(combined_prompt)
-                                result = response.text
-                                print(f"[OK] Cloud fallback succeeded using Gemini")
-                                return result
-                            
-                            elif provider_name == 'openai':
-                                from openai import AsyncOpenAI
-                                client = AsyncOpenAI(api_key=api_key)
-                                messages = []
-                                if system_prompt:
-                                    messages.append({"role": "system", "content": system_prompt})
-                                messages.append({"role": "user", "content": compressed_prompt})
-                                # Hard fail-safe to fit OpenAI context window
-                                try:
-                                    from ai.smart_model_selector import fit_openai_messages_to_context
-                                    trimmed_messages, prompt_tokens = fit_openai_messages_to_context(
-                                        messages=messages,
-                                        model_name="gpt-4",
-                                        context_window=8192,
-                                        max_completion_tokens=4000,
-                                        safety_margin=200,
-                                    )
-                                    if prompt_tokens > 0:
-                                        print(f"[TOKEN_GUARD] OpenAI prompt tokens: {prompt_tokens} (<= 3992 target)")
-                                    messages = trimmed_messages
-                                except Exception as _guard_err:
-                                    print(f"[WARN] Token guard failed (OpenAI): {_guard_err}. Proceeding without additional trimming.")
-                                
-                                response = await client.chat.completions.create(
-                                    model="gpt-4",
-                                    messages=messages,
-                                    temperature=0.2,
-                                    max_tokens=4000
-                                )
-                                result = response.choices[0].message.content
-                                print(f"[OK] Cloud fallback succeeded using OpenAI GPT-4")
-                                # Try to record as positive example for finetuning if quality is high
-                                try:
-                                    from validation.output_validator import ArtifactValidator
-                                    validator = ArtifactValidator()
-                                    validation_context = {
-                                        'rag_context': self.rag_context,
-                                        'user_request': original_prompt,
-                                        'artifact_type': artifact_type
-                                    }
-                                    vres = validator.validate(artifact_type or "unknown", result, validation_context)
-                                    if vres.score >= 80.0:
-                                        from components.finetuning_feedback import feedback_store, FeedbackEntry
-                                        entry = FeedbackEntry.create(
-                                            artifact_type=artifact_type or "unknown",
-                                            issue="AUTO_POSITIVE: High-quality generation",
-                                            expected_style=result,
-                                            reference_code="",
-                                            meeting_context=original_prompt
-                                        )
-                                        feedback_store.add_feedback(entry)
-                                        print("[FINETUNE] ✅ Added successful OpenAI generation to fine-tuning feedback store")
-                                except Exception as _ft_err:
-                                    print(f"[WARN] Could not record fine-tuning feedback (OpenAI): {_ft_err}")
-                                return result
-                        
-                        except Exception as cloud_error:
-                            print(f"[WARN] Cloud provider {provider_name} failed: {cloud_error}. Trying next...")
-                            continue
-                    
-                    # All cloud providers failed
-                    raise Exception("All cloud providers failed after Ollama failure.")
-                
-                except Exception as fallback_error:
-                    print(f"[ERROR] Cloud fallback also failed: {fallback_error}")
-                    raise Exception(f"Both Ollama and cloud providers failed. Ollama: {e}, Cloud: {fallback_error}")
+        Args:
+            prompt: Full prompt (including RAG context)
+            system_prompt: System prompt (optional)
+            artifact_type: Artifact type for smart provider selection
+            
+        Returns:
+            Generated content from cloud provider
+        """
+        from config.secrets_manager import api_key_manager
+        from ai.smart_model_selector import ContextOptimizer
         
-        if self.client_type == 'local_finetuned':
-            # Use local fine-tuned model
-            import torch
-            
-            model = self.client['model']
-            tokenizer = self.client['tokenizer']
-            
-            # Format prompt for instruction-following
-            instruction_prompt = f"""### Instruction:
-{system_prompt if system_prompt else 'You are an expert software architect. Generate high-quality technical documentation and code.'}
-
-### Input:
-{full_prompt}
-
-### Output:
-"""
-            
-            # Tokenize
-            inputs = tokenizer(instruction_prompt, return_tensors="pt", truncation=True, max_length=4096)
-            
-            # Move to GPU if available
-            if self.client.get('cuda_available'):
-                inputs = {k: v.cuda() for k, v in inputs.items()}
-            
-            # Stream tokens for user feedback
-            try:
-                from transformers import TextIteratorStreamer
-                import threading
-                streamer = TextIteratorStreamer(tokenizer, skip_prompt=True, skip_special_tokens=True)
-                generation_kwargs = dict(
-                    **inputs,
-                    max_new_tokens=4096,  # Increased from 2048 for full prototypes
-                    temperature=0.2,
-                    do_sample=True,
-                    top_p=0.95,
-                    pad_token_id=tokenizer.pad_token_id,
-                    eos_token_id=tokenizer.eos_token_id,
-                    streamer=streamer,
-                )
-            
-                # Prepare optional Streamlit placeholder for live logs
-                log_placeholder = None
-                try:
-                    import streamlit as st
-                    log_placeholder = st.empty()
-                    log_placeholder.info("🧠 Generating with local Codellama…")
-                except Exception:
-                    log_placeholder = None
-
-                generated_chunks = []
-                generation_error: Dict[str, Exception] = {}
-
-                def _generate_async():
-                    try:
-                        with torch.no_grad():
-                            model.generate(**generation_kwargs)
-                    except Exception as exc:  # noqa: BLE001
-                        generation_error["error"] = exc
-
-                thread = threading.Thread(target=_generate_async)
-                thread.start()
-
-                for token in streamer:
-                    generated_chunks.append(token)
-                    partial_text = "".join(generated_chunks)
-                    if log_placeholder is not None:
-                        log_placeholder.markdown(f"```\n{partial_text[-2000:]}\n```")
-                    else:
-                        print(f"[LOCAL_GEN] {partial_text[-120:]}" if len(partial_text) > 120 else f"[LOCAL_GEN] {partial_text}")
-
-                thread.join()
-
-                if generation_error:
-                    raise generation_error["error"]
-
-                generated_text = "".join(generated_chunks)
-
-            except Exception as stream_err:
-                # Fallback to non-streaming generation
-                print(f"[WARN] Streaming generation failed: {stream_err}. Retrying without streamer...")
-                try:
-                    with torch.no_grad():
-                        outputs = model.generate(
-                            **inputs,
-                            max_new_tokens=4096,  # Increased from 2048 for full prototypes
-                            temperature=0.0,
-                            do_sample=False,
-                            top_p=0.95,
-                            pad_token_id=tokenizer.pad_token_id or tokenizer.eos_token_id,
-                            eos_token_id=tokenizer.eos_token_id,
-                        )
-                    prompt_length = inputs["input_ids"].shape[-1]
-                    generated_ids = outputs[0][prompt_length:]
-                    generated_text = tokenizer.decode(generated_ids.detach().cpu(), skip_special_tokens=True)
-                except Exception as final_err:  # noqa: BLE001
-                    if log_placeholder is not None:
-                        try:
-                            log_placeholder.error("❌ Local model generation failed. Swapping to cloud provider.")
-                        except Exception:  # noqa: BLE001
-                            pass
-                    # Clear CUDA error state to keep app responsive
-                    if self.client.get('cuda_available'):
-                        try:
-                            torch.cuda.empty_cache()
-                        except Exception:  # noqa: BLE001
-                            pass
-                    # Fine-tuned model failed, try cloud fallback
-                    print(f"[WARN] Local fine-tuned model failed: {final_err}. Falling back to cloud...")
-                    # Fall through to cloud fallback below
-            
-            cleaned_text = generated_text.strip()
-            if "### Output:" in cleaned_text:
-                result = cleaned_text.split("### Output:", 1)[-1].strip()
-            else:
-                result = cleaned_text
-            
-            # Clear live log placeholder once finished
-            try:
-                if log_placeholder is not None:
-                    log_placeholder.empty()
-            except Exception:
-                pass
-
-            return result
+        # Compress context for cloud models (target 3000 tokens = ~12K chars)
+        compressed_prompt = await ContextOptimizer.compress_prompt_for_cloud(prompt, max_tokens=3000)
+        print(f"[CONTEXT_COMPRESSION] {len(prompt)} → {len(compressed_prompt)} chars for cloud")
         
-        elif self.client_type == 'groq':
-            messages = []
-            if system_prompt:
-                messages.append({"role": "system", "content": system_prompt})
-            messages.append({"role": "user", "content": full_prompt})
-            
-            response = await self.client.chat.completions.create(
-                model="llama-3.3-70b-versatile",  # Fast and powerful
-                messages=messages,
-                temperature=0.2,
-                max_tokens=8000
-            )
-            return response.choices[0].message.content
-        
-        elif self.client_type == 'openai':
-            messages = []
-            if system_prompt:
-                messages.append({"role": "system", "content": system_prompt})
-            messages.append({"role": "user", "content": full_prompt})
-            
-            response = await self.client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=messages,
-                temperature=0.2
-            )
-            return response.choices[0].message.content
-        
-        elif self.client_type == 'gemini':
-            full_system_prompt = f"{system_prompt}\n\n{full_prompt}" if system_prompt else full_prompt
-            
-            # Add retry logic for rate limiting (429 errors)
-            import time
-            import random
-            max_retries = 3
-            base_delay = 5  # Base delay in seconds
-            
-            for attempt in range(max_retries):
-                try:
-                    response = self.client.generate_content(full_system_prompt)
-                    return response.text
-                except Exception as e:
-                    error_str = str(e)
-                    # Check if it's a 429 rate limit error
-                    if "429" in error_str or "Resource exhausted" in error_str or "ResourceExhausted" in error_str:
-                        if attempt < max_retries - 1:
-                            # Exponential backoff with jitter
-                            delay = base_delay * (2 ** attempt) + random.uniform(1, 3)
-                            print(f"[WARN] Rate limit hit (429). Retrying in {delay:.1f}s (attempt {attempt + 1}/{max_retries})...")
-                            time.sleep(delay)
-                            continue
-                        else:
-                            print(f"[ERROR] Rate limit exceeded after {max_retries} attempts. Please wait before trying again.")
-                            raise Exception(f"429 Rate limit exceeded. Please wait a few minutes before trying again. Error: {error_str}")
-                    else:
-                        # Not a rate limit error, re-raise immediately
-                        raise
-        
+        # Smart provider selection based on artifact type
+        # Complex tasks (architecture, prototypes) → Gemini 2.0 Flash
+        # Simple tasks (code, ERD) → Groq/OpenAI
+        if artifact_type in ['mermaid_class', 'prototype', 'architecture']:
+            cloud_providers = [
+                ('gemini', 'gemini-2.0-flash-exp'),
+                ('groq', 'llama-3.3-70b-versatile'),
+                ('openai', 'gpt-4')
+            ]
+            print(f"[SMART_ROUTING] Complex task ({artifact_type}) → Trying Gemini first")
         else:
-            # Unknown client type - try cloud fallback
-            print(f"[WARN] Unknown client type: {self.client_type}. Attempting cloud fallback...")
-            # Fall through to cloud fallback logic above
-            raise Exception(f"Unknown client type: {self.client_type}. No cloud fallback available.")
+            cloud_providers = [
+                ('groq', 'llama-3.3-70b-versatile'),
+                ('gemini', 'gemini-2.0-flash-exp'),
+                ('openai', 'gpt-4')
+            ]
+        
+        for provider_name, model_name in cloud_providers:
+            try:
+                api_key = api_key_manager.get_key(provider_name)
+                if not api_key:
+                    print(f"[SKIP] No API key for {provider_name}")
+                    continue
+                
+                if provider_name == 'groq':
+                    from groq import AsyncGroq
+                    client = AsyncGroq(api_key=api_key)
+                    messages = []
+                    if system_prompt:
+                        messages.append({"role": "system", "content": system_prompt})
+                    messages.append({"role": "user", "content": compressed_prompt})
+                    
+                    response = await client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=messages,
+                        temperature=0.2,
+                        max_tokens=8000
+                    )
+                    result = response.choices[0].message.content
+                    print(f"[OK] Cloud fallback succeeded using Groq")
+                    return result
+                
+                elif provider_name == 'gemini':
+                    import google.generativeai as genai
+                    genai.configure(api_key=api_key)
+                    model = genai.GenerativeModel('gemini-2.0-flash-exp')
+                    
+                    combined_prompt = compressed_prompt
+                    if system_prompt:
+                        combined_prompt = f"{system_prompt}\n\n{compressed_prompt}"
+                    
+                    response = await model.generate_content_async(combined_prompt)
+                    result = response.text
+                    print(f"[OK] Cloud fallback succeeded using Gemini")
+                    return result
+                
+                elif provider_name == 'openai':
+                    from openai import AsyncOpenAI
+                    client = AsyncOpenAI(api_key=api_key)
+                    messages = []
+                    if system_prompt:
+                        messages.append({"role": "system", "content": system_prompt})
+                    messages.append({"role": "user", "content": compressed_prompt})
+                    
+                    # Token guard for OpenAI
+                    try:
+                        from ai.smart_model_selector import fit_openai_messages_to_context
+                        trimmed_messages, prompt_tokens = fit_openai_messages_to_context(
+                            messages=messages,
+                            model_name="gpt-4",
+                            context_window=8192,
+                            max_completion_tokens=4000,
+                            safety_margin=200,
+                        )
+                        if prompt_tokens > 0:
+                            print(f"[TOKEN_GUARD] OpenAI prompt tokens: {prompt_tokens}")
+                        messages = trimmed_messages
+                    except Exception as _guard_err:
+                        print(f"[WARN] Token guard failed: {_guard_err}")
+                    
+                    response = await client.chat.completions.create(
+                        model="gpt-4",
+                        messages=messages,
+                        temperature=0.2,
+                        max_tokens=4000
+                    )
+                    result = response.choices[0].message.content
+                    print(f"[OK] Cloud fallback succeeded using OpenAI GPT-4")
+                    return result
+            
+            except Exception as e:
+                print(f"[WARN] Cloud provider {provider_name} failed: {e}. Trying next...")
+                continue
+        
+        # All cloud providers failed
+        raise Exception("All cloud providers failed. Please check API keys in secrets store.")
+    
+    # ============================================================================
+    # RAG CONTEXT RETRIEVAL
+    # ============================================================================
+    
+    async def retrieve_rag_context(self, query: str, force_refresh: bool = False, max_retries: int = 3) -> str:
+        """Retrieve relevant context using ENHANCED RAG with caching and retry logic"""
+        if not self.collection or not self.cfg:
+            print("[WARN] RAG system not available")
+            return ""
+        
+        # Check cache first
+        if not force_refresh:
+            cached_context = self.cache.get_context(query)
+            if cached_context:
+                self.rag_context = cached_context
+                return cached_context
+        
+        # Retry logic with exponential backoff
+        import time
+        for attempt in range(max_retries):
+            try:
+                if attempt > 0:
+                    wait_time = 2 ** attempt  # Exponential backoff: 2s, 4s, 8s
+                    print(f"[RAG] Retry attempt {attempt + 1}/{max_retries} after {wait_time}s...")
+                    time.sleep(wait_time)
+                
+                return await self._retrieve_rag_context_internal(query)
+                
+            except Exception as e:
+                print(f"[ERROR] RAG retrieval attempt {attempt + 1} failed: {e}")
+                if attempt == max_retries - 1:
+                    # Last attempt failed
+                    print(f"[ERROR] RAG retrieval failed after {max_retries} attempts")
+                    import traceback
+                    traceback.print_exc()
+                    return ""
+        
+        return ""
+    
+    async def _retrieve_rag_context_internal(self, query: str) -> str:
+        """Internal RAG retrieval implementation - ALWAYS uses advanced RAG + Smart Code Analysis"""
+        try:
+            # STEP 0: PROGRAMMATIC CODE ANALYSIS (NEW - reduces AI noise)
+            programmatic_context = ""
+            try:
+                from components.smart_code_analyzer import get_smart_analyzer
+                from pathlib import Path
+                
+                # Find project root (same logic as repo analysis)
+                current = Path(".").resolve()
+                project_root = current
+                if current.name == "architect_ai_cursor_poc" or "architect_ai" in str(current):
+                    project_root = current.parent.resolve()
+                
+                analyzer = get_smart_analyzer()
+                print("[SMART_ANALYSIS] 🧠 Running programmatic code analysis...")
+                analysis = analyzer.analyze_project(project_root)
+                programmatic_context = analyzer.format_for_ai(analysis)
+                
+                print(f"[SMART_ANALYSIS] ✅ Extracted {len(analysis['api_endpoints'])} APIs, "
+                      f"{len(analysis['database_models'])} models, "
+                      f"{len(analysis['ui_components'])} components")
+            except Exception as e:
+                print(f"[WARN] Smart code analysis failed: {e}")
+                programmatic_context = ""
+            
+            # FORCE ADVANCED RAG - Override config to ALWAYS enable advanced features
+            intelligence_cfg = self.cfg.get("intelligence", {})
+            
+            # Force enable all advanced features for artifact generation
+            if "query_expansion" not in intelligence_cfg:
+                intelligence_cfg["query_expansion"] = {}
+            if "reranking" not in intelligence_cfg:
+                intelligence_cfg["reranking"] = {}
+            if "context_optimization" not in intelligence_cfg:
+                intelligence_cfg["context_optimization"] = {}
+            
+            intelligence_cfg["query_expansion"]["enabled"] = True
+            intelligence_cfg["reranking"]["enabled"] = True
+            intelligence_cfg["reranking"]["strategy"] = "hybrid"
+            intelligence_cfg["reranking"]["top_k"] = 18
+            intelligence_cfg["context_optimization"]["enabled"] = True
+            intelligence_cfg["context_optimization"]["max_tokens"] = 8000
+            
+            print("[RAG] ✅ ADVANCED RAG ENABLED (forced) - Query Expansion + Hybrid Reranking + Context Optimization")
+            
+            # Step 1: Query Expansion (ALWAYS enabled)
+            queries = [query]
+            if True:  # Force enable
+                try:
+                    from rag.query_processor import get_query_expander
+                    expander = get_query_expander()
+                    analysis = expander.analyze_query(query)
+                    # Use original + expanded queries (limit to 3 total)
+                    queries = [analysis.original_query] + analysis.expanded_queries[:2]
+                    print(f"[RAG] ✅ Expanded to {len(queries)} queries")
+                except Exception as e:
+                    print(f"[WARN] Query expansion failed: {e}, continuing with original query")
+                    queries = [query]
+            
+            # Step 2: Retrieve for all queries
+            docs = self._load_docs_from_chroma()
+            
+            # Continue with the RAG pipeline...
+            # (Full implementation below in duplicate method)
+            # This is a stub - the real implementation is at line 1330+
+            return "RAG_STUB"  # Placeholder
+            
+        except Exception as e:
+            # Re-raise to trigger retry in outer method
+            raise Exception(f"RAG internal retrieval stub failed: {e}")
+    
+    # NOTE: The REAL _retrieve_rag_context_internal implementation follows below
+    #       This stub exists due to orphaned code cleanup
+    
+    def _load_docs_from_chroma(self):
+        """Load documents from Chroma"""
+        try:
+            res = self.collection.get(include=["documents","metadatas","embeddings"], limit=100000)
+            docs = [{"id":i, "content":d, "meta":m} for i,(d,m) in enumerate(zip(res["documents"], res["metadatas"]))]
+            return docs
+        except Exception as e:
+            print(f"[ERROR] Failed to load docs: {e}")
+            return []
+    
+    async def analyze_repository(self, repo_path: str = ".") -> RepositoryAnalysis:
+        """Comprehensive repository analysis - ALWAYS uses deterministic detection"""
+        print("[INFO] Analyzing repository...")
+        
+        # CRITICAL: Resolve the path to get absolute path
+        repo_path = Path(repo_path).resolve()
+        
+        # ALWAYS use deterministic detection - it's reliable and fast
+        # AI is too unreliable for tech stack detection
+        analysis = self._fallback_tech_stack_detection(repo_path)
+        
+        # Still retrieve RAG context for other purposes (code patterns, etc.)
+        # ENHANCED RAG CONTEXT: Include comprehensive project context
+        await self.retrieve_rag_context("""
+        components services controllers models architecture patterns
+        coding style conventions naming patterns project structure
+        README documentation definition of done definition of ready
+        coding standards best practices design patterns
+        """)
+        
+        self.repo_analysis = analysis
+        print(f"[OK] Repository analysis complete: {len(analysis.tech_stacks)} tech stacks detected")
+        print(f"[DEBUG] Final tech stacks: {analysis.tech_stacks}")
+        return analysis
+    
+    def _fallback_tech_stack_detection(self, repo_path: Path) -> RepositoryAnalysis:
+        """Deterministic tech stack detection - EXCLUDES the tool itself"""
+        analysis = RepositoryAnalysis()
+        
+        # SMART ROOT DETECTION: Find actual project root (same logic as RAG ingest)
+        search_path = repo_path
+        check_path = repo_path
+        
+        # If we're in architect_ai_cursor_poc, ALWAYS go to parent
+        if check_path.name == "architect_ai_cursor_poc" or "architect_ai" in str(check_path):
+            search_path = check_path.parent.resolve()
+            print(f"[DEBUG] Detected tool directory, searching parent: {search_path}")
+        else:
+            # Check up to 3 levels up for other cases
+            for _ in range(3):
+                parent = check_path.parent
+                if parent != check_path:
+                    subdirs = [d for d in parent.iterdir() if d.is_dir() and not d.name.startswith('.')]
+                    if len(subdirs) >= 2 and check_path.name in [d.name for d in subdirs]:
+                        search_path = parent
+                        break
+                check_path = parent
+        
+        print(f"[DEBUG] Searching for tech stacks in: {search_path}")
+        
+        # GENERIC TECH STACK DETECTION - recursively search for markers
+        # BUT EXCLUDE the tool directory itself
+        detected = []
+        
+        # Search for Angular (angular.json anywhere) - EXCLUDE tool dir
+        for angular_json in search_path.rglob("angular.json"):
+            angular_str = str(angular_json)
+            if ("node_modules" not in angular_str and 
+                "architect_ai_cursor_poc" not in angular_str and
+                "rag/" not in angular_str and
+                "components/" not in angular_str and
+                "agents/" not in angular_str):
+                detected.append(("Angular", "TypeScript", angular_json.parent))
+                print(f"[DEBUG] Found Angular at: {angular_json}")
+                break
+        
+        # NOTE: More tech stack detection code follows in the REAL duplicate method below
+        # This stub method has been cleaned up to remove orphaned code
+        return analysis
+    
+    # ============================================================================
+    # DUPLICATE METHODS (Real implementations follow)
+    # ============================================================================
+    
+    async def process_meeting_notes(self, notes_path: str) -> Dict[str, Any]:
+        """Process meeting notes to extract feature requirements and user stories"""
+        print(f"[INFO] Processing meeting notes from: {notes_path}")
+        
+        # NOTE: Full implementation in duplicate method below
+        # This stub exists due to orphaned code cleanup
+        return {}
+    
+    async def generate_prototype_code(self, feature_name: str) -> Dict[str, Any]:
+        """Generate code prototype - ENHANCED with Pattern Mining"""
+        print("[INFO] Generating code prototype...")
+        
+        # CRITICAL: Analyze repository FIRST if not already done
+        if not self.repo_analysis:
+            print("[INFO] Repository not analyzed yet, analyzing now...")
+            await self.analyze_repository()
+        
+        # ENHANCED RAG CONTEXT: Be MORE SPECIFIC with feature name to get relevant examples
+        # Extract key words from feature name for better matching
+        feature_keywords = ' '.join(word.lower() for word in feature_name.split('-') if len(word) > 2)
+        
+        await self.retrieve_rag_context(f"""
+        {feature_name} {feature_keywords} feature request form component service controller
+        implementation example similar component API endpoint backend service
+        coding style patterns components services API controller architecture
+        README documentation coding standards best practices conventions
+        project structure folder organization file naming TypeScript Angular C# .NET
+        """)
+        
+        # Continue with the rest of the prototype generation...
+        # (Full implementation follows in duplicate method below)
+        return {}
     
     async def _call_cloud_provider(self, prompt: str, system_prompt: str = None, artifact_type: str = None) -> str:
         """
@@ -2114,7 +1983,8 @@ Make it DETAILED and COMPLETE - this should be ready to copy-paste and run!
             system_prompt += "This is a FULL-STACK project with frontend and backend. YOU MUST generate files for BOTH. "
         system_prompt += "Generate COMPLETE, production-ready code with NO placeholders. Follow the exact file format with === FILE: === markers."
         
-        response = await self._call_ai(prompt, system_prompt)
+        # ✅ FIXED: Pass artifact_type to enable smart generator
+        response = await self._call_ai(prompt, system_prompt, artifact_type="code_prototype")
         
         return {
             "type": "code_prototype",
