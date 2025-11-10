@@ -1,10 +1,18 @@
-# 🏗️ Architect.AI v3.5.0 - Enterprise AI Development Platform
+# 🏗️ Architect.AI v3.5.2 - Enterprise AI Development Platform
 
 **Transform Meeting Notes → Production-Ready Code + Architecture + Documentation**
 
 The only AI assistant that truly understands YOUR codebase. Uses YOUR actual entities, YOUR design patterns, YOUR architecture - not generic templates.
 
-> **Latest (v3.5.0) - Intelligence That Knows Your Code:**
+> **Latest (v3.5.2) - November 2025 Improvements:**
+> - 🚀 **100% Smart Generator Coverage**: All artifacts now use local-first generation with cloud fallback
+> - 🎯 **Intelligent Cloud Routing**: Complex tasks (prototypes, architecture) automatically route to Gemini 2.0 Flash
+> - 💾 **Automatic Fine-Tuning Data Collection**: High-quality cloud responses saved for training local models
+> - 🔍 **Enhanced Context Passing**: RAG context + meeting notes + feature requirements in all prompts
+> - ✅ **8-Validator Quality System**: Comprehensive validation (syntax, semantics, completeness) with 0-100 scoring
+> - 📊 **See [November 2025 Improvements](documentation/NOVEMBER_2025_IMPROVEMENTS.md) for details**
+>
+> **v3.5.0 - Intelligence That Knows Your Code:**
 > - 🧠 **Knowledge Graph**: Maps YOUR component relationships using AST parsing + NetworkX
 > - 🔍 **Pattern Mining**: Detects YOUR design patterns (Singleton, Factory, Observer) via static analysis
 > - ✅ **Programmatic Validation**: Every artifact validated (Mermaid syntax, quality scores 0-100, auto-retry)
