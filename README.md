@@ -7,10 +7,13 @@ The only AI assistant that truly understands YOUR codebase. Uses YOUR actual ent
 > **Latest (v3.5.2) - November 2025 Improvements:**
 > - 🚀 **100% Smart Generator Coverage**: All artifacts now use local-first generation with cloud fallback
 > - 🎯 **Intelligent Cloud Routing**: Complex tasks (prototypes, architecture) automatically route to Gemini 2.0 Flash
-> - 💾 **Automatic Fine-Tuning Data Collection**: High-quality cloud responses saved for training local models
+> - 💾 **Quality-Filtered Fine-Tuning**: Only excellent cloud responses (≥90/100) saved for training to prevent model degradation
 > - 🔍 **Enhanced Context Passing**: RAG context + meeting notes + feature requirements in all prompts
 > - ✅ **8-Validator Quality System**: Comprehensive validation (syntax, semantics, completeness) with 0-100 scoring
-> - 📊 **See [November 2025 Improvements](documentation/NOVEMBER_2025_IMPROVEMENTS.md) for details**
+> - 🎨 **Enhanced Prototypes**: Full-stack generation (frontend + backend), proper file routing, improved caching
+> - 🛡️ **Robust Error Handling**: Diagram editor shows helpful troubleshooting tips (no more white screens)
+> - 💾 **Persistent UI State**: Success/error messages and save indicators persist across page refreshes
+> - 📊 **See [November 2025 Improvements](documentation/NOVEMBER_2025_IMPROVEMENTS.md) for full details**
 >
 > **v3.5.0 - Intelligence That Knows Your Code:**
 > - 🧠 **Knowledge Graph**: Maps YOUR component relationships using AST parsing + NetworkX

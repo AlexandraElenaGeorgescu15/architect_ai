@@ -606,6 +606,168 @@ ollama pull llama3.2:3b  # Instead of 8b
 
 ---
 
+## Prototype & Generation Issues (v3.5.2+)
+
+### Visual Prototype Shows Meeting Notes Text Instead of HTML
+
+**Symptom:** Visual prototype generation outputs plain text (meeting notes) instead of interactive HTML
+
+**Cause:** Validator attempting to process non-HTML content
+
+**Solution:** This is fixed in v3.5.2, but if you encounter it:
+1. Check that you're using the correct artifact type: `visual_prototype_dev` (not `html_diagram`)
+2. Verify the validator is checking for HTML tags before processing
+3. Ensure model selection is using `qwen2.5-coder:14b` for visual prototypes
+
+**Prevention:**
+- Update to v3.5.2 or later
+- Check `enhanced_prototype_generator.py` line 109 has correct `artifact_type`
+
+---
+
+### Code Prototype Missing Backend Files
+
+**Symptom:** Code prototype only generates 2 frontend files, no backend C# files
+
+**Cause:** Markdown code extraction not detecting all file types
+
+**Solution:**
+1. **Check extraction logic:** Ensure `prototype_generator.py` has enhanced C# extraction (v3.5.2+)
+2. **Verify LLM output:** Check if LLM actually generated C# code (look for `csharp` or `.cs` in response)
+3. **Try regeneration:** Click "Generate Code Prototype" again
+
+**Files to check:**
+- `outputs/prototypes/llm/frontend/` - Should have TypeScript files
+- `outputs/prototypes/llm/backend/` - Should have C# controllers, services, models
+
+**Fixed in:** v3.5.2 with enhanced extraction patterns
+
+---
+
+### Prototype Editor Not Showing Latest Version
+
+**Symptom:** Interactive editor shows old/cached prototype after new generation
+
+**Cause:** Browser cache not invalidated when new prototype generated
+
+**Solution:**
+1. **Force refresh:** Click the "🔄 Force Refresh" button in the Outputs tab
+2. **Check version:** Editor now shows "(v#)" where # is the version number
+3. **Clear browser cache:** Ctrl+F5 (Windows) or Cmd+Shift+R (Mac)
+
+**Prevention:**
+- v3.5.2+ includes automatic cache busting
+- Version number displayed: "✅ Loaded Developer visual prototype (v5)"
+
+---
+
+### UI Feedback Disappears After Generation
+
+**Symptom:** Success/error messages vanish after page refresh
+
+**Cause:** Streamlit rerun cleared transient UI elements
+
+**Solution:**
+- **Fixed in v3.5.2:** Messages now persist in session state
+- Look for feedback at the top of the Generate tab with timestamp
+- Example: "✅ Erd generated successfully! (14:32:15)"
+
+**If still happening:**
+1. Update to v3.5.2
+2. Check `st.session_state.last_generation_result` is being set
+
+---
+
+### Diagram Editor Shows White Screen
+
+**Symptom:** Mermaid diagram editor displays blank white screen instead of diagram or error
+
+**Cause:** Mermaid.js rendering error without proper error handling
+
+**Solution:**
+1. **Check syntax:** Look for validation errors in the left panel
+2. **Look for error messages:** v3.5.2+ shows detailed errors with troubleshooting tips
+3. **Simplify diagram:** Complex diagrams may hit rendering limits
+
+**Prevention:**
+- v3.5.2+ includes enhanced error handling with helpful messages
+- Shows loading state and specific error details
+- Provides troubleshooting tips for common issues
+
+**Expected behavior (v3.5.2+):**
+- Shows "⏳ Rendering diagram..." while loading
+- Displays "⚠️ Mermaid Rendering Error" with actual error message
+- Provides troubleshooting tips (check syntax, brackets, nodes)
+
+---
+
+### Files Appearing in Wrong Tabs
+
+**Symptom:** Visual prototypes or HTML diagrams show up in Code Editor tab
+
+**Cause:** File routing not filtering by file type/purpose
+
+**Solution:**
+- **Fixed in v3.5.2:** Files now properly routed
+  - Visual prototypes & HTML diagrams → Outputs tab ONLY
+  - Code files → BOTH Outputs (viewing) AND Code Editor (editing)
+  - Test files → Tests tab ONLY
+
+**If still happening:**
+1. Verify exclusion list in Code Editor tab includes:
+   - `developer_visual_prototype.html`
+   - `pm_visual_prototype.html`
+   - `*_diagram.html`
+2. Check file is in correct directory: `outputs/prototypes/llm/`
+
+---
+
+### Diagram Save State Not Persisting
+
+**Symptom:** Save indicator disappears when switching between views
+
+**Cause:** Session state not tracking save status across reruns
+
+**Solution:**
+- **Fixed in v3.5.2:** Save state now tracked with timestamps
+- Look for save indicator in editor:
+  - "✅ All changes saved (14:35:22)"
+  - "⚠️ You have unsaved changes (last saved: 14:35:22)"
+
+**Expected behavior:**
+1. Edit diagram in editor
+2. See "💡 Click Save to persist your changes"
+3. Click Save button
+4. See "✅ Saved diagram_name.mmd" 
+5. Indicator persists when switching views
+
+---
+
+### Fine-Tuning Degrading Model Quality
+
+**Symptom:** Local models getting worse over time, not better
+
+**Cause:** Low-quality examples (score < 90) being saved for training
+
+**Solution:**
+- **Fixed in v3.5.2:** Only examples with quality ≥90/100 are saved automatically
+- **ONE-TIME:** Run cleanup script to remove OLD low-quality examples (pre-v3.5.2):
+  ```bash
+  python scripts/cleanup_low_quality_finetuning.py
+  ```
+- **Going forward:** Quality filter is automatic - no manual cleanup needed
+
+**Check training data quality:**
+1. Look in `finetune_datasets/cloud_responses/`
+2. Each JSON file has `quality_score` field
+3. Should only see scores ≥ 90
+
+**Prevention:**
+- v3.5.2+ automatically filters low-quality examples
+- Only excellent cloud responses saved for training
+
+---
+
 ## Getting More Help
 
 ### Check Logs

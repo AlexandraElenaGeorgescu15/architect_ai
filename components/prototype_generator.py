@@ -136,17 +136,59 @@ def extract_code_from_markdown(response: str, feature_name: str, out_root: Path)
             saved.append(comp_scss)
             print(f"[EXTRACT] Saved SCSS styles: {comp_scss.name}")
     
-    # Extract C# controller
+    # Extract C# files (controller, models, services, repositories)
     cs_matches = csharp_pattern.findall(response)
     if cs_matches:
-        for cs_code in cs_matches:
+        for idx, cs_code in enumerate(cs_matches):
+            # Detect file type based on content
             if 'Controller' in cs_code or 'ApiController' in cs_code:
                 controller = out_root / "prototypes" / "llm" / "backend" / "Controllers" / f"{feat.replace('-', '')}Controller.cs"
                 controller.parent.mkdir(parents=True, exist_ok=True)
                 controller.write_text(cs_code.strip(), encoding='utf-8')
                 saved.append(controller)
                 print(f"[EXTRACT] Saved C# controller: {controller.name}")
-                break
+            
+            elif 'Dto' in cs_code or 'DTO' in cs_code or ('class' in cs_code and 'public' in cs_code and '{' in cs_code and 'Controller' not in cs_code):
+                # Extract class name from code
+                class_match = re.search(r'class\s+(\w+)', cs_code)
+                class_name = class_match.group(1) if class_match else f"{feat.replace('-', '')}Dto"
+                dto = out_root / "prototypes" / "llm" / "backend" / "Models" / f"{class_name}.cs"
+                dto.parent.mkdir(parents=True, exist_ok=True)
+                dto.write_text(cs_code.strip(), encoding='utf-8')
+                saved.append(dto)
+                print(f"[EXTRACT] Saved C# model/DTO: {dto.name}")
+            
+            elif 'Service' in cs_code or 'IService' in cs_code:
+                # Extract class name
+                class_match = re.search(r'(class|interface)\s+(\w+)', cs_code)
+                class_name = class_match.group(2) if class_match else f"{feat.replace('-', '')}Service"
+                service = out_root / "prototypes" / "llm" / "backend" / "Services" / f"{class_name}.cs"
+                service.parent.mkdir(parents=True, exist_ok=True)
+                service.write_text(cs_code.strip(), encoding='utf-8')
+                saved.append(service)
+                print(f"[EXTRACT] Saved C# service: {service.name}")
+            
+            elif 'Repository' in cs_code or 'IRepository' in cs_code:
+                # Extract class name
+                class_match = re.search(r'(class|interface)\s+(\w+)', cs_code)
+                class_name = class_match.group(2) if class_match else f"{feat.replace('-', '')}Repository"
+                repo = out_root / "prototypes" / "llm" / "backend" / "Data" / f"{class_name}.cs"
+                repo.parent.mkdir(parents=True, exist_ok=True)
+                repo.write_text(cs_code.strip(), encoding='utf-8')
+                saved.append(repo)
+                print(f"[EXTRACT] Saved C# repository: {repo.name}")
+    
+    # Also check for TypeScript services
+    ts_service_matches = [m for m in ts_matches if 'Injectable' in m or 'Service' in m]
+    for ts_code in ts_service_matches:
+        # Extract class name
+        class_match = re.search(r'class\s+(\w+)', ts_code)
+        class_name = class_match.group(1) if class_match else f"{feat.replace('-', '')}Service"
+        service = out_root / "prototypes" / "llm" / "frontend" / "src" / "app" / "services" / f"{class_name.lower()}.service.ts"
+        service.parent.mkdir(parents=True, exist_ok=True)
+        service.write_text(ts_code.strip(), encoding='utf-8')
+        saved.append(service)
+        print(f"[EXTRACT] Saved TypeScript service: {service.name}")
     
     return saved
 
@@ -524,6 +566,22 @@ def generate_best_effort(feature_name: str, base: Path, out_root: Path, llm_resp
     3. Only fall back to skeleton generation as last resort
     """
     saved: List[Path] = []
+    
+    # 🧹 CLEANUP: Remove previous prototype files to prevent accumulation
+    prototype_dirs = [
+        out_root / "prototypes" / "llm" / "frontend",
+        out_root / "prototypes" / "llm" / "backend",
+        out_root / "prototypes" / "llm"  # Fallback for old structure
+    ]
+    
+    for proto_dir in prototype_dirs:
+        if proto_dir.exists():
+            import shutil
+            try:
+                shutil.rmtree(proto_dir)
+                print(f"[CLEANUP] Removed old prototype files from {proto_dir.name}")
+            except Exception as e:
+                print(f"[CLEANUP] Could not remove {proto_dir}: {e}")
     
     # DEBUG: Log what we're receiving
     print(f"[PROTOTYPE_GEN] Feature: {feature_name}")

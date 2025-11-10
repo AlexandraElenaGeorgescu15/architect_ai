@@ -2707,57 +2707,134 @@ def render_granular_generation_tab():
         
         st.warning("⚠️ Batch generation may hit rate limits with Gemini. Use individual buttons above instead.")
 
-        if st.button("🔥 Generate Core Artifacts", use_container_width=True, key="btn_core_batch"):
-            st.info("Generating: ERD, Architecture, API Docs, JIRA, Workflows...")
-            
-            # 🔥 FIX: Add error handling and continue on failure
-            artifacts = ["erd", "architecture", "api_docs", "jira", "workflows"]
-            succeeded = []
-            failed = []
-            
-            for art in artifacts:
-                try:
-                    st.write(f"⏳ Generating {art}...")
-                    _dispatch(art)
-                    succeeded.append(art)
-                    st.write(f"✅ {art} complete")
-                except Exception as e:
-                    failed.append(art)
-                    st.error(f"❌ {art} failed: {str(e)[:100]}")
-                    # Continue to next artifact instead of stopping
-                    continue
-            
-            # Summary
-            if succeeded:
-                st.success(f"✅ {len(succeeded)}/{len(artifacts)} artifacts complete: {', '.join(succeeded)}")
-            if failed:
-                st.warning(f"⚠️ {len(failed)} artifacts failed: {', '.join(failed)}")
+        # 📊 Show last individual generation result if exists
+        if 'last_generation_result' in st.session_state and st.session_state.last_generation_result:
+            result = st.session_state.last_generation_result
+            artifact_name = result['artifact'].replace('_', ' ').title()
+            if result['success']:
+                st.success(f"✅ {artifact_name} generated successfully! ({result['timestamp']})")
+            else:
+                st.error(f"❌ {artifact_name} generation failed: {result.get('error', 'Unknown error')} ({result['timestamp']})")
         
-        if st.button("🎨 Generate Prototypes", use_container_width=True, key="btn_proto_batch"):
-            st.info("Generating: Code & Visual Prototypes...")
+        # 📊 Show last batch results if they exist
+        if 'last_batch_results' in st.session_state and st.session_state.last_batch_results:
+            results = st.session_state.last_batch_results
+            if results['succeeded']:
+                st.success(f"✅ Last batch: {len(results['succeeded'])}/{results['total']} artifacts generated successfully!")
+                with st.expander("📋 View details"):
+                    st.write("**Succeeded:**", ", ".join(results['succeeded']))
+                    if results['failed']:
+                        st.write("**Failed:**", ", ".join(results['failed']))
+        
+        if st.button("🔥 Generate All Docs & Diagrams (10)", use_container_width=True, key="btn_all_docs_diagrams"):
+            st.info("Generating: 5 Docs + 5 Diagrams (10 total)...")
             
-            # 🔥 FIX: Add error handling and continue on failure
-            artifacts = ["code_prototype", "visual_prototype_dev"]
+            # 🔥 FIX: Suppress st.rerun() during batch operations
+            st.session_state.batch_mode = True
+            
+            # 10 artifacts: 5 docs + 5 diagrams
+            artifacts = [
+                "erd",                    # 1. ERD Diagram
+                "architecture",           # 2. Architecture Diagram
+                "api_docs",              # 3. API Documentation
+                "jira",                  # 4. JIRA Tasks
+                "workflows",             # 5. Workflows
+                "system_overview",       # 6. System Overview Diagram
+                "data_flow",             # 7. Data Flow Diagram
+                "user_flow",             # 8. User Flow Diagram
+                "components_diagram",    # 9. Components Diagram
+                "api_sequence"           # 10. API Sequence Diagram
+            ]
             succeeded = []
             failed = []
             
-            for art in artifacts:
+            for i, art in enumerate(artifacts, 1):
                 try:
-                    st.write(f"⏳ Generating {art}...")
+                    st.write(f"⏳ {i}/10: Generating {art}...")
                     _dispatch(art)
                     succeeded.append(art)
-                    st.write(f"✅ {art} complete")
+                    st.write(f"✅ {i}/10: {art} complete")
                 except Exception as e:
                     failed.append(art)
-                    st.error(f"❌ {art} failed: {str(e)[:100]}")
+                    st.error(f"❌ {i}/10: {art} failed: {str(e)[:100]}")
                     # Continue to next artifact instead of stopping
                     continue
             
-            # Summary
+            # Clear batch mode
+            st.session_state.batch_mode = False
+            
+            # 💾 Store results in session state (persists after rerun!)
+            st.session_state.last_batch_results = {
+                'total': len(artifacts),
+                'succeeded': succeeded,
+                'failed': failed,
+                'timestamp': datetime.now().strftime("%H:%M:%S")
+            }
+            
+            # Summary before rerun
             if succeeded:
-                st.success(f"✅ {len(succeeded)}/{len(artifacts)} artifacts complete: {', '.join(succeeded)}")
+                st.success(f"✅ {len(succeeded)}/10 artifacts complete: {', '.join(succeeded)}")
             if failed:
-                st.warning(f"⚠️ {len(failed)} artifacts failed: {', '.join(failed)}")
+                st.warning(f"⚠️ {len(failed)}/10 artifacts failed: {', '.join(failed)}")
+            
+            # Rerun once at the end to refresh UI
+            st.rerun()
+        
+        # 📊 Show last prototype results if they exist
+        if 'last_prototype_results' in st.session_state and st.session_state.last_prototype_results:
+            results = st.session_state.last_prototype_results
+            if results['succeeded']:
+                st.success(f"✅ Last batch: {len(results['succeeded'])}/{results['total']} prototypes generated!")
+                with st.expander("📋 View details"):
+                    st.write("**Succeeded:**", ", ".join(results['succeeded']))
+                    if results['failed']:
+                        st.write("**Failed:**", ", ".join(results['failed']))
+        
+        if st.button("🎨 Generate Both Prototypes (2)", use_container_width=True, key="btn_both_prototypes"):
+            st.info("Generating: Code + Visual Prototypes (2 total)...")
+            
+            # 🔥 FIX: Suppress st.rerun() during batch operations
+            st.session_state.batch_mode = True
+            
+            # 2 artifacts: code prototype + visual prototype
+            artifacts = [
+                "code_prototype",         # 1. Code Prototype
+                "visual_prototype_dev"    # 2. Visual Prototype
+            ]
+            succeeded = []
+            failed = []
+            
+            for i, art in enumerate(artifacts, 1):
+                try:
+                    st.write(f"⏳ {i}/2: Generating {art}...")
+                    _dispatch(art)
+                    succeeded.append(art)
+                    st.write(f"✅ {i}/2: {art} complete")
+                except Exception as e:
+                    failed.append(art)
+                    st.error(f"❌ {i}/2: {art} failed: {str(e)[:100]}")
+                    # Continue to next artifact instead of stopping
+                    continue
+            
+            # Clear batch mode
+            st.session_state.batch_mode = False
+            
+            # 💾 Store results in session state (persists after rerun!)
+            st.session_state.last_prototype_results = {
+                'total': len(artifacts),
+                'succeeded': succeeded,
+                'failed': failed,
+                'timestamp': datetime.now().strftime("%H:%M:%S")
+            }
+            
+            # Summary before rerun
+            if succeeded:
+                st.success(f"✅ {len(succeeded)}/2 prototypes complete: {', '.join(succeeded)}")
+            if failed:
+                st.warning(f"⚠️ {len(failed)}/2 prototypes failed: {', '.join(failed)}")
+            
+            # Rerun once at the end to refresh UI
+            st.rerun()
 
 
 def render_dev_outputs_tab():
@@ -2812,9 +2889,11 @@ def render_dev_outputs_tab():
                         st.markdown("**Interactive Editor** - Edit the diagram code and see live preview")
                         try:
                             mermaid_code = diagram_file.read_text(encoding='utf-8')
+                            editor_key = f"mermaid_editor_{idx}_{diagram_file.stem}"
                             updated_code = render_mermaid_editor(
                                 initial_code=mermaid_code,
-                                key=f"mermaid_editor_{idx}_{diagram_file.stem}"
+                                key=editor_key,
+                                file_path=diagram_file  # 🔥 FIX: Pass file path for save tracking
                             )
                             
                             # Save button to update the file
@@ -2823,8 +2902,12 @@ def render_dev_outputs_tab():
                                 if st.button("💾 Save Changes", key=f"save_diagram_{idx}"):
                                     try:
                                         diagram_file.write_text(updated_code, encoding='utf-8')
+                                        # 🔥 FIX: Update session state to track save
+                                        from datetime import datetime
+                                        st.session_state[f"{editor_key}_last_saved"] = updated_code
+                                        st.session_state[f"{editor_key}_save_timestamp"] = datetime.now().strftime("%H:%M:%S")
                                         st.success(f"✅ Saved {diagram_file.name}")
-                                        st.rerun()
+                                        # 🔥 FIX: Don't rerun immediately - save indicator will persist
                                     except Exception as e:
                                         st.error(f"❌ Save failed: {str(e)}")
                         except Exception as e:
@@ -2985,6 +3068,52 @@ Cache buster: {cache_buster}
                     except Exception as e:
                         st.error(f"Error loading code prototype: {str(e)}")
                     st.divider()
+                
+                # Code prototypes - NEW enhanced format (from LLM extraction)
+                llm_proto_dir = proto_dir / "llm"
+                if llm_proto_dir.exists():
+                    frontend_dir = llm_proto_dir / "frontend"
+                    backend_dir = llm_proto_dir / "backend"
+                    
+                    has_frontend = frontend_dir.exists() and any(frontend_dir.rglob("*"))
+                    has_backend = backend_dir.exists() and any(backend_dir.rglob("*"))
+                    
+                    if has_frontend or has_backend:
+                        st.markdown("#### 💻 Generated Code Prototype")
+                        st.info("💡 **Tip:** Go to the **Code Editor** tab to edit these files!")
+                        
+                        if has_frontend:
+                            with st.expander("🎨 Frontend Files", expanded=True):
+                                frontend_files = sorted(frontend_dir.rglob("*"), key=lambda p: (p.suffix, p.name))
+                                frontend_files = [f for f in frontend_files if f.is_file()]
+                                
+                                for file_path in frontend_files[:10]:  # Limit to 10 files
+                                    rel_path = file_path.relative_to(frontend_dir)
+                                    st.markdown(f"**📄 {rel_path}**")
+                                    try:
+                                        content = file_path.read_text(encoding='utf-8')
+                                        # Determine language
+                                        ext_map = {'.ts': 'typescript', '.html': 'html', '.scss': 'scss', '.css': 'css', '.js': 'javascript'}
+                                        lang = ext_map.get(file_path.suffix, 'text')
+                                        st.code(content, language=lang)
+                                    except Exception as e:
+                                        st.error(f"Error loading {file_path.name}: {e}")
+                        
+                        if has_backend:
+                            with st.expander("⚙️ Backend Files", expanded=True):
+                                backend_files = sorted(backend_dir.rglob("*"), key=lambda p: (p.suffix, p.name))
+                                backend_files = [f for f in backend_files if f.is_file()]
+                                
+                                for file_path in backend_files[:10]:  # Limit to 10 files
+                                    rel_path = file_path.relative_to(backend_dir)
+                                    st.markdown(f"**📄 {rel_path}**")
+                                    try:
+                                        content = file_path.read_text(encoding='utf-8')
+                                        st.code(content, language='csharp')
+                                    except Exception as e:
+                                        st.error(f"Error loading {file_path.name}: {e}")
+                        
+                        st.divider()
     
     # Workflows - with black background
     workflows_dir = outputs_dir / "workflows"
@@ -3153,11 +3282,27 @@ def render_code_editor_tab():
         AppConfig.OUTPUTS_DIR / "prototypes"  # Legacy location (plural)
     ]
     
+    # 🔥 FIX: Files to exclude (visual prototypes and HTML diagrams belong in Outputs tab only)
+    excluded_files = {
+        'developer_visual_prototype.html',
+        'pm_visual_prototype.html',
+        'erd_diagram.html',
+        'architecture_diagram.html',
+        'api_sequence_diagram.html',
+        'user_flow_diagram.html',
+        'data_flow_diagram.html',
+        'system_overview_diagram.html',
+        'components_diagram.html'
+    }
+    
     for proto_dir in proto_dirs:
         if proto_dir.exists():
             for ext in ['*.ts', '*.py', '*.cs', '*.js', '*.tsx', '*.jsx', '*.html', '*.css']:
                 for file_path in proto_dir.rglob(ext):
-                    if file_path.is_file() and 'test' not in file_path.name.lower():
+                    # Exclude test files and visual prototypes/diagrams
+                    if (file_path.is_file() and 
+                        'test' not in file_path.name.lower() and
+                        file_path.name not in excluded_files):
                         code_files.append(file_path)
     
     if not code_files:
@@ -3291,11 +3436,27 @@ def render_test_generator_tab():
     ]
     code_files = []
     
+    # 🔥 FIX: Files to exclude (visual prototypes and HTML diagrams belong in Outputs tab only)
+    excluded_files = {
+        'developer_visual_prototype.html',
+        'pm_visual_prototype.html',
+        'erd_diagram.html',
+        'architecture_diagram.html',
+        'api_sequence_diagram.html',
+        'user_flow_diagram.html',
+        'data_flow_diagram.html',
+        'system_overview_diagram.html',
+        'components_diagram.html'
+    }
+    
     for proto_dir in proto_dirs:
         if proto_dir.exists():
             for ext in ['.py', '.ts', '.js', '.cs', '.tsx', '.jsx']:
                 for file_path in proto_dir.rglob(f"*{ext}"):
-                    if file_path.is_file() and 'test' not in file_path.name.lower():
+                    # Exclude test files and visual prototypes/diagrams
+                    if (file_path.is_file() and 
+                        'test' not in file_path.name.lower() and
+                        file_path.name not in excluded_files):
                         code_files.append(file_path)
     
     if not code_files:
@@ -3925,10 +4086,19 @@ def render_dev_interactive_editor_tab():
     initial_html = None
     feature_context = ""
     
+    # 🔥 FIX: Check cache buster to ensure we load the LATEST version
+    cache_buster_dev = st.session_state.get('prototype_cache_buster_dev', 0)
+    last_loaded_dev = st.session_state.get('_editor_last_loaded_dev_cache', -1)
+    
     # Load prototype if exists
     if dev_proto.exists():
+        # Force reload if cache buster changed (new generation happened)
+        if cache_buster_dev != last_loaded_dev:
+            st.session_state._editor_last_loaded_dev_cache = cache_buster_dev
+            st.session_state.pop('_editor_html_cache', None)  # Clear HTML cache
+        
         initial_html = dev_proto.read_text(encoding='utf-8')
-        st.success("✅ Loaded Developer visual prototype")
+        st.success(f"✅ Loaded Developer visual prototype (v{cache_buster_dev})")
     elif pm_proto.exists():
         initial_html = pm_proto.read_text(encoding='utf-8')
         st.info("📋 Loaded PM visual prototype")
@@ -4024,10 +4194,19 @@ def render_pm_interactive_editor_tab():
     initial_html = None
     feature_context = ""
     
+    # 🔥 FIX: Check cache buster to ensure we load the LATEST version
+    cache_buster_pm = st.session_state.get('prototype_cache_buster_pm', 0)
+    last_loaded_pm = st.session_state.get('_editor_last_loaded_pm_cache', -1)
+    
     # Load prototype if exists
     if pm_proto.exists():
+        # Force reload if cache buster changed (new generation happened)
+        if cache_buster_pm != last_loaded_pm:
+            st.session_state._editor_last_loaded_pm_cache = cache_buster_pm
+            st.session_state.pop('_editor_html_cache', None)  # Clear HTML cache
+        
         initial_html = pm_proto.read_text(encoding='utf-8')
-        st.success("✅ Loaded PM visual prototype")
+        st.success(f"✅ Loaded PM visual prototype (v{cache_buster_pm})")
     elif dev_proto.exists():
         initial_html = dev_proto.read_text(encoding='utf-8')
         st.info("📋 Loaded Developer visual prototype (will save as PM prototype)")
@@ -4460,6 +4639,9 @@ def generate_single_artifact(artifact_type: str):
         None (displays results in Streamlit UI)
     """
     try:
+        # 🔥 FIX: Clear previous result to avoid showing stale success message
+        st.session_state.last_generation_result = None
+        
         with st.spinner(f"🎨 Generating {artifact_type}..."):
             # Load meeting notes
             notes_path = AppConfig.INPUTS_DIR / AppConfig.MEETING_NOTES_FILE
@@ -4534,7 +4716,15 @@ def generate_single_artifact(artifact_type: str):
                     st.session_state.outputs_updated_time = datetime.now().isoformat()
                     
                 track_generation("erd")
-                st.rerun()
+                # 💾 Store result in session state (persists after rerun!)
+                st.session_state.last_generation_result = {
+                    'artifact': 'erd',
+                    'success': True,
+                    'timestamp': datetime.now().strftime("%H:%M:%S")
+                }
+                # Only rerun if not in batch mode
+                if not st.session_state.get('batch_mode', False):
+                    st.rerun()
             elif artifact_type == "architecture":
                 result = generate_with_validation(
                     "architecture",
@@ -4569,7 +4759,9 @@ def generate_single_artifact(artifact_type: str):
                     st.session_state.outputs_updated_time = datetime.now().isoformat()
                     
                 track_generation("architecture")
-                st.rerun()
+                # Only rerun if not in batch mode
+                if not st.session_state.get('batch_mode', False):
+                    st.rerun()
             elif artifact_type == "api_docs":
                 result = generate_with_validation(
                     "api_docs",
@@ -4590,7 +4782,9 @@ def generate_single_artifact(artifact_type: str):
                     st.success("✅ API Documentation generated!")
                     
                 track_generation("api_docs")
-                st.rerun()
+                # Only rerun if not in batch mode
+                if not st.session_state.get('batch_mode', False):
+                    st.rerun()
             elif artifact_type == "jira":
                 # Ensure meeting notes are processed first for higher fidelity
                 try:
@@ -4617,7 +4811,9 @@ def generate_single_artifact(artifact_type: str):
                     st.success("✅ JIRA Tasks generated!")
                     
                 track_generation("jira")
-                st.rerun()
+                # Only rerun if not in batch mode
+                if not st.session_state.get('batch_mode', False):
+                    st.rerun()
             elif artifact_type == "workflows":
                 result = generate_with_validation(
                     "workflows",
@@ -4638,7 +4834,9 @@ def generate_single_artifact(artifact_type: str):
                     st.success("✅ Workflows generated!")
                     
                 track_generation("workflows")
-                st.rerun()
+                # Only rerun if not in batch mode
+                if not st.session_state.get('batch_mode', False):
+                    st.rerun()
             elif artifact_type in ["system_overview", "data_flow", "user_flow", "components_diagram", "api_sequence"]:
                 # Generate individual diagram (BUG FIX #2: Only generate the requested diagram, not all)
                 diagram_map = {
@@ -4698,7 +4896,9 @@ def generate_single_artifact(artifact_type: str):
                     st.success(f"✅ {diagram_name} generated!")
                     
                 track_generation(artifact_type)
-                st.rerun()
+                # Only rerun if not in batch mode
+                if not st.session_state.get('batch_mode', False):
+                    st.rerun()
             elif artifact_type == "all_diagrams":
                 # Wrap all diagrams generation in validation for unified quality control
                 def generate_all_diagrams():
@@ -4823,7 +5023,9 @@ def generate_single_artifact(artifact_type: str):
                     st.success("✅ Outputs generated! Switch to 'Outputs' tab to view them.")
                     
                     # Force immediate UI refresh to show new outputs
-                    st.rerun()
+                    # Only rerun if not in batch mode
+                    if not st.session_state.get('batch_mode', False):
+                        st.rerun()
                 else:
                     st.warning("⚠️ No files generated")
                 
@@ -4882,7 +5084,9 @@ def generate_single_artifact(artifact_type: str):
                     st.success("✅ Visual Prototype generated!")
                     
                     track_generation("visual_prototype")
-                    st.rerun()
+                    # Only rerun if not in batch mode
+                    if not st.session_state.get('batch_mode', False):
+                        st.rerun()
             
             # Log activity
             log_message = f"Generated {artifact_type}"
@@ -4982,11 +5186,20 @@ def generate_single_artifact(artifact_type: str):
                     st.warning(f"⚠️ Multi-agent analysis encountered an error: {str(e)}")
                     st.info("Generated artifact is still available in Outputs tab.")
             
-            # Display final status based on whether generation succeeded
+            # 🔥 FIX: Persist generation results in session state to survive reruns
             if generated_result:
-                st.success(f"✅ {artifact_type.title()} generated successfully!")
+                success_message = f"✅ {artifact_type.title()} generated successfully!"
+                st.session_state['last_generation_success'] = success_message
+                st.session_state['last_generation_timestamp'] = datetime.now().strftime("%H:%M:%S")
+                st.session_state['last_generation_artifact'] = artifact_type
+                st.success(success_message)
             else:
-                st.error(f"❌ {artifact_type.title()} generation failed after all retry attempts.")
+                error_message = f"❌ {artifact_type.title()} generation failed after all retry attempts."
+                st.session_state['last_generation_success'] = None
+                st.session_state['last_generation_error'] = error_message
+                st.session_state['last_generation_timestamp'] = datetime.now().strftime("%H:%M:%S")
+                st.session_state['last_generation_artifact'] = artifact_type
+                st.error(error_message)
                 st.info("Please check the validation details above and try again with different meeting notes or settings.")
             if use_multi_agent:
                 st.success("🤖 Multi-agent analysis complete!")
@@ -5083,6 +5296,14 @@ def generate_single_artifact(artifact_type: str):
             st.session_state.last_generation.append(artifact_type)
     
     except Exception as e:
+        # 💾 Store error in session state (persists after rerun!)
+        st.session_state.last_generation_result = {
+            'artifact': artifact_type,
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now().strftime("%H:%M:%S")
+        }
+        
         st.error(f"❌ Error: {str(e)}")
         import traceback
         with st.expander("Error Details"):

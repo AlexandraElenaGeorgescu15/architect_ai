@@ -48,6 +48,13 @@ class PrototypeValidator:
         issues = []
         quality_score = 100
         
+        # Check 0: Is this actually HTML at all?
+        # If it doesn't have basic HTML tags, it's completely invalid
+        has_html_tags = any(tag in html.lower() for tag in ['<html', '<body', '<div', '<head', '<!doctype'])
+        if not has_html_tags:
+            issues.append("CRITICAL: Not HTML content - no HTML tags found")
+            return False, issues, 0  # Return immediately with 0 score
+        
         # Check 1: Has feature name in content
         if feature_name.lower() not in html.lower():
             issues.append(f"Missing feature name '{feature_name}' in content")
@@ -180,7 +187,13 @@ def validate_and_enhance(html: str, feature_name: str) -> Tuple[str, Dict]:
         'enhanced': False
     }
     
-    # If invalid, try to enhance
+    # CRITICAL: If score is 0 (not HTML at all), DO NOT enhance
+    # This prevents wrapping meeting notes text as HTML
+    if score == 0:
+        report['error'] = 'Generated content is not HTML - model failed to follow instructions'
+        return html, report  # Return as-is for debugging
+    
+    # If invalid but has some HTML structure, try to enhance
     if not is_valid and score < 60:
         html = validator.enhance_html_functionality(html, feature_name)
         report['enhanced'] = True

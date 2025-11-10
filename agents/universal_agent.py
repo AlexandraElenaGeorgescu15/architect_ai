@@ -758,7 +758,16 @@ USER REQUEST:
                 # Return None - no fallback to broken OLD logic
                 return None
         
-        # 🔥 REMOVED OLD FALLBACK LOGIC - Smart generator is the only path now
+        # 🔥 Fallback for legacy calls without artifact_type (internal diagram methods)
+        # These are rare and will be deprecated
+        if not artifact_type:
+            print(f"[DEBUG] Legacy call without artifact_type - using simple cloud fallback")
+            try:
+                return await self._call_cloud_provider(full_prompt, system_prompt, "generic")
+            except Exception as e:
+                print(f"[ERROR] Legacy cloud fallback failed: {e}")
+                return None
+        
         # If smart generator not available, fail gracefully
         if not self.smart_generator:
             print(f"[ERROR] Smart generator not initialized - cannot generate {artifact_type}")
@@ -766,7 +775,7 @@ USER REQUEST:
             return None
         
         # This should never be reached (smart generator handles everything)
-        print(f"[WARN] Reached end of generate_with_llm without return - this is unexpected")
+        print(f"[WARN] Unexpected code path in _call_ai for artifact_type={artifact_type}")
         return None
     
     async def _call_cloud_provider(self, prompt: str, system_prompt: str = None, artifact_type: str = None) -> str:

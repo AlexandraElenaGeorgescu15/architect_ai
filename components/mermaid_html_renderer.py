@@ -234,8 +234,29 @@ class MermaidHTMLRenderer:
             except Exception as e:
                 print(f"[WARN] Could not retrieve supplemental RAG context for HTML: {e}")
         
+        # Map diagram types to clear descriptions
+        diagram_descriptions = {
+            "erd": "Entity-Relationship Diagram (ERD) showing database tables, fields, and relationships",
+            "overview": "System Overview Diagram showing high-level architecture and main components",
+            "system_overview": "System Overview Diagram showing high-level architecture and main components",
+            "dataflow": "Data Flow Diagram showing how data moves through the system",
+            "data_flow": "Data Flow Diagram showing how data moves through the system",
+            "userflow": "User Flow Diagram showing user journey and interactions",
+            "user_flow": "User Flow Diagram showing user journey and interactions",
+            "components": "Component Diagram showing UI components and their relationships",
+            "components_diagram": "Component Diagram showing UI components and their relationships",
+            "api": "API Sequence Diagram showing API calls, requests, and responses",
+            "api_sequence": "API Sequence Diagram showing API calls, requests, and responses",
+            "architecture": "Architecture Diagram showing system layers, services, and infrastructure",
+            "flowchart": "Flowchart showing process flow and business logic"
+        }
+        
+        diagram_description = diagram_descriptions.get(diagram_type, f"{diagram_type.replace('_', ' ').title()} Diagram")
+        
         prompt = f"""
-        Create a beautiful, interactive HTML visualization for a NEW FEATURE based on meeting notes.
+        Create a beautiful, interactive HTML visualization for: **{diagram_description}**
+        
+        **DIAGRAM TYPE: {diagram_type.upper().replace('_', ' ')}**
         
         **PRIMARY CONTEXT - NEW FEATURE FROM MEETING NOTES:**
         {meeting_notes if meeting_notes else "No specific meeting notes provided"}
@@ -249,25 +270,28 @@ class MermaidHTMLRenderer:
         ```
         
         **CRITICAL REQUIREMENTS:**
-        1. **FEATURE-FOCUSED**: The diagram MUST visualize the NEW FEATURE described in the meeting notes above, NOT the existing codebase
-        2. If meeting notes describe a "Phone Swap Request Feature", create diagrams about phone swaps, not about existing user/phone tables
+        1. **DIAGRAM-SPECIFIC**: Create a {diagram_description} specifically
+        2. **FEATURE-FOCUSED**: The diagram MUST visualize the NEW FEATURE described in the meeting notes above, NOT the existing codebase
         3. Use repository context ONLY for understanding technical patterns (API structure, naming conventions, tech stack)
-        4. Choose the BEST diagram type for the NEW feature:
-           - ERD: For new database tables/relationships the feature requires
-           - System Architecture: For new services/components/endpoints
-           - Flowchart: For user workflows and business processes
-           - Sequence: For API request/response flows
-           - Component: For frontend UI structure
+        
+        **DIAGRAM TYPE GUIDELINES:**
+        - ERD: Show database tables with fields, primary keys, foreign keys, and relationships
+        - System Overview: Show high-level components, services, databases, and main connections
+        - Data Flow: Show how data moves between components with arrows and transformations
+        - User Flow: Show user actions, decisions, and navigation paths
+        - Component Diagram: Show UI components, their hierarchy, props, and interactions
+        - API Sequence: Show API endpoints, request/response flow, and timing
+        - Architecture: Show technical layers (frontend, backend, database, external services)
         
         **YOUR TASK:**
         1. Read the meeting notes and identify the NEW FEATURE being requested
-        2. Decide which diagram type best explains this NEW feature
-        3. Create a modern, interactive HTML visualization showing:
-           - The NEW feature's structure (NOT existing codebase)
+        2. Create a {diagram_description} for this feature
+        3. Make it interactive and modern with:
            - Professional design (blues, grays, gradients)
-           - Hover effects and smooth animations
+           - Hover effects showing details
+           - Smooth animations
            - Mobile-responsive layout
-           - Clear title describing the NEW feature
+           - Clear title: "{diagram_description} - [Feature Name]"
            - Footer with generation metadata
         4. Use realistic names from the meeting notes (e.g., "PhoneSwapRequest", "POST /api/phone-swaps")
         5. Reference existing repository only for technical consistency (API patterns, naming style)
@@ -280,15 +304,18 @@ class MermaidHTMLRenderer:
         - DO NOT wrap in markdown code blocks (no ```html)
         - Just the raw HTML code, nothing else
         
-        OUTPUT: Complete, self-contained HTML page with embedded CSS and JavaScript. No external dependencies or libraries.
+        OUTPUT: Complete, self-contained HTML page with embedded CSS and JavaScript for a {diagram_description}. No external dependencies or libraries.
         """
         
         try:
-            # Use visual_prototype_dev artifact type to get llama3 model (better at HTML)
+            # 🔥 FIX: Use the actual diagram type as artifact_type for proper routing
+            # This ensures each diagram gets appropriate model selection
+            artifact_type_for_model = f"html_diagram_{diagram_type}" if diagram_type not in ["visual_prototype_dev", "code_prototype"] else diagram_type
+            
             html_content = await agent._call_ai(
                 prompt, 
-                "You are an expert web developer who creates accurate, context-aware HTML visualizations. Use the repository context to ensure technical accuracy.",
-                artifact_type="visual_prototype_dev"  # Uses llama3 instead of codellama
+                "You are an expert web developer who creates accurate, context-aware HTML diagram visualizations. Focus on creating an interactive visualization of the diagram structure.",
+                artifact_type="html_diagram"  # ✅ Use html_diagram for all diagram HTML generation
             )
             
             # Check if we got valid content
@@ -298,7 +325,7 @@ class MermaidHTMLRenderer:
                 html_content = await agent._call_ai(
                     prompt,
                     "Generate ONLY valid HTML code. Start with <!DOCTYPE html> and end with </html>. No explanations.",
-                    artifact_type="visual_prototype_dev"
+                    artifact_type="html_diagram"  # ✅ Consistent artifact type
                 )
             
             # Clean up the HTML content

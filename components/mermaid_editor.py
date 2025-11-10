@@ -5,7 +5,8 @@ A clean, no-frills editor for Mermaid diagrams with:
 - Syntax editor on the left
 - Live preview on the right
 - Auto-validation and syntax error checking
-- No AI-generated diagram editor complexity
+- AI-powered semantic validation (optional)
+- Save state persistence across UI refreshes
 
 The diagram is rendered from the syntax you edit. That's it.
 """
@@ -13,6 +14,7 @@ The diagram is rendered from the syntax you edit. That's it.
 import streamlit as st
 import streamlit.components.v1 as components
 import re
+from pathlib import Path
 
 
 def validate_mermaid_syntax(mermaid_code: str) -> tuple[bool, str]:
@@ -56,7 +58,7 @@ def validate_mermaid_syntax(mermaid_code: str) -> tuple[bool, str]:
     return True, ""
 
 
-def render_mermaid_editor(initial_code: str = "", key: str = "mermaid_editor"):
+def render_mermaid_editor(initial_code: str = "", key: str = "mermaid_editor", file_path: Path = None):
     """
     Render a simple canvas-based Mermaid editor with live preview.
     
@@ -66,10 +68,19 @@ def render_mermaid_editor(initial_code: str = "", key: str = "mermaid_editor"):
     Args:
         initial_code: Initial Mermaid code to display
         key: Unique key for the editor component
+        file_path: Optional path to the diagram file (for save state tracking)
         
     Returns:
         Updated Mermaid code from the editor
     """
+    
+    # 🔥 FIX: Initialize session state for this specific editor
+    if f"{key}_code" not in st.session_state:
+        st.session_state[f"{key}_code"] = initial_code
+    if f"{key}_last_saved" not in st.session_state:
+        st.session_state[f"{key}_last_saved"] = initial_code
+    if f"{key}_save_timestamp" not in st.session_state:
+        st.session_state[f"{key}_save_timestamp"] = None
     
     # Create two columns: editor and preview
     col1, col2 = st.columns([1, 1])
@@ -77,10 +88,17 @@ def render_mermaid_editor(initial_code: str = "", key: str = "mermaid_editor"):
     with col1:
         st.markdown("### 📝 Mermaid Syntax Editor")
         
-        # Text area for editing Mermaid code
-        if f"{key}_code" not in st.session_state:
-            st.session_state[f"{key}_code"] = initial_code
+        # 🔥 FIX: Show save state indicator
+        has_changes = st.session_state[f"{key}_code"] != st.session_state[f"{key}_last_saved"]
+        if st.session_state[f"{key}_save_timestamp"]:
+            if has_changes:
+                st.warning(f"⚠️ You have unsaved changes (last saved: {st.session_state[f'{key}_save_timestamp']})")
+            else:
+                st.success(f"✅ All changes saved ({st.session_state[f'{key}_save_timestamp']})")
+        elif has_changes:
+            st.info("💡 Click Save to persist your changes")
         
+        # Text area for editing Mermaid code
         mermaid_code = st.text_area(
             "Edit Mermaid syntax:",
             value=st.session_state[f"{key}_code"],
@@ -193,43 +211,90 @@ def render_mermaid_diagram(mermaid_code: str, key: str = "mermaid_preview"):
                 font-family: 'Courier New', monospace;
                 font-size: 14px;
             }}
+            .warning {{
+                color: #856404;
+                background: #fff3cd;
+                border: 2px solid #ffc107;
+                border-radius: 8px;
+                padding: 15px;
+                margin: 20px;
+                font-size: 14px;
+            }}
             .mermaid {{
                 background: white;
                 padding: 10px;
+            }}
+            .loading {{
+                color: #6c757d;
+                text-align: center;
+                padding: 40px;
             }}
         </style>
     </head>
     <body>
         <div id="canvas">
-            <div class="mermaid">
+            <div class="loading">⏳ Rendering diagram...</div>
+            <div class="mermaid" style="display:none;">
 {clean_code}
             </div>
         </div>
         <script>
-            mermaid.initialize({{ 
-                startOnLoad: true,
-                theme: 'default',
-                securityLevel: 'loose',
-                flowchart: {{ 
-                    useMaxWidth: true,
-                    htmlLabels: true,
-                    curve: 'basis'
-                }},
-                er: {{
-                    useMaxWidth: true
-                }},
-                sequence: {{
-                    useMaxWidth: true,
-                    wrap: true
-                }}
-            }});
-            
-            // Error handling
-            window.addEventListener('error', function(e) {{
+            try {{
+                mermaid.initialize({{ 
+                    startOnLoad: false,  // Manual render for better error handling
+                    theme: 'default',
+                    securityLevel: 'loose',
+                    flowchart: {{ 
+                        useMaxWidth: true,
+                        htmlLabels: true,
+                        curve: 'basis'
+                    }},
+                    er: {{
+                        useMaxWidth: true
+                    }},
+                    sequence: {{
+                        useMaxWidth: true,
+                        wrap: true
+                    }}
+                }});
+                
+                // Manual render with error handling
+                const mermaidDiv = document.querySelector('.mermaid');
+                mermaidDiv.style.display = 'block';
+                document.querySelector('.loading').remove();
+                
+                mermaid.run({{
+                    nodes: [mermaidDiv]
+                }}).catch(err => {{
+                    console.error('Mermaid render error:', err);
+                    document.getElementById('canvas').innerHTML = 
+                        '<div class="error">' +
+                        '<strong>⚠️ Mermaid Rendering Error</strong><br><br>' + 
+                        '<strong>Error:</strong> ' + (err.message || 'Unknown error') + '<br><br>' +
+                        '<div class="warning">💡 <strong>Troubleshooting:</strong><br>' +
+                        '• Check for syntax errors in the editor<br>' +
+                        '• Ensure all nodes are properly connected<br>' +
+                        '• Verify bracket balancing<br>' +
+                        '• Try simplifying the diagram</div>' +
+                        '</div>';
+                }});
+            }} catch (initError) {{
+                console.error('Mermaid init error:', initError);
                 document.getElementById('canvas').innerHTML = 
-                    '<div class="error"><strong>⚠️ Mermaid Rendering Error</strong><br><br>' + 
-                    'Syntax error in diagram. Please check the syntax editor for details.' + 
+                    '<div class="error"><strong>⚠️ Failed to Initialize Mermaid</strong><br><br>' + 
+                    'Could not load Mermaid.js library. Check your internet connection.' + 
                     '</div>';
+            }}
+            
+            // Global error handler
+            window.addEventListener('error', function(e) {{
+                console.error('Window error:', e);
+                if (document.getElementById('canvas').querySelector('.error') === null) {{
+                    document.getElementById('canvas').innerHTML = 
+                        '<div class="error"><strong>⚠️ Unexpected Error</strong><br><br>' + 
+                        'An error occurred while rendering the diagram.' + 
+                        '</div>';
+                }}
             }});
         </script>
     </body>

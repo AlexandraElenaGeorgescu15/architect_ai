@@ -777,23 +777,42 @@ class SmartGenerationOrchestrator:
                 attempts.append(cloud_attempt)
                 
                 # 🔥 SAVE CLOUD RESPONSE FOR FINE-TUNING (with full context)
-                try:
-                    await self._save_for_finetuning(
-                        artifact_type=artifact_type,
-                        prompt=full_context_prompt,  # ✅ CHANGED - save full prompt with context
-                        system_message=enhanced_system_message,  # ✅ CHANGED - save enhanced system message
-                        cloud_response=cloud_content,
-                        quality_score=quality_score,
-                        local_model_failed=priority_models[0] if priority_models else "unknown",
-                        meeting_notes=meeting_notes
-                    )
-                    _log(f"💾 Saved cloud response for fine-tuning (quality: {quality_score}/100)")
-                    print(f"[DEBUG_FINETUNE] ✅ Successfully saved to {self.finetuning_data_dir}")
+                # ✅ QUALITY FILTER: Save cloud responses that passed generation threshold (≥80)
+                # Cloud responses are by definition better than local (which failed at <80)
+                # Lower threshold allows collecting training data while maintaining quality
+                FINETUNING_THRESHOLD = 80  # Match generation threshold
+                
+                print(f"[FINETUNE_DEBUG] ==========================================")
+                print(f"[FINETUNE_DEBUG] Cloud response quality: {quality_score}/100")
+                print(f"[FINETUNE_DEBUG] Threshold: {FINETUNING_THRESHOLD}/100")
+                print(f"[FINETUNE_DEBUG] Will save: {quality_score >= FINETUNING_THRESHOLD}")
+                print(f"[FINETUNE_DEBUG] Local models failed, cloud succeeded")
+                print(f"[FINETUNE_DEBUG] ==========================================")
+                
+                if quality_score >= FINETUNING_THRESHOLD:
+                    try:
+                        await self._save_for_finetuning(
+                            artifact_type=artifact_type,
+                            prompt=full_context_prompt,  # ✅ CHANGED - save full prompt with context
+                            system_message=enhanced_system_message,  # ✅ CHANGED - save enhanced system message
+                            cloud_response=cloud_content,
+                            quality_score=quality_score,
+                            local_model_failed=priority_models[0] if priority_models else "unknown",
+                            meeting_notes=meeting_notes
+                        )
+                        quality_label = "EXCELLENT" if quality_score >= 90 else "GOOD" if quality_score >= 85 else "ACCEPTABLE"
+                        _log(f"💾 Saved {quality_label} cloud response for fine-tuning (quality: {quality_score}/100)")
+                        print(f"[DEBUG_FINETUNE] ✅ Successfully saved to {self.finetuning_data_dir}")
+                        print(f"[DEBUG_FINETUNE] ✅ File count in directory: {len(list(self.finetuning_data_dir.glob('*.json')))}")
+                    except Exception as e:
+                        print(f"[DEBUG_FINETUNE] ❌ Failed to save: {e}")
+                        import traceback
+                        print(f"[DEBUG_FINETUNE] Traceback: {traceback.format_exc()}")
+                else:
+                    _log(f"⚠️ Skipped saving for fine-tuning (quality: {quality_score}/100 < {FINETUNING_THRESHOLD} threshold)")
+                    print(f"[DEBUG_FINETUNE] ⚠️ Quality too low ({quality_score}/100), not saved for fine-tuning")
                     print(f"[DEBUG_FINETUNE]    Quality: {quality_score}/100, Failed model: {priority_models[0] if priority_models else 'unknown'}")
-                except Exception as e:
-                    print(f"[DEBUG_FINETUNE] ❌ Failed to save fine-tuning data: {e}")
-                    import traceback
-                    traceback.print_exc()
+                    print(f"[DEBUG_FINETUNE]    Cloud response was used but not saved for training")
                 
                 total_time = time.time() - start_time
                 
@@ -851,6 +870,8 @@ class SmartGenerationOrchestrator:
         
         This captures high-quality cloud responses that can be used to
         fine-tune local models, improving their performance over time.
+        
+        🚀 AUTO-TRIGGER: Automatically triggers fine-tuning when 50+ examples collected.
         """
         try:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
@@ -873,9 +894,143 @@ class SmartGenerationOrchestrator:
             
             print(f"[FINETUNING] Saved cloud response: {filename}")
             print(f"[FINETUNING] Quality: {quality_score}/100, Failed model: {local_model_failed}")
+            
+            # 🚀 AUTO-TRIGGER: Check if we should trigger fine-tuning
+            await self._check_and_trigger_finetuning()
         
         except Exception as e:
             print(f"[ERROR] Failed to save fine-tuning data: {e}")
+    
+    async def _check_and_trigger_finetuning(self):
+        """
+        Check if enough examples collected and automatically trigger fine-tuning.
+        
+        Triggers when:
+        - 50+ examples collected (≥80/100 quality)
+        - Prioritizes excellent examples (≥90) if available
+        - Not already training
+        - Hasn't trained recently (last 1 hour)
+        
+        Quality Tiers:
+        - 90-100: EXCELLENT (priority training)
+        - 85-89:  GOOD (secondary training)
+        - 80-84:  ACCEPTABLE (basic training)
+        """
+        try:
+            # Count examples
+            example_files = list(self.finetuning_data_dir.glob("*.json"))
+            example_count = len(example_files)
+            
+            print(f"[AUTO_FINETUNE] Current example count: {example_count}")
+            
+            # Check threshold
+            BATCH_THRESHOLD = 50
+            if example_count < BATCH_THRESHOLD:
+                print(f"[AUTO_FINETUNE] Not enough examples yet ({example_count}/{BATCH_THRESHOLD})")
+                return  # Not enough examples yet
+            
+            # Check if already training (look for lock file)
+            lock_file = self.finetuning_data_dir / ".training_lock"
+            if lock_file.exists():
+                # Check if lock is stale (> 2 hours old)
+                lock_age = datetime.now().timestamp() - lock_file.stat().st_mtime
+                if lock_age < 7200:  # 2 hours
+                    print(f"[AUTO_FINETUNE] Training already in progress (lock age: {lock_age/60:.1f} min)")
+                    return
+                else:
+                    # Stale lock, remove it
+                    lock_file.unlink()
+                    print(f"[AUTO_FINETUNE] Removed stale training lock")
+            
+            # Check last training time
+            last_train_file = self.finetuning_data_dir / ".last_training"
+            if last_train_file.exists():
+                with open(last_train_file, 'r') as f:
+                    last_train_time = float(f.read().strip())
+                time_since_last = datetime.now().timestamp() - last_train_time
+                if time_since_last < 3600:  # 1 hour
+                    print(f"[AUTO_FINETUNE] Trained recently ({time_since_last/60:.1f} min ago), skipping")
+                    return
+            
+            # 🚀 TRIGGER AUTOMATIC FINE-TUNING
+            print(f"[AUTO_FINETUNE] 🚀 Threshold reached! {example_count} examples collected")
+            print(f"[AUTO_FINETUNE] Triggering automatic fine-tuning in background...")
+            
+            # Create lock file
+            lock_file.write_text(str(datetime.now().timestamp()))
+            
+            # Trigger training in background thread (non-blocking)
+            import threading
+            training_thread = threading.Thread(
+                target=self._run_background_finetuning,
+                args=(example_files, lock_file),
+                daemon=True
+            )
+            training_thread.start()
+            
+            print(f"[AUTO_FINETUNE] ✅ Background training started!")
+        
+        except Exception as e:
+            print(f"[AUTO_FINETUNE] ❌ Error checking for auto-trigger: {e}")
+    
+    def _run_background_finetuning(self, example_files, lock_file):
+        """
+        Run fine-tuning in background thread (non-blocking).
+        
+        This method runs in a separate thread to avoid blocking artifact generation.
+        """
+        try:
+            print(f"[AUTO_FINETUNE] 🔧 Starting background fine-tuning process...")
+            
+            # Import here to avoid circular dependencies
+            from workers.finetuning_worker import FinetuningWorker
+            
+            # Create worker instance
+            worker = FinetuningWorker(
+                jobs_dir="db/training_jobs",
+                models_dir="finetuned_models",
+                registry_path="model_registry.json",
+                batch_threshold=50
+            )
+            
+            # Process pending jobs
+            jobs = worker.get_pending_jobs()
+            if not jobs:
+                # Create a new job from collected examples
+                print(f"[AUTO_FINETUNE] Creating training job from {len(example_files)} examples")
+                # Worker will auto-detect and create job
+            
+            # Trigger training
+            trained_count = 0
+            for job in jobs:
+                try:
+                    worker.execute_training(job)
+                    trained_count += 1
+                    print(f"[AUTO_FINETUNE] ✅ Trained model: {job.get('model_name', 'unknown')}")
+                except Exception as e:
+                    print(f"[AUTO_FINETUNE] ❌ Training failed: {e}")
+            
+            # Update last training time
+            last_train_file = self.finetuning_data_dir / ".last_training"
+            last_train_file.write_text(str(datetime.now().timestamp()))
+            
+            # Remove lock file
+            if lock_file.exists():
+                lock_file.unlink()
+            
+            if trained_count > 0:
+                print(f"[AUTO_FINETUNE] 🎉 Successfully trained {trained_count} model(s)!")
+            else:
+                print(f"[AUTO_FINETUNE] ⚠️ No models trained (check worker logs)")
+        
+        except Exception as e:
+            print(f"[AUTO_FINETUNE] ❌ Background training failed: {e}")
+            # Clean up lock file on error
+            if lock_file.exists():
+                try:
+                    lock_file.unlink()
+                except:
+                    pass
 
 
 # Global instance

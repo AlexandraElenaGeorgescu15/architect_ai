@@ -3,7 +3,9 @@
 **Complete guide to the dual fine-tuning pipeline**
 
 **Status:** ✅ Both systems production-ready  
-**Last Updated:** November 8, 2025
+**Last Updated:** November 10, 2025
+
+**🔒 QUALITY PROTECTION:** Only saves examples with quality ≥ 90/100 to prevent model degradation
 
 ---
 
@@ -39,16 +41,27 @@ Architect.AI provides **two complementary fine-tuning systems**:
 ```
 User Interaction
     ↓
-AI Generates Artifact
+AI Generates Artifact (local model tries first)
     ↓
-User Provides Feedback → System records with RL reward (-1.0 to +1.0)
+Quality Check (8 validators, 0-100 score)
     ↓
-High-quality feedback (reward ≥ 0.3) accumulated
+IF quality < 80 → Cloud fallback (Gemini/Groq/GPT-4)
+    ↓
+IF cloud quality ≥ 90 → Save for fine-tuning ✅
+IF cloud quality < 90 → Discard (not good enough) ❌
+    ↓
+High-quality examples (≥90) accumulated
     ↓
 Batch of 50 examples → Auto-triggers fine-tuning
     ↓
 Updated Model → Better future artifacts
 ```
+
+**🔒 CRITICAL QUALITY FILTER:**
+- Only cloud responses with quality ≥ 90/100 are saved for fine-tuning
+- This prevents the model from learning mediocre patterns
+- Low-quality examples (60-89) are discarded to protect model quality
+- Result: Models only learn from EXCELLENT examples
 
 ### Feedback Types & Rewards
 
@@ -284,14 +297,21 @@ In the Streamlit UI:
 2. After generation, click "👍 This is good" or "👎 Needs improvement"
 3. Or edit the output directly (system records correction)
 
-### 2. Monitor Ollama Progress
+### 2. Monitor Fine-Tuning Dataset
 
 ```bash
-# Check feedback count
-cat db/training_jobs/adaptive_learning/feedback_events.jsonl | wc -l
+# Check saved examples (quality ≥ 90/100)
+ls -l finetune_datasets/cloud_responses/
 
-# View latest feedback
-tail -f db/training_jobs/adaptive_learning/feedback_events.jsonl
+# Count examples
+ls finetune_datasets/cloud_responses/*.json | wc -l
+
+# View quality scores
+python scripts/check_finetuning_quality.py
+
+# ONE-TIME: Clean up OLD low-quality examples (saved before v3.5.2)
+# ⚠️ Only needed once - quality filter now prevents saving bad examples
+python scripts/cleanup_low_quality_finetuning.py
 ```
 
 ### 3. Trigger HuggingFace Training
@@ -303,11 +323,61 @@ In the Streamlit UI:
 4. Click "Start Training"
 5. Monitor progress bar
 
-### 4. Start Background Worker (Ollama)
+### 4. Automatic Fine-Tuning
 
+✅ **FULLY AUTOMATIC** - No manual intervention required!
+
+**How it works:**
+1. System collects examples during normal use (≥80/100 quality)
+2. When 50+ examples collected → **automatically triggers training**
+3. Training runs in background thread (non-blocking)
+4. Fine-tuned models automatically saved and registered
+5. System continuously improves local model performance
+
+**Quality Tiers:**
+- **90-100:** EXCELLENT (priority for training)
+- **85-89:**  GOOD (secondary training data)
+- **80-84:**  ACCEPTABLE (basic training data)
+- **< 80:**   Not saved (too low quality)
+
+**Automatic Safeguards:**
+- ✅ Only saves cloud responses ≥80 (better than local)
+- ✅ Trains when 50+ examples collected
+- ✅ Won't train if already training (lock file)
+- ✅ Won't train more than once per hour (cooldown)
+- ✅ Runs in background (doesn't block artifact generation)
+- ✅ Cleans up stale locks automatically
+
+**Manual Override (Optional):**
+
+**A) Via UI (If you want to trigger manually):**
+1. Go to **Fine-Tuning** tab in Streamlit app
+2. Click "Start Training" when ready
+3. Monitor progress in the UI
+
+**B) Via Background Worker (Advanced - not needed):**
 ```bash
-# Start worker to process batches automatically
+# Manual worker is NOT needed - auto-trigger handles it
+# But you can run it if you want continuous monitoring
 python workers/finetuning_worker.py
+```
+
+**Key Points:**
+- ✅ **Data collection is automatic** - happens during normal use
+- ✅ **Quality filter is automatic** - only saves ≥90/100 examples
+- ✅ **Training is automatic** - triggers at 50 examples
+- ✅ **No manual setup required** - just use the app!
+
+**Monitor progress:**
+```bash
+# Check example count
+ls finetune_datasets/cloud_responses/*.json | wc -l
+
+# Check if training is in progress
+ls finetune_datasets/cloud_responses/.training_lock 2>/dev/null
+
+# Check last training time
+cat finetune_datasets/cloud_responses/.last_training 2>/dev/null
 ```
 
 ---

@@ -106,7 +106,7 @@ class EnhancedPrototypeGenerator:
         html = await self.agent._call_ai(
             prompt,
             system_prompt=f"You are an expert frontend developer creating a functional, beautiful prototype for: {requirements['feature_name']}. Output ONLY valid HTML code, no explanations.",
-            artifact_type="html_diagram"  # Enable smart generator with local-first + validation
+            artifact_type="visual_prototype_dev"  # ✅ CORRECT - Use visual_prototype_dev, not html_diagram!
         )
         
         return html
