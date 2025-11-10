@@ -1172,21 +1172,26 @@ USER REQUEST:
                     continue
                 
                 if provider_name == 'groq':
-                    from groq import AsyncGroq
-                    client = AsyncGroq(api_key=api_key)
-                    messages = []
-                    if system_prompt:
-                        messages.append({"role": "system", "content": system_prompt})
-                    messages.append({"role": "user", "content": compressed_prompt})
-                    
-                    response = await client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
-                        messages=messages,
-                        temperature=0.2,
-                        max_tokens=8000
-                    )
-                    print(f"[CLOUD] ✅ Success with Groq")
-                    return response.choices[0].message.content
+                    try:
+                        from groq import AsyncGroq
+                        client = AsyncGroq(api_key=api_key)
+                        messages = []
+                        if system_prompt:
+                            messages.append({"role": "system", "content": system_prompt})
+                        messages.append({"role": "user", "content": compressed_prompt})
+                        
+                        response = await client.chat.completions.create(
+                            model="llama-3.3-70b-versatile",
+                            messages=messages,
+                            temperature=0.2,
+                            max_tokens=8000
+                        )
+                        print(f"[CLOUD] ✅ Success with Groq")
+                        return response.choices[0].message.content
+                    except TypeError as te:
+                        if "'proxies'" in str(te):
+                            print(f"[CLOUD] ⚠️ groq version incompatible with httpx. Run: pip install --upgrade groq openai")
+                        raise
                 
                 elif provider_name == 'gemini':
                     import google.generativeai as genai
@@ -1202,36 +1207,41 @@ USER REQUEST:
                     return response.text
                 
                 elif provider_name == 'openai':
-                    from openai import AsyncOpenAI
-                    client = AsyncOpenAI(api_key=api_key)
-                    messages = []
-                    if system_prompt:
-                        messages.append({"role": "system", "content": system_prompt})
-                    messages.append({"role": "user", "content": compressed_prompt})
-                    
-                    # Token safety guard
                     try:
-                        from ai.smart_model_selector import fit_openai_messages_to_context
-                        trimmed_messages, prompt_tokens = fit_openai_messages_to_context(
+                        from openai import AsyncOpenAI
+                        client = AsyncOpenAI(api_key=api_key)
+                        messages = []
+                        if system_prompt:
+                            messages.append({"role": "system", "content": system_prompt})
+                        messages.append({"role": "user", "content": compressed_prompt})
+                        
+                        # Token safety guard
+                        try:
+                            from ai.smart_model_selector import fit_openai_messages_to_context
+                            trimmed_messages, prompt_tokens = fit_openai_messages_to_context(
+                                messages=messages,
+                                model_name="gpt-4",
+                                context_window=8192,
+                                max_completion_tokens=4000,
+                                safety_margin=200
+                            )
+                            messages = trimmed_messages
+                            print(f"[CLOUD] OpenAI tokens: {prompt_tokens}")
+                        except Exception as e:
+                            print(f"[WARN] Token guard failed: {e}")
+                        
+                        response = await client.chat.completions.create(
+                            model="gpt-4",
                             messages=messages,
-                            model_name="gpt-4",
-                            context_window=8192,
-                            max_completion_tokens=4000,
-                            safety_margin=200
+                            temperature=0.2,
+                            max_tokens=4000
                         )
-                        messages = trimmed_messages
-                        print(f"[CLOUD] OpenAI tokens: {prompt_tokens}")
-                    except Exception as e:
-                        print(f"[WARN] Token guard failed: {e}")
-                    
-                    response = await client.chat.completions.create(
-                        model="gpt-4",
-                        messages=messages,
-                        temperature=0.2,
-                        max_tokens=4000
-                    )
-                    print(f"[CLOUD] ✅ Success with OpenAI GPT-4")
-                    return response.choices[0].message.content
+                        print(f"[CLOUD] ✅ Success with OpenAI GPT-4")
+                        return response.choices[0].message.content
+                    except TypeError as te:
+                        if "'proxies'" in str(te):
+                            print(f"[CLOUD] ⚠️ openai version incompatible with httpx. Run: pip install --upgrade groq openai")
+                        raise
             
             except Exception as e:
                 print(f"[CLOUD] ⚠️ {provider_name} failed: {e}")

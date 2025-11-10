@@ -113,16 +113,16 @@ def render_diagram_viewer(diagram_file: Path, meeting_notes: str = ""):
                         st.caption("💡 This diagram uses actual codebase details from RAG context")
                     except Exception as e:
                         st.error(f"❌ Error rendering HTML: {str(e)}")
-                        with st.expander("🔍 View HTML Source"):
-                            st.code(html_content[:1000] + "..." if len(html_content) > 1000 else html_content, language="html")
+                        st.markdown("**🔍 HTML Source:**")
+                        st.code(html_content[:1000] + "..." if len(html_content) > 1000 else html_content, language="html")
                 else:
                     st.warning("⚠️ HTML visualization not available or invalid")
                     
                     # Show what we got instead
                     if html_content:
-                        with st.expander("🔍 View Raw Output"):
-                            st.code(html_content[:1000] + "..." if len(html_content) > 1000 else html_content)
-                            st.caption("HTML appears to be malformed or incomplete")
+                        st.markdown("**🔍 Raw Output:**")
+                        st.code(html_content[:1000] + "..." if len(html_content) > 1000 else html_content)
+                        st.caption("HTML appears to be malformed or incomplete")
                     else:
                         st.info("No HTML content was generated. The Gemini generation may have failed.")
                         st.caption("Try regenerating the diagram or check your API key.")

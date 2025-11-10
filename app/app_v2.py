@@ -1812,13 +1812,18 @@ def render_sidebar():
         
         provider_info = AppConfig.AI_PROVIDERS.get(provider)
         if is_local_model:
-            # Local fine-tuned model
-            st.info(f"🎓 Using local fine-tuned model: {provider}")
-            if selected_local_model:
-                st.caption(f"📁 Model path: {selected_local_model['model_path']}")
-                st.session_state.selected_local_model = selected_local_model
+            # Local fine-tuned model or Ollama
+            if provider == "Ollama (Local)":
+                # Ollama doesn't use model registry, no warning needed
+                st.session_state.selected_local_model = None
             else:
-                st.warning("⚠️ Unable to locate model metadata. Verify model registry entry.")
+                # Local fine-tuned model - needs registry entry
+                st.info(f"🎓 Using local fine-tuned model: {provider}")
+                if selected_local_model:
+                    st.caption(f"📁 Model path: {selected_local_model['model_path']}")
+                    st.session_state.selected_local_model = selected_local_model
+                else:
+                    st.warning("⚠️ Unable to locate model metadata. Verify model registry entry.")
         else:
             st.session_state.selected_local_model = None
             if not provider_info:
@@ -3083,35 +3088,35 @@ Cache buster: {cache_buster}
                         st.info("💡 **Tip:** Go to the **Code Editor** tab to edit these files!")
                         
                         if has_frontend:
-                            with st.expander("🎨 Frontend Files", expanded=True):
-                                frontend_files = sorted(frontend_dir.rglob("*"), key=lambda p: (p.suffix, p.name))
-                                frontend_files = [f for f in frontend_files if f.is_file()]
-                                
-                                for file_path in frontend_files[:10]:  # Limit to 10 files
-                                    rel_path = file_path.relative_to(frontend_dir)
-                                    st.markdown(f"**📄 {rel_path}**")
-                                    try:
-                                        content = file_path.read_text(encoding='utf-8')
-                                        # Determine language
-                                        ext_map = {'.ts': 'typescript', '.html': 'html', '.scss': 'scss', '.css': 'css', '.js': 'javascript'}
-                                        lang = ext_map.get(file_path.suffix, 'text')
-                                        st.code(content, language=lang)
-                                    except Exception as e:
-                                        st.error(f"Error loading {file_path.name}: {e}")
+                            st.markdown("##### 🎨 Frontend Files")
+                            frontend_files = sorted(frontend_dir.rglob("*"), key=lambda p: (p.suffix, p.name))
+                            frontend_files = [f for f in frontend_files if f.is_file()]
+                            
+                            for file_path in frontend_files[:10]:  # Limit to 10 files
+                                rel_path = file_path.relative_to(frontend_dir)
+                                st.markdown(f"**📄 {rel_path}**")
+                                try:
+                                    content = file_path.read_text(encoding='utf-8')
+                                    # Determine language
+                                    ext_map = {'.ts': 'typescript', '.html': 'html', '.scss': 'scss', '.css': 'css', '.js': 'javascript'}
+                                    lang = ext_map.get(file_path.suffix, 'text')
+                                    st.code(content, language=lang)
+                                except Exception as e:
+                                    st.error(f"Error loading {file_path.name}: {e}")
                         
                         if has_backend:
-                            with st.expander("⚙️ Backend Files", expanded=True):
-                                backend_files = sorted(backend_dir.rglob("*"), key=lambda p: (p.suffix, p.name))
-                                backend_files = [f for f in backend_files if f.is_file()]
-                                
-                                for file_path in backend_files[:10]:  # Limit to 10 files
-                                    rel_path = file_path.relative_to(backend_dir)
-                                    st.markdown(f"**📄 {rel_path}**")
-                                    try:
-                                        content = file_path.read_text(encoding='utf-8')
-                                        st.code(content, language='csharp')
-                                    except Exception as e:
-                                        st.error(f"Error loading {file_path.name}: {e}")
+                            st.markdown("##### ⚙️ Backend Files")
+                            backend_files = sorted(backend_dir.rglob("*"), key=lambda p: (p.suffix, p.name))
+                            backend_files = [f for f in backend_files if f.is_file()]
+                            
+                            for file_path in backend_files[:10]:  # Limit to 10 files
+                                rel_path = file_path.relative_to(backend_dir)
+                                st.markdown(f"**📄 {rel_path}**")
+                                try:
+                                    content = file_path.read_text(encoding='utf-8')
+                                    st.code(content, language='csharp')
+                                except Exception as e:
+                                    st.error(f"Error loading {file_path.name}: {e}")
                         
                         st.divider()
     

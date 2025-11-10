@@ -17,6 +17,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed (November 10, 2025)
 - **UI Feedback Persistence:** Enhanced session state persistence for generation results (survives UI reruns)
 - **Fine-tuning Dataset Cleanup:** Ran cleanup script, verified 0 low-quality examples (system ready for collection)
+- **Nested Expander Error:** Fixed StreamlitAPIException by replacing nested expanders with markdown headers
+  - app_v2.py lines 3086, 3103: Frontend/Backend file expanders inside Prototypes expander
+  - diagram_viewer.py lines 116, 123: HTML source/raw output expanders inside Diagrams tab
+- **Cloud API Compatibility:** Fixed httpx/groq/openai version incompatibility issues
+  - Updated groq from 0.4.1 to 0.11.0+ for httpx 0.27+ compatibility
+  - Updated openai from 1.35.0 to 1.54.0+ for httpx 0.27+ compatibility
+  - Added helpful error messages for 'proxies' parameter TypeError
+  - Fixed AsyncHttpxClientWrapper '_state' attribute errors
+  - **ACTION REQUIRED:** Run `pip install --upgrade groq openai` to update dependencies
+- **Ollama Model Registry Warning:** Fixed spurious "Unable to locate model metadata" warning for Ollama models
+  - Ollama models don't use the model registry system (only fine-tuned models do)
+  - Warning now only shows for actual fine-tuned models, not Ollama
 
 ### Verified (November 10, 2025)
 - All v3.5.2 fixes confirmed working:
