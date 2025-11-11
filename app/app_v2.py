@@ -4354,6 +4354,26 @@ def generate_with_validation_silent(artifact_type: str, generate_fn, meeting_not
             
             logger.info(f"Validation: {artifact_type} - Score: {validation_result.score:.1f}/100, Valid: {validation_result.is_valid}")
             
+            # 🚀 RECORD FEEDBACK FOR ADAPTIVE LEARNING (any score ≥80)
+            if validation_result.score >= 80:
+                try:
+                    from components.adaptive_learning import AdaptiveLearningLoop, FeedbackType
+                    adaptive_loop = AdaptiveLearningLoop()
+                    
+                    adaptive_loop.record_feedback(
+                        input_data=meeting_notes,
+                        ai_output=result,
+                        artifact_type=artifact_type,
+                        model_used="unknown",  # Model info not available in this path
+                        validation_score=validation_result.score,
+                        feedback_type=FeedbackType.SUCCESS,
+                        corrected_output=None,
+                        context={'meeting_notes': meeting_notes, 'is_background_job': True}
+                    )
+                    logger.info(f"[ADAPTIVE_LEARNING] ✅ Recorded feedback for {artifact_type} (score: {validation_result.score:.1f})")
+                except Exception as e:
+                    logger.warning(f"[ADAPTIVE_LEARNING] ⚠️ Failed to record feedback: {e}")
+            
             # 🚀 REMOVED OLD RETRY LOGIC - Smart generator handles retries internally
             # The smart generation orchestrator already does:
             # 1. Try local models (with quality validation)
@@ -4512,6 +4532,30 @@ def generate_with_validation(artifact_type: str, generate_fn, meeting_notes: str
             
             from ai.output_validator import ValidationResult
             validation_result = ValidationResultWrapper(validation_status, validation_issues, validation_score)
+            
+            # 🚀 RECORD FEEDBACK FOR ADAPTIVE LEARNING (any score ≥80)
+            if validation_result.score >= 80:
+                try:
+                    from components.adaptive_learning import AdaptiveLearningLoop, FeedbackType
+                    adaptive_loop = AdaptiveLearningLoop()
+                    
+                    adaptive_loop.record_feedback(
+                        input_data=meeting_notes,
+                        ai_output=result,
+                        artifact_type=artifact_type,
+                        model_used="unknown",  # Model info not available in this path
+                        validation_score=validation_result.score,
+                        feedback_type=FeedbackType.SUCCESS,
+                        corrected_output=None,
+                        context={'meeting_notes': meeting_notes, 'is_ui_generation': True}
+                    )
+                    st.session_state.rag_logs.append(
+                        f"[{datetime.now().strftime('%H:%M:%S')}] 🚀 Recorded feedback for fine-tuning (score: {validation_result.score:.1f})"
+                    )
+                except Exception as e:
+                    st.session_state.rag_logs.append(
+                        f"[{datetime.now().strftime('%H:%M:%S')}] ⚠️ Failed to record feedback: {str(e)}"
+                    )
             
             # Show validation results
             col1, col2 = st.columns([1, 3])

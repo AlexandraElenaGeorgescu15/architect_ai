@@ -745,6 +745,38 @@ USER REQUEST:
                 
                 if result.success:
                     print(f"[SMART_GEN] ✅ Success! Model: {result.model_used}, Quality: {result.quality_score}/100, Cloud: {result.used_cloud_fallback}")
+                    
+                    # 🚀 RECORD FEEDBACK FOR ADAPTIVE LEARNING (Critical for incremental fine-tuning)
+                    if self.adaptive_loop and result.quality_score >= 80:
+                        try:
+                            # Determine feedback type based on quality score
+                            feedback_type = FeedbackType.SUCCESS if result.quality_score >= 80 else FeedbackType.VALIDATION_FAILURE
+                            
+                            # Record feedback event
+                            self.adaptive_loop.record_feedback(
+                                input_data=full_prompt,
+                                ai_output=result.content,
+                                artifact_type=artifact_type,
+                                model_used=result.model_used,
+                                validation_score=result.quality_score,
+                                feedback_type=feedback_type,
+                                corrected_output=None,
+                                context={
+                                    "meeting_notes": self.meeting_notes,
+                                    "rag_context": self.rag_context,
+                                    "feature_requirements": self.feature_requirements,
+                                    "is_local": result.is_local,
+                                    "used_cloud_fallback": result.used_cloud_fallback,
+                                    "generation_time": result.generation_time
+                                }
+                            )
+                            print(f"[ADAPTIVE_LEARNING] ✅ Recorded successful generation for fine-tuning")
+                        except Exception as e:
+                            print(f"[ADAPTIVE_LEARNING] ⚠️ Failed to record feedback: {e}")
+                            # Don't fail the request if feedback recording fails
+                    elif result.quality_score < 80:
+                        print(f"[ADAPTIVE_LEARNING] ⛔ Skipped feedback recording (quality {result.quality_score} < 80)")
+                    
                     return result.content
                 else:
                     print(f"[SMART_GEN] ⚠️ Failed after trying all models: {result.validation_errors}")

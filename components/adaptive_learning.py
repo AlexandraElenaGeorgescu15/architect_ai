@@ -400,7 +400,7 @@ class AdaptiveLearningLoop:
             'job_id': batch_id,
             'dataset_file': str(dataset_file),
             'priority': priority,
-            'status': 'queued',
+            'status': 'pending',  # ✅ FIXED: Changed from 'queued' to 'pending' (worker looks for 'pending')
             'created_at': time.time(),
             'artifact_type': artifact_type,  # Track artifact type
             'model_used': model_used,  # Track model
