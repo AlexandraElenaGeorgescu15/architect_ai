@@ -51,6 +51,8 @@ from ai.artifact_router import ArtifactRouter, ArtifactType
 from ai.output_validator import OutputValidator
 # Import mermaid editor for interactive diagram editing
 from components.mermaid_editor import render_mermaid_editor
+# Import visual diagram editor for TRUE Miro-like diagram creation
+from components.visual_diagram_editor import render_visual_diagram_editor
 
 # Note: Auto-update architecture documentation feature was removed
 # to prevent startup crashes. If needed, run manually via utils/architecture_updater.py
@@ -2100,6 +2102,14 @@ def render_dev_mode():
     )
     st.session_state.use_enhanced_rag = use_enhanced_rag
     
+    # Visual Diagram Editor Toggle
+    enable_visual_editor = st.sidebar.checkbox(
+        "🎨 Visual Diagram Editor (Miro-like)",
+        value=False,
+        help="Enable TRUE Miro-like drag-and-drop diagram editor in Interactive Editor tab"
+    )
+    st.session_state.enable_visual_diagram_editor = enable_visual_editor
+    
     st.sidebar.divider()
     
     # Auto-Ingestion Status
@@ -2286,8 +2296,49 @@ def render_dev_mode():
     
     with tabs[5]:
         # Fine-Tuning Tab
-        st.markdown("### 🎓 Local Fine-Tuning")
-        st.markdown("Train the AI on your project's code and patterns")
+        st.markdown("### 🎓 AI Training & Feedback Pipeline")
+        st.markdown("Train the AI to learn your project's code patterns and preferences")
+        
+        # Show the complete feedback-to-training pipeline
+        st.info("""
+        **📊 Complete Training Pipeline:**
+        
+        1. **Generate Artifacts** → AI creates code, diagrams, docs
+        2. **Provide Feedback** → Click 👍 or 👎 on generated outputs
+        3. **Collect Examples** → System stores feedback in training dataset
+        4. **Fine-Tune Models** → Train local (Ollama) or cloud (HuggingFace) models
+        5. **Deploy & Use** → Improved models generate better outputs
+        6. **Repeat** → Continuous improvement loop!
+        """)
+        
+        # Quick stats dashboard
+        try:
+            from components.finetuning_feedback import feedback_store
+            from components.ollama_finetuning import ollama_finetuner
+            
+            feedback_count = len(feedback_store.list_feedback())
+            registered_models = ollama_finetuner.list_fine_tuned_models()
+            
+            col_stats1, col_stats2, col_stats3 = st.columns(3)
+            with col_stats1:
+                st.metric("💬 Feedback Collected", feedback_count, help="Total feedback entries for training")
+            with col_stats2:
+                st.metric("🤖 Fine-Tuned Models", len(registered_models), help="Custom models created")
+            with col_stats3:
+                ready_to_train = "✅ Ready" if feedback_count >= 5 else f"⏳ Need {5 - feedback_count} more"
+                st.metric("🎯 Training Status", ready_to_train, help="Minimum 5 feedback entries recommended")
+            
+            if feedback_count > 0 and feedback_count < 5:
+                st.warning(f"💡 **Tip:** Collect at least 5 feedback entries for effective training. You have {feedback_count} so far.")
+            elif feedback_count >= 5:
+                st.success(f"🎉 **Ready to train!** You have {feedback_count} feedback entries. Scroll down to start training.")
+                
+        except Exception as e:
+            st.warning(f"Could not load feedback stats: {e}")
+        
+        st.markdown("---")
+        
+        # Main fine-tuning UI
         try:
             from components.local_finetuning import render_local_finetuning_ui
             render_local_finetuning_ui()
@@ -2732,12 +2783,12 @@ def render_granular_generation_tab():
                         st.write("**Failed:**", ", ".join(results['failed']))
         
         if st.button("🔥 Generate All Docs & Diagrams (10)", use_container_width=True, key="btn_all_docs_diagrams"):
-            st.info("Generating: 5 Docs + 5 Diagrams (10 total)...")
+            st.info("Generating: 3 Docs + 7 Diagrams (10 total)...")
             
             # 🔥 FIX: Suppress st.rerun() during batch operations
             st.session_state.batch_mode = True
             
-            # 10 artifacts: 5 docs + 5 diagrams
+            # 10 artifacts: 3 docs + 7 diagrams
             artifacts = [
                 "erd",                    # 1. ERD Diagram
                 "architecture",           # 2. Architecture Diagram
@@ -4074,8 +4125,47 @@ Cache buster: {cache_buster}
 
 def render_dev_interactive_editor_tab():
     """Render Developer interactive editor tab with AI-powered prototype modification"""
-    st.markdown("### 🎨 Interactive Prototype Editor")
-    st.markdown("Modify your prototype in real-time by chatting with AI. Make it perfect!")
+    st.markdown("### 🎨 Interactive Editor")
+    
+    # Check if visual diagram editor is enabled
+    if st.session_state.get('enable_visual_diagram_editor', False):
+        st.markdown("#### 🎨 Visual Diagram Editor (Miro-like)")
+        st.info("✨ Create Mermaid diagrams with TRUE drag-and-drop! Move nodes, double-click to edit, multi-select with Shift.")
+        
+        # Load existing diagram if any
+        outputs_dir = AppConfig.OUTPUTS_DIR
+        viz_dir = outputs_dir / "visualizations"
+        initial_mermaid = ""
+        
+        # Try to load existing diagrams
+        diagram_files = []
+        if viz_dir.exists():
+            diagram_files = list(viz_dir.glob("*.mmd"))
+        
+        if diagram_files:
+            selected_diagram = st.selectbox(
+                "Load existing diagram (optional):",
+                ["<Create New>"] + [f.stem for f in diagram_files],
+                key="visual_editor_diagram_select"
+            )
+            
+            if selected_diagram != "<Create New>":
+                diagram_path = viz_dir / f"{selected_diagram}.mmd"
+                if diagram_path.exists():
+                    initial_mermaid = diagram_path.read_text(encoding='utf-8')
+                    st.success(f"✅ Loaded: {selected_diagram}")
+        
+        # Render the visual diagram editor
+        render_visual_diagram_editor(
+            diagram_type="flowchart",
+            initial_mermaid=initial_mermaid,
+            key_suffix="interactive_tab"
+        )
+        
+        st.markdown("---")
+        st.markdown("#### 💡 HTML Prototype Editor")
+    else:
+        st.markdown("Modify your prototype in real-time by chatting with AI. Make it perfect!")
     
     # Check if interactive editor component is available
     if render_interactive_prototype_editor is None:
@@ -4618,6 +4708,76 @@ Attempts: {attempt + 1}
     return result
 
 
+# ============================================================================
+# DIAGRAM GENERATION HELPER FUNCTIONS
+# These functions encapsulate diagram-specific generation logic for clarity
+# ============================================================================
+
+def _save_diagram_with_html(
+    diagram_content: str,
+    diagram_type: str,
+    diagram_name: str,
+    meeting_notes: str,
+    outputs_dir: Path,
+    agent
+) -> None:
+    """
+    Save diagram as .mmd file and generate HTML visualization.
+    
+    Args:
+        diagram_content: The Mermaid diagram code
+        diagram_type: Type identifier (e.g., 'erd', 'architecture')
+        diagram_name: Human-readable name for messages
+        meeting_notes: Meeting notes for context
+        outputs_dir: Output directory path
+        agent: The AI agent with RAG context
+    """
+    viz_dir = outputs_dir / "visualizations"
+    viz_dir.mkdir(exist_ok=True)
+    
+    # Save .mmd file
+    mmd_file = viz_dir / f"{diagram_type}_diagram.mmd"
+    mmd_file.write_text(diagram_content, encoding='utf-8')
+    
+    # Generate HTML visualization with RAG context
+    try:
+        from components.mermaid_html_renderer import mermaid_html_renderer
+        html_content = run_async(
+            mermaid_html_renderer.generate_html_visualization_with_gemini(
+                diagram_content, meeting_notes, diagram_type, agent.rag_context, agent=agent
+            )
+        )
+        html_file = mmd_file.with_suffix('.html')
+        html_file.write_text(html_content, encoding='utf-8')
+        st.success(f"✅ Generated {diagram_name} + HTML visualization")
+    except Exception as e:
+        st.warning(f"⚠️ {diagram_name} generated, but HTML creation failed: {str(e)}")
+
+
+def _update_generation_state(artifact_type: str, model_used: str = "unknown", is_cloud: bool = False) -> None:
+    """
+    Update session state after successful generation.
+    
+    This ensures consistent state management across ALL artifact types and enables
+    feedback collection for both local and cloud model generations.
+    
+    Args:
+        artifact_type: Type of artifact generated
+        model_used: Model identifier (e.g., 'llama3:8b', 'groq/llama-3.3-70b')
+        is_cloud: Whether a cloud provider was used
+    """
+    st.session_state.last_generation.append(artifact_type)
+    st.session_state.outputs_updated = True
+    st.session_state.outputs_updated_time = datetime.now().isoformat()
+    st.session_state[f'generated_{artifact_type}'] = True
+    st.session_state[f'generation_time_{artifact_type}'] = datetime.now().isoformat()
+    
+    # Store model metadata for feedback system
+    st.session_state[f'model_used_{artifact_type}'] = model_used
+    st.session_state[f'is_cloud_{artifact_type}'] = is_cloud
+    st.session_state[f'show_feedback_ui_{artifact_type}'] = True
+
+
 def generate_single_artifact(artifact_type: str):
     """
     Generate a single artifact with full repository context and RAG.
@@ -4696,40 +4856,18 @@ def generate_single_artifact(artifact_type: str):
                 )
                 generated_result = result
                 if result:
-                    viz_dir = outputs_dir / "visualizations"
-                    viz_dir.mkdir(exist_ok=True)
-                    mmd_file = viz_dir / "erd_diagram.mmd"
-                    mmd_file.write_text(result, encoding='utf-8')
-                    
-                    # Generate HTML visualization with RAG context
-                    try:
-                        from components.mermaid_html_renderer import mermaid_html_renderer
-                        html_content = run_async(
-                            mermaid_html_renderer.generate_html_visualization_with_gemini(
-                                result, meeting_notes, "erd", agent.rag_context, agent=agent
-                            )
-                        )
-                        html_file = mmd_file.with_suffix('.html')
-                        html_file.write_text(html_content, encoding='utf-8')
-                        st.success("✅ Generated ERD diagram + HTML visualization (with RAG context)")
-                    except Exception as e:
-                        st.warning(f"⚠️ ERD generated, but HTML creation failed: {str(e)}")
-                    
-                    # Update session state for outputs tab
-                    st.session_state.last_generation.append("erd")
-                    st.session_state.outputs_updated = True
-                    st.session_state.outputs_updated_time = datetime.now().isoformat()
+                    _save_diagram_with_html(result, "erd", "ERD diagram", meeting_notes, outputs_dir, agent)
+                    _update_generation_state("erd")
                     
                 track_generation("erd")
-                # 💾 Store result in session state (persists after rerun!)
                 st.session_state.last_generation_result = {
                     'artifact': 'erd',
                     'success': True,
                     'timestamp': datetime.now().strftime("%H:%M:%S")
                 }
-                # Only rerun if not in batch mode
                 if not st.session_state.get('batch_mode', False):
                     st.rerun()
+                    
             elif artifact_type == "architecture":
                 result = generate_with_validation(
                     "architecture",
@@ -4739,29 +4877,8 @@ def generate_single_artifact(artifact_type: str):
                 )
                 generated_result = result
                 if result:
-                    viz_dir = outputs_dir / "visualizations"
-                    viz_dir.mkdir(exist_ok=True)
-                    mmd_file = viz_dir / "architecture_diagram.mmd"
-                    mmd_file.write_text(result, encoding='utf-8')
-                    
-                    # Generate HTML visualization
-                    try:
-                        from components.mermaid_html_renderer import mermaid_html_renderer
-                        html_content = run_async(
-                            mermaid_html_renderer.generate_html_visualization_with_gemini(
-                                result, meeting_notes, "architecture", agent.rag_context, agent=agent
-                            )
-                        )
-                        html_file = mmd_file.with_suffix('.html')
-                        html_file.write_text(html_content, encoding='utf-8')
-                        st.success("✅ Generated Architecture diagram + HTML visualization")
-                    except Exception as e:
-                        st.warning(f"⚠️ Architecture generated, but HTML creation failed: {str(e)}")
-                    
-                    # Update session state for outputs tab
-                    st.session_state.last_generation.append("architecture")
-                    st.session_state.outputs_updated = True
-                    st.session_state.outputs_updated_time = datetime.now().isoformat()
+                    _save_diagram_with_html(result, "architecture", "Architecture diagram", meeting_notes, outputs_dir, agent)
+                    _update_generation_state("architecture")
                     
                 track_generation("architecture")
                 # Only rerun if not in batch mode
@@ -4883,7 +5000,8 @@ def generate_single_artifact(artifact_type: str):
                     except Exception as e:
                         st.warning(f"⚠️ {diagram_name} generated, but HTML creation failed: {str(e)}")
                     
-                    return f"Generated {diagram_name}"
+                    # ✅ FIX: Return simple success message without diagram name (prevents duplication)
+                    return "success"
                 
                 result = generate_with_validation(
                     artifact_type,
@@ -4894,14 +5012,10 @@ def generate_single_artifact(artifact_type: str):
                 
                 if result:
                     generated_result = result
-                    # Update session state for outputs tab
-                    st.session_state.last_generation.append(artifact_type)
-                    st.session_state.outputs_updated = True
-                    st.session_state.outputs_updated_time = datetime.now().isoformat()
+                    _update_generation_state(artifact_type)
                     st.success(f"✅ {diagram_name} generated!")
                     
                 track_generation(artifact_type)
-                # Only rerun if not in batch mode
                 if not st.session_state.get('batch_mode', False):
                     st.rerun()
             elif artifact_type == "all_diagrams":
@@ -5211,9 +5325,16 @@ def generate_single_artifact(artifact_type: str):
             st.info("💡 Go to the 'Outputs' tab to view your generated content!")
             st.balloons()
             
-            # Quick Feedback Section
+            # ✅ FIX: Persist feedback UI - don't clear it on rerun
+            # Mark that we should show feedback for this artifact
+            st.session_state[f'show_feedback_ui_{artifact_type}'] = True
+            
+        # 💬 PERSISTENT FEEDBACK SECTION (shows even after rerun)
+        # Display feedback UI if this artifact was recently generated
+        if st.session_state.get(f'show_feedback_ui_{artifact_type}', False):
             st.markdown("---")
             st.markdown("### 💬 Was this output helpful?")
+            st.caption(f"Provide feedback for: **{artifact_type.replace('_', ' ').title()}**")
             feedback_cols = st.columns([1, 1, 2])
             with feedback_cols[0]:
                 if st.button("👍 Good", key=f"feedback_good_{artifact_type}", use_container_width=True):
@@ -5221,10 +5342,14 @@ def generate_single_artifact(artifact_type: str):
                         from components.finetuning_feedback import feedback_store, FeedbackEntry
                         # Get the actual output that was generated
                         generated_output = st.session_state.get(artifact_type, "")
+                        # ✅ FIX: Record feedback for BOTH local and cloud models
+                        model_used = st.session_state.get(f'model_used_{artifact_type}', 'unknown')
+                        is_cloud = st.session_state.get(f'is_cloud_{artifact_type}', False)
+                        
                         # Save positive feedback with the actual generated output
                         entry = FeedbackEntry.create(
                             artifact_type=artifact_type,
-                            issue="Positive feedback - output was correct and helpful",
+                            issue=f"Positive feedback - output was correct and helpful (Model: {model_used}, Cloud: {is_cloud})",
                             expected_style=str(generated_output)[:1000] if generated_output else "Continue generating similar quality output",
                             reference_code="",
                             meeting_context=st.session_state.get('meeting_notes', '')[:200],
@@ -5232,7 +5357,7 @@ def generate_single_artifact(artifact_type: str):
                         feedback_store.add_feedback(entry)
                         feedback_count = len(feedback_store.list_feedback())
                         st.success(f"✅ Thanks! Positive feedback saved for training (Total: {feedback_count} entries).")
-                        print(f"[FEEDBACK] Saved positive feedback for {artifact_type} (Total: {feedback_count})")
+                        print(f"[FEEDBACK] Saved positive feedback for {artifact_type} using {model_used} (Cloud: {is_cloud}, Total: {feedback_count})")
                     except Exception as e:
                         st.error(f"❌ Failed to save feedback: {e}")
                         import traceback
@@ -5268,9 +5393,13 @@ def generate_single_artifact(artifact_type: str):
                     with fb_cols[0]:
                         if st.button("💾 Save Feedback", key=f"save_quick_fb_{artifact_type}", type="primary"):
                             if fb_issue.strip() and fb_expected.strip():
+                                # ✅ FIX: Include model info in feedback
+                                model_used = st.session_state.get(f'model_used_{artifact_type}', 'unknown')
+                                is_cloud = st.session_state.get(f'is_cloud_{artifact_type}', False)
+                                
                                 entry = FeedbackEntry.create(
                                     artifact_type=artifact_type,
-                                    issue=fb_issue,
+                                    issue=f"{fb_issue} (Model: {model_used}, Cloud: {is_cloud})",
                                     expected_style=fb_expected,
                                     reference_code="",
                                     meeting_context=st.session_state.get('meeting_notes', '')[:200],

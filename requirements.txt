@@ -7,9 +7,9 @@ streamlit>=1.38.0
 
 # AI/LLM Providers
 google-generativeai>=0.3.2
-openai>=1.54.0  # Updated for httpx 0.27+ compatibility
+openai==2.7.2  # Fixed: Compatible with httpx 0.28+
 anthropic>=0.18.0
-groq>=0.11.0  # Updated for httpx 0.27+ compatibility
+groq==0.33.0  # Fixed: Compatible with httpx 0.28+
 huggingface-hub>=0.19.4
 
 # Local Model Support
@@ -20,7 +20,7 @@ bitsandbytes>=0.41.0
 datasets>=2.14.0
 
 # HTTP & Async
-httpx>=0.27.0
+httpx==0.28.1  # Fixed: Latest stable version
 aiofiles>=23.2.1
 
 # RAG & Vector Search

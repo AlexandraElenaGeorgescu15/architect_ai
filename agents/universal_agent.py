@@ -1153,16 +1153,19 @@ USER REQUEST:
             mapper = get_artifact_mapper()
             task_type = mapper.get_task_type(artifact_type)
             
+            # ⚡ UPDATED: Groq as primary fallback for better reliability (no rate limits like Gemini)
             if task_type == 'mermaid':
-                cloud_providers = [('gemini', 'gemini-2.0-flash-exp'), ('groq', 'llama-3.3-70b-versatile'), ('openai', 'gpt-4')]
-            elif task_type in ['code', 'html']:
                 cloud_providers = [('groq', 'llama-3.3-70b-versatile'), ('gemini', 'gemini-2.0-flash-exp'), ('openai', 'gpt-4')]
+            elif task_type in ['code', 'html', 'prototype']:
+                cloud_providers = [('groq', 'llama-3.3-70b-versatile'), ('openai', 'gpt-4'), ('gemini', 'gemini-2.0-flash-exp')]
             elif task_type in ['jira', 'planning', 'documentation']:
-                cloud_providers = [('gemini', 'gemini-2.0-flash-exp'), ('groq', 'llama-3.3-70b-versatile'), ('openai', 'gpt-4')]
-            else:
+                # Groq first for JIRA (better at structured output), Gemini as fallback
                 cloud_providers = [('groq', 'llama-3.3-70b-versatile'), ('gemini', 'gemini-2.0-flash-exp'), ('openai', 'gpt-4')]
+            else:
+                cloud_providers = [('groq', 'llama-3.3-70b-versatile'), ('openai', 'gpt-4'), ('gemini', 'gemini-2.0-flash-exp')]
         else:
-            cloud_providers = [('groq', 'llama-3.3-70b-versatile'), ('gemini', 'gemini-2.0-flash-exp'), ('openai', 'gpt-4')]
+            # Default: Groq first (most reliable), OpenAI second, Gemini last
+            cloud_providers = [('groq', 'llama-3.3-70b-versatile'), ('openai', 'gpt-4'), ('gemini', 'gemini-2.0-flash-exp')]
         
         # Try each provider
         for provider_name, model_name in cloud_providers:
@@ -1750,7 +1753,8 @@ Return as detailed JSON.
             try:
                 response = await self._call_ai(
                     requirements_prompt,
-                    "You are an expert business analyst. Extract comprehensive requirements using the RAG context."
+                    "You are an expert business analyst. Extract comprehensive requirements using the RAG context.",
+                    artifact_type="requirements"
                 )
                 self.feature_requirements = json.loads(response)
             except Exception as e:
@@ -2830,7 +2834,7 @@ OUTPUT RULES (CRITICAL):
 
 Focus on the NEW feature, not existing system overview.
 """
-        raw_overview = await self._call_ai(overview_prompt, "Output ONLY the diagram. Start with 'graph TD'.")
+        raw_overview = await self._call_ai(overview_prompt, "Output ONLY the diagram. Start with 'graph TD'.", artifact_type="system_overview")
         cleaned = self._clean_diagram_output(raw_overview)
         try:
             from components.universal_diagram_fixer import fix_any_diagram
@@ -2860,7 +2864,7 @@ You are a Mermaid diagram generator. Generate a data flow diagram for a NEW FEAT
 OUTPUT RULES: graph TD, max 6 nodes, square brackets, --> arrows.
 NO markdown blocks, NO explanations after diagram.
 """
-        raw = await self._call_ai(prompt, "Output ONLY the diagram. Start with 'graph TD'.")
+        raw = await self._call_ai(prompt, "Output ONLY the diagram. Start with 'graph TD'.", artifact_type="data_flow")
         return self._clean_diagram_output(raw)
     
     async def generate_user_flow_diagram(self) -> Optional[str]:
@@ -2884,7 +2888,7 @@ You are a Mermaid diagram generator. Generate a user flow diagram for a NEW FEAT
 OUTPUT RULES: graph TD, max 7 nodes, [Action] for steps, {{{{Decision}}}} for choices.
 NO markdown blocks, NO explanations after diagram.
 """
-        raw = await self._call_ai(prompt, "Output ONLY the diagram. Start with 'graph TD'.")
+        raw = await self._call_ai(prompt, "Output ONLY the diagram. Start with 'graph TD'.", artifact_type="user_flow")
         return self._clean_diagram_output(raw)
     
     async def generate_components_diagram(self) -> Optional[str]:
@@ -2910,7 +2914,7 @@ You are a Mermaid diagram generator. Generate a component diagram for a NEW FEAT
 OUTPUT RULES: graph LR, max 7 nodes, square brackets, --> arrows.
 NO markdown blocks, NO explanations after diagram.
 """
-        raw = await self._call_ai(prompt, "Output ONLY the diagram. Start with 'graph LR'.")
+        raw = await self._call_ai(prompt, "Output ONLY the diagram. Start with 'graph LR'.", artifact_type="components_diagram")
         return self._clean_diagram_output(raw)
     
     async def generate_api_sequence_diagram(self) -> Optional[str]:
@@ -2934,7 +2938,7 @@ You are a Mermaid diagram generator. Generate an API sequence diagram for a NEW 
 OUTPUT RULES: sequenceDiagram, max 4 participants, ->> arrows.
 NO markdown blocks, NO explanations after diagram.
 """
-        raw = await self._call_ai(prompt, "Output ONLY the diagram. Start with 'sequenceDiagram'.")
+        raw = await self._call_ai(prompt, "Output ONLY the diagram. Start with 'sequenceDiagram'.", artifact_type="api_sequence")
         return self._clean_diagram_output(raw)
     
     async def generate_specific_diagrams(self) -> Dict[str, str]:
@@ -2985,7 +2989,7 @@ CRITICAL INSTRUCTIONS:
 
 Generate a system overview diagram with max 7 nodes following these EXACT rules.
 """
-        raw_overview = await self._call_ai(overview_prompt, "Output ONLY the diagram. Start with 'graph TD'. No text before or after.")
+        raw_overview = await self._call_ai(overview_prompt, "Output ONLY the diagram. Start with 'graph TD'. No text before or after.", artifact_type="system_overview")
         cleaned_overview = self._clean_diagram_output(raw_overview)
         
         # Apply universal diagram fixer
@@ -3025,7 +3029,7 @@ CRITICAL INSTRUCTIONS:
 
 Generate a data flow diagram with max 6 nodes following these EXACT rules.
 """
-        raw_dataflow = await self._call_ai(dataflow_prompt, "Output ONLY the diagram. Start with 'graph TD'. No text before or after.")
+        raw_dataflow = await self._call_ai(dataflow_prompt, "Output ONLY the diagram. Start with 'graph TD'. No text before or after.", artifact_type="data_flow")
         cleaned_dataflow = self._clean_diagram_output(raw_dataflow)
         try:
             from components.universal_diagram_fixer import fix_any_diagram
@@ -3062,7 +3066,7 @@ CRITICAL INSTRUCTIONS:
 
 Generate a user flow diagram with max 7 nodes following these EXACT rules.
 """
-        raw_userflow = await self._call_ai(userflow_prompt, "Output ONLY the diagram. Start with 'graph TD'. No text before or after.")
+        raw_userflow = await self._call_ai(userflow_prompt, "Output ONLY the diagram. Start with 'graph TD'. No text before or after.", artifact_type="user_flow")
         cleaned_userflow = self._clean_diagram_output(raw_userflow)
         try:
             from components.universal_diagram_fixer import fix_any_diagram
@@ -3098,7 +3102,7 @@ IMPORTANT:
 
 Generate a component diagram with max 7 nodes following these EXACT rules.
 """
-        raw_components = await self._call_ai(components_prompt, "Output ONLY the diagram. Start with 'graph LR'. No text before or after.")
+        raw_components = await self._call_ai(components_prompt, "Output ONLY the diagram. Start with 'graph LR'. No text before or after.", artifact_type="components_diagram")
         cleaned_components = self._clean_diagram_output(raw_components)
         try:
             from components.universal_diagram_fixer import fix_any_diagram
@@ -3132,7 +3136,7 @@ IMPORTANT:
 
 Generate an API sequence diagram with max 6 interactions following these EXACT rules.
 """
-        raw_api = await self._call_ai(api_prompt, "Output ONLY the diagram. Start with 'sequenceDiagram'. No text before or after.")
+        raw_api = await self._call_ai(api_prompt, "Output ONLY the diagram. Start with 'sequenceDiagram'. No text before or after.", artifact_type="api_sequence")
         cleaned_api = self._clean_diagram_output(raw_api)
         try:
             from components.universal_diagram_fixer import fix_any_diagram
@@ -3183,7 +3187,8 @@ Make it specific to YOUR actual repository and follow YOUR conventions.
         
         return await self._call_ai(
             prompt,
-            "You are an expert UX designer and technical writer. Generate detailed design documentation."
+            "You are an expert UX designer and technical writer. Generate detailed design documentation.",
+            artifact_type="design_document"
         )
     
     async def generate_architecture_document(self) -> str:
@@ -3227,7 +3232,8 @@ Base this on YOUR actual repository architecture shown in the RAG context.
         
         return await self._call_ai(
             prompt,
-            "You are an expert software architect. Generate detailed technical architecture."
+            "You are an expert software architect. Generate detailed technical architecture.",
+            artifact_type="architecture_document"
         )
     
     async def generate_api_documentation(self) -> str:
@@ -3292,7 +3298,8 @@ Base this on YOUR actual API patterns shown in the RAG context.
         
         return await self._call_ai(
             prompt,
-            "You are an expert API designer. Generate comprehensive API documentation."
+            "You are an expert API designer. Generate comprehensive API documentation.",
+            artifact_type="api_documentation"
         )
     
     async def generate_jira_tasks(self) -> str:
@@ -3397,7 +3404,8 @@ Make tasks specific and actionable based on the actual requirements.
         
         return await self._call_ai(
             prompt,
-            "You are an expert Scrum master and project manager. Generate detailed, actionable JIRA tasks."
+            "You are an expert Scrum master and project manager. Generate detailed, actionable JIRA tasks.",
+            artifact_type="jira_tasks"
         )
     
     async def generate_workflows(self) -> str:
@@ -3513,7 +3521,8 @@ Make workflows specific to the actual tech stack and team practices.
         
         return await self._call_ai(
             prompt,
-            "You are an expert DevOps engineer. Generate detailed workflows."
+            "You are an expert DevOps engineer. Generate detailed workflows.",
+            artifact_type="workflows_document"
         )
     
     async def validate_outputs(self) -> Dict[str, Any]:
