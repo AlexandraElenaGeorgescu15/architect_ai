@@ -1519,10 +1519,19 @@ def render_local_finetuning_ui():
                         if st.button(f"📥 Download", key=f"download_{model_key}"):
                             with st.spinner("Downloading model..."):
                                 try:
+                                    import asyncio as async_module  # Local import to avoid scoping issues
+                                    
                                     def progress_callback(t):
                                         st.progress(t)
                                     
-                                    asyncio.run(local_finetuning_system.download_model(model_key, progress_callback))
+                                    # Run async function synchronously
+                                    loop = async_module.new_event_loop()
+                                    async_module.set_event_loop(loop)
+                                    try:
+                                        loop.run_until_complete(local_finetuning_system.download_model(model_key, progress_callback))
+                                    finally:
+                                        loop.close()
+                                    
                                     st.success("✅ Model downloaded!")
                                     st.rerun()
                                 except Exception as e:

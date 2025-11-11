@@ -2317,7 +2317,7 @@ def render_dev_mode():
             from components.ollama_finetuning import ollama_finetuner
             
             feedback_count = len(feedback_store.list_feedback())
-            registered_models = ollama_finetuner.list_fine_tuned_models()
+            registered_models = ollama_finetuner.list_models()
             
             col_stats1, col_stats2, col_stats3 = st.columns(3)
             with col_stats1:
