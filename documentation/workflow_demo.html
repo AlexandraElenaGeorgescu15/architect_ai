@@ -3,1128 +3,1681 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Architect.AI - Technical Documentation</title>
+    <title>Architect.AI - Interactive Architecture Visualization</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        :root {
+            --color-complete: #27ae60;
+            --color-partial: #f39c12;
+            --color-missing: #e74c3c;
+            --color-primary: #3498db;
+            --color-dark: #2c3e50;
+            --color-light: #ecf0f1;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.15);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.2);
+        }
         
         body {
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background: #f5f7fa;
-            padding: 20px;
-            line-height: 1.6;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: #333;
+            line-height: 1.6;
+            overflow-x: hidden;
         }
 
         .container {
-            max-width: 1400px;
-            margin: 0 auto;
+            max-width: 1600px;
+            margin: 20px auto;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
             overflow: hidden;
         }
 
         header {
-            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            background: linear-gradient(135deg, var(--color-dark) 0%, var(--color-primary) 100%);
             color: white;
-            padding: 40px;
-            border-bottom: 4px solid #2980b9;
+            padding: 50px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 500px;
+            height: 500px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.3; }
         }
 
         header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
+            font-size: 3em;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
         }
 
         header p {
-            font-size: 1.2em;
-            opacity: 0.9;
+            font-size: 1.3em;
+            opacity: 0.95;
+            position: relative;
+            z-index: 1;
         }
 
-        .version {
-            background: rgba(255,255,255,0.2);
-            padding: 5px 15px;
-            border-radius: 15px;
-            display: inline-block;
-            margin-top: 15px;
+        .stats-bar {
+            display: flex;
+            gap: 30px;
+            margin-top: 25px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .stat {
+            background: rgba(255,255,255,0.15);
+            padding: 15px 25px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-label {
             font-size: 0.9em;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 15px;
+            padding: 30px 40px;
+            background: var(--color-light);
+            flex-wrap: wrap;
+            align-items: center;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: var(--color-dark);
+            margin-right: 10px;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            border: 2px solid transparent;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95em;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .filter-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .filter-btn.active {
+            border-color: var(--color-primary);
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .filter-btn .badge {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
         }
 
         .section {
-            padding: 40px;
-            border-bottom: 1px solid #e9ecef;
+            padding: 50px 40px;
+            border-bottom: 1px solid #e0e0e0;
         }
 
         .section h2 {
-            font-size: 2em;
-            color: #2c3e50;
-            margin-bottom: 25px;
-            padding-bottom: 10px;
-            border-bottom: 3px solid #3498db;
+            font-size: 2.2em;
+            color: var(--color-dark);
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 4px solid var(--color-primary);
+            display: inline-block;
         }
 
-        .section h3 {
-            font-size: 1.5em;
-            color: #34495e;
-            margin: 25px 0 15px 0;
-        }
-
-        .section h4 {
-            font-size: 1.2em;
-            color: #555;
-            margin: 20px 0 10px 0;
-        }
-
-        .feature-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 25px;
-            margin-top: 25px;
-        }
-
-        .feature-card {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 10px;
-            border-left: 4px solid #3498db;
-            transition: all 0.3s ease;
-        }
-
-        .feature-card:hover {
-            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2);
-            transform: translateY(-2px);
-        }
-
-        .feature-card h3 {
-            color: #2c3e50;
-            margin-top: 0;
-            font-size: 1.3em;
-        }
-
-        .feature-card ul {
-            list-style: none;
-            margin-top: 15px;
-        }
-
-        .feature-card li {
-            padding: 8px 0;
-            padding-left: 25px;
-            position: relative;
-        }
-
-        .feature-card li:before {
-            content: "•";
-            position: absolute;
-            left: 0;
-            color: #3498db;
-            font-weight: bold;
-            font-size: 1.5em;
-        }
-
-        .info-box {
-            background: #e8f4f8;
-            border-left: 4px solid #3498db;
-            padding: 20px;
-            margin: 25px 0;
-            border-radius: 5px;
-        }
-
-        .info-box.warning {
-            background: #fff3cd;
-            border-left-color: #ffc107;
-        }
-
-        .info-box.note {
-            background: #d1ecf1;
-            border-left-color: #17a2b8;
-        }
-
-        .code-block {
-            background: #2d2d2d;
-            color: #f8f8f2;
-            padding: 20px;
-            border-radius: 8px;
+        .diagram-container {
+            background: #fafafa;
+            border-radius: 12px;
+            padding: 40px;
+            margin: 30px 0;
+            box-shadow: var(--shadow-sm);
             overflow-x: auto;
-            font-family: 'Courier New', monospace;
-            margin: 20px 0;
+        }
+
+        .flow-diagram {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            min-width: 1200px;
+        }
+
+        .flow-row {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .flow-node {
+            background: white;
+            border: 3px solid var(--color-complete);
+            border-radius: 12px;
+            padding: 20px 30px;
+            min-width: 200px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .flow-node:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .flow-node.complete { border-color: var(--color-complete); }
+        .flow-node.partial { border-color: var(--color-partial); }
+        .flow-node.missing { border-color: var(--color-missing); }
+
+        .flow-node::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--color-complete);
+        }
+
+        .flow-node.complete::before { background: var(--color-complete); }
+        .flow-node.partial::before { background: var(--color-partial); }
+        .flow-node.missing::before { background: var(--color-missing); }
+
+        .flow-node-title {
+            font-weight: 600;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            color: var(--color-dark);
+        }
+
+        .flow-node-desc {
+            font-size: 0.85em;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .flow-arrow {
+            font-size: 2em;
+            color: var(--color-primary);
+            animation: slideRight 1.5s ease-in-out infinite;
+        }
+
+        @keyframes slideRight {
+            0%, 100% { transform: translateX(0); opacity: 0.5; }
+            50% { transform: translateX(10px); opacity: 1; }
+        }
+
+        .tabs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .tab-card {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: var(--color-complete);
+        }
+
+        .tab-card.complete::before { background: var(--color-complete); }
+        .tab-card.partial::before { background: var(--color-partial); }
+        .tab-card.missing::before { background: var(--color-missing); }
+
+        .tab-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateX(5px);
+        }
+
+        .tab-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+        }
+
+        .tab-card-title {
+            font-weight: 600;
+            font-size: 1.2em;
+            color: var(--color-dark);
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-badge.complete {
+            background: rgba(39, 174, 96, 0.15);
+            color: var(--color-complete);
+        }
+
+        .status-badge.partial {
+            background: rgba(243, 156, 18, 0.15);
+            color: var(--color-partial);
+        }
+
+        .status-badge.missing {
+            background: rgba(231, 76, 60, 0.15);
+            color: var(--color-missing);
+        }
+
+        .tab-card-desc {
+            color: #666;
             font-size: 0.9em;
             line-height: 1.5;
         }
 
-        .workflow-diagram {
-            background: white;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            padding: 25px;
-            margin: 25px 0;
-        }
-
-        .workflow-step {
-            display: flex;
-            align-items: flex-start;
-            margin: 20px 0;
-            padding: 15px;
+        .expandable-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
             background: #f8f9fa;
             border-radius: 8px;
-            border-left: 4px solid #3498db;
+            margin-top: 15px;
         }
 
-        .step-number {
-            min-width: 40px;
-            height: 40px;
-            background: #3498db;
+        .tab-card.expanded .expandable-details {
+            max-height: 500px;
+            padding: 15px;
+        }
+
+        .artifact-matrix {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .artifact-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .artifact-item:hover {
+            box-shadow: var(--shadow-sm);
+            transform: scale(1.02);
+        }
+
+        .artifact-name {
+            font-weight: 500;
+            color: var(--color-dark);
+        }
+
+        .feature-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .feature-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .feature-card h3 {
+            font-size: 1.3em;
+            color: var(--color-dark);
+            margin: 0;
+        }
+
+        .priority-badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .priority-badge.high {
+            background: rgba(231, 76, 60, 0.15);
+            color: #c0392b;
+        }
+
+        .priority-badge.medium {
+            background: rgba(243, 156, 18, 0.15);
+            color: #e67e22;
+        }
+
+        .priority-badge.low {
+            background: rgba(52, 152, 219, 0.15);
+            color: #2980b9;
+        }
+
+        .feature-card-body {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .feature-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+            margin-top: 15px;
+        }
+
+        .feature-card.expanded .feature-details {
+            max-height: 1000px;
+        }
+
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+
+        .tech-item {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            border-radius: 50%;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.3s ease;
+        }
+
+        .tech-item:hover {
+            transform: scale(1.05);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--color-complete) 0%, #2ecc71 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            margin-right: 15px;
-            flex-shrink: 0;
-        }
-
-        .step-content h4 {
-            margin: 0 0 8px 0;
-            color: #2c3e50;
-        }
-
-        .step-content p {
-            margin: 0;
-            color: #666;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 25px 0;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-
-        table th {
-            background: #34495e;
             color: white;
-            padding: 15px;
-            text-align: left;
             font-weight: 600;
+            transition: width 1s ease;
         }
 
-        table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #e9ecef;
+        .legend {
+            display: flex;
+            gap: 30px;
+            justify-content: center;
+            margin: 30px 0;
+            flex-wrap: wrap;
         }
 
-        table tr:hover {
-            background: #f8f9fa;
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95em;
         }
 
-        .tab-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-
-        .tab-item {
-            background: #ecf0f1;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            font-weight: 600;
-            color: #2c3e50;
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
         }
 
         footer {
-            background: #2c3e50;
+            background: var(--color-dark);
             color: white;
+            padding: 30px 40px;
             text-align: center;
-            padding: 30px;
         }
 
         footer p {
-            margin: 8px 0;
+            opacity: 0.9;
+            margin: 5px 0;
+        }
+
+        .hidden {
+            display: none !important;
         }
 
         @media (max-width: 768px) {
-            header h1 { font-size: 2em; }
-            .feature-grid { grid-template-columns: 1fr; }
-            .section { padding: 25px; }
+            header h1 {
+                font-size: 2em;
+            }
+
+            .stats-bar {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .filter-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .flow-diagram {
+                min-width: auto;
+            }
+
+            .flow-row {
+                flex-direction: column;
+            }
+
+            .tabs-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .filter-controls {
+                display: none;
+            }
+
+            .container {
+                box-shadow: none;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Architect.AI</h1>
-            <p>AI-Powered Architecture Assistant for Software Development</p>
-            <div class="version">Version 2.1.0 | Last Updated: November 2025</div>
+            <h1>🏗️ Architect.AI - Interactive Architecture</h1>
+            <p>Complete system visualization showing current state and roadmap</p>
+            <div class="stats-bar">
+                <div class="stat">
+                    <div class="stat-label">Complete</div>
+                    <div class="stat-value" style="color: var(--color-complete);">58%</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Partial</div>
+                    <div class="stat-value" style="color: var(--color-partial);">14%</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Missing</div>
+                    <div class="stat-value" style="color: var(--color-missing);">28%</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-label">Total Features</div>
+                    <div class="stat-value">96</div>
+                </div>
+            </div>
         </header>
 
-        <!-- Overview -->
-        <div class="section">
-            <h2>Overview</h2>
-            <p>Architect.AI is a Streamlit-based application that transforms meeting notes and repository context into production-ready software artifacts. It uses a combination of local and cloud AI models, RAG (Retrieval-Augmented Generation), and static code analysis to generate architecture diagrams, code, documentation, and project management artifacts.</p>
+        <div class="filter-controls">
+            <span class="filter-label">Filter by Status:</span>
+            <button class="filter-btn active" data-filter="all">
+                All Components
+            </button>
+            <button class="filter-btn" data-filter="complete">
+                <span class="badge" style="background: var(--color-complete);"></span>
+                Complete Features
+            </button>
+            <button class="filter-btn" data-filter="partial">
+                <span class="badge" style="background: var(--color-partial);"></span>
+                Partial Features
+            </button>
+            <button class="filter-btn" data-filter="missing">
+                <span class="badge" style="background: var(--color-missing);"></span>
+                Missing Features
+            </button>
+            <button class="filter-btn" data-filter="critical">
+                ⭐ Critical Path
+            </button>
+        </div>
+
+        <!-- Main Interactive Diagram -->
+        <section class="section">
+            <h2>System Flow Overview</h2>
             
-            <div class="info-box">
-                <strong>Core Principles:</strong>
-                <ul style="margin: 10px 0 0 20px;">
-                    <li><strong>RAG-First:</strong> Always retrieves repository context before generating</li>
-                    <li><strong>Feature-Focused:</strong> Outputs relate to the feature in meeting notes</li>
-                    <li><strong>Stack-Aware:</strong> Detects and respects your tech stack and conventions</li>
-                    <li><strong>Context-Driven:</strong> Uses your repository's architecture, patterns, and naming conventions</li>
-                </ul>
-            </div>
-        </div>
-
-        <!-- Application Modes -->
-        <div class="section">
-            <h2>Application Modes</h2>
-            <p>The application operates in two distinct modes, each tailored for different use cases:</p>
-
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <h3>👨‍💻 Developer Mode</h3>
-                    <p>Full technical capabilities for development teams</p>
-                    <ul>
-                        <li>All 8 artifact types available</li>
-                        <li>Granular generation (individual or batch)</li>
-                        <li>Interactive editors for refinement</li>
-                        <li>Code editor with syntax highlighting</li>
-                        <li>Test generation capabilities</li>
-                        <li>Knowledge Graph visualization</li>
-                        <li>Pattern Mining analysis</li>
-                        <li>Version history tracking</li>
-                        <li>Fine-tuning controls</li>
-                        <li>Export management</li>
-                    </ul>
-                </div>
-
-                <div class="feature-card">
-                    <h3>📋 PM Mode</h3>
-                    <p>Streamlined interface for product managers</p>
-                    <ul>
-                        <li>Visual prototype generation</li>
-                        <li>JIRA task creation</li>
-                        <li>Interactive prototype editor</li>
-                        <li>Simplified input interface</li>
-                        <li>Quick modifications via chat</li>
-                        <li>Version history</li>
-                        <li>Export capabilities</li>
-                        <li>No technical setup required</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-
-        <!-- Artifact Types -->
-        <div class="section">
-            <h2>Artifact Types</h2>
-            <p>The system can generate 8 different types of artifacts from meeting notes:</p>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>Artifact Type</th>
-                        <th>Output Format</th>
-                        <th>Description</th>
-                        <th>Validator</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><strong>ERD Diagram</strong></td>
-                        <td>Mermaid + HTML</td>
-                        <td>Entity-Relationship Diagram showing data models, entities, relationships, and attributes</td>
-                        <td>Mermaid syntax, entities ≥1, relationships ≥1</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Architecture Diagram</strong></td>
-                        <td>Mermaid + HTML</td>
-                        <td>System architecture showing components, layers, services, and interactions</td>
-                        <td>Components ≥3, layers ≥2, interactions ≥2</td>
-                    </tr>
-                    <tr>
-                        <td><strong>API Documentation</strong></td>
-                        <td>Markdown</td>
-                        <td>REST API documentation with endpoints, methods, request/response formats, authentication</td>
-                        <td>Endpoints ≥1, HTTP methods, request/response examples</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Code Prototype</strong></td>
-                        <td>Multi-file</td>
-                        <td>Full-stack code: Frontend (TypeScript/Angular) + Backend (C#/.NET)</td>
-                        <td>File markers, no placeholders, syntax validation</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Visual Prototype</strong></td>
-                        <td>HTML/CSS/JS</td>
-                        <td>Interactive HTML prototype with styling and basic functionality</td>
-                        <td>HTML structure, required tags, valid markup</td>
-                    </tr>
-                    <tr>
-                        <td><strong>JIRA Tasks</strong></td>
-                        <td>Markdown</td>
-                        <td>User stories with acceptance criteria (Given/When/Then), estimates, and subtasks</td>
-                        <td>Story format, acceptance criteria, estimates</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Workflows</strong></td>
-                        <td>Markdown</td>
-                        <td>Deployment workflows, CI/CD pipelines, operational procedures</td>
-                        <td>Steps ≥3, sequencing, completeness</td>
-                    </tr>
-                    <tr>
-                        <td><strong>All Diagrams</strong></td>
-                        <td>Multiple files</td>
-                        <td>Batch generation of ERD, Architecture, Data Flow, User Flow, Components, API Sequence</td>
-                        <td>Multiple diagram types validated</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Developer Mode Tabs -->
-        <div class="section">
-            <h2>Developer Mode Interface</h2>
-            <p>Developer Mode provides 12 tabs, each serving a specific purpose:</p>
-
-            <div class="tab-list">
-                <div class="tab-item">📝 Input</div>
-                <div class="tab-item">🎯 Generate</div>
-                <div class="tab-item">📊 Outputs</div>
-                <div class="tab-item">🎨 Interactive Editor</div>
-                <div class="tab-item">✏️ Code Editor</div>
-                <div class="tab-item">🎓 Fine-Tuning</div>
-                <div class="tab-item">🧪 Tests</div>
-                <div class="tab-item">📤 Export</div>
-                <div class="tab-item">📚 Versions</div>
-                <div class="tab-item">📈 Metrics</div>
-                <div class="tab-item">🔗 Knowledge Graph</div>
-                <div class="tab-item">🔍 Pattern Mining</div>
-            </div>
-
-            <h3>Tab Descriptions</h3>
-
-            <div class="feature-card">
-                <h4>📝 Input Tab</h4>
-                <p>Upload or paste meeting notes/requirements. Supports Markdown and plain text. Minimum 80 characters required for generation.</p>
-            </div>
-
-            <div class="feature-card">
-                <h4>🎯 Generate Tab</h4>
-                <p>Granular artifact generation interface. Select individual artifacts or batch operations. Configure model providers and parameters. View generation logs and quality scores.</p>
-            </div>
-
-            <div class="feature-card">
-                <h4>📊 Outputs Tab</h4>
-                <p>View all generated artifacts with syntax highlighting, live previews for diagrams/HTML, download capabilities, and validation results.</p>
-            </div>
-
-            <div class="feature-card">
-                <h4>🎨 Interactive Editor Tab</h4>
-                <p>Chat-based prototype modification interface. Send natural language instructions to modify visual prototypes. Quick action buttons for common changes (responsive, dark mode, polish). Version tracking with restore capability.</p>
-            </div>
-
-            <div class="feature-card">
-                <h4>✏️ Code Editor Tab</h4>
-                <p>In-app code editor with syntax highlighting. Edit generated code files. Save/revert capabilities. Multi-file editor for code prototypes.</p>
-            </div>
-
-            <div class="feature-card">
-                <h4>🎓 Fine-Tuning Tab</h4>
-                <p>Local model fine-tuning interface. Configure training parameters (epochs, batch size, learning rate). Monitor training progress. View dataset statistics. Both Ollama and HuggingFace pipelines available.</p>
-            </div>
-
-            <div class="feature-card">
-                <h4>🧪 Tests Tab</h4>
-                <p>AI-powered test generation for code artifacts. Creates unit tests based on code structure. Supports multiple testing frameworks.</p>
-            </div>
-
-            <div class="feature-card">
-                <h4>📤 Export Tab</h4>
-                <p>Export manager for bulk downloads. Create ZIP archives of artifacts. Batch download capabilities. Export configurations.</p>
-            </div>
-
-            <div class="feature-card">
-                <h4>📚 Versions Tab</h4>
-                <p>Version history for all artifacts. Restore previous versions. Compare changes between versions. Automatic versioning on each generation.</p>
-            </div>
-
-            <div class="feature-card">
-                <h4>📈 Metrics Tab</h4>
-                <p>Generation metrics dashboard. Track quality scores, model usage, generation times, validation results. Performance analytics.</p>
-            </div>
-
-            <div class="feature-card">
-                <h4>🔗 Knowledge Graph Tab</h4>
-                <p>Visualize component relationships from your codebase. AST parsing for Python, regex parsing for TypeScript/C#/Java. NetworkX graph visualization. Coupling metrics and dependency analysis.</p>
-            </div>
-
-            <div class="feature-card">
-                <h4>🔍 Pattern Mining Tab</h4>
-                <p>Extract design patterns, anti-patterns, and code smells from your repository. Detect Singleton, Factory, Observer, Strategy patterns. Identify God Classes, Long Methods, duplicates. Quality scoring 0-100.</p>
-            </div>
-        </div>
-
-        <!-- Generation System -->
-        <div class="section">
-            <h2>Generation System</h2>
-
-            <h3>Smart Generation Architecture</h3>
-            <p>The system uses a hybrid local-first approach with intelligent cloud fallback:</p>
-
-            <div class="workflow-diagram">
-                <div class="workflow-step">
-                    <div class="step-number">1</div>
-                    <div class="step-content">
-                        <h4>RAG Context Retrieval</h4>
-                        <p>ChromaDB vector search + BM25 keyword matching retrieve 18-100 relevant code chunks from your repository. Hybrid reranking combines both methods for optimal results.</p>
+            <div class="diagram-container">
+                <div class="flow-diagram">
+                    <!-- Entry Point -->
+                    <div class="flow-row">
+                        <div class="flow-node complete">
+                            <div class="flow-node-title">User Opens App</div>
+                            <div class="flow-node-desc">Streamlit interface loads</div>
+                        </div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-node missing critical-feature">
+                            <div class="flow-node-title">RAG Auto-Refresh</div>
+                            <div class="flow-node-desc">File watching & auto-reindex</div>
+                        </div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-node missing critical-feature">
+                            <div class="flow-node-title">Button Lock During Init</div>
+                            <div class="flow-node-desc">Disable UI during RAG refresh</div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="workflow-step">
-                    <div class="step-number">2</div>
-                    <div class="step-content">
-                        <h4>Intelligence Analysis</h4>
-                        <p>Knowledge Graph (AST parsing) and Pattern Mining analyze your codebase structure and patterns. Results cached for performance.</p>
+                    <!-- Mode Selection -->
+                    <div class="flow-row">
+                        <div class="flow-node complete">
+                            <div class="flow-node-title">Mode Selection</div>
+                            <div class="flow-node-desc">Dev or PM Mode</div>
+                        </div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-node complete">
+                            <div class="flow-node-title">AI Provider Selection</div>
+                            <div class="flow-node-desc">Ollama (default) or Cloud</div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="workflow-step">
-                    <div class="step-number">3</div>
-                    <div class="step-content">
-                        <h4>Context Assembly</h4>
-                        <p>5-Layer Context: (1) RAG chunks, (2) Meeting notes, (3) Repository analysis, (4) Knowledge Graph, (5) Pattern Mining results.</p>
+                    <!-- Dev Mode Branch -->
+                    <div class="flow-row">
+                        <div class="flow-node complete" style="background: #e8f8f5; flex: 1;">
+                            <div class="flow-node-title">DEV MODE</div>
+                            <div class="flow-node-desc">12 tabs for technical artifacts</div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="workflow-step">
-                    <div class="step-number">4</div>
-                    <div class="step-content">
-                        <h4>Local Model Attempt</h4>
-                        <p>Try artifact-specific local model via Ollama (if available). Model routing selects optimal model for artifact type.</p>
+                    <!-- PM Mode Branch -->
+                    <div class="flow-row">
+                        <div class="flow-node complete" style="background: #fef5e7; flex: 1;">
+                            <div class="flow-node-title">PM MODE</div>
+                            <div class="flow-node-desc">4 tabs for product management</div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="workflow-step">
-                    <div class="step-number">5</div>
-                    <div class="step-content">
-                        <h4>Validation</h4>
-                        <p>Artifact-specific validator checks quality (0-100 score). Minimum threshold: 80/100. Auto-retry if below threshold (max 2 retries).</p>
+                    <!-- Generation Flow -->
+                    <div class="flow-row" style="margin-top: 40px;">
+                        <div class="flow-node partial critical-feature">
+                            <div class="flow-node-title">RAG Context Retrieval</div>
+                            <div class="flow-node-desc">Not artifact-specific yet</div>
+                        </div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-node missing critical-feature">
+                            <div class="flow-node-title">Meeting Notes Filter</div>
+                            <div class="flow-node-desc">Extract relevant parts per artifact</div>
+                        </div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-node partial">
+                            <div class="flow-node-title">Model Selection Map</div>
+                            <div class="flow-node-desc">19/33 artifact types mapped</div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="workflow-step">
-                    <div class="step-number">6</div>
-                    <div class="step-content">
-                        <h4>Cloud Fallback</h4>
-                        <p>If local quality < 80, fallback to cloud providers (Gemini 2.0 Flash for complex tasks, Groq/OpenAI for simple tasks).</p>
+                    <!-- Model Attempts -->
+                    <div class="flow-row">
+                        <div class="flow-node complete">
+                            <div class="flow-node-title">Local Model #1</div>
+                            <div class="flow-node-desc">First attempt + validation</div>
+                        </div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-node missing critical-feature">
+                            <div class="flow-node-title">Local Model #2</div>
+                            <div class="flow-node-desc">Retry with different model</div>
+                        </div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-node complete">
+                            <div class="flow-node-title">Cloud Model #1</div>
+                            <div class="flow-node-desc">Groq fallback</div>
+                        </div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-node missing critical-feature">
+                            <div class="flow-node-title">Cloud Models #2-3</div>
+                            <div class="flow-node-desc">Gemini, GPT-4 fallback</div>
+                        </div>
                     </div>
-                </div>
 
-                <div class="workflow-step">
-                    <div class="step-number">7</div>
-                    <div class="step-content">
-                        <h4>Save & Learn</h4>
-                        <p>If cloud response quality ≥ 80, save for fine-tuning. Return validated artifact. Record metrics.</p>
+                    <!-- Output -->
+                    <div class="flow-row">
+                        <div class="flow-node missing critical-feature">
+                            <div class="flow-node-title">Best Score Selection</div>
+                            <div class="flow-node-desc">Choose highest quality output</div>
+                        </div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-node complete">
+                            <div class="flow-node-title">Output & Feedback</div>
+                            <div class="flow-node-desc">Save + record if score ≥80</div>
+                        </div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-node complete">
+                            <div class="flow-node-title">Version Management</div>
+                            <div class="flow-node-desc">Auto-versioning on save</div>
+                        </div>
+                    </div>
+
+                    <!-- Fine-Tuning Loop -->
+                    <div class="flow-row" style="margin-top: 40px; background: #fef9e7; padding: 20px; border-radius: 12px;">
+                        <div class="flow-node complete">
+                            <div class="flow-node-title">Feedback Accumulation</div>
+                            <div class="flow-node-desc">50 examples per artifact+model</div>
+                        </div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-node complete">
+                            <div class="flow-node-title">Auto Fine-Tuning</div>
+                            <div class="flow-node-desc">LoRA/QLoRA incremental training</div>
+                        </div>
+                        <span class="flow-arrow">→</span>
+                        <div class="flow-node complete">
+                            <div class="flow-node-title">Model Versioning</div>
+                            <div class="flow-node-desc">v1, v2, v3... incremental</div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <h3>Model Routing</h3>
-            <p>Artifact-specific model selection optimizes for each task type:</p>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th>Artifact Type</th>
-                        <th>Primary Local Model</th>
-                        <th>Fallback Local</th>
-                        <th>Cloud (Complex)</th>
-                        <th>Cloud (Simple)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>ERD/Architecture</td>
-                        <td>mistral:7b-instruct-q4_K_M</td>
-                        <td>llama3:8b-instruct-q4_K_M</td>
-                        <td>Gemini 2.0 Flash</td>
-                        <td>Groq/OpenAI</td>
-                    </tr>
-                    <tr>
-                        <td>Code Prototype</td>
-                        <td>codellama:7b-instruct-q4_K_M</td>
-                        <td>qwen2.5-coder:7b-instruct-q4_K_M</td>
-                        <td>Gemini 2.0 Flash</td>
-                        <td>-</td>
-                    </tr>
-                    <tr>
-                        <td>Visual Prototype</td>
-                        <td>qwen2.5-coder:7b-instruct-q4_K_M</td>
-                        <td>codellama:7b-instruct-q4_K_M</td>
-                        <td>Gemini 2.0 Flash</td>
-                        <td>-</td>
-                    </tr>
-                    <tr>
-                        <td>API Docs</td>
-                        <td>llama3:8b-instruct-q4_K_M</td>
-                        <td>codellama:7b-instruct-q4_K_M</td>
-                        <td>-</td>
-                        <td>Groq/OpenAI</td>
-                    </tr>
-                    <tr>
-                        <td>JIRA/Workflows</td>
-                        <td>llama3:8b-instruct-q4_K_M</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>Groq/OpenAI</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Validation System -->
-        <div class="section">
-            <h2>Validation System</h2>
-            <p>Each artifact type has a specialized validator that performs multiple quality checks:</p>
-
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <h3>Validation Process</h3>
-                    <ul>
-                        <li><strong>Basic Check:</strong> Not empty, minimum content length</li>
-                        <li><strong>Syntax Check:</strong> Valid format (Mermaid, HTML, code syntax)</li>
-                        <li><strong>Semantic Check:</strong> Matches meeting notes requirements</li>
-                        <li><strong>Completeness:</strong> Minimum entities/components present</li>
-                        <li><strong>Context Alignment:</strong> Uses project-specific patterns</li>
-                        <li><strong>Quality Scoring:</strong> 0-100 comprehensive score</li>
-                        <li><strong>Length Validation:</strong> Adequate detail level</li>
-                        <li><strong>Format Validation:</strong> Proper structure</li>
-                    </ul>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--color-complete);"></div>
+                    <span>Complete - Fully Implemented</span>
                 </div>
-
-                <div class="feature-card">
-                    <h3>Validation Results</h3>
-                    <ul>
-                        <li>Quality score: 0-100</li>
-                        <li>Pass/fail determination</li>
-                        <li>List of errors (critical issues)</li>
-                        <li>List of warnings (minor issues)</li>
-                        <li>Improvement suggestions</li>
-                        <li>Validation report saved to outputs/validation/</li>
-                        <li>Auto-retry if score < 80 (max 2 attempts)</li>
-                    </ul>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--color-partial);"></div>
+                    <span>Partial - Works but needs improvement</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: var(--color-missing);"></div>
+                    <span>Missing - Not yet implemented</span>
                 </div>
             </div>
+        </section>
 
-            <div class="info-box">
-                <strong>Quality Thresholds:</strong> Generation threshold: 80/100 | Fine-tuning save threshold: 80/100 | Minimum passing: 60/100 (with retries exhausted)
-            </div>
-        </div>
-
-        <!-- RAG System -->
-        <div class="section">
-            <h2>RAG (Retrieval-Augmented Generation)</h2>
+        <!-- Dev Mode Tabs -->
+        <section class="section">
+            <h2>Developer Mode - 12 Tabs</h2>
             
-            <h3>Hybrid Retrieval</h3>
-            <p>The RAG system combines two retrieval methods for optimal context:</p>
-
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <h3>Vector Search (ChromaDB)</h3>
-                    <ul>
-                        <li>Semantic similarity search</li>
-                        <li>Embedding-based retrieval</li>
-                        <li>Finds conceptually related code</li>
-                        <li>HNSW indexing for speed</li>
-                        <li>Cosine similarity metric</li>
-                    </ul>
+            <div class="tabs-grid">
+                <div class="tab-card complete" data-status="complete">
+                    <div class="tab-card-header">
+                        <div class="tab-card-title">📝 Meeting Notes</div>
+                        <div class="status-badge complete">Complete</div>
+                    </div>
+                    <div class="tab-card-desc">Upload or view meeting notes. File handling, preview, and feature detection all working.</div>
+                    <div class="expandable-details">
+                        <strong>Features:</strong> File upload, text preview, feature name extraction, auto-clear on change
+                    </div>
                 </div>
 
-                <div class="feature-card">
-                    <h3>BM25 Keyword Search</h3>
-                    <ul>
-                        <li>Exact term matching</li>
-                        <li>TF-IDF based ranking</li>
-                        <li>Finds specific keywords</li>
-                        <li>Complements vector search</li>
-                        <li>Fast query execution</li>
-                    </ul>
+                <div class="tab-card partial" data-status="partial">
+                    <div class="tab-card-header">
+                        <div class="tab-card-title">🎯 Generate</div>
+                        <div class="status-badge partial">Partial</div>
+                    </div>
+                    <div class="tab-card-desc">Smart suggestions, quick generate, scenarios. Needs refactoring for better accuracy.</div>
+                    <div class="expandable-details">
+                        <strong>Has:</strong> Smart suggestions, scenario detection, RAG controls, multi-agent analysis<br>
+                        <strong>Missing:</strong> More accurate suggestions, artifact-specific context
+                    </div>
+                </div>
+
+                <div class="tab-card complete" data-status="complete">
+                    <div class="tab-card-header">
+                        <div class="tab-card-title">📊 Outputs</div>
+                        <div class="status-badge complete">Complete</div>
+                    </div>
+                    <div class="tab-card-desc">View all artifacts with menu bars (Mermaid, HTML, Interactive Editor, Export).</div>
+                    <div class="expandable-details">
+                        <strong>Features:</strong> Diagram viewer, multi-tab interface, live preview, export options
+                    </div>
+                </div>
+
+                <div class="tab-card complete" data-status="complete">
+                    <div class="tab-card-header">
+                        <div class="tab-card-title">🎨 Interactive Editor</div>
+                        <div class="status-badge complete">Complete</div>
+                    </div>
+                    <div class="tab-card-desc">Quick mods (darker, search, mobile, animations) + AI chat for custom changes.</div>
+                    <div class="expandable-details">
+                        <strong>Features:</strong> 4 quick-mod buttons, AI chat, live preview, version history, auto-save
+                    </div>
+                </div>
+
+                <div class="tab-card complete" data-status="complete">
+                    <div class="tab-card-header">
+                        <div class="tab-card-title">✏️ Code Editor</div>
+                        <div class="status-badge complete">Complete</div>
+                    </div>
+                    <div class="tab-card-desc">View, edit, and save generated code files with syntax highlighting.</div>
+                    <div class="expandable-details">
+                        <strong>Features:</strong> Multi-file editor, syntax highlighting, save, download, copy path, file info
+                    </div>
+                </div>
+
+                <div class="tab-card partial" data-status="partial">
+                    <div class="tab-card-header">
+                        <div class="tab-card-title">🎓 Fine-Tuning</div>
+                        <div class="status-badge partial">Partial</div>
+                    </div>
+                    <div class="tab-card-desc">Dataset generation and incremental training working. Missing model download UI.</div>
+                    <div class="expandable-details">
+                        <strong>Has:</strong> Dataset builder, LoRA/QLoRA training, checkpoint resume, model versioning<br>
+                        <strong>Missing:</strong> Model search/download from HuggingFace UI
+                    </div>
+                </div>
+
+                <div class="tab-card complete" data-status="complete">
+                    <div class="tab-card-header">
+                        <div class="tab-card-title">🧪 Tests</div>
+                        <div class="status-badge complete">Complete</div>
+                    </div>
+                    <div class="tab-card-desc">Select file from code prototype and generate unit tests.</div>
+                    <div class="expandable-details">
+                        <strong>Features:</strong> File selection, test generation, test type options, auto-save
+                    </div>
+                </div>
+
+                <div class="tab-card complete" data-status="complete">
+                    <div class="tab-card-header">
+                        <div class="tab-card-title">📤 Export</div>
+                        <div class="status-badge complete">Complete</div>
+                    </div>
+                    <div class="tab-card-desc">Export artifacts as ZIP or combined documentation.</div>
+                    <div class="expandable-details">
+                        <strong>Features:</strong> ZIP export, combined docs, selective export, download options
+                    </div>
+                </div>
+
+                <div class="tab-card complete" data-status="complete">
+                    <div class="tab-card-header">
+                        <div class="tab-card-title">📚 Versions</div>
+                        <div class="status-badge complete">Complete</div>
+                    </div>
+                    <div class="tab-card-desc">View version history, compare versions, and restore previous versions.</div>
+                    <div class="expandable-details">
+                        <strong>Features:</strong> History view, side-by-side comparison, version restore, metadata tracking
+                    </div>
+                </div>
+
+                <div class="tab-card complete" data-status="complete">
+                    <div class="tab-card-header">
+                        <div class="tab-card-title">📈 Metrics</div>
+                        <div class="status-badge complete">Complete</div>
+                    </div>
+                    <div class="tab-card-desc">Performance metrics from generation and machine learning insights.</div>
+                    <div class="expandable-details">
+                        <strong>Features:</strong> Generation time tracking, quality scores, success rates, performance analytics
+                    </div>
+                </div>
+
+                <div class="tab-card complete" data-status="complete">
+                    <div class="tab-card-header">
+                        <div class="tab-card-title">🔗 Knowledge Graph</div>
+                        <div class="status-badge complete">Complete</div>
+                    </div>
+                    <div class="tab-card-desc">AST parsing + NetworkX visualization of component relationships.</div>
+                    <div class="expandable-details">
+                        <strong>Features:</strong> Component extraction, relationship mapping, dependency analysis, visual graph
+                    </div>
+                </div>
+
+                <div class="tab-card complete" data-status="complete">
+                    <div class="tab-card-header">
+                        <div class="tab-card-title">🔍 Pattern Mining</div>
+                        <div class="status-badge complete">Complete</div>
+                    </div>
+                    <div class="tab-card-desc">Static analysis for design patterns and anti-patterns detection.</div>
+                    <div class="expandable-details">
+                        <strong>Features:</strong> Pattern detection, anti-pattern identification, code quality insights
+                    </div>
                 </div>
             </div>
+        </section>
 
-            <h3>Context Assembly</h3>
-            <p>Retrieved chunks are organized and optimized:</p>
-            <ul style="margin-left: 20px;">
-                <li><strong>Tiered Organization:</strong> High-relevance chunks prioritized</li>
-                <li><strong>Model-Aware Limits:</strong> Adapts to model context windows (18-100 chunks)</li>
-                <li><strong>Query Expansion:</strong> Original query + expanded variations (up to 3 total)</li>
-                <li><strong>Reranking:</strong> Hybrid scores combine vector + BM25 results</li>
-                <li><strong>Context Optimization:</strong> Fits within token budget (8000 tokens default)</li>
-                <li><strong>Intelligent Caching:</strong> Cache RAG results per meeting notes hash (60-70% reduction in RAG calls)</li>
-            </ul>
-
-            <div class="code-block">
-# RAG Configuration (rag/config.yaml)
-hybrid:
-  k_vector: 10      # Vector search results
-  k_bm25: 10        # BM25 search results
-  k_final: 18       # Final merged results (default)
-
-# Enhanced RAG can retrieve up to 100 chunks for deep context
-# Standard mode: 18 chunks
-# Enhanced mode: 50-100 chunks (Developer Mode)</div>
-        </div>
-
-        <!-- Intelligence Systems -->
-        <div class="section">
-            <h2>Intelligence Systems</h2>
-
-            <h3>Knowledge Graph</h3>
-            <p>Static code analysis system that builds a dependency graph of your codebase:</p>
-
-            <div class="feature-card">
-                <h4>Component Extraction</h4>
-                <ul>
-                    <li><strong>Python:</strong> AST parsing (imports, classes, functions, decorators)</li>
-                    <li><strong>TypeScript:</strong> Regex parsing (classes, interfaces, methods, imports)</li>
-                    <li><strong>C#:</strong> Regex parsing (classes, interfaces, methods, namespaces)</li>
-                    <li><strong>Java:</strong> Regex parsing (classes, interfaces, methods, packages)</li>
-                </ul>
-
-                <h4>Graph Construction</h4>
-                <ul>
-                    <li>NetworkX directed graph representation</li>
-                    <li>Nodes: Components (classes, functions, modules)</li>
-                    <li>Edges: Dependencies (imports, calls, inheritance)</li>
-                    <li>Metrics: Coupling density, clustering coefficient, complexity</li>
-                </ul>
-
-                <h4>Performance</h4>
-                <ul>
-                    <li>Lazy-loaded on first use</li>
-                    <li>Cached for 10x performance boost on subsequent runs</li>
-                    <li>Incremental updates (only changed files)</li>
-                </ul>
-            </div>
-
-            <h3>Pattern Mining</h3>
-            <p>Detects design patterns, anti-patterns, and code smells in your codebase:</p>
-
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <h4>Design Patterns</h4>
-                    <ul>
-                        <li>Singleton</li>
-                        <li>Factory</li>
-                        <li>Observer</li>
-                        <li>Strategy</li>
-                        <li>Decorator</li>
-                    </ul>
+        <!-- PM Mode Tabs -->
+        <section class="section">
+            <h2>Product/PM Mode - 4 Tabs</h2>
+            
+            <div class="tabs-grid">
+                <div class="tab-card complete" data-status="complete">
+                    <div class="tab-card-header">
+                        <div class="tab-card-title">💡 Idea</div>
+                        <div class="status-badge complete">Complete</div>
+                    </div>
+                    <div class="tab-card-desc">Describe your idea or use meeting notes as input.</div>
+                    <div class="expandable-details">
+                        <strong>Features:</strong> Custom idea input, meeting notes loading, context management
+                    </div>
                 </div>
 
-                <div class="feature-card">
-                    <h4>Anti-Patterns</h4>
-                    <ul>
-                        <li>God Class (>1000 lines)</li>
-                        <li>Long Method (>50 lines)</li>
-                        <li>Duplicate Code</li>
-                        <li>Feature Envy</li>
-                        <li>Shotgun Surgery</li>
-                    </ul>
+                <div class="tab-card partial" data-status="partial">
+                    <div class="tab-card-header">
+                        <div class="tab-card-title">🤖 Ask AI</div>
+                        <div class="status-badge partial">Partial</div>
+                    </div>
+                    <div class="tab-card-desc">PM Power Tools with quick questions. Generic AI responses, not specialized.</div>
+                    <div class="expandable-details">
+                        <strong>Has:</strong> Estimations, personas, feature scoring, backlog, custom questions<br>
+                        <strong>Missing:</strong> Specialized analysis for "feasibility", "risks", "complexity"
+                    </div>
                 </div>
 
-                <div class="feature-card">
-                    <h4>Code Smells</h4>
-                    <ul>
-                        <li>Magic Numbers</li>
-                        <li>Dead Code / TODOs</li>
-                        <li>Complex Conditionals</li>
-                        <li>Long Parameter Lists</li>
-                        <li>Primitive Obsession</li>
-                    </ul>
-                </div>
-            </div>
-
-            <div class="info-box">
-                <strong>Quality Scoring:</strong> Pattern Mining assigns a 0-100 quality score based on detected patterns (positive points) and anti-patterns/smells (negative points). Provides actionable improvement suggestions.
-            </div>
-        </div>
-
-        <!-- Fine-Tuning -->
-        <div class="section">
-            <h2>Fine-Tuning System</h2>
-            <p>Two complementary fine-tuning pipelines for model improvement:</p>
-
-            <h3>1. Ollama Adaptive Learning</h3>
-
-            <div class="feature-card">
-                <h4>Automatic Feedback Collection</h4>
-                <p>System records every interaction automatically:</p>
-                <ul>
-                    <li>Cloud responses with quality ≥ 80/100 saved for training</li>
-                    <li>Full context preserved (prompt, system message, meeting notes, RAG context)</li>
-                    <li>Quality tiers: 90-100 (excellent), 85-89 (good), 80-84 (acceptable)</li>
-                    <li>Examples below 80 not saved (maintains quality)</li>
-                </ul>
-
-                <h4>Automatic Training Trigger</h4>
-                <p>When 50+ examples collected:</p>
-                <ul>
-                    <li>Automatically triggers fine-tuning in background thread</li>
-                    <li>Non-blocking (artifact generation continues)</li>
-                    <li>Cooldown period: 1 hour between training runs</li>
-                    <li>Lock file prevents concurrent training</li>
-                    <li>No manual intervention required</li>
-                </ul>
-
-                <h4>Training Process</h4>
-                <ul>
-                    <li>Prepares training data in JSONL format</li>
-                    <li>Creates fine-tuned model with timestamp</li>
-                    <li>Updates model registry for artifact routing</li>
-                    <li>Ollama command generated for manual execution (if Ollama fine-tuning available)</li>
-                </ul>
-            </div>
-
-            <div class="info-box warning">
-                <strong>Current Status:</strong> Feedback collection and automatic triggering are fully functional. Actual Ollama fine-tuning execution requires Ollama's fine-tuning API (when available). Training data is saved and ready at finetune_datasets/cloud_responses/
-            </div>
-
-            <h3>2. HuggingFace Manual Training</h3>
-
-            <div class="feature-card">
-                <h4>Manual Training Interface</h4>
-                <p>Full control over training process via Fine-Tuning tab:</p>
-                <ul>
-                    <li>Select model to fine-tune (CodeLlama, Mistral, etc.)</li>
-                    <li>Configure hyperparameters (epochs, batch size, learning rate)</li>
-                    <li>Choose LoRA/QLoRA for efficient 4-bit training</li>
-                    <li>Monitor progress with live progress bar</li>
-                    <li>Dataset generation from multiple sources</li>
-                </ul>
-
-                <h4>Dataset Sources</h4>
-                <ul>
-                    <li><strong>Comprehensive Builder:</strong> 1000+ high-quality examples from templates</li>
-                    <li><strong>Ollama Generation:</strong> 600-1200 examples generated via local models</li>
-                    <li><strong>Feedback Data:</strong> Production feedback from user interactions</li>
-                    <li><strong>Repository Sweep:</strong> Extract patterns from your codebase</li>
-                </ul>
-
-                <h4>Training Configuration</h4>
-                <ul>
-                    <li>Epochs: 1-10 (default: 3)</li>
-                    <li>Batch size: 1-8 (default: 4, limited by VRAM)</li>
-                    <li>Learning rate: 1e-5 to 1e-3 (default: 2e-4)</li>
-                    <li>LoRA rank: 8-64 (default: 16)</li>
-                    <li>Checkpoint saving every epoch</li>
-                </ul>
-            </div>
-
-            <h3>VRAM Management</h3>
-            <p>Optimized for RTX 3500 Ada (12GB VRAM):</p>
-            <ul style="margin-left: 20px;">
-                <li><strong>Persistent Models:</strong> codellama:7b (3.8GB) + llama3:8b (4.7GB) = 8.5GB</li>
-                <li><strong>On-Demand Models:</strong> Loaded as needed, unloaded after use</li>
-                <li><strong>Fine-Tuning:</strong> 4-bit quantization (QLoRA) for efficient training</li>
-                <li><strong>Batch Size:</strong> Limited to 1-4 based on available VRAM</li>
-                <li><strong>Safety Buffer:</strong> 1-2GB reserved for system operations</li>
-            </ul>
-        </div>
-
-        <!-- Interactive Features -->
-        <div class="section">
-            <h2>Interactive Features</h2>
-
-            <h3>Interactive Prototype Editor</h3>
-            <p>Chat-based modification system for visual prototypes:</p>
-            <ul style="margin-left: 20px;">
-                <li><strong>Natural Language Instructions:</strong> "Add a search bar to the header"</li>
-                <li><strong>Quick Actions:</strong> Make Responsive, Add Dark Mode, Polish UI buttons</li>
-                <li><strong>Version History:</strong> Track all modifications, restore previous versions</li>
-                <li><strong>Live Preview:</strong> Real-time HTML rendering in iframe</li>
-                <li><strong>Cache Busting:</strong> Ensures latest version always loads (no stale cache)</li>
-                <li><strong>Available in:</strong> Both Developer Mode and PM Mode</li>
-            </ul>
-
-            <h3>Mermaid Diagram Editor</h3>
-            <p>Two-column editor with syntax editing and live preview:</p>
-            <ul style="margin-left: 20px;">
-                <li><strong>Syntax Editor:</strong> Text area for Mermaid code editing</li>
-                <li><strong>Live Preview:</strong> Canvas renders diagram in real-time</li>
-                <li><strong>Error Handling:</strong> 4-layer error detection (validation, render, init, global)</li>
-                <li><strong>Helpful Messages:</strong> Specific error text with troubleshooting tips</li>
-                <li><strong>Save State:</strong> Track unsaved changes with timestamps</li>
-                <li><strong>Actions:</strong> Save, Download, Reset, Show Code buttons</li>
-            </ul>
-
-            <h3>Code Editor</h3>
-            <p>In-app Monaco-style editor for code artifacts:</p>
-            <ul style="margin-left: 20px;">
-                <li>Syntax highlighting for TypeScript, C#, Python, Java, etc.</li>
-                <li>Multi-file editing for code prototypes</li>
-                <li>Save/revert capabilities with confirmation</li>
-                <li>File tree navigation</li>
-                <li>Search and replace</li>
-            </ul>
-        </div>
-
-        <!-- Technical Stack -->
-        <div class="section">
-            <h2>Technical Stack</h2>
-
-            <div class="feature-grid">
-                <div class="feature-card">
-                    <h3>Frontend</h3>
-                    <ul>
-                        <li>Streamlit (Python web framework)</li>
-                        <li>HTML/CSS/JavaScript for prototypes</li>
-                        <li>Mermaid.js for diagrams</li>
-                        <li>Monaco Editor integration</li>
-                    </ul>
+                <div class="tab-card complete" data-status="complete">
+                    <div class="tab-card-header">
+                        <div class="tab-card-title">📊 Outputs</div>
+                        <div class="status-badge complete">Complete</div>
+                    </div>
+                    <div class="tab-card-desc">View all PM artifacts (same interface as Dev mode).</div>
+                    <div class="expandable-details">
+                        <strong>Features:</strong> Artifact viewer, export options, multi-format support
+                    </div>
                 </div>
 
-                <div class="feature-card">
-                    <h3>AI & ML</h3>
-                    <ul>
-                        <li>Ollama (local model serving)</li>
-                        <li>Google Gemini 2.0 Flash</li>
-                        <li>Groq (fast inference)</li>
-                        <li>OpenAI GPT-4</li>
-                        <li>HuggingFace Transformers</li>
-                        <li>PEFT (LoRA/QLoRA)</li>
-                    </ul>
+                <div class="tab-card complete" data-status="complete">
+                    <div class="tab-card-header">
+                        <div class="tab-card-title">🎨 Interactive Editor</div>
+                        <div class="status-badge complete">Complete</div>
+                    </div>
+                    <div class="tab-card-desc">Same as Dev mode but for PM visual prototype.</div>
+                    <div class="expandable-details">
+                        <strong>Features:</strong> Quick modifications, AI chat, live preview, PM-specific prototype
+                    </div>
                 </div>
+            </div>
+        </section>
 
-                <div class="feature-card">
-                    <h3>Data & Storage</h3>
-                    <ul>
-                        <li>ChromaDB (vector database)</li>
-                        <li>NetworkX (graph analysis)</li>
-                        <li>JSON (file storage)</li>
-                        <li>File system (outputs, cache)</li>
-                    </ul>
+        <!-- Artifact Type Matrix -->
+        <section class="section">
+            <h2>Artifact Type Coverage (33 Types)</h2>
+            
+            <h3 style="color: #666; font-size: 1.2em; margin-top: 30px;">Mermaid Diagrams (14 types)</h3>
+            <div class="artifact-matrix">
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">ERD</span>
+                    <span class="status-badge complete">✓</span>
                 </div>
-
-                <div class="feature-card">
-                    <h3>Code Analysis</h3>
-                    <ul>
-                        <li>AST (Abstract Syntax Trees)</li>
-                        <li>Regex parsing</li>
-                        <li>Radon (complexity metrics)</li>
-                        <li>Static analysis tools</li>
-                    </ul>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">System Architecture</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">System Overview</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">Data Flow</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">User Flow</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">Component Diagram</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">API Sequence</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="missing">
+                    <span class="artifact-name">UML Class Diagram</span>
+                    <span class="status-badge missing">✗</span>
+                </div>
+                <div class="artifact-item" data-status="missing">
+                    <span class="artifact-name">Gantt Chart</span>
+                    <span class="status-badge missing">✗</span>
+                </div>
+                <div class="artifact-item" data-status="missing">
+                    <span class="artifact-name">Pie Chart</span>
+                    <span class="status-badge missing">✗</span>
+                </div>
+                <div class="artifact-item" data-status="missing">
+                    <span class="artifact-name">User Journey</span>
+                    <span class="status-badge missing">✗</span>
+                </div>
+                <div class="artifact-item" data-status="missing">
+                    <span class="artifact-name">Git Graph</span>
+                    <span class="status-badge missing">✗</span>
+                </div>
+                <div class="artifact-item" data-status="missing">
+                    <span class="artifact-name">Mindmap</span>
+                    <span class="status-badge missing">✗</span>
+                </div>
+                <div class="artifact-item" data-status="missing">
+                    <span class="artifact-name">Timeline</span>
+                    <span class="status-badge missing">✗</span>
                 </div>
             </div>
 
-            <h3>Key Components (File Structure)</h3>
-            <div class="code-block">
-architect_ai_cursor_poc/
-├── app/
-│   └── app_v2.py                        # Main Streamlit application
-├── agents/
-│   └── universal_agent.py               # Main orchestrator
-├── ai/
-│   ├── smart_generation.py              # Generation orchestrator
-│   ├── smart_model_selector.py          # Priority-based model selection
-│   ├── model_router.py                  # Local/cloud routing
-│   ├── artifact_router.py               # Artifact-specific models
-│   ├── output_validator.py              # Validation system
-│   └── ollama_client.py                 # Ollama server interface
-├── components/
-│   ├── knowledge_graph.py               # AST parsing + NetworkX
-│   ├── pattern_mining.py                # Design pattern detection
-│   ├── local_finetuning.py             # HuggingFace training
-│   ├── adaptive_learning.py             # Feedback collection
-│   ├── finetuning_dataset_builder.py   # Dataset generation
-│   ├── interactive_prototype_editor.py  # Chat-based editing
-│   ├── mermaid_editor.py                # Diagram editor
-│   ├── code_editor.py                   # Code editing
-│   ├── version_history.py               # Version tracking
-│   └── enhanced_rag.py                  # Enhanced retrieval
-├── rag/
-│   ├── ingest.py                        # Indexing
-│   ├── retrieve.py                      # Hybrid search
-│   └── config.yaml                      # RAG configuration
-├── validation/
-│   └── output_validator.py              # Artifact validators
-└── workers/
-    └── finetuning_worker.py             # Background training</div>
-        </div>
-
-        <!-- Requirements -->
-        <div class="section">
-            <h2>System Requirements</h2>
-
-            <h3>Minimum Requirements</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Component</th>
-                        <th>Requirement</th>
-                        <th>Notes</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Python</td>
-                        <td>3.9+</td>
-                        <td>Required for Streamlit and dependencies</td>
-                    </tr>
-                    <tr>
-                        <td>RAM</td>
-                        <td>8GB+</td>
-                        <td>16GB recommended for Knowledge Graph on large repos</td>
-                    </tr>
-                    <tr>
-                        <td>VRAM (GPU)</td>
-                        <td>12GB</td>
-                        <td>For local models (Ollama). Optional if using cloud-only</td>
-                    </tr>
-                    <tr>
-                        <td>Disk Space</td>
-                        <td>10GB+</td>
-                        <td>5GB for models, 5GB for ChromaDB index</td>
-                    </tr>
-                    <tr>
-                        <td>Ollama</td>
-                        <td>Latest</td>
-                        <td>Optional for local models, required for fine-tuning</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <h3>Cloud API Keys (Optional)</h3>
-            <p>Configure in config/secrets.yaml:</p>
-            <ul style="margin-left: 20px;">
-                <li><strong>Gemini API Key:</strong> For complex tasks (architecture, prototypes)</li>
-                <li><strong>Groq API Key:</strong> For fast fallback</li>
-                <li><strong>OpenAI API Key:</strong> For premium quality</li>
-            </ul>
-
-            <div class="info-box note">
-                <strong>Cloud-Only Mode:</strong> The application can run without Ollama by relying solely on cloud providers. Local-first mode requires Ollama with models installed.
-            </div>
-        </div>
-
-        <!-- Quick Start -->
-        <div class="section">
-            <h2>Quick Start</h2>
-
-            <div class="code-block">
-# 1. Install Dependencies
-pip install -r requirements.txt
-
-# 2. Install Ollama (optional, for local models)
-# Download from: https://ollama.com/download
-
-# 3. Pull Local Models (if using Ollama)
-ollama pull llama3:8b-instruct-q4_K_M
-ollama pull codellama:7b-instruct-q4_K_M
-ollama pull mistral:7b-instruct-q4_K_M
-ollama pull qwen2.5-coder:7b-instruct-q4_K_M  # Optional
-
-# 4. Configure API Keys (optional)
-# Create config/secrets.yaml with your API keys
-
-# 5. Launch Application
-python launch.py
-# Opens at: http://localhost:8501
-
-# 6. Index Your Repository (First-Time Setup)
-# In sidebar: Click "Index Project Files"
-# Wait ~30 seconds for initial indexing
-
-# 7. Upload Meeting Notes
-# Create a .md file with requirements (minimum 80 characters)
-# Upload via sidebar file uploader
-
-# 8. Generate Artifacts
-# Select mode (Developer/PM)
-# Click artifact generation buttons
-# View results in Outputs tab</div>
-
-            <h3>First-Time Indexing</h3>
-            <p>The RAG system needs to index your repository before first use:</p>
-            <ol style="margin-left: 20px;">
-                <li>Click "Index Project Files" in the sidebar</li>
-                <li>System scans your repository for code files</li>
-                <li>Excludes tool files (self-contamination prevention)</li>
-                <li>Creates ChromaDB vector embeddings</li>
-                <li>Builds BM25 index</li>
-                <li>Duration: ~30 seconds for medium repos (1000 files)</li>
-                <li>Subsequent runs use incremental indexing (only changed files)</li>
-            </ol>
-        </div>
-
-        <!-- Known Limitations -->
-        <div class="section">
-            <h2>Known Limitations</h2>
-
-            <div class="info-box warning">
-                <strong>Current Limitations:</strong>
+            <h3 style="color: #666; font-size: 1.2em; margin-top: 30px;">HTML Diagrams (14 types)</h3>
+            <div class="artifact-matrix">
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">HTML ERD</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">HTML System Architecture</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">HTML System Overview</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">HTML Data Flow</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">HTML User Flow</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">HTML Component Diagram</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">HTML API Sequence</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">HTML UML (auto-generated)</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">HTML Gantt (if Mermaid exists)</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">HTML Pie (if Mermaid exists)</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">HTML Journey (if Mermaid exists)</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">HTML Git Graph (if Mermaid exists)</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">HTML Mindmap (if Mermaid exists)</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">HTML Timeline (if Mermaid exists)</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
             </div>
 
-            <ul style="margin-left: 20px;">
-                <li><strong>Ollama Fine-Tuning:</strong> Automatic training trigger works, but actual Ollama fine-tuning requires Ollama's fine-tuning API (not yet publicly available). Training data is collected and ready.</li>
-                <li><strong>VRAM Constraints:</strong> Optimized for 12GB GPUs. Larger models require more VRAM or cloud-only mode.</li>
-                <li><strong>Language Support:</strong> AST parsing only for Python. Other languages use regex (less accurate).</li>
-                <li><strong>Single User:</strong> No authentication system. Designed for single-user development tool.</li>
-                <li><strong>Model Context Limits:</strong> Large repositories may exceed model context windows even with RAG optimization.</li>
-                <li><strong>Code Execution:</strong> Generated code not executed automatically. Manual review and testing required.</li>
-                <li><strong>Mermaid Syntax:</strong> Complex diagrams may exceed Mermaid's capabilities. Falls back to simpler structures.</li>
-            </ul>
-        </div>
-
-        <!-- Architecture Philosophy -->
-        <div class="section">
-            <h2>Architecture Philosophy</h2>
-
-            <h3>Design Decisions</h3>
-
-            <div class="feature-card">
-                <h4>Local-First with Cloud Fallback</h4>
-                <p>Rationale: Balance cost, privacy, and quality. Local models try first (free, private), cloud only when needed (expensive but high-quality).</p>
+            <h3 style="color: #666; font-size: 1.2em; margin-top: 30px;">Other Artifacts (5 types)</h3>
+            <div class="artifact-matrix">
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">Code Prototype</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">Visual Prototype (Dev)</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">Visual Prototype (PM)</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">API Documentation</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">JIRA Tasks</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">Workflows</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="missing">
+                    <span class="artifact-name">Backlog (standalone)</span>
+                    <span class="status-badge missing">✗</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">Personas</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">Estimations</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
+                <div class="artifact-item" data-status="complete">
+                    <span class="artifact-name">Feature Scoring</span>
+                    <span class="status-badge complete">✓</span>
+                </div>
             </div>
 
-            <div class="feature-card">
-                <h4>RAG-First Generation</h4>
-                <p>Rationale: Generic AI outputs are useless. Always retrieve repository context first to ensure generated artifacts match actual codebase.</p>
+            <div style="margin-top: 30px;">
+                <strong>Summary:</strong> 26 of 33 artifact types fully implemented (79%)
+            </div>
+        </section>
+
+        <!-- Missing Features Roadmap -->
+        <section class="section">
+            <h2>Missing Features Roadmap</h2>
+
+            <h3 style="margin-top: 30px; color: #c0392b;">High Priority</h3>
+            
+            <div class="feature-card critical-feature" data-status="missing">
+                <div class="feature-card-header">
+                    <h3>1. RAG Auto-Refresh System</h3>
+                    <span class="priority-badge high">High</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>Automatically detect file changes in mother projects and reindex RAG database. Lock UI buttons during reindexing to prevent errors.</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Components needed:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>File watcher service (watchdog library)</li>
+                        <li>SHA1 hash comparison for change detection</li>
+                        <li>Background reindexing worker</li>
+                        <li>UI state management during refresh</li>
+                    </ul>
+                    <strong style="display: block; margin-top: 15px;">Estimated effort:</strong> 2-3 days
+                </div>
             </div>
 
-            <div class="feature-card">
-                <h4>Validation Before Saving</h4>
-                <p>Rationale: Prevent low-quality outputs from polluting results. Auto-retry ensures quality threshold met before accepting.</p>
+            <div class="feature-card critical-feature" data-status="missing">
+                <div class="feature-card-header">
+                    <h3>2. Comprehensive Model Fallback</h3>
+                    <span class="priority-badge high">High</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>Try all local models (2+) before cloud, then try all cloud models (Groq, Gemini, GPT-4) in sequence. Keep best score if all fail.</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Current behavior:</strong> 1 local → 1 cloud (stops at first success)<br>
+                    <strong>Desired behavior:</strong> Local models 1-2 → Cloud models 1-3 → Best score selection<br>
+                    <strong>Files to modify:</strong> ai/smart_generation.py, agents/universal_agent.py<br>
+                    <strong>Estimated effort:</strong> 1-2 days
+                </div>
             </div>
 
-            <div class="feature-card">
-                <h4>Artifact-Specific Models</h4>
-                <p>Rationale: One model can't be optimal for all tasks. Route each artifact type to specialized model trained for that task.</p>
+            <div class="feature-card critical-feature" data-status="missing">
+                <div class="feature-card-header">
+                    <h3>3. Artifact-Specific RAG Targeting</h3>
+                    <span class="priority-badge high">High</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>Select most relevant RAG chunks based on artifact type. ERD needs data models, API docs need endpoints, etc.</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Implementation:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Create artifact type → query template mapping</li>
+                        <li>Weight chunks by relevance to artifact type</li>
+                        <li>Use metadata filtering in ChromaDB</li>
+                    </ul>
+                    <strong style="display: block; margin-top: 15px;">Estimated effort:</strong> 2-3 days
+                </div>
             </div>
 
-            <div class="feature-card">
-                <h4>Static Analysis + AI</h4>
-                <p>Rationale: AI alone can hallucinate. Combine programmatic analysis (Knowledge Graph, Pattern Mining) with AI for accuracy.</p>
+            <div class="feature-card critical-feature" data-status="missing">
+                <div class="feature-card-header">
+                    <h3>4. Thumbs Up/Down UI</h3>
+                    <span class="priority-badge high">High</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>Add user feedback buttons to every generated artifact. Record thumbs up/down as valid fine-tuning examples with adjusted scores.</p>
+                </div>
+                <div class="feature-details">
+                    <strong>UI elements:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>👍 Thumbs up (boost score to 95)</li>
+                        <li>👎 Thumbs down (mark for regeneration)</li>
+                        <li>💬 Optional feedback text</li>
+                        <li>Persistent display after generation</li>
+                    </ul>
+                    <strong style="display: block; margin-top: 15px;">Estimated effort:</strong> 1 day
+                </div>
             </div>
 
-            <div class="feature-card">
-                <h4>Self-Contamination Prevention</h4>
-                <p>Rationale: Tool must never index its own code. 4-layer exclusion system ensures only user code is analyzed.</p>
+            <div class="feature-card critical-feature" data-status="missing">
+                <div class="feature-card-header">
+                    <h3>5. AI Chatbot for Repo</h3>
+                    <span class="priority-badge high">High</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>ChatGPT-style conversational AI with full repo context. Ask about code structure, feasibility, suggestions. Optional n8n integration.</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Features:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Chat interface in both Dev and PM modes</li>
+                        <li>RAG-powered responses with repo context</li>
+                        <li>Conversation history</li>
+                        <li>Optional diagram generation on request</li>
+                        <li>n8n webhook integration (optional)</li>
+                    </ul>
+                    <strong style="display: block; margin-top: 15px;">Estimated effort:</strong> 3-4 days
+                </div>
             </div>
-        </div>
+
+            <h3 style="margin-top: 40px; color: #e67e22;">Medium Priority</h3>
+
+            <div class="feature-card" data-status="missing">
+                <div class="feature-card-header">
+                    <h3>6. Batch Operations UI</h3>
+                    <span class="priority-badge medium">Medium</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>Generate multiple artifacts at once. Select from checklist and generate in parallel with progress tracking.</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Estimated effort:</strong> 1-2 days (parallel processing already exists)
+                </div>
+            </div>
+
+            <div class="feature-card" data-status="missing">
+                <div class="feature-card-header">
+                    <h3>7. Model Download UI</h3>
+                    <span class="priority-badge medium">Medium</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>Search and download models from HuggingFace directly in the Fine-Tuning tab. No need for manual Ollama CLI.</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Estimated effort:</strong> 2 days
+                </div>
+            </div>
+
+            <div class="feature-card" data-status="missing">
+                <div class="feature-card-header">
+                    <h3>8. Advanced Mermaid Generation</h3>
+                    <span class="priority-badge medium">Medium</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>Generate Gantt, Pie, Journey, Mindmap, Timeline, Git Graph, C4 diagrams as standalone artifacts (currently only validated).</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Estimated effort:</strong> 2-3 days (7 new artifact types)
+                </div>
+            </div>
+
+            <div class="feature-card" data-status="missing">
+                <div class="feature-card-header">
+                    <h3>9. PM Power Tools Enhancement</h3>
+                    <span class="priority-badge medium">Medium</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>Specialized AI analysis for "Is this feasible?", "What are the risks?", "How long to build?", "What's the complexity?"</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Estimated effort:</strong> 1-2 days
+                </div>
+            </div>
+
+            <div class="feature-card" data-status="missing">
+                <div class="feature-card-header">
+                    <h3>10. Artifact State Consistency</h3>
+                    <span class="priority-badge medium">Medium</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>Fix bug where regenerated artifacts don't show latest version everywhere. Clear old files before regeneration.</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Estimated effort:</strong> 1 day
+                </div>
+            </div>
+
+            <h3 style="margin-top: 40px; color: #2980b9;">Low Priority</h3>
+
+            <div class="feature-card" data-status="missing">
+                <div class="feature-card-header">
+                    <h3>11. Universal Fine-Tuned Model</h3>
+                    <span class="priority-badge low">Low</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>Train one model to handle all artifact types (currently trains specialized models per type).</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Note:</strong> Current approach (specialized models) is arguably better. Low priority.
+                </div>
+            </div>
+
+            <div class="feature-card" data-status="missing">
+                <div class="feature-card-header">
+                    <h3>12. Meeting Notes Filtering</h3>
+                    <span class="priority-badge low">Low</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>Extract only relevant parts of meeting notes for each artifact type instead of using full notes.</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Estimated effort:</strong> 1-2 days
+                </div>
+            </div>
+
+            <div class="feature-card" data-status="missing">
+                <div class="feature-card-header">
+                    <h3>13. n8n Integration</h3>
+                    <span class="priority-badge low">Low</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>External workflow automation with n8n for advanced use cases.</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Estimated effort:</strong> Variable (depends on workflow complexity)
+                </div>
+            </div>
+
+            <div class="feature-card" data-status="missing">
+                <div class="feature-card-header">
+                    <h3>14. Performance Optimizations</h3>
+                    <span class="priority-badge low">Low</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>General speed improvements. System already fast with parallel processing and caching.</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Estimated effort:</strong> Ongoing
+                </div>
+            </div>
+        </section>
+
+        <!-- Technical Architecture -->
+        <section class="section">
+            <h2>Technical Architecture</h2>
+
+            <h3>Tech Stack</h3>
+            <div class="tech-stack">
+                <div class="tech-item">Python 3.9+</div>
+                <div class="tech-item">Streamlit</div>
+                <div class="tech-item">Ollama</div>
+                <div class="tech-item">ChromaDB</div>
+                <div class="tech-item">HuggingFace</div>
+                <div class="tech-item">Transformers</div>
+                <div class="tech-item">NetworkX</div>
+                <div class="tech-item">AST Parser</div>
+                <div class="tech-item">Groq API</div>
+                <div class="tech-item">Google Gemini</div>
+                <div class="tech-item">OpenAI GPT-4</div>
+            </div>
+
+            <h3 style="margin-top: 40px;">Core Systems</h3>
+            
+            <div class="feature-card complete" data-status="complete">
+                <div class="feature-card-header">
+                    <h3>RAG System</h3>
+                    <span class="status-badge complete">Complete</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>Advanced RAG with HyDE, Multi-hop reasoning, Query Decomposition, Hybrid Reranking (vector + BM25), Context Optimization</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Components:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>ChromaDB for vector storage</li>
+                        <li>Sentence transformers for embeddings</li>
+                        <li>BM25 keyword search</li>
+                        <li>Hybrid reranking (0.7 vector + 0.3 BM25)</li>
+                        <li>Configurable chunk size and overlap</li>
+                    </ul>
+                    <strong style="display: block; margin-top: 15px;">Missing:</strong> Auto-refresh on file changes
+                </div>
+            </div>
+
+            <div class="feature-card complete" data-status="complete">
+                <div class="feature-card-header">
+                    <h3>Knowledge Graph</h3>
+                    <span class="status-badge complete">Complete</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>AST parsing → NetworkX graph of components, classes, functions, and their relationships</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Capabilities:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Parse Python, TypeScript, C# files</li>
+                        <li>Extract classes, functions, imports</li>
+                        <li>Build dependency graph</li>
+                        <li>Visualize component relationships</li>
+                        <li>Detect circular dependencies</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="feature-card complete" data-status="complete">
+                <div class="feature-card-header">
+                    <h3>Pattern Mining</h3>
+                    <span class="status-badge complete">Complete</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>Static code analysis for design pattern detection and anti-pattern identification</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Detects:</strong> Singleton, Factory, Observer, Strategy patterns and common anti-patterns
+                </div>
+            </div>
+
+            <div class="feature-card partial" data-status="partial">
+                <div class="feature-card-header">
+                    <h3>Smart Generation Orchestrator</h3>
+                    <span class="status-badge partial">Partial</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>Local-first generation with cloud fallback and quality validation</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Works:</strong> 1 local attempt → validation → 1 cloud fallback<br>
+                    <strong>Missing:</strong> Multiple local attempts, multiple cloud attempts, best score tracking
+                </div>
+            </div>
+
+            <div class="feature-card complete" data-status="complete">
+                <div class="feature-card-header">
+                    <h3>Validation Pipeline</h3>
+                    <span class="status-badge complete">Complete</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>8 validators with comprehensive scoring (syntax, functionality, logic, relevance, completeness)</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Validators:</strong> Mermaid syntax, ERD structure, code syntax, API completeness, JIRA format, HTML validity, documentation quality, prototype functionality
+                </div>
+            </div>
+
+            <div class="feature-card complete" data-status="complete">
+                <div class="feature-card-header">
+                    <h3>Adaptive Learning Loop</h3>
+                    <span class="status-badge complete">Complete</span>
+                </div>
+                <div class="feature-card-body">
+                    <p>Automatic feedback recording, batching (50 examples), and incremental fine-tuning</p>
+                </div>
+                <div class="feature-details">
+                    <strong>Process:</strong>
+                    <ul style="margin-left: 20px; margin-top: 10px;">
+                        <li>Record artifacts with score ≥80</li>
+                        <li>Group by (artifact_type, model) pair</li>
+                        <li>Trigger training at 50 examples</li>
+                        <li>LoRA/QLoRA incremental training</li>
+                        <li>Version new model (v1, v2, v3...)</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3 style="margin-top: 40px;">Model Registry</h3>
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-top: 20px;">
+                <strong>Local Models (Ollama):</strong>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li><strong>codellama:7b-instruct-q4_K_M</strong> - Code, TypeScript, C#, Angular, .NET (3.8GB VRAM)</li>
+                    <li><strong>llama3:8b-instruct-q4_K_M</strong> - General, documentation, API docs, JIRA (4.7GB VRAM)</li>
+                    <li><strong>mistral:7b-instruct-q4_K_M</strong> - Mermaid diagrams, ERD, architecture (4.1GB VRAM)</li>
+                    <li><strong>qwen2.5-coder:7b-instruct-q4_K_M</strong> - Code, HTML, CSS, prototypes (4.3GB VRAM)</li>
+                </ul>
+                <br>
+                <strong>Cloud Models:</strong>
+                <ul style="margin-left: 20px;">
+                    <li><strong>Groq (Llama 3.1 70B)</strong> - Fast inference, good quality</li>
+                    <li><strong>Google Gemini 1.5 Pro</strong> - Long context, multimodal</li>
+                    <li><strong>OpenAI GPT-4</strong> - Highest quality fallback</li>
+                </ul>
+            </div>
+
+            <h3 style="margin-top: 40px;">VRAM Management</h3>
+            <div style="background: #fff3cd; padding: 20px; border-radius: 10px; margin-top: 20px; border-left: 4px solid #ffc107;">
+                <strong>Strategy:</strong> Load → Use → Unload to avoid VRAM overcrowding
+                <br><br>
+                <strong>Persistent Models:</strong> codellama:7b, llama3:8b (always loaded, 8.5GB total)
+                <br>
+                <strong>On-Demand Models:</strong> mistral:7b, qwen2.5-coder:7b (loaded as needed)
+                <br><br>
+                <strong>Total System:</strong> ~12-16GB VRAM recommended for smooth operation
+            </div>
+        </section>
+
+        <!-- Overall Progress -->
+        <section class="section">
+            <h2>Overall Progress</h2>
+            
+            <div style="margin: 30px 0;">
+                <h3 style="font-size: 1.2em; color: #666;">Feature Implementation</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 58%;">58% Complete</div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 30px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 3em; font-weight: bold; color: var(--color-complete);">56</div>
+                        <div style="color: #666;">Complete Features</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 3em; font-weight: bold; color: var(--color-partial);">13</div>
+                        <div style="color: #666;">Partial Features</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 3em; font-weight: bold; color: var(--color-missing);">27</div>
+                        <div style="color: #666;">Missing Features</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 50px;">
+                <h3 style="font-size: 1.2em; color: #666;">Artifact Type Coverage</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 79%;">26 of 33 Types (79%)</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 50px;">
+                <h3 style="font-size: 1.2em; color: #666;">System Maturity</h3>
+                <div style="background: #e8f8f5; padding: 30px; border-radius: 10px; border-left: 4px solid var(--color-complete);">
+                    <p style="font-size: 1.1em; line-height: 1.8;">
+                        <strong>Production-Ready Core:</strong> The application has a solid, working foundation with all critical systems in place.
+                        RAG, Knowledge Graph, Pattern Mining, Generation Pipeline, Validation, and Fine-Tuning are all fully functional.
+                        <br><br>
+                        <strong>What Works:</strong> You can generate 19 artifact types with local models and cloud fallback, view outputs in multiple formats,
+                        edit prototypes interactively, manage versions, and automatically fine-tune models based on quality feedback.
+                        <br><br>
+                        <strong>What's Missing:</strong> Mostly enhancements - auto-refresh, comprehensive fallback strategy, batch UI, more artifact types,
+                        and specialized analysis tools. None are blockers for core functionality.
+                        <br><br>
+                        <strong>Next Steps:</strong> Focus on high-priority missing features (auto-refresh, comprehensive fallback, artifact-specific RAG)
+                        to reach 80%+ completion within 1-2 weeks of focused development.
+                    </p>
+                </div>
+            </div>
+        </section>
 
         <footer>
-            <p><strong>Architect.AI v2.1.0</strong></p>
-            <p>Built with Streamlit, Ollama, ChromaDB, NetworkX, HuggingFace</p>
-            <p>© 2025 | Internal Development Tool</p>
-            <p style="margin-top: 15px; opacity: 0.8;">
-                Documentation generated: November 2025 | Based on actual codebase analysis
-            </p>
+            <p><strong>Architect.AI</strong> - Interactive Architecture Visualization</p>
+            <p>Generated: November 11, 2024</p>
+            <p>Version: 3.5.2</p>
         </footer>
     </div>
+
+    <script>
+        // Filter functionality
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const tabCards = document.querySelectorAll('.tab-card');
+        const artifactItems = document.querySelectorAll('.artifact-item');
+        const featureCards = document.querySelectorAll('.feature-card');
+        const flowNodes = document.querySelectorAll('.flow-node');
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update active button
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                const filter = btn.dataset.filter;
+
+                // Filter elements
+                const allElements = [...tabCards, ...artifactItems, ...featureCards, ...flowNodes];
+                allElements.forEach(el => {
+                    if (filter === 'all') {
+                        el.classList.remove('hidden');
+                    } else if (filter === 'critical') {
+                        if (el.classList.contains('critical-feature')) {
+                            el.classList.remove('hidden');
+                        } else {
+                            el.classList.add('hidden');
+                        }
+                    } else {
+                        if (el.dataset.status === filter) {
+                            el.classList.remove('hidden');
+                        } else {
+                            el.classList.add('hidden');
+                        }
+                    }
+                });
+            });
+        });
+
+        // Expand/collapse functionality
+        tabCards.forEach(card => {
+            card.addEventListener('click', () => {
+                card.classList.toggle('expanded');
+            });
+        });
+
+        featureCards.forEach(card => {
+            card.addEventListener('click', () => {
+                card.classList.toggle('expanded');
+            });
+        });
+
+        // Animate progress bars on load
+        window.addEventListener('load', () => {
+            const progressFills = document.querySelectorAll('.progress-fill');
+            progressFills.forEach(fill => {
+                const width = fill.style.width;
+                fill.style.width = '0';
+                setTimeout(() => {
+                    fill.style.width = width;
+                }, 100);
+            });
+        });
+
+        // Add smooth scroll for better UX
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                // Close all expanded cards
+                document.querySelectorAll('.expanded').forEach(el => {
+                    el.classList.remove('expanded');
+                });
+            }
+        });
+
+        // Print optimization
+        window.addEventListener('beforeprint', () => {
+            // Expand all cards for printing
+            document.querySelectorAll('.tab-card, .feature-card').forEach(card => {
+                card.classList.add('expanded');
+            });
+        });
+
+        window.addEventListener('afterprint', () => {
+            // Collapse cards after printing
+            document.querySelectorAll('.tab-card, .feature-card').forEach(card => {
+                card.classList.remove('expanded');
+            });
+        });
+
+        console.log('🏗️ Architect.AI Architecture Visualization Loaded');
+        console.log('📊 Stats: 56 Complete, 13 Partial, 27 Missing (96 total features)');
+        console.log('🎯 Artifact Coverage: 26/33 types (79%)');
+    </script>
 </body>
 </html>
