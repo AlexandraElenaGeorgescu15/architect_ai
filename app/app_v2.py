@@ -524,7 +524,7 @@ Generate a complete OpenAPI 3.1 YAML with:
 
 Output YAML only, no markdown formatting.
 """
-            res = run_async(agent._call_ai(prompt, "Generate valid OpenAPI 3.1 YAML only."))
+            res = run_async(agent._call_ai(prompt, "Generate valid OpenAPI 3.1 YAML only.", artifact_type="openapi_spec"))
             if res:
                 p = outputs_dir / "documentation" / "openapi.yaml"
                 p.parent.mkdir(exist_ok=True)
@@ -551,7 +551,7 @@ Generate a complete Python API client that:
 
 Output full .py code only, no markdown.
 """
-            res = run_async(agent._call_ai(prompt, "Generate production-ready Python code only."))
+            res = run_async(agent._call_ai(prompt, "Generate production-ready Python code only.", artifact_type="code_prototype"))
         if res:
             p = outputs_dir / "prototypes" / "api_client.py"
             p.parent.mkdir(exist_ok=True)
@@ -578,7 +578,7 @@ Generate a complete TypeScript API client that:
 
 Output full .ts code only, no markdown.
 """
-            res = run_async(agent._call_ai(prompt, "Generate production-ready TypeScript code only."))
+            res = run_async(agent._call_ai(prompt, "Generate production-ready TypeScript code only.", artifact_type="code_prototype"))
             if res:
                 p = outputs_dir / "prototypes" / "api_client.ts"
                 p.parent.mkdir(exist_ok=True)
@@ -2931,43 +2931,9 @@ def render_dev_outputs_tab():
                 meeting_notes = st.session_state.get('meeting_notes', '')
                 
                 for idx, diagram_file in enumerate(diagram_files):
-                    st.markdown(f"### 📊 {diagram_file.stem.replace('_', ' ').title()}")
-                    
-                    # Create tabs: AI View | Edit & Preview
-                    view_tab, edit_tab = st.tabs(["🤖 AI View", "✏️ Edit & Preview"])
-                    
-                    with view_tab:
-                        # Use rich diagram viewer with tabs
-                        render_diagram_viewer(diagram_file, meeting_notes)
-                    
-                    with edit_tab:
-                        # Interactive Mermaid editor
-                        st.markdown("**Interactive Editor** - Edit the diagram code and see live preview")
-                        try:
-                            mermaid_code = diagram_file.read_text(encoding='utf-8')
-                            editor_key = f"mermaid_editor_{idx}_{diagram_file.stem}"
-                            updated_code = render_mermaid_editor(
-                                initial_code=mermaid_code,
-                                key=editor_key,
-                                file_path=diagram_file  # 🔥 FIX: Pass file path for save tracking
-                            )
-                            
-                            # Save button to update the file
-                            col1, col2 = st.columns([1, 4])
-                            with col1:
-                                if st.button("💾 Save Changes", key=f"save_diagram_{idx}"):
-                                    try:
-                                        diagram_file.write_text(updated_code, encoding='utf-8')
-                                        # 🔥 FIX: Update session state to track save
-                                        from datetime import datetime
-                                        st.session_state[f"{editor_key}_last_saved"] = updated_code
-                                        st.session_state[f"{editor_key}_save_timestamp"] = datetime.now().strftime("%H:%M:%S")
-                                        st.success(f"✅ Saved {diagram_file.name}")
-                                        # 🔥 FIX: Don't rerun immediately - save indicator will persist
-                                    except Exception as e:
-                                        st.error(f"❌ Save failed: {str(e)}")
-                        except Exception as e:
-                            st.error(f"Error loading diagram: {str(e)}")
+                    # Use rich diagram viewer with tabs (Mermaid Code | HTML Visualization | Interactive Editor | Export)
+                    # This component already has all the tabs we need, no need for outer tabs
+                    render_diagram_viewer(diagram_file, meeting_notes)
                     
                     st.divider()
     
@@ -2985,73 +2951,20 @@ def render_dev_outputs_tab():
                     st.markdown(f"#### 📄 {doc_file.stem.replace('_', ' ').title()}")
                     try:
                         content = doc_file.read_text(encoding='utf-8')
-                        st.markdown(f"""
-                        <div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px; margin-bottom: 10px;">
-                        
-{content}
-                        
-                        </div>
-                        """, unsafe_allow_html=True)
+                        st.markdown(f'<div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px; margin-bottom: 10px;">{content}</div>', unsafe_allow_html=True)
                         st.divider()
                     except Exception as e:
                         st.error(f"Error loading {doc_file.name}: {str(e)}")
     
-    # Dedicated sections for key docs (with black background)
+    # Dedicated sections for key docs (with black background) - DEV MODE ONLY
+    # Note: PM-specific docs (estimations, personas, feature_scoring, backlog_pack) are NOT shown here
+    # They belong in PM mode only
     if (docs_dir / "jira_tasks.md").exists():
         has_outputs = True
         with st.expander("📋 JIRA Tasks", expanded=True):
             content = (docs_dir / "jira_tasks.md").read_text(encoding='utf-8')
-            st.markdown(f"""
-            <div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px; font-family: 'Segoe UI', sans-serif;">
-            
-{content}
-            
-            </div>
-            """, unsafe_allow_html=True)
-    if (docs_dir / "estimations.md").exists():
-        has_outputs = True
-        with st.expander("⏱️ Estimations", expanded=False):
-            content = (docs_dir / "estimations.md").read_text(encoding='utf-8')
-            st.markdown(f"""
-            <div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px;">
-            
-{content}
-            
-            </div>
-            """, unsafe_allow_html=True)
-    if (docs_dir / "personas_journeys.md").exists():
-        has_outputs = True
-        with st.expander("👥 Personas & Journeys", expanded=False):
-            content = (docs_dir / "personas_journeys.md").read_text(encoding='utf-8')
-            st.markdown(f"""
-            <div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px;">
-            
-{content}
-            
-            </div>
-            """, unsafe_allow_html=True)
-    if (docs_dir / "feature_scoring.md").exists():
-        has_outputs = True
-        with st.expander("📊 Feature Scoring", expanded=False):
-            content = (docs_dir / "feature_scoring.md").read_text(encoding='utf-8')
-            st.markdown(f"""
-            <div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px;">
-            
-{content}
-            
-            </div>
-            """, unsafe_allow_html=True)
-    if (docs_dir / "backlog_pack.md").exists():
-        has_outputs = True
-        with st.expander("🧳 Backlog Package", expanded=False):
-            content = (docs_dir / "backlog_pack.md").read_text(encoding='utf-8')
-            st.markdown(f"""
-            <div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px;">
-            
-{content}
-            
-            </div>
-            """, unsafe_allow_html=True)
+            # Use proper HTML escaping to prevent stray tags from showing
+            st.markdown(f'<div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px; font-family: \'Segoe UI\', sans-serif;">{content}</div>', unsafe_allow_html=True)
     
     # OpenAPI
     if (docs_dir / "openapi.yaml").exists():
@@ -3182,13 +3095,7 @@ Cache buster: {cache_buster}
                     st.markdown(f"#### 🔄 {workflow_file.stem.replace('_', ' ').title()}")
                     try:
                         content = workflow_file.read_text(encoding='utf-8')
-                        st.markdown(f"""
-                        <div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px; margin-bottom: 10px;">
-                        
-{content}
-                        
-                        </div>
-                        """, unsafe_allow_html=True)
+                        st.markdown(f'<div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px; margin-bottom: 10px;">{content}</div>', unsafe_allow_html=True)
                         st.divider()
                     except Exception as e:
                         st.error(f"Error loading {workflow_file.name}: {str(e)}")
@@ -3217,7 +3124,7 @@ def _build_llm_callable(system_prompt: str = "You are a testing expert. Generate
         if error or not runtime_context:
             raise RuntimeError(error or "Unable to resolve provider configuration")
         agent = get_or_create_agent(runtime_context['config'])
-        return run_async(agent._call_ai(prompt, system_prompt))
+        return run_async(agent._call_ai(prompt, system_prompt, artifact_type="code_prototype"))
     return _call
 
 
@@ -3587,7 +3494,7 @@ Output ONLY the test code with no explanations or markdown formatting.
 """
                     
                     import asyncio
-                    tests = run_async(agent._call_ai(prompt, "You are an expert test engineer"))
+                    tests = run_async(agent._call_ai(prompt, "You are an expert test engineer", artifact_type="code_prototype"))
                     
                     # Strip markdown artifacts
                     tests = strip_markdown_artifacts(tests)
@@ -3941,7 +3848,7 @@ Output:
 PROJECT CONTEXT (RAG):
 {agent.rag_context[:3000]}
 """
-    res = run_async(agent._call_ai(prompt, "You are an expert delivery manager. Output in Markdown."))
+    res = run_async(agent._call_ai(prompt, "You are an expert delivery manager. Output in Markdown.", artifact_type="documentation"))
     if res:
         p = AppConfig.OUTPUTS_DIR / "documentation" / "estimations.md"
         p.parent.mkdir(exist_ok=True)
@@ -3962,7 +3869,7 @@ Generate 3 personas and their user journeys for the proposed feature. Output Mar
 PROJECT CONTEXT (RAG):
 {agent.rag_context[:3000]}
 """
-    res = run_async(agent._call_ai(prompt, "You are an expert UX researcher. Output in Markdown."))
+    res = run_async(agent._call_ai(prompt, "You are an expert UX researcher. Output in Markdown.", artifact_type="documentation"))
     if res:
         p = AppConfig.OUTPUTS_DIR / "documentation" / "personas_journeys.md"
         p.parent.mkdir(exist_ok=True)
@@ -3983,7 +3890,7 @@ Create a feature scoring matrix (Impact, Effort, Risk, Confidence) with formulas
 PROJECT CONTEXT (RAG):
 {agent.rag_context[:3000]}
 """
-    res = run_async(agent._call_ai(prompt, "You are a PM. Output Markdown tables only."))
+    res = run_async(agent._call_ai(prompt, "You are a PM. Output Markdown tables only.", artifact_type="documentation"))
     if res:
         p = AppConfig.OUTPUTS_DIR / "documentation" / "feature_scoring.md"
         p.parent.mkdir(exist_ok=True)
@@ -4004,7 +3911,7 @@ Package backlog into Epics, Stories, Subtasks based on the idea and repository p
 PROJECT CONTEXT (RAG):
 {agent.rag_context[:3000]}
 """
-    res = run_async(agent._call_ai(prompt, "You are a PM. Output Markdown only."))
+    res = run_async(agent._call_ai(prompt, "You are a PM. Output Markdown only.", artifact_type="documentation"))
     if res:
         p = AppConfig.OUTPUTS_DIR / "documentation" / "backlog_pack.md"
         p.parent.mkdir(exist_ok=True)
@@ -4069,56 +3976,27 @@ Cache buster: {cache_buster}
     if docs_dir.exists() and pm_jira.exists():
         with st.expander("📋 JIRA Tasks", expanded=True):
             # Black background for markdown
-            st.markdown(f"""
-            <div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px;">
-            
-{pm_jira.read_text(encoding='utf-8')}
-            
-            </div>
-            """, unsafe_allow_html=True)
+            content = pm_jira.read_text(encoding='utf-8')
+            st.markdown(f'<div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px;">{content}</div>', unsafe_allow_html=True)
     
     # Estimations, Personas, Scoring, Backlog - with black backgrounds
     if docs_dir.exists():
         if (docs_dir / "estimations.md").exists():
             with st.expander("⏱️ Estimations", expanded=False):
                 content = (docs_dir / "estimations.md").read_text(encoding='utf-8')
-                st.markdown(f"""
-                <div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px;">
-                
-{content}
-                
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f'<div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px;">{content}</div>', unsafe_allow_html=True)
         if (docs_dir / "personas_journeys.md").exists():
             with st.expander("👥 Personas & Journeys", expanded=False):
                 content = (docs_dir / "personas_journeys.md").read_text(encoding='utf-8')
-                st.markdown(f"""
-                <div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px;">
-                
-{content}
-                
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f'<div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px;">{content}</div>', unsafe_allow_html=True)
         if (docs_dir / "feature_scoring.md").exists():
             with st.expander("📊 Feature Scoring", expanded=False):
                 content = (docs_dir / "feature_scoring.md").read_text(encoding='utf-8')
-                st.markdown(f"""
-                <div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px;">
-                
-{content}
-                
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f'<div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px;">{content}</div>', unsafe_allow_html=True)
         if (docs_dir / "backlog_pack.md").exists():
             with st.expander("🧳 Backlog Package", expanded=False):
                 content = (docs_dir / "backlog_pack.md").read_text(encoding='utf-8')
-                st.markdown(f"""
-                <div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px;">
-                
-{content}
-                
-                </div>
-                """, unsafe_allow_html=True)
+                st.markdown(f'<div style="background: #1e1e1e; color: #e0e0e0; padding: 20px; border-radius: 8px;">{content}</div>', unsafe_allow_html=True)
         if (docs_dir / "openapi.yaml").exists():
             with st.expander("📜 OpenAPI.yaml", expanded=False):
                 st.code((docs_dir / "openapi.yaml").read_text(encoding='utf-8'), language="yaml")
@@ -4181,13 +4059,16 @@ def render_dev_interactive_editor_tab():
     initial_html = None
     feature_context = ""
     
-    # 🔥 FIX: Check cache buster to ensure we load the LATEST version
-    cache_buster_dev = st.session_state.get('prototype_cache_buster_dev', 0)
+    # 🔥 FIX: Use file modification time as cache buster to ensure we ALWAYS load the LATEST version
+    cache_buster_dev = 0
+    if dev_proto.exists():
+        cache_buster_dev = int(dev_proto.stat().st_mtime)
+    
     last_loaded_dev = st.session_state.get('_editor_last_loaded_dev_cache', -1)
     
     # Load prototype if exists
     if dev_proto.exists():
-        # Force reload if cache buster changed (new generation happened)
+        # Force reload if file changed (based on modification time)
         if cache_buster_dev != last_loaded_dev:
             st.session_state._editor_last_loaded_dev_cache = cache_buster_dev
             st.session_state.pop('_editor_html_cache', None)  # Clear HTML cache
@@ -4196,7 +4077,8 @@ def render_dev_interactive_editor_tab():
         st.success(f"✅ Loaded Developer visual prototype (v{cache_buster_dev})")
     elif pm_proto.exists():
         initial_html = pm_proto.read_text(encoding='utf-8')
-        st.info("📋 Loaded PM visual prototype")
+        pm_cache_bust = int(pm_proto.stat().st_mtime)
+        st.info(f"📋 Loaded PM visual prototype (v{pm_cache_bust})")
     else:
         st.warning("⚠️ No prototype found. Please generate a prototype first in the 'Generate' tab.")
         st.info("💡 Go to **Generate** → Generate Visual Prototype (Dev), then come back here.")
@@ -4289,13 +4171,16 @@ def render_pm_interactive_editor_tab():
     initial_html = None
     feature_context = ""
     
-    # 🔥 FIX: Check cache buster to ensure we load the LATEST version
-    cache_buster_pm = st.session_state.get('prototype_cache_buster_pm', 0)
+    # 🔥 FIX: Use file modification time as cache buster to ensure we ALWAYS load the LATEST version
+    cache_buster_pm = 0
+    if pm_proto.exists():
+        cache_buster_pm = int(pm_proto.stat().st_mtime)
+    
     last_loaded_pm = st.session_state.get('_editor_last_loaded_pm_cache', -1)
     
     # Load prototype if exists
     if pm_proto.exists():
-        # Force reload if cache buster changed (new generation happened)
+        # Force reload if file changed (based on modification time)
         if cache_buster_pm != last_loaded_pm:
             st.session_state._editor_last_loaded_pm_cache = cache_buster_pm
             st.session_state.pop('_editor_html_cache', None)  # Clear HTML cache
@@ -4487,7 +4372,6 @@ def generate_with_validation_silent(artifact_type: str, generate_fn, meeting_not
             
             if is_cloud_generation:
                 import json
-                from datetime import datetime
                 
                 finetune_dir = Path("finetune_datasets") / "cloud_outputs"
                 finetune_dir.mkdir(parents=True, exist_ok=True)
@@ -5720,7 +5604,8 @@ Provide a helpful, actionable answer that's tailored to THIS specific project.
             
             response = run_async(agent._call_ai(
                 prompt,
-                "You are a helpful product and technical advisor with deep knowledge of this specific project. Be clear, concise, and actionable."
+                "You are a helpful product and technical advisor with deep knowledge of this specific project. Be clear, concise, and actionable.",
+                artifact_type="documentation"
             ))
             
             # Store in conversation history

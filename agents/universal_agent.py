@@ -2530,7 +2530,7 @@ Create a flowchart showing:
 - Data flow directions
 
 Output ONLY the Mermaid flowchart code starting with 'flowchart TD' or 'flowchart LR'."""
-            return await self._call_ai(prompt)
+            return await self._call_ai(prompt, artifact_type="architecture")
         
         # Standard generation with RAG context for general models
         await self.retrieve_rag_context("""
