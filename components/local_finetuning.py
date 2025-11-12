@@ -2009,9 +2009,8 @@ def render_local_finetuning_ui():
             # ========== GENERATE DATASETS USING THREE METHODS ==========
             with st.spinner("🔄 Generating comprehensive datasets (Comprehensive Builder + Ollama + variations)..."):
                 import asyncio
-                import json
                 import random
-                from pathlib import Path
+                from pathlib import Path as PathLib2
                 from config.artifact_model_mapping import get_artifact_mapper, ArtifactType
                 from ai.ollama_client import OllamaClient
                 from ai.model_router import get_router
@@ -2028,7 +2027,7 @@ def render_local_finetuning_ui():
                     else:
                         artifact_type = 'code_prototype'
                 
-                datasets_dir = Path("finetune_datasets")
+                datasets_dir = PathLib2("finetune_datasets")
                 datasets_dir.mkdir(parents=True, exist_ok=True)
                 
                 # ========== METHOD 1: COMPREHENSIVE BUILDER (BEST - 1000+ HIGH QUALITY) ==========
