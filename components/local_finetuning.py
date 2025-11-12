@@ -1759,6 +1759,29 @@ def render_local_finetuning_ui():
         
         st.divider()
         st.write("**🔍 Dataset Preview:**")
+        
+        # Artifact type selection for comprehensive dataset
+        artifact_type_options = {
+            'ERD (Entity Relationship Diagram)': 'erd',
+            'Architecture Diagram': 'architecture',
+            'API Sequence Diagram': 'api_sequence',
+            'Class Diagram': 'class_diagram',
+            'State Diagram': 'state_diagram',
+            'Visual Prototype (HTML)': 'visual_prototype_dev',
+            'Code Prototype': 'code_prototype',
+            'API Documentation': 'api_docs',
+            'JIRA Stories': 'jira',
+            'Workflows': 'workflows',
+        }
+        
+        selected_artifact_display = st.selectbox(
+            "📊 Select Artifact Type for Training:",
+            options=list(artifact_type_options.keys()),
+            key="artifact_type_selector",
+            help="Choose what type of artifact you want to train the model to generate"
+        )
+        st.session_state['selected_artifact_type'] = artifact_type_options[selected_artifact_display]
+        
         preview_cols = st.columns([1, 1])
         if preview_cols[0].button("Preview Dataset", key="finetune_preview_button"):
             is_incremental = st.session_state.get('is_incremental_training', False)
@@ -1785,22 +1808,128 @@ def render_local_finetuning_ui():
             elif not meeting_notes.strip():
                 st.warning("Please enter meeting notes before previewing the dataset.")
             else:
-                with st.spinner("Building dataset preview..."):
-                    preview_limit = None if unlimited else 180
-                    dataset_preview = local_finetuning_system.prepare_training_data(
-                        rag_context="",
-                        meeting_notes=meeting_notes,
-                        unlimited=unlimited,
-                        preview_limit=preview_limit,
-                    )
-                st.session_state['finetune_preview_dataset'] = dataset_preview
-                if local_finetuning_system.last_dataset_report:
-                    st.session_state['finetuning_preview_report'] = asdict(local_finetuning_system.last_dataset_report)
+                with st.spinner("🚀 Generating MEGA dataset (combining all sources: RAG + Comprehensive + Feedback + Synthetic)..."):
+                    from pathlib import Path as PathLib2
+                    from scripts.build_comprehensive_datasets import ComprehensiveFinetuningDatasets
+                    from components.finetuning_dataset_builder import FineTuningDatasetBuilder
+                    
+                    try:
+                        # Get selected artifact type
+                        artifact_type = st.session_state.get('selected_artifact_type', 'erd')
+                        
+                        all_examples = []
+                        source_counts = {}
+                        
+                        # SOURCE 1: RAG-based examples from YOUR codebase (5000+ synthetic from your code)
+                        st.info("📚 Step 1/4: Generating examples from YOUR codebase...")
+                        try:
+                            rag_builder = FineTuningDatasetBuilder(meeting_notes, max_chunks=1200)
+                            rag_examples, rag_report = rag_builder.build_dataset()
+                            all_examples.extend(rag_examples)
+                            source_counts['rag_codebase'] = len(rag_examples)
+                            st.success(f"✅ Added {len(rag_examples)} examples from YOUR code")
+                        except Exception as e:
+                            st.warning(f"⚠️ RAG builder skipped: {e}")
+                            source_counts['rag_codebase'] = 0
+                        
+                        # SOURCE 2: Comprehensive domain examples (600-1000+ per artifact type)
+                        st.info("🎯 Step 2/4: Generating comprehensive domain examples...")
+                        try:
+                            datasets_dir = PathLib2("datasets_temp")
+                            datasets_dir.mkdir(parents=True, exist_ok=True)
+                            comp_builder = ComprehensiveFinetuningDatasets(output_dir=datasets_dir)
+                            
+                            dataset_methods = {
+                                'erd': comp_builder.build_erd_dataset,
+                                'architecture': comp_builder.build_architecture_dataset,
+                                'api_sequence': comp_builder.build_sequence_dataset,
+                                'class_diagram': comp_builder.build_class_diagram_dataset,
+                                'state_diagram': comp_builder.build_state_diagram_dataset,
+                                'visual_prototype_dev': comp_builder.build_html_prototype_dataset,
+                                'code_prototype': comp_builder.build_code_prototype_dataset,
+                                'api_docs': comp_builder.build_api_docs_dataset,
+                                'jira': comp_builder.build_jira_dataset,
+                                'workflows': comp_builder.build_workflow_dataset,
+                            }
+                            
+                            if artifact_type in dataset_methods:
+                                comp_examples = dataset_methods[artifact_type]()
+                                all_examples.extend(comp_examples)
+                                source_counts['comprehensive'] = len(comp_examples)
+                                st.success(f"✅ Added {len(comp_examples)} comprehensive domain examples")
+                            else:
+                                st.warning(f"⚠️ No comprehensive builder for {artifact_type}")
+                                source_counts['comprehensive'] = 0
+                        except Exception as e:
+                            st.warning(f"⚠️ Comprehensive builder failed: {e}")
+                            source_counts['comprehensive'] = 0
+                        
+                        # SOURCE 3: Manual feedback examples
+                        st.info("💬 Step 3/4: Loading manual feedback examples...")
+                        try:
+                            from components.finetuning_feedback import feedback_store
+                            feedback_examples = feedback_store.to_training_examples()
+                            all_examples.extend(feedback_examples)
+                            source_counts['manual_feedback'] = len(feedback_examples)
+                            st.success(f"✅ Added {len(feedback_examples)} manual feedback examples")
+                        except Exception as e:
+                            st.warning(f"⚠️ Feedback loading failed: {e}")
+                            source_counts['manual_feedback'] = 0
+                        
+                        # SOURCE 4: Auto-generated feedback from successful artifacts (above 80 score)
+                        st.info("🎯 Step 4/4: Loading auto-generated feedback from production...")
+                        try:
+                            from components.adaptive_learning import AdaptiveLearningLoop
+                            adaptive_loop = AdaptiveLearningLoop()
+                            
+                            # Get feedback events that match artifact type
+                            auto_feedback_count = 0
+                            for event in adaptive_loop.feedback_events:
+                                if event.artifact_type == artifact_type and event.validation_score >= 80:
+                                    all_examples.append(event.to_training_example())
+                                    auto_feedback_count += 1
+                            
+                            source_counts['auto_feedback'] = auto_feedback_count
+                            if auto_feedback_count > 0:
+                                st.success(f"✅ Added {auto_feedback_count} auto-generated feedback examples")
+                            else:
+                                st.info("ℹ️ No auto-feedback examples yet (generate artifacts to collect)")
+                        except Exception as e:
+                            st.warning(f"⚠️ Auto-feedback loading failed: {e}")
+                            source_counts['auto_feedback'] = 0
+                        
+                        # Combine and deduplicate
+                        total_examples = len(all_examples)
+                        
+                        # Show preview (first 180) but store full dataset
+                        preview_limit = 180 if not unlimited else total_examples
+                        display_dataset = all_examples[:preview_limit]
+                        
+                        st.session_state['finetune_preview_dataset'] = display_dataset
+                        st.session_state['finetune_full_dataset'] = all_examples
+                        st.session_state['finetuning_preview_report'] = {
+                            'total_examples': total_examples,
+                            'feedback_examples': source_counts.get('manual_feedback', 0) + source_counts.get('auto_feedback', 0),
+                            'unique_files': source_counts.get('rag_codebase', 0),
+                            'artifact_breakdown': {artifact_type: total_examples},
+                            'top_files': [(f"{k} ({v})", v) for k, v in source_counts.items()],
+                            'discarded_chunks': 0
+                        }
+                        
+                        st.success(f"🎉 **MEGA DATASET READY:** {total_examples} total examples!")
+                        st.info(f"📊 **Sources:** RAG={source_counts.get('rag_codebase', 0)} | Comprehensive={source_counts.get('comprehensive', 0)} | Manual={source_counts.get('manual_feedback', 0)} | Auto={source_counts.get('auto_feedback', 0)}")
+                        if preview_limit < total_examples:
+                            st.caption(f"Showing first {preview_limit} examples in preview. Full dataset ({total_examples} examples) will be used for training.")
+                            
+                    except Exception as e:
+                        st.error(f"Failed to generate mega dataset: {e}")
+                        import traceback
+                        st.code(traceback.format_exc())
+                
                 # Clear old training data since dataset changed
                 st.session_state.pop('last_training_data', None)
                 st.session_state.pop('last_training_config', None)
                 st.session_state.pop('last_training_job_id', None)
-                st.success("Preview generated!")
 
         preview_dataset = st.session_state.get('finetune_preview_dataset')
         preview_report_dict = st.session_state.get('finetuning_preview_report')
@@ -1989,8 +2118,8 @@ def render_local_finetuning_ui():
             # Get training mode from session state
             is_incremental_mode = st.session_state.get('is_incremental_training', False)
             
-            # Use preview dataset if available (avoids rebuilding)
-            training_data = st.session_state.get('finetune_preview_dataset')
+            # Use FULL dataset (not just preview) if available
+            training_data = st.session_state.get('finetune_full_dataset') or st.session_state.get('finetune_preview_dataset')
             
             # Validate training data exists and is not empty
             if not training_data or len(training_data) == 0:
@@ -2000,11 +2129,44 @@ def render_local_finetuning_ui():
                         builder = FineTuningDatasetBuilder(meeting_notes="", max_chunks=0)
                         training_data, _ = builder.build_incremental_dataset()
                     else:
-                        training_data = local_finetuning_system.prepare_training_data(
-                            rag_context="",
-                            meeting_notes=meeting_notes,
-                            unlimited=True,
-                        )
+                        # Use comprehensive builder if artifact type is selected
+                        artifact_type = st.session_state.get('selected_artifact_type')
+                        if artifact_type:
+                            from pathlib import Path as PathLib2
+                            from scripts.build_comprehensive_datasets import ComprehensiveFinetuningDatasets
+                            
+                            datasets_dir = PathLib2("datasets_temp")
+                            datasets_dir.mkdir(parents=True, exist_ok=True)
+                            builder = ComprehensiveFinetuningDatasets(output_dir=datasets_dir)
+                            
+                            dataset_methods = {
+                                'erd': builder.build_erd_dataset,
+                                'architecture': builder.build_architecture_dataset,
+                                'api_sequence': builder.build_sequence_dataset,
+                                'class_diagram': builder.build_class_diagram_dataset,
+                                'state_diagram': builder.build_state_diagram_dataset,
+                                'visual_prototype_dev': builder.build_html_prototype_dataset,
+                                'code_prototype': builder.build_code_prototype_dataset,
+                                'api_docs': builder.build_api_docs_dataset,
+                                'jira': builder.build_jira_dataset,
+                                'workflows': builder.build_workflow_dataset,
+                            }
+                            
+                            if artifact_type in dataset_methods:
+                                training_data = dataset_methods[artifact_type]()
+                                st.info(f"✅ Generated {len(training_data)} examples for {artifact_type}")
+                            else:
+                                training_data = local_finetuning_system.prepare_training_data(
+                                    rag_context="",
+                                    meeting_notes=meeting_notes,
+                                    unlimited=True,
+                                )
+                        else:
+                            training_data = local_finetuning_system.prepare_training_data(
+                                rag_context="",
+                                meeting_notes=meeting_notes,
+                                unlimited=True,
+                            )
             
             # ========== GENERATE DATASETS USING THREE METHODS ==========
             with st.spinner("🔄 Generating comprehensive datasets (Comprehensive Builder + Ollama + variations)..."):

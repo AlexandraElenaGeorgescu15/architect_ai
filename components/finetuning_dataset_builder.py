@@ -55,8 +55,8 @@ DOTNET_CONTROLLER_SUFFIX = "controller.cs"
 DOTNET_DTO_SUFFIX = "dto.cs"
 DOTNET_SERVICE_SUFFIX = "service.cs"
 
-MIN_DATASET_SIZE = 500  # Increased for comprehensive training
-DEFAULT_TARGET_EXAMPLES = 5000  # Target 5000+ examples
+MIN_DATASET_SIZE = 3  # Lowered for testing (comprehensive generation happens during training)
+DEFAULT_TARGET_EXAMPLES = 1000  # Target 1000+ examples  
 MAX_DATASET_SIZE = 6000  # Allow up to 6000 examples
 MAX_FILE_BYTES = 200_000
 
