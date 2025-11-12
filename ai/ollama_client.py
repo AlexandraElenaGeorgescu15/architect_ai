@@ -490,6 +490,23 @@ class OllamaClient:
         
         return success
     
+    async def unload_all_models(self):
+        """Unload all loaded Ollama models to free VRAM"""
+        loaded_models = [
+            model_name for model_name, model_info in self.models.items()
+            if model_info.status == ModelStatus.LOADED
+        ]
+        
+        for model_name in loaded_models:
+            try:
+                await self.unload_model(model_name, show_progress=False)
+                print(f"[OLLAMA] Unloaded {model_name}")
+            except Exception as e:
+                print(f"[OLLAMA] Failed to unload {model_name}: {e}")
+        
+        if loaded_models:
+            print(f"[OLLAMA] ✅ Unloaded {len(loaded_models)} models")
+    
     async def unload_model(self, model_name: str, show_progress: bool = True):
         """
         Unload a model from VRAM.

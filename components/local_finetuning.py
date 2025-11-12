@@ -200,7 +200,7 @@ class LocalFineTuningSystem:
                 vram_gb = torch.cuda.get_device_properties(0).total_memory / (1024**3)
                 status["vram_gb"] = vram_gb
                 
-                if vram_gb < 12:
+                if vram_gb < 11.5:  # More lenient threshold (11.99GB won't trigger warning)
                     status["message"] = (
                         f"⚠️ Only {vram_gb:.1f}GB VRAM detected. Recommend 12GB+ for 7B models with LoRA. "
                         f"Training may be slower or fail with OOM errors. "
@@ -307,6 +307,18 @@ class LocalFineTuningSystem:
             model_info.is_downloaded = True
             self._scan_downloaded_models()
 
+            # 🚀 REGISTER MODEL: Add to registry so it appears in AI provider dropdown
+            try:
+                from components.model_registry import model_registry
+                model_path_str = str(models_dir / model_key)
+                model_registry.register_downloaded_model(
+                    base_model=model_key,
+                    model_path=model_path_str
+                )
+                print(f"[REGISTRY] ✅ Model registered in dropdown: {model_key}")
+            except Exception as e:
+                print(f"[REGISTRY] ⚠️ Failed to register model: {e}")
+
             env_status = self.check_environment()
             if not env_status["ready"]:
                 warning = (
@@ -328,6 +340,24 @@ class LocalFineTuningSystem:
             model_key: The base model key (e.g., 'codellama-7b')
             incremental: If True, load the latest fine-tuned version if it exists
         """
+        # 🚀 AUTO-UNLOAD: Unload any existing model first to free VRAM
+        if self.current_model:
+            print(f"[AUTO-UNLOAD] Unloading existing model to free VRAM...")
+            self.unload_model()
+            
+            # Also unload Ollama models if available
+            try:
+                from ai.ollama_client import OllamaClient
+                ollama = OllamaClient()
+                import asyncio
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                # Unload all Ollama models
+                loop.run_until_complete(ollama.unload_all_models())
+                print(f"[AUTO-UNLOAD] ✅ All Ollama models unloaded")
+            except Exception as e:
+                print(f"[AUTO-UNLOAD] ⚠️ Could not unload Ollama models: {e}")
+        
         try:
             model_info = self.available_models[model_key]
             
