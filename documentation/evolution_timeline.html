@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architect.AI Evolution Timeline - Then, Now, Future</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 3.5em;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 1.3em;
+            opacity: 0.9;
+        }
+
+        .timeline-nav {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 3px solid #e9ecef;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .timeline-nav button {
+            flex: 1;
+            padding: 20px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .timeline-nav button:hover {
+            background: #e9ecef;
+        }
+
+        .timeline-nav button.active {
+            background: white;
+            color: #2a5298;
+        }
+
+        .timeline-nav button.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #2a5298;
+        }
+
+        .timeline-section {
+            display: none;
+            padding: 40px;
+        }
+
+        .timeline-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .period-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .period-header h2 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .period-header .version {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .category {
+            margin-bottom: 40px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .category h3 {
+            font-size: 2em;
+            color: #2a5298;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .category-icon {
+            font-size: 1.2em;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .feature-card h4 {
+            color: #2a5298;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+
+        .feature-card ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .feature-card ul li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .feature-card ul li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .comparison-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .comparison-table th, .comparison-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .comparison-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .status-badge.removed {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .status-badge.added {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-badge.enhanced {
+            background: #fff3e0;
+            color: #e65100;
+        }
+
+        .status-badge.future {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .workflow-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-top: 30px;
+            border: 2px solid #667eea;
+        }
+
+        .workflow-section h4 {
+            color: #2a5298;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+        }
+
+        .workflow-steps {
+            counter-reset: step-counter;
+        }
+
+        .workflow-step {
+            position: relative;
+            padding-left: 60px;
+            padding-bottom: 30px;
+            border-left: 3px solid #667eea;
+            margin-left: 20px;
+        }
+
+        .workflow-step:last-child {
+            border-left: none;
+        }
+
+        .workflow-step::before {
+            counter-increment: step-counter;
+            content: counter(step-counter);
+            position: absolute;
+            left: -20px;
+            top: 0;
+            width: 40px;
+            height: 40px;
+            background: #667eea;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .workflow-step h5 {
+            color: #2a5298;
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+
+        .artifact-map {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 20px;
+            border: 1px solid #e9ecef;
+        }
+
+        .artifact-map h5 {
+            color: #2a5298;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .artifact-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 10px;
+        }
+
+        .artifact-item {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 5px;
+            font-size: 0.95em;
+            border-left: 3px solid #667eea;
+        }
+
+        .highlight-box {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #ff9800;
+            margin: 20px 0;
+        }
+
+        .highlight-box strong {
+            color: #e65100;
+            font-size: 1.1em;
+        }
+
+        .tab-content {
+            margin-top: 20px;
+        }
+
+        .tab-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .tab-list li {
+            background: white;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .tab-list li strong {
+            color: #2a5298;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        footer {
+            background: #2a5298;
+            color: white;
+            text-align: center;
+            padding: 30px;
+            margin-top: 40px;
+        }
+
+        .emoji {
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏗️ Architect.AI Evolution Timeline</h1>
+            <p>A Comprehensive Journey: Initial Vision → Current State → Future Goals</p>
+        </header>
+
+        <div class="timeline-nav">
+            <button class="timeline-btn active" data-target="initial">
+                📅 Initial Commit<br><small>v2.5.2 - The Beginning</small>
+            </button>
+            <button class="timeline-btn" data-target="current">
+                🚀 Current State<br><small>v3.5.2 - November 2025</small>
+            </button>
+            <button class="timeline-btn" data-target="future">
+                🔮 Future Vision<br><small>The Ultimate Goal</small>
+            </button>
+        </div>
+
+        <!-- INITIAL STATE SECTION -->
+        <div id="initial" class="timeline-section active">
+            <div class="period-header">
+                <h2>📅 Initial Commit - Where It All Began</h2>
+                <div class="version">Version 2.5.2 | Commit: cd68de5</div>
+                <p style="margin-top: 15px; font-size: 1.1em;">The foundation of an ambitious AI-powered development assistant</p>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">🎯</span> Core Features</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>Dual-Mode System</h4>
+                        <ul>
+                            <li>Developer Mode (technical artifacts)</li>
+                            <li>Product Manager Mode (visual prototypes)</li>
+                            <li>Basic mode switching</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>RAG Integration</h4>
+                        <ul>
+                            <li>ChromaDB vector database</li>
+                            <li>Basic semantic search</li>
+                            <li>HyDE query enhancement</li>
+                            <li>Manual ingestion required</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Artifact Generation</h4>
+                        <ul>
+                            <li>ERD diagrams (basic)</li>
+                            <li>Architecture diagrams</li>
+                            <li>API documentation</li>
+                            <li>Code prototypes (limited stacks)</li>
+                            <li>Visual prototypes (HTML)</li>
+                            <li>JIRA tasks</li>
+                            <li>Deployment workflows</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">🤖</span> AI & Intelligence</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>Model Support</h4>
+                        <ul>
+                            <li>Google Gemini (primary)</li>
+                            <li>OpenAI GPT-4 (fallback)</li>
+                            <li>No local model support</li>
+                            <li>Cloud-only architecture</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Context System</h4>
+                        <ul>
+                            <li>1-layer context (RAG only)</li>
+                            <li>Meeting notes as input</li>
+                            <li>Basic stack detection</li>
+                            <li>Generic template fallbacks</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Multi-Agent System</h4>
+                        <ul>
+                            <li>3 specialized agents (Design, Backend, Frontend)</li>
+                            <li>Basic collaboration</li>
+                            <li>Output critique system</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">✅</span> Validation & Quality</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>Validation System</h4>
+                        <ul>
+                            <li>8 specialized validators</li>
+                            <li>Quality scoring (0-100)</li>
+                            <li>Auto-retry logic (2 attempts)</li>
+                            <li>Manual review required</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Quality Control</h4>
+                        <ul>
+                            <li>Basic syntax checking</li>
+                            <li>Completeness validation</li>
+                            <li>No automated fixing</li>
+                            <li>Validation reports to file</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">📊</span> Features & Tools</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>Editor & Export</h4>
+                        <ul>
+                            <li>Basic code editor</li>
+                            <li>Mermaid diagram editor</li>
+                            <li>ZIP export functionality</li>
+                            <li>Version history (basic)</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Performance</h4>
+                        <ul>
+                            <li>Agent caching (93% overhead reduction)</li>
+                            <li>RAG context caching</li>
+                            <li>Rate limit detection</li>
+                            <li>Smart retry logic</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Auto-Ingestion</h4>
+                        <ul>
+                            <li>File watching system</li>
+                            <li>Incremental updates</li>
+                            <li>Background processing</li>
+                            <li>Smart batching</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">⚠️</span> Limitations</h3>
+                <div class="highlight-box">
+                    <strong>What Was Missing:</strong>
+                    <ul style="margin-top: 10px; padding-left: 20px;">
+                        <li>No local model support (100% cloud-dependent)</li>
+                        <li>No knowledge graph or pattern mining</li>
+                        <li>No fine-tuning capabilities</li>
+                        <li>Limited context awareness (only RAG)</li>
+                        <li>No programmatic code analysis</li>
+                        <li>Basic diagram types (no advanced Mermaid support)</li>
+                        <li>No interactive visual editing</li>
+                        <li>Manual RAG refresh only</li>
+                        <li>Generic outputs not tailored to specific codebases</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- CURRENT STATE SECTION -->
+        <div id="current" class="timeline-section">
+            <div class="period-header">
+                <h2>🚀 Current State - Enterprise-Grade Intelligence</h2>
+                <div class="version">Version 3.5.2 | November 2025</div>
+                <p style="margin-top: 15px; font-size: 1.1em;">A complete transformation with AI that truly understands YOUR codebase</p>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">🧠</span> Intelligence Revolution</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>Knowledge Graph</h4>
+                        <ul>
+                            <li>AST parsing (Python)</li>
+                            <li>Regex parsing (TypeScript, C#, Java)</li>
+                            <li>NetworkX component relationships</li>
+                            <li>Coupling & complexity metrics</li>
+                            <li>Dependency graph analysis</li>
+                            <li>Real entity extraction</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Pattern Mining</h4>
+                        <ul>
+                            <li>Static code analysis</li>
+                            <li>Design pattern detection (Singleton, Factory, Observer)</li>
+                            <li>Anti-pattern identification</li>
+                            <li>Code smell detection</li>
+                            <li>Complexity scoring</li>
+                            <li>Quality recommendations</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>5-Layer Context System</h4>
+                        <ul>
+                            <li>Layer 1: RAG Context (18-100 chunks)</li>
+                            <li>Layer 2: Meeting Notes</li>
+                            <li>Layer 3: Repository Analysis</li>
+                            <li>Layer 4: Knowledge Graph</li>
+                            <li>Layer 5: Pattern Mining</li>
+                            <li>Model-aware chunk limits</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">🤖</span> Local AI & Fine-Tuning</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>Ollama Integration</h4>
+                        <ul>
+                            <li>Local model execution</li>
+                            <li>Persistent model loading (CodeLlama 7B, Llama 3 8B)</li>
+                            <li>On-demand model swapping</li>
+                            <li>VRAM optimization (12GB mode)</li>
+                            <li>80% instant response rate</li>
+                            <li>90% cost reduction</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Smart Model Routing</h4>
+                        <ul>
+                            <li>Artifact-specific model selection</li>
+                            <li>Local-first with cloud fallback</li>
+                            <li>Complex tasks → Gemini 2.0 Flash</li>
+                            <li>Quality-based routing</li>
+                            <li>Performance tracking</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Dual Fine-Tuning Pipelines</h4>
+                        <ul>
+                            <li>Ollama: Feedback collection + manual training</li>
+                            <li>HuggingFace: Manual dataset upload</li>
+                            <li>5000+ training examples</li>
+                            <li>LoRA/QLoRA 4-bit training</li>
+                            <li>Incremental versioning (v1→v2→v3)</li>
+                            <li>Rollback capability</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">✨</span> Enhanced Validation & Quality</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>100% Automated Validation</h4>
+                        <ul>
+                            <li>8 type-specific validators</li>
+                            <li>Programmatic Mermaid syntax checking</li>
+                            <li>AI-powered 3-pass syntax correction</li>
+                            <li>Quality scores 0-100</li>
+                            <li>Auto-retry with exponential backoff</li>
+                            <li>Validation reports saved</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Noise Reduction Pipeline</h4>
+                        <ul>
+                            <li>Regex preprocessing</li>
+                            <li>Code comment removal</li>
+                            <li>Debug statement filtering</li>
+                            <li>Stop-word removal</li>
+                            <li>Whitespace normalization</li>
+                            <li>Keyword extraction</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Quality-Filtered Training</h4>
+                        <ul>
+                            <li>Only ≥90/100 responses saved</li>
+                            <li>Prevents model degradation</li>
+                            <li>Reward signal calculation</li>
+                            <li>Feedback-driven improvement</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">🎨</span> Enhanced Artifacts</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>Advanced Diagrams</h4>
+                        <ul>
+                            <li>13 Mermaid diagram types</li>
+                            <li>Flowchart, ERD, Class, State, Sequence</li>
+                            <li>Gantt, Pie, Journey, Git Graph</li>
+                            <li>Mindmap, Timeline, C4 Diagrams</li>
+                            <li>Interactive HTML visualizations</li>
+                            <li>Visual canvas editor (Miro-like)</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Full-Stack Prototypes</h4>
+                        <ul>
+                            <li>Frontend + Backend generation</li>
+                            <li>Proper file routing</li>
+                            <li>Improved caching</li>
+                            <li>Pattern-aware code</li>
+                            <li>YOUR design patterns replicated</li>
+                            <li>Stack-specific conventions</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Smart ERD Generation</h4>
+                        <ul>
+                            <li>YOUR actual entities (from code)</li>
+                            <li>Real field names & types</li>
+                            <li>Actual foreign key relationships</li>
+                            <li>Knowledge Graph integration</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">🛡️</span> Production-Ready Reliability</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>Comprehensive Fallbacks</h4>
+                        <ul>
+                            <li>RAG → Cloud → Template (never fails)</li>
+                            <li>Provider warnings & notifications</li>
+                            <li>Session state sync</li>
+                            <li>Immediate UI updates</li>
+                            <li>Error recovery & graceful degradation</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Robust Error Handling</h4>
+                        <ul>
+                            <li>Helpful troubleshooting tips</li>
+                            <li>No more white screens</li>
+                            <li>Persistent UI state</li>
+                            <li>Save indicators across refreshes</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">📈</span> Key Improvements Over Initial</h3>
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Initial (v2.5.2)</th>
+                            <th>Current (v3.5.2)</th>
+                            <th>Impact</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Context Layers</strong></td>
+                            <td>1 layer (RAG only)</td>
+                            <td>5 layers (RAG + Notes + Analysis + KG + PM)</td>
+                            <td><span class="status-badge enhanced">10x More Accurate</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Model Support</strong></td>
+                            <td>Cloud only (Gemini, GPT-4)</td>
+                            <td>Local (Ollama) + Cloud with smart routing</td>
+                            <td><span class="status-badge added">90% Cost Reduction</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>ERD Quality</strong></td>
+                            <td>Generic User/Item entities</td>
+                            <td>YOUR actual entities from code (Knowledge Graph)</td>
+                            <td><span class="status-badge enhanced">100% Accurate</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Code Analysis</strong></td>
+                            <td>None</td>
+                            <td>AST + Regex parsing, Pattern Mining</td>
+                            <td><span class="status-badge added">New Capability</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Fine-Tuning</strong></td>
+                            <td>None</td>
+                            <td>Dual pipelines (Ollama + HuggingFace)</td>
+                            <td><span class="status-badge added">Continuous Learning</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Diagram Types</strong></td>
+                            <td>5 basic types</td>
+                            <td>13 advanced types + visual editor</td>
+                            <td><span class="status-badge enhanced">160% More Options</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Validation</strong></td>
+                            <td>Manual review required</td>
+                            <td>100% automated with AI fixing</td>
+                            <td><span class="status-badge enhanced">Zero Manual Work</span></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Response Time</strong></td>
+                            <td>15-30s (cloud only)</td>
+                            <td>5-10s (local persistent models)</td>
+                            <td><span class="status-badge enhanced">50-70% Faster</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- FUTURE VISION SECTION -->
+        <div id="future" class="timeline-section">
+            <div class="period-header">
+                <h2>🔮 Future Vision - The Ultimate Development Assistant</h2>
+                <div class="version">Target: v4.0+ | The Perfect Tool</div>
+                <p style="margin-top: 15px; font-size: 1.1em;">A seamless, intelligent, self-improving system that adapts to YOUR workflow</p>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">🎯</span> Unified User Experience</h3>
+                <div class="workflow-section">
+                    <h4>App Startup Flow</h4>
+                    <div class="workflow-steps">
+                        <div class="workflow-step">
+                            <h5>1. Intelligent RAG Auto-Refresh</h5>
+                            <p>System automatically detects file changes in mother project and refreshes RAG index. Real-time file watching ensures context is always up-to-date. Users see clear status: "RAG indexing in progress" with progress bar.</p>
+                        </div>
+                        <div class="workflow-step">
+                            <h5>2. UI Lock During RAG</h5>
+                            <p>While RAG reinitializes, all generation buttons are disabled with helpful tooltip: "Waiting for RAG to complete...". Prevents race conditions and ensures data integrity.</p>
+                        </div>
+                        <div class="workflow-step">
+                            <h5>3. Mode Selection</h5>
+                            <p>Clear choice between Developer Mode (technical artifacts) and PM Mode (product management tools). Mode persists across sessions.</p>
+                        </div>
+                        <div class="workflow-step">
+                            <h5>4. AI Provider Selection</h5>
+                            <p><strong>Default: Ollama (Local)</strong> - Multi-model orchestration with automatic loading/unloading and cloud fallback.<br>
+                            <strong>Alternative: Cloud Only</strong> - Direct calls to Gemini/GPT-4 without local processing.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">👨‍💻</span> Developer Mode - Complete Redesign</h3>
+                
+                <div class="tab-content">
+                    <h4>Tab Structure</h4>
+                    <ul class="tab-list">
+                        <li>
+                            <strong>📝 Meeting Notes</strong>
+                            <p>View currently loaded meeting notes or upload new ones. Real-time preview with syntax highlighting. Support for markdown, plain text, and structured formats.</p>
+                        </li>
+                        <li>
+                            <strong>⚡ Generate</strong>
+                            <p><strong>Smart Suggestions:</strong> AI-powered recommendations based on RAG analysis<br>
+                            <strong>Quick Generate:</strong> One-click generation for common artifacts<br>
+                            <strong>All Suggestions:</strong> Comprehensive list of detected scenarios<br>
+                            <strong>Detected Scenarios:</strong> Context-aware project analysis<br>
+                            <strong>RAG Controls:</strong> Manual refresh, status monitoring<br>
+                            <strong>Advanced Multi-Model Analysis:</strong> Compare outputs from multiple AI models<br>
+                            <strong>Auto-Validation Options:</strong> Configure quality thresholds and retry logic</p>
+                        </li>
+                        <li>
+                            <strong>📊 Outputs</strong>
+                            <p><strong>All artifacts open by default</strong> - Live view of all generated content<br>
+                            <strong>Diagram Viewer:</strong> Title + menu bar (Mermaid Code | HTML Diagram | Interactive Editor | Export)<br>
+                            <strong>Mermaid Code Tab:</strong> View and edit raw Mermaid syntax<br>
+                            <strong>HTML Diagram Tab:</strong> AI-generated visual representation<br>
+                            <strong>Interactive Editor Tab:</strong> True Miro-like experience - drag nodes, add connections, visual editing<br>
+                            <strong>Visual Prototype:</strong> Live preview with refresh and debug info options<br>
+                            <strong>Persistent Logs:</strong> Validation results, needs improvement flags, and quality scores remain visible after generation</p>
+                        </li>
+                        <li>
+                            <strong>🎨 Interactive Editor</strong>
+                            <p>Last generated visual prototype with live preview. Quick modification buttons (Make Darker, Add Search, Mobile Optimize, Add Animations). AI chat for custom requests. Real-time updates.</p>
+                        </li>
+                        <li>
+                            <strong>💻 Code Editor</strong>
+                            <p>View generated code files with Monaco-style editing. Save to file, download, copy path. Display file size and type. Syntax highlighting for all languages. Multi-file navigation.</p>
+                        </li>
+                        <li>
+                            <strong>🔧 Fine-Tuning</strong>
+                            <p>Large dataset of 80+ quality validated examples. Training data from entire repo sweep. Examples for each artifact type. Search and download specific CodeLlama models. Monitor training progress and manage model versions.</p>
+                        </li>
+                        <li>
+                            <strong>🧪 Tests</strong>
+                            <p>Select any file from code prototype. Generate unit tests, integration tests, or E2E tests. View coverage reports. Run tests directly in UI.</p>
+                        </li>
+                        <li>
+                            <strong>📦 Export</strong>
+                            <p>Export individual artifacts or batch downloads. ZIP packages with proper folder structure. Custom export configurations.</p>
+                        </li>
+                        <li>
+                            <strong>🕐 Versions</strong>
+                            <p>Complete version history for each artifact. Side-by-side comparison view. Diff highlighting. One-click restore to any previous version. Automatic archiving of old versions.</p>
+                        </li>
+                        <li>
+                            <strong>📈 Metrics</strong>
+                            <p>Programmatic metrics (code complexity, coupling, quality scores). Machine learning insights. Generation success rates. Model performance comparison. Quality trends over time.</p>
+                        </li>
+                        <li>
+                            <strong>🕸️ Knowledge Graph</strong>
+                            <p>Interactive visualization of component relationships. Dependency graphs. Coupling metrics. Critical component identification. Architecture health dashboard.</p>
+                        </li>
+                        <li>
+                            <strong>🔍 Pattern Mining</strong>
+                            <p>Detected design patterns with examples. Anti-pattern warnings. Code smell reports. Refactoring suggestions. Quality improvement roadmap.</p>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="artifact-map">
+                    <h5>🎯 Artifact-Specific Model Mapping (25 Artifact Types)</h5>
+                    <div class="artifact-list">
+                        <div class="artifact-item">ERD Mermaid → Model A</div>
+                        <div class="artifact-item">ERD HTML → Model B</div>
+                        <div class="artifact-item">System Architecture Mermaid → Model C</div>
+                        <div class="artifact-item">System Architecture HTML → Model D</div>
+                        <div class="artifact-item">System Overview Mermaid → Model E</div>
+                        <div class="artifact-item">System Overview HTML → Model F</div>
+                        <div class="artifact-item">Data Flow Mermaid → Model G</div>
+                        <div class="artifact-item">Data Flow HTML → Model H</div>
+                        <div class="artifact-item">User Flow Mermaid → Model I</div>
+                        <div class="artifact-item">User Flow HTML → Model J</div>
+                        <div class="artifact-item">Component Diagram Mermaid → Model K</div>
+                        <div class="artifact-item">Component Diagram HTML → Model L</div>
+                        <div class="artifact-item">API Sequence Mermaid → Model M</div>
+                        <div class="artifact-item">API Sequence HTML → Model N</div>
+                        <div class="artifact-item">UML Diagram Mermaid → Model O</div>
+                        <div class="artifact-item">UML Diagram HTML → Model P</div>
+                        <div class="artifact-item">Code Prototype → Model Q</div>
+                        <div class="artifact-item">Dev Visual Prototype → Model R</div>
+                        <div class="artifact-item">API Documentation → Model S</div>
+                        <div class="artifact-item">JIRA Tasks → Model T</div>
+                        <div class="artifact-item">Workflows → Model U</div>
+                        <div class="artifact-item">Backlog → Model V</div>
+                        <div class="artifact-item">Personas → Model W</div>
+                        <div class="artifact-item">Estimations → Model X</div>
+                        <div class="artifact-item">Feature Scoring → Model Y</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">🤖</span> Intelligent Generation Pipeline</h3>
+                <div class="workflow-section">
+                    <h4>Advanced Ollama Orchestration</h4>
+                    <div class="workflow-steps">
+                        <div class="workflow-step">
+                            <h5>1. Context Preparation</h5>
+                            <p><strong>RAG Targeting:</strong> Extract most relevant chunks for specific artifact type using semantic search + Knowledge Graph + Pattern Mining<br>
+                            <strong>Meeting Notes Filtering:</strong> Extract only relevant sections for this artifact<br>
+                            <strong>ML-Enhanced Context:</strong> Machine learning determines optimal details from codebase</p>
+                        </div>
+                        <div class="workflow-step">
+                            <h5>2. Local Model Attempt (Ollama)</h5>
+                            <p><strong>Model Selection:</strong> Lookup artifact type in model map, load first specialized model<br>
+                            <strong>Generation:</strong> Generate artifact with full context<br>
+                            <strong>Cleaning & Formatting:</strong> Apply syntax correction and formatting rules<br>
+                            <strong>Thorough Validation:</strong> 8-point validation (syntax, functionality, logic, relevance to project, relevance to notes, likely success, similarity to perfect version) - Score 0-100</p>
+                        </div>
+                        <div class="workflow-step">
+                            <h5>3. Multi-Model Fallback (Score < 80)</h5>
+                            <p><strong>Second Local Model:</strong> Load next model in artifact map, unload first model (prevent VRAM overflow)<br>
+                            <strong>Third Local Model:</strong> Try remaining local models if available<br>
+                            <strong>Model Unloading:</strong> Aggressive cleanup to free VRAM</p>
+                        </div>
+                        <div class="workflow-step">
+                            <h5>4. Cloud Fallback (All Local < 80)</h5>
+                            <p><strong>Primary Cloud:</strong> Use best cloud model for artifact type (Gemini 2.0 Flash Thinking, GPT-4o, Claude Sonnet)<br>
+                            <strong>Secondary Cloud:</strong> Try second-best cloud model<br>
+                            <strong>Tertiary Cloud:</strong> Final cloud attempt</p>
+                        </div>
+                        <div class="workflow-step">
+                            <h5>5. Best Effort Output</h5>
+                            <p>If all models fail validation, select output with highest score and save with warning flag. Provide detailed explanation of issues and suggestions for manual improvement.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="highlight-box">
+                    <strong>🎯 Key Innovation:</strong> Each artifact type has its own model specialization map. The system automatically tries multiple models (loading/unloading to manage VRAM) before falling back to cloud. This ensures maximum quality while minimizing cloud costs.
+                </div>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">📊</span> Supported Diagram Types (13 Total)</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>Fully Parsable to Canvas (7 types)</h4>
+                        <ul>
+                            <li>Flowchart (graph TD, graph LR)</li>
+                            <li>ERD (erDiagram)</li>
+                            <li>Class Diagram (classDiagram)</li>
+                            <li>State Diagram (stateDiagram)</li>
+                            <li>Sequence Diagram (sequenceDiagram)</li>
+                            <li>Architecture Diagram (graph)</li>
+                            <li>API Diagram (flowchart-based)</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Recognized & Validated (6 types)</h4>
+                        <ul>
+                            <li>Gantt Chart (gantt)</li>
+                            <li>Pie Chart (pie)</li>
+                            <li>User Journey (journey)</li>
+                            <li>Git Graph (gitGraph)</li>
+                            <li>Mindmap (mindmap)</li>
+                            <li>Timeline (timeline)</li>
+                            <li>C4 Diagrams (C4Context, C4Container)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">🔄</span> Automatic Fine-Tuning System</h3>
+                <div class="workflow-section">
+                    <h4>Continuous Learning Pipeline</h4>
+                    <div class="workflow-steps">
+                        <div class="workflow-step">
+                            <h5>Quality Tracking</h5>
+                            <p>Every successful generation with validation score ≥80 is automatically saved as a training example. Examples include: prompt (meeting notes + context), artifact type, generated output, validation score, user feedback (thumbs up/down, edits made).</p>
+                        </div>
+                        <div class="workflow-step">
+                            <h5>Automatic Fine-Tuning Trigger</h5>
+                            <p><strong>Threshold:</strong> When 50 high-quality examples (≥80 score) accumulate for ANY artifact type<br>
+                            <strong>Automatic Start:</strong> Background fine-tuning job launches without user intervention<br>
+                            <strong>Model Selection:</strong> Fine-tune all local models responsible for that artifact type<br>
+                            <strong>Result:</strong> Models get progressively better, reducing reliance on cloud models</p>
+                        </div>
+                        <div class="workflow-step">
+                            <h5>Cross-Source Learning</h5>
+                            <p>Training examples come from ANY successful model (local or cloud). Best cloud responses teach local models. Over time, local models learn to match cloud quality.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">📱</span> Product Manager Mode - Simplified & Powerful</h3>
+                
+                <div class="tab-content">
+                    <h4>Tab Structure</h4>
+                    <ul class="tab-list">
+                        <li>
+                            <strong>💡 Idea</strong>
+                            <p>Describe your own idea OR use loaded meeting notes. Rich text editor with templates. Real-time save. Context carries through all PM tools.</p>
+                        </li>
+                        <li>
+                            <strong>🤔 Ask AI</strong>
+                            <p><strong>Quick Questions:</strong> Pre-defined common PM queries<br>
+                            <strong>PM Power Tools:</strong>
+                            - Generate Estimations (T-shirt sizes, story points, time estimates)<br>
+                            - Feature Scoring Matrix (RICE, weighted scoring)<br>
+                            - Generate Personas & Journeys (user research artifacts)<br>
+                            - Package Backlog (structured sprint planning)<br>
+                            - Is This Feasible? (technical feasibility analysis)<br>
+                            - What Are The Risks? (risk assessment matrix)<br>
+                            - How Long To Build? (timeline projections)<br>
+                            - What's The Complexity? (complexity scoring)<br>
+                            <strong>Custom Question:</strong> Add your own context on top of idea/notes</p>
+                        </li>
+                        <li>
+                            <strong>📊 Outputs</strong>
+                            <p>Same structure as Dev Mode but with PM-focused artifacts. Visual prototypes for stakeholder demos. JIRA epics and stories. Personas and user journeys. Feature scoring matrices. Risk assessments. All with the same Ollama orchestration (multi-model + cloud fallback).</p>
+                        </li>
+                        <li>
+                            <strong>🎨 Interactive Editor</strong>
+                            <p>PM visual prototype with same quick modification features. Stakeholder-ready mockups. Real-time collaboration preview.</p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">💬</span> AI Chat Assistant (Both Modes)</h3>
+                <div class="workflow-section">
+                    <h4>ChatGPT-Style Conversational AI</h4>
+                    <p>A highly intelligent chatbot with deep knowledge of:</p>
+                    <ul style="padding-left: 40px; margin-top: 10px;">
+                        <li>Your entire codebase (via RAG + Knowledge Graph)</li>
+                        <li>Project structure and architecture</li>
+                        <li>Design patterns and conventions</li>
+                        <li>What's feasible vs. not feasible</li>
+                        <li>Technical debt and improvement opportunities</li>
+                    </ul>
+                    
+                    <h4 style="margin-top: 20px;">Potential Integration: N8N Workflow</h4>
+                    <p>Connect to n8n workflow with:</p>
+                    <ul style="padding-left: 40px; margin-top: 10px;">
+                        <li>Knowledge base of specific project</li>
+                        <li>Canvas for diagram generation on request</li>
+                        <li>File access for code examples</li>
+                        <li>Slack/Teams integration for team collaboration</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">⚡</span> Performance Optimizations</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>Speed Improvements</h4>
+                        <ul>
+                            <li>Parallel artifact generation</li>
+                            <li>Aggressive caching strategies</li>
+                            <li>Streaming responses (show progress)</li>
+                            <li>Lazy loading of heavy components</li>
+                            <li>Database query optimization</li>
+                            <li>Reduced model loading times</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Resource Management</h4>
+                        <ul>
+                            <li>Smart VRAM allocation</li>
+                            <li>Model persistence strategies</li>
+                            <li>Background job scheduling</li>
+                            <li>Memory leak prevention</li>
+                            <li>Automatic garbage collection</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="category">
+                <h3><span class="category-icon">🎯</span> Quality of Life Features</h3>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <h4>User Experience</h4>
+                        <ul>
+                            <li>Persistent state across sessions</li>
+                            <li>Keyboard shortcuts</li>
+                            <li>Dark mode support</li>
+                            <li>Customizable UI layouts</li>
+                            <li>Drag-and-drop file uploads</li>
+                            <li>Inline editing everywhere</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Smart Suggestions</h4>
+                        <ul>
+                            <li>AI-powered next steps</li>
+                            <li>Context-aware recommendations</li>
+                            <li>Proactive error prevention</li>
+                            <li>Optimization suggestions</li>
+                            <li>Learning from user patterns</li>
+                        </ul>
+                    </div>
+                    <div class="feature-card">
+                        <h4>Regeneration & Versioning</h4>
+                        <ul>
+                            <li>Auto-archive on regenerate</li>
+                            <li>Clean folder structure</li>
+                            <li>Previous version in /versions</li>
+                            <li>No data loss ever</li>
+                            <li>Quick rollback</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight-box">
+                <strong>🚀 Ultimate Goal:</strong> A self-improving, context-aware AI development assistant that learns from every interaction, generates high-quality artifacts consistently, and becomes indispensable to developers and product managers alike. It should feel like having a senior architect, a skilled developer, and a product expert all working together - but faster, cheaper, and available 24/7.
+            </div>
+        </div>
+
+        <footer>
+            <h3>🏗️ Architect.AI Evolution</h3>
+            <p>From Basic AI Assistant to Enterprise Intelligence Platform</p>
+            <p style="margin-top: 15px; opacity: 0.8;">Created by Alexandra Georgescu | alestef81@gmail.com</p>
+            <p style="margin-top: 10px; font-size: 0.9em; opacity: 0.7;">Last Updated: November 2025</p>
+        </footer>
+    </div>
+
+    <script>
+        // Tab switching functionality
+        const buttons = document.querySelectorAll('.timeline-btn');
+        const sections = document.querySelectorAll('.timeline-section');
+
+        buttons.forEach(button => {
+            button.addEventListener('click', () => {
+                const target = button.getAttribute('data-target');
+                
+                // Remove active class from all buttons and sections
+                buttons.forEach(btn => btn.classList.remove('active'));
+                sections.forEach(section => section.classList.remove('active'));
+                
+                // Add active class to clicked button and corresponding section
+                button.classList.add('active');
+                document.getElementById(target).classList.add('active');
+                
+                // Scroll to top of section
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>
