@@ -123,5 +123,16 @@
       "final_loss": 2.4016088008880616,
       "epochs_completed": 3
     }
+  },
+  "deepseek-coder-6.7b-downloaded": {
+    "model_id": "deepseek-coder-6.7b-downloaded",
+    "model_name": "Deepseek Coder 6.7B",
+    "base_model": "deepseek-coder-6.7b",
+    "status": "downloaded",
+    "model_path": "models\\deepseek-coder-6.7b",
+    "created_at": "2025-11-12T16:19:54.557642",
+    "trained_at": null,
+    "training_config": null,
+    "metrics": null
   }
 }

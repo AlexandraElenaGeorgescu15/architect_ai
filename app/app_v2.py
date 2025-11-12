@@ -1775,33 +1775,34 @@ def render_sidebar():
             providers_list.remove("Ollama (Local)")
             providers_list.insert(0, "Ollama (Local)")
         
-        # Add any fine-tuned models from the REGISTRY (check for duplicates)
-        added_models = set()  # Track added models to prevent duplicates
-        
+        # Add ONLY currently loaded local models (not from registry)
+        # Registry models are not loaded in RAM, so they shouldn't appear in dropdown
         try:
-            from components.model_registry import model_registry
+            from components.local_finetuning import local_finetuning_system
             
-            # Get all usable models from registry (both downloaded and trained)
-            trained_models = [
-                model for model in model_registry.get_all_models()
-                if model.status in ["downloaded", "trained"]
-            ]
-            for model in trained_models:
-                # Add to dropdown with visual indicator
-                model_key = model.model_name.lower()
-                if model_key not in added_models:
-                    display_name = f"🎓 Local: {model.model_name} ✅"
-                    providers_list.append(display_name)
-                    local_provider_options[display_name] = {
-                        "model_id": model.model_id,
-                        "model_name": model.model_name,
-                        "model_path": model.model_path,
-                        "base_model": model.base_model,
-                        "trained_at": model.trained_at,
-                    }
-                    added_models.add(model_key)
-        except Exception:
-            pass  # Silently continue if registry doesn't exist
+            # Only show models that are currently loaded in RAM
+            if local_finetuning_system.current_model:
+                current = local_finetuning_system.current_model
+                model_key = current['key']
+                model_info = current['info']
+                
+                # Determine display name based on whether it's fine-tuned
+                if current.get('is_finetuned') and current.get('finetuned_version'):
+                    display_name = f"🎓 Local: {model_info.name} (v{current['finetuned_version']}) ✅"
+                else:
+                    display_name = f"🎓 Local: {model_info.name} ✅"
+                
+                providers_list.append(display_name)
+                local_provider_options[display_name] = {
+                    "model_id": model_key,
+                    "model_name": model_info.name,
+                    "model_path": str(current.get('base_path', '')),
+                    "base_model": model_key,
+                    "is_finetuned": current.get('is_finetuned', False),
+                    "finetuned_version": current.get('finetuned_version'),
+                }
+        except Exception as e:
+            pass  # Silently continue if local_finetuning_system not available
         
         provider = st.selectbox(
             "Select Provider",
