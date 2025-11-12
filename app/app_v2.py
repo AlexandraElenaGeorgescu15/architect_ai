@@ -1741,6 +1741,7 @@ def render_sidebar():
                         if result.returncode == 0:
                             st.success("✅ RAG index rebuilt successfully!")
                             st.code(result.stdout, language="text")
+                            st.rerun()  # Refresh UI to show updated RAG status
                         else:
                             st.error("❌ Failed to rebuild index")
                             st.code(result.stderr, language="text")
@@ -1780,8 +1781,11 @@ def render_sidebar():
         try:
             from components.model_registry import model_registry
             
-            # Get all trained models from NEW registry
-            trained_models = model_registry.get_trained_models()
+            # Get all usable models from registry (both downloaded and trained)
+            trained_models = [
+                model for model in model_registry.get_all_models()
+                if model.status in ["downloaded", "trained"]
+            ]
             for model in trained_models:
                 # Add to dropdown with visual indicator
                 model_key = model.model_name.lower()
