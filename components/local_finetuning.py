@@ -725,16 +725,23 @@ class LocalFineTuningSystem:
             
             # Prepare dataset
             def tokenize_function(examples):
-                # Tokenize the text
+                # Tokenize the text with fixed-length padding
                 tokenized = tokenizer(
                     examples['text'],
                     truncation=True,
-                    padding=True,
-                    max_length=config.max_length
+                    padding='max_length',  # ✅ Fixed: pad all sequences to max_length
+                    max_length=config.max_length,
+                    return_tensors=None  # Return lists, not tensors (for batched mapping)
                 )
                 
                 # For causal language modeling, labels are the same as input_ids
-                tokenized['labels'] = tokenized['input_ids'].copy()
+                # Use list comprehension to handle batched tokenization properly
+                if isinstance(tokenized['input_ids'][0], list):
+                    # Batched: list of lists
+                    tokenized['labels'] = [ids.copy() for ids in tokenized['input_ids']]
+                else:
+                    # Single example: list
+                    tokenized['labels'] = tokenized['input_ids'].copy()
                 
                 return tokenized
             
@@ -1106,13 +1113,21 @@ class LocalFineTuningSystem:
             
             # Prepare dataset
             def tokenize_function(examples):
+                # Tokenize with fixed-length padding
                 tokenized = tokenizer(
                     examples['text'],
                     truncation=True,
-                    padding=True,
-                    max_length=config.max_length
+                    padding='max_length',  # ✅ Fixed: pad all sequences to max_length
+                    max_length=config.max_length,
+                    return_tensors=None  # Return lists, not tensors
                 )
-                tokenized['labels'] = tokenized['input_ids'].copy()
+                
+                # Handle batched tokenization properly
+                if isinstance(tokenized['input_ids'][0], list):
+                    tokenized['labels'] = [ids.copy() for ids in tokenized['input_ids']]
+                else:
+                    tokenized['labels'] = tokenized['input_ids'].copy()
+                
                 return tokenized
             
             # Convert to dataset format
@@ -1867,7 +1882,6 @@ def render_local_finetuning_ui():
                         # SOURCE 3: Manual feedback examples
                         st.info("💬 Step 3/4: Loading manual feedback examples...")
                         try:
-                            from components.finetuning_feedback import feedback_store
                             feedback_examples = feedback_store.to_training_examples()
                             all_examples.extend(feedback_examples)
                             source_counts['manual_feedback'] = len(feedback_examples)
@@ -2233,85 +2247,10 @@ def render_local_finetuning_ui():
                     import traceback
                     print(f"[ERROR] Comprehensive dataset generation: {traceback.format_exc()}")
                 
-                # Method 2: Generate using Ollama (if available)
-                ollama_examples = []
-                try:
-                    ollama_client = OllamaClient()
-                    if asyncio.run(ollama_client.check_server_health()):
-                        router = get_router({}, ollama_client)
-                        router.set_force_local_only(True)
-                        
-                        mapper = get_artifact_mapper()
-                        task_type = mapper.get_task_type(artifact_type)
-                        model_name = mapper.get_model_name(artifact_type)
-                        
-                        st.info(f"🤖 Generating 1000 examples using Ollama ({model_name})...")
-                        
-                        # Generate examples using Ollama
-                        from scripts.generate_datasets_with_ollama import SEED_PROMPTS, vary_prompt, build_system_message
-                        
-                        seeds = SEED_PROMPTS.get(task_type, [f"Generate {artifact_type} example."])
-                        system_message = build_system_message(artifact_type)
-                        
-                        # Generate in batches
-                        batch_size = 50
-                        total_needed = 1000
-                        generated = 0
-                        
-                        progress_bar = st.progress(0)
-                        status_text = st.empty()
-                        
-                        while generated < total_needed:
-                            batch_prompts = [vary_prompt(random.choice(seeds)) for _ in range(batch_size)]
-                            
-                            for prompt in batch_prompts:
-                                try:
-                                    response = asyncio.run(router.generate(
-                                        task_type=task_type,
-                                        prompt=prompt,
-                                        system_message=system_message,
-                                        temperature=0.2,
-                                        force_cloud=False
-                                    ))
-                                    
-                                    if response.success and response.content and len(response.content.strip()) > 0:
-                                        ollama_examples.append({
-                                            "prompt": prompt,
-                                            "completion": response.content.strip(),
-                                            "metadata": {
-                                                "artifact": artifact_type,
-                                                "model": model_name,
-                                                "source": "ollama"
-                                            }
-                                        })
-                                        generated += 1
-                                        
-                                        if generated % 100 == 0:
-                                            status_text.text(f"Generated {generated}/{total_needed} examples...")
-                                            progress_bar.progress(generated / total_needed)
-                                        
-                                        if generated >= total_needed:
-                                            break
-                                except Exception as e:
-                                    continue  # Skip failed generations
-                            
-                            if generated >= total_needed:
-                                break
-                        
-                        progress_bar.progress(1.0)
-                        status_text.text(f"✅ Generated {len(ollama_examples)} examples using Ollama")
-                        
-                        # Save Ollama dataset
-                        ollama_path = datasets_dir / f"{artifact_type}_ollama_1000.jsonl"
-                        with open(ollama_path, 'w', encoding='utf-8') as f:
-                            for ex in ollama_examples:
-                                f.write(json.dumps(ex, ensure_ascii=False) + "\n")
-                        
-                        st.success(f"✅ Saved {len(ollama_examples)} Ollama examples to {ollama_path}")
-                    else:
-                        st.warning("⚠️ Ollama server not running. Skipping Ollama dataset generation.")
-                except Exception as e:
-                    st.warning(f"⚠️ Ollama dataset generation failed: {str(e)}. Continuing with variation-based generation...")
+                # Method 2: REMOVED Ollama generation (was causing failures in Streamlit)
+                # The comprehensive builder already provides 600-1200 high-quality examples per artifact type
+                # which is more than sufficient for fine-tuning
+                st.info("ℹ️ Skipping Ollama generation (using comprehensive builder only)")
                 
                 # Method 2: Generate using variations (from seed examples)
                 try:
@@ -2381,34 +2320,24 @@ def render_local_finetuning_ui():
                                 }
                             })
                         
-                        # 2. Add Ollama examples
-                        for ex in ollama_examples:
-                            training_data.append({
-                                "instruction": ex["prompt"],
-                                "input": "",
-                                "output": ex["completion"],
-                                "source": "ollama",
-                                "metadata": ex.get("metadata", {})
-                            })
-                        
-                        # 3. Add variation examples (as supplementary)
+                        # 2. Add variation examples (as supplementary)
                         training_data.extend(variation_training)
                         
                         total_comprehensive = len(comprehensive_examples)
-                        total_ollama = len(ollama_examples)
                         total_variations = len(variation_training)
                         
-                        st.success(f"✅ Merged {total_comprehensive} comprehensive + {total_ollama} Ollama + {total_variations} variation examples = {total_comprehensive + total_ollama + total_variations} total examples!")
+                        st.success(f"✅ Merged {total_comprehensive} comprehensive + {total_variations} variation examples = {total_comprehensive + total_variations} total examples!")
                         
                         # Show breakdown
                         with st.expander("📊 Dataset Breakdown", expanded=False):
                             st.markdown(f"""
                             **Dataset Sources:**
                             - 🌟 **Comprehensive Builder**: {total_comprehensive} examples (high quality, domain-specific)
-                            - 🤖 **Ollama Generated**: {total_ollama} examples (AI-generated variations)
                             - 🔄 **Seed Variations**: {total_variations} examples (template-based)
                             
-                            **Total Training Examples**: {total_comprehensive + total_ollama + total_variations}
+                            **Total Training Examples**: {total_comprehensive + total_variations}
+                            
+                            ℹ️ *Ollama generation removed due to Streamlit compatibility issues*
                             """)
                     else:
                         st.warning(f"⚠️ No seed examples found for {artifact_type}. Skipping variation generation.")

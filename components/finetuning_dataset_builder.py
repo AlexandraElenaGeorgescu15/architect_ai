@@ -4590,9 +4590,26 @@ class FineTuningDatasetBuilder:
         from rag.retrieve import merge_rerank, vector_search, bm25_search, load_docs_from_chroma
         from rag.utils import BM25Index, chroma_client
         from rag.filters import load_cfg
+        import chromadb
 
         cfg = load_cfg()
-        client = chroma_client(cfg["store"]["path"])
+        
+        # Try to get existing client first to avoid "already exists" error
+        try:
+            client = chroma_client(cfg["store"]["path"])
+        except (ValueError, RuntimeError) as e:
+            # If client already exists with different settings, use the existing one
+            if "already exists" in str(e).lower():
+                try:
+                    # Get the existing client using chromadb.PersistentClient
+                    client = chromadb.PersistentClient(path=cfg["store"]["path"])
+                except Exception as e2:
+                    print(f"[FINETUNING][ERROR] Failed to connect to Chroma: {e2}")
+                    # Return empty results if we can't connect
+                    return [], []
+            else:
+                raise
+        
         collection = client.get_or_create_collection("repo", metadata={"hnsw:space": "cosine"})
         docs = load_docs_from_chroma(collection)
         bm25 = BM25Index(docs)
