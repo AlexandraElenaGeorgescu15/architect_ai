@@ -158,7 +158,7 @@ class AdaptiveLearningLoop:
     """
     
     def __init__(self, storage_dir: Path = None):
-        self.storage_dir = storage_dir or Path("training_jobs/adaptive_learning")
+        self.storage_dir = storage_dir or Path("db/training_jobs")
         self.storage_dir.mkdir(parents=True, exist_ok=True)
         
         self.feedback_events: List[FeedbackEvent] = []

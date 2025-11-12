@@ -1632,7 +1632,8 @@ def render_local_finetuning_ui():
         
         st.write("**📚 Training Data:**")
         if 'finetuning_meeting_notes' not in st.session_state:
-            notes_path = Path("inputs") / "meeting_notes.md"
+            from pathlib import Path as PathLib
+            notes_path = PathLib("inputs") / "meeting_notes.md"
             default_notes = notes_path.read_text(encoding="utf-8") if notes_path.exists() else ""
             st.session_state['finetuning_meeting_notes'] = default_notes
 
