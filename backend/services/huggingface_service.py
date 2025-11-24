@@ -44,8 +44,14 @@ class HuggingFaceService:
         self.downloads_dir = Path("models/huggingface")
         self.downloads_dir.mkdir(parents=True, exist_ok=True)
         
+        # Track active downloads
+        self.active_downloads: Dict[str, Dict[str, Any]] = {}  # model_id -> {status, error, progress}
+        
         # Load downloaded models registry
         self._load_registry()
+        
+        if not HUGGINGFACE_AVAILABLE:
+            logger.warning("HuggingFace Hub not available. Install with: pip install huggingface_hub")
         
         logger.info("HuggingFace Service initialized")
     
@@ -131,10 +137,24 @@ class HuggingFaceService:
             Dictionary with download status and model info
         """
         if not HUGGINGFACE_AVAILABLE:
+            error_msg = "HuggingFace Hub not available. Install with: pip install huggingface_hub"
+            logger.error(error_msg)
+            self.active_downloads[model_id] = {
+                "status": "failed",
+                "error": error_msg,
+                "progress": 0.0
+            }
             return {
                 "success": False,
-                "error": "HuggingFace Hub not available. Install with: pip install huggingface_hub"
+                "error": error_msg
             }
+        
+        # Mark download as started
+        self.active_downloads[model_id] = {
+            "status": "downloading",
+            "error": None,
+            "progress": 0.0
+        }
         
         try:
             # Check if already downloaded
@@ -238,17 +258,29 @@ class HuggingFaceService:
                         "warning": conversion_result.get("error", "Conversion failed")
                     }
             
-            return {
+            result = {
                 "success": True,
                 "message": f"Model {model_id} downloaded successfully",
                 "model_id": model_id,
                 "path": str(model_dir)
             }
+            self.active_downloads[model_id] = {
+                "status": "completed",
+                "error": None,
+                "progress": 1.0
+            }
+            return result
         except Exception as e:
-            logger.error(f"Error downloading model {model_id}: {e}")
+            error_msg = str(e)
+            logger.error(f"Error downloading model {model_id}: {error_msg}", exc_info=True)
+            self.active_downloads[model_id] = {
+                "status": "failed",
+                "error": error_msg,
+                "progress": 0.0
+            }
             return {
                 "success": False,
-                "error": str(e),
+                "error": error_msg,
                 "model_id": model_id
             }
     

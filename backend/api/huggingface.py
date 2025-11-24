@@ -73,14 +73,71 @@ async def download_model(
             "model_id": model_id
         }
     
-    # Start download in background
-    background_tasks.add_task(service.download_model, model_id, convert_to_ollama)
+    # Check if download is already in progress
+    if model_id in service.active_downloads:
+        status = service.active_downloads[model_id].get("status")
+        if status == "downloading":
+            return {
+                "success": False,
+                "error": f"Download of {model_id} is already in progress",
+                "model_id": model_id
+            }
+    
+    # Start download in background with error handling
+    async def download_with_error_handling():
+        try:
+            result = await service.download_model(model_id, convert_to_ollama)
+            if not result.get("success"):
+                logger.error(f"Download failed for {model_id}: {result.get('error')}")
+        except Exception as e:
+            logger.error(f"Background download error for {model_id}: {e}", exc_info=True)
+            service.active_downloads[model_id] = {
+                "status": "failed",
+                "error": str(e),
+                "progress": 0.0
+            }
+    
+    background_tasks.add_task(download_with_error_handling)
     
     return {
         "success": True,
         "message": f"Download of {model_id} started in background",
         "model_id": model_id,
         "convert_to_ollama": convert_to_ollama
+    }
+
+
+@router.get("/download/{model_id}/status", summary="Get download status")
+async def get_download_status(
+    model_id: str,
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """Get the download status for a model."""
+    service = get_service()
+    
+    # Check if already downloaded
+    downloaded = await service.list_downloaded_models()
+    if any(m.get("id") == model_id for m in downloaded):
+        return {
+            "success": True,
+            "status": "completed",
+            "model_id": model_id,
+            "progress": 1.0
+        }
+    
+    # Check active downloads
+    if model_id in service.active_downloads:
+        return {
+            "success": True,
+            **service.active_downloads[model_id],
+            "model_id": model_id
+        }
+    
+    return {
+        "success": True,
+        "status": "not_started",
+        "model_id": model_id,
+        "progress": 0.0
     }
 
 

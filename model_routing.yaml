@@ -254,7 +254,7 @@ mermaid_journey:
   enabled: true
   fallback_models:
   - ollama:codellama
-  - gemini:gemini-2.0-flash-exp
+  - groq:llama-3.3-70b-versatile
   primary_model: ollama:llama3
 mermaid_mindmap:
   enabled: true
@@ -279,6 +279,7 @@ mermaid_state:
   fallback_models:
   - ollama:codellama
   - gemini:gemini-2.0-flash-exp
+  - groq:mixtral-8x7b-32768
   primary_model: ollama:llama3
 mermaid_system_overview:
   enabled: true

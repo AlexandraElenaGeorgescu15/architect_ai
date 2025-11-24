@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { ArtifactType } from '../services/generationService'
 import { 
   Loader2, Sparkles, FileText, CheckCircle2, Folder, Code, FileCode, 
-  Download, Key, Settings, Search, Network, ListTodo, Sliders
+  Download, Key, Settings, Search, Network, ListTodo, Sliders, Edit3
 } from 'lucide-react'
 import MeetingNotesManager from './MeetingNotesManager'
 import ArtifactTabs from './artifacts/ArtifactTabs'
@@ -13,6 +13,7 @@ import BulkGenerationDialog from './BulkGenerationDialog'
 import ApiKeysManager from './ApiKeysManager'
 import InteractivePrototypeEditor from './InteractivePrototypeEditor'
 import CodeWithTestsEditor from './CodeWithTestsEditor'
+import MermaidRenderer from './MermaidRenderer'
 import { bulkGenerate } from '../services/generationService'
 import { useArtifactStore } from '../stores/artifactStore'
 import { useUIStore } from '../stores/uiStore'
@@ -91,15 +92,24 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
         max_rag_chunks: 18,
         artifact_type: props.selectedArtifactType,
       })
-      props.setContextId(response.context_id)
-    } catch (error) {
-      // Failed to build context - handle in UI
+      if (response?.context_id) {
+        props.setContextId(response.context_id)
+        addNotification('success', 'Context built successfully!')
+      } else {
+        addNotification('warning', 'Context built but no ID returned. Generation will still work.')
+      }
+    } catch (error: any) {
+      console.error('Context build error:', error)
+      const errorMsg = error?.response?.data?.detail || error?.message || 'Failed to build context'
+      addNotification('error', `Context build failed: ${errorMsg}. You can still generate directly.`)
+      // Don't throw - allow generation to proceed without context
     }
   }, [props, selectedFolderId])
 
   const handleGenerate = useCallback(async () => {
-    if (!props.contextId && !selectedFolderId && props.meetingNotes.length < 10) {
-      alert('Please build context first, select a folder, or provide meeting notes')
+    // Allow generation even without context - it will build context on-the-fly
+    if (!selectedFolderId && props.meetingNotes.length < 10) {
+      alert('Please provide meeting notes (at least 10 characters) or select a folder')
       return
     }
 
@@ -115,10 +125,11 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
           temperature: 0.7,
         },
       })
-    } catch (error) {
-      // Failed to generate artifact - handle in UI
+    } catch (error: any) {
+      console.error('Generation error:', error)
+      addNotification('error', error?.response?.data?.detail || error?.message || 'Failed to generate artifact. Please try again.')
     }
-  }, [props, selectedFolderId])
+  }, [props, selectedFolderId, addNotification])
 
   const handleAskAi = useCallback(async (question: string) => {
     if (!question.trim()) return
@@ -362,7 +373,7 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
 
                     <button
                       onClick={handleGenerate}
-                      disabled={props.isGenerating || (!props.contextId && props.meetingNotes.length < 10)}
+                      disabled={props.isGenerating || (!selectedFolderId && props.meetingNotes.length < 10)}
                       className="w-full py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground rounded-xl font-black uppercase tracking-widest shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 flex items-center justify-center gap-3 transform hover:-translate-y-1 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                     >
                       {props.isGenerating ? (
@@ -417,26 +428,55 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                        {props.artifactTypes.find(t => t.value === props.selectedArtifactType)?.label || 'Select Artifact'}
                     </span>
                  </div>
-                 <div className="flex-1 overflow-hidden relative bg-background/20">
+                 <div className="flex-1 overflow-hidden relative bg-background/20 flex flex-col">
                     {/* Render appropriate editor based on artifact type */}
-                    {props.selectedArtifactType.includes('mermaid') || props.selectedArtifactType.includes('html') ? (
-                      <div className="h-full flex items-center justify-center p-8">
-                        <div className="text-center max-w-md">
-                          <FileCode className="w-20 h-20 mx-auto mb-6 text-primary opacity-80 animate-pulse" />
-                          <h3 className="text-2xl font-bold text-foreground mb-3">Diagram Preview</h3>
-                          <p className="text-muted-foreground mb-6 leading-relaxed">
-                            Your diagram has been generated! For full interactive editing with drag-and-drop, 
-                            colors, and AI improvements, open the <span className="font-bold text-primary">Canvas</span> page.
-                          </p>
+                    {props.selectedArtifactType.includes('mermaid') ? (
+                      <>
+                        {/* Mermaid Diagram Rendering */}
+                        <div className="flex-1 overflow-hidden">
+                          {(() => {
+                            const latestArtifact = props.getArtifactsByType(props.selectedArtifactType)?.[0]
+                            if (latestArtifact?.content) {
+                              return <MermaidRenderer content={latestArtifact.content} />
+                            } else if (props.progress?.artifact?.content) {
+                              return <MermaidRenderer content={props.progress.artifact.content} />
+                            } else {
+                              return (
+                                <div className="h-full flex items-center justify-center p-8">
+                                  <div className="text-center max-w-md">
+                                    <FileCode className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                                    <h3 className="text-lg font-semibold text-muted-foreground mb-2">No Diagram Generated Yet</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                      Click "Generate" to create your {props.artifactTypes.find(t => t.value === props.selectedArtifactType)?.label || 'diagram'}
+                                    </p>
+                                  </div>
+                                </div>
+                              )
+                            }
+                          })()}
+                        </div>
+                        {/* Small Footer - Canvas Editor Link */}
+                        <div className="border-t border-border px-4 py-3 bg-secondary/10 flex items-center justify-between flex-shrink-0">
+                          <span className="text-xs text-muted-foreground flex items-center gap-2">
+                            <Sparkles className="w-3 h-3 text-primary" />
+                            For interactive editing with drag-and-drop, use <strong>Canvas</strong>
+                          </span>
                           <button
                             onClick={() => window.location.href = '/canvas'}
-                            className="px-6 py-3 bg-primary text-primary-foreground rounded-lg font-semibold hover:bg-primary/90 transition-all shadow-lg hover:shadow-xl flex items-center gap-2 mx-auto"
+                            className="text-xs px-3 py-1.5 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors flex items-center gap-1.5 font-medium"
                           >
-                            <FileCode className="w-5 h-5" />
-                            Open Canvas Editor
+                            <Edit3 className="w-3 h-3" />
+                            Edit in Canvas
                           </button>
-                          <p className="text-xs text-muted-foreground mt-4">
-                            Or view the generated artifact in the <strong>Library</strong> tab
+                        </div>
+                      </>
+                    ) : props.selectedArtifactType.includes('html') ? (
+                      <div className="h-full flex items-center justify-center p-8">
+                        <div className="text-center max-w-md">
+                          <FileCode className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                          <h3 className="text-lg font-semibold text-foreground mb-2">HTML Artifact</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            View the generated HTML in the <strong>Library</strong> tab
                           </p>
                         </div>
                       </div>

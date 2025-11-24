@@ -82,14 +82,42 @@ export default function ModelMapping() {
 
   const downloadModel = async (modelId: string) => {
     try {
-      await api.post(`/api/huggingface/download/${modelId}`, {
+      const response = await api.post(`/api/huggingface/download/${modelId}`, {
         convert_to_ollama: true
       })
-      alert(`Download started for ${modelId}. Check Ollama for progress.`)
-      fetchModels() // Refresh model list
-    } catch (error) {
-      // Failed to download model - show user error
-      alert('Failed to start download')
+      
+      if (response.data.success) {
+        alert(`Download started for ${modelId}. This may take several minutes.`)
+        
+        // Poll for download status
+        const checkStatus = async () => {
+          try {
+            const statusResponse = await api.get(`/api/huggingface/download/${modelId}/status`)
+            const status = statusResponse.data
+            
+            if (status.status === 'completed') {
+              alert(`Model ${modelId} downloaded successfully!`)
+              fetchModels() // Refresh model list
+            } else if (status.status === 'failed') {
+              alert(`Download failed: ${status.error || 'Unknown error'}`)
+            } else if (status.status === 'downloading') {
+              // Check again in 5 seconds
+              setTimeout(checkStatus, 5000)
+            }
+          } catch (error) {
+            console.error('Error checking download status:', error)
+          }
+        }
+        
+        // Start checking status after 2 seconds
+        setTimeout(checkStatus, 2000)
+      } else {
+        alert(`Download failed: ${response.data.error || 'Unknown error'}`)
+      }
+    } catch (error: any) {
+      const errorMsg = error?.response?.data?.detail || error?.response?.data?.error || error?.message || 'Failed to start download'
+      alert(`Download error: ${errorMsg}`)
+      console.error('Download error:', error)
     }
   }
 

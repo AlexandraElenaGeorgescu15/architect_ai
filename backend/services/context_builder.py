@@ -86,7 +86,22 @@ class ContextBuilder:
         """
         # 🚀 STEP 1: Get Universal Context (baseline project knowledge)
         logger.info("🚀 Getting Universal Context - The baseline that knows your entire project by heart")
-        universal_ctx = await self.universal_context_service.get_universal_context()
+        
+        try:
+            universal_ctx = await self.universal_context_service.get_universal_context()
+            if not universal_ctx:
+                raise ValueError("Universal context service returned None")
+        except Exception as e:
+            logger.error(f"Failed to get universal context: {e}", exc_info=True)
+            # Fallback to empty universal context
+            universal_ctx = {
+                "project_directories": [],
+                "total_files": 0,
+                "key_entities": [],
+                "project_map": {},
+                "knowledge_graph": {"nodes": [], "edges": []},
+                "patterns": []
+            }
         
         context = {
             "meeting_notes": meeting_notes,
@@ -105,7 +120,7 @@ class ContextBuilder:
         
         # Check cache first
         cache_key = self._get_cache_key(meeting_notes, repo_id, include_rag, include_kg, include_patterns)
-        cached_context = self.rag_cache.get(meeting_notes)
+        cached_context = self.rag_cache.get_context(meeting_notes)
         
         if cached_context and not include_ml_features:
             logger.info("Using cached targeted context (with universal baseline)")
@@ -120,19 +135,24 @@ class ContextBuilder:
         # 🎯 STEP 2: Build targeted context on top of universal baseline
         logger.info("🎯 Building targeted context for this specific query")
         tasks = []
+        task_names = []
         
         if include_rag:
             # Use smart context that combines universal + targeted
             tasks.append(self._build_smart_rag_context(meeting_notes, max_rag_chunks, artifact_type))
+            task_names.append("rag")
         
         if include_kg:
             tasks.append(self._build_kg_context(meeting_notes, kg_depth))
+            task_names.append("kg")
         
         if include_patterns:
             tasks.append(self._build_pattern_context(meeting_notes))
+            task_names.append("patterns")
         
         if include_ml_features:
             tasks.append(self._build_ml_features_context(meeting_notes))
+            task_names.append("ml_features")
         
         # Execute all tasks in parallel
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -140,10 +160,10 @@ class ContextBuilder:
         # Process results
         for i, result in enumerate(results):
             if isinstance(result, Exception):
-                logger.error(f"Error building context source {i}: {result}", exc_info=result)
+                logger.error(f"Error building context source {task_names[i]}: {result}", exc_info=result)
                 continue
             
-            source_name = ["rag", "kg", "patterns", "ml_features"][i]
+            source_name = task_names[i]
             if result:
                 context["sources"][source_name] = result
         
@@ -154,7 +174,7 @@ class ContextBuilder:
         if include_rag and "rag" in context["sources"]:
             rag_context = context["sources"]["rag"].get("context", "")
             if rag_context:
-                self.rag_cache.set(meeting_notes, rag_context)
+                self.rag_cache.set_context(meeting_notes, rag_context)
         
         final_context = {
             **context,

@@ -390,6 +390,7 @@ class PatternMiner:
     def analyze_file(self, file_path: Path) -> Dict[str, Any]:
         """
         Analyze a single file for patterns, smells, and security issues.
+        Supports Python, C#, TypeScript, and JavaScript.
         
         Args:
             file_path: Path to file
@@ -403,33 +404,23 @@ class PatternMiner:
         if should_exclude_path(file_path):
             return {"excluded": True, "reason": "Tool directory"}
         
-        if file_path.suffix != '.py':
-            return {"error": "Only Python files supported currently"}
+        suffix = file_path.suffix.lower()
+        if suffix not in ['.py', '.cs', '.ts', '.tsx', '.js', '.jsx']:
+            return {"error": f"Unsupported file type: {suffix}"}
         
         try:
             with open(file_path, 'r', encoding='utf-8') as f:
                 content = f.read()
             
-            tree = ast.parse(content, filename=str(file_path))
-            
-            # Detect patterns
-            patterns = []
-            patterns.extend(self.detect_singleton(file_path, tree))
-            patterns.extend(self.detect_factory(file_path, tree))
-            patterns.extend(self.detect_observer(file_path, tree))
-            
-            # Detect code smells
-            smells = self.detect_code_smells(file_path, tree)
-            
-            # Detect security issues
-            security = self.detect_security_issues(file_path, content)
-            
-            return {
-                "file_path": str(file_path),
-                "patterns": [asdict(p) for p in patterns],
-                "code_smells": [asdict(s) for s in smells],
-                "security_issues": [asdict(sec) for sec in security]
-            }
+            # Dispatch based on file type
+            if suffix == '.py':
+                return self._analyze_python_file(file_path, content)
+            elif suffix == '.cs':
+                return self._analyze_csharp_file(file_path, content)
+            elif suffix in ['.ts', '.tsx', '.js', '.jsx']:
+                return self._analyze_typescript_file(file_path, content)
+            else:
+                return {"error": f"Unsupported file type: {suffix}"}
             
         except SyntaxError as e:
             logger.warning(f"Syntax error in {file_path}: {e}")
@@ -437,6 +428,182 @@ class PatternMiner:
         except Exception as e:
             logger.error(f"Error analyzing {file_path}: {e}", exc_info=True)
             return {"error": str(e)}
+    
+    def _analyze_python_file(self, file_path: Path, content: str) -> Dict[str, Any]:
+        """Analyze Python file using AST."""
+        tree = ast.parse(content, filename=str(file_path))
+        
+        # Detect patterns
+        patterns = []
+        patterns.extend(self.detect_singleton(file_path, tree))
+        patterns.extend(self.detect_factory(file_path, tree))
+        patterns.extend(self.detect_observer(file_path, tree))
+        
+        # Detect code smells
+        smells = self.detect_code_smells(file_path, tree)
+        
+        # Detect security issues
+        security = self.detect_security_issues(file_path, content)
+        
+        return {
+            "file_path": str(file_path),
+            "patterns": [asdict(p) for p in patterns],
+            "code_smells": [asdict(s) for s in smells],
+            "security_issues": [asdict(sec) for sec in security]
+        }
+        
+    def _analyze_csharp_file(self, file_path: Path, content: str) -> Dict[str, Any]:
+        """Analyze C# file using regex patterns."""
+        patterns = []
+        smells = []
+        security = []
+        
+        # Detect Singleton pattern (sealed class with private constructor and static Instance)
+        if re.search(r'sealed\s+class\s+\w+.*?private\s+\w+\s*\(\)', content, re.DOTALL):
+            if re.search(r'public\s+static\s+\w+\s+Instance', content):
+                patterns.append(PatternMatch(
+                    pattern_name="Singleton",
+                    location=f"{file_path}:1",
+                    confidence=0.8,
+                    details={"language": "C#", "type": "Creational"},
+                    severity="info"
+                ))
+        
+        # Detect Factory pattern (class name contains "Factory" and has Create/Build methods)
+        if re.search(r'class\s+\w*Factory\w*', content):
+            if re.search(r'public\s+\w+\s+(Create|Build)\w*\s*\(', content):
+                patterns.append(PatternMatch(
+                    pattern_name="Factory",
+                    location=f"{file_path}:1",
+                    confidence=0.75,
+                    details={"language": "C#", "type": "Creational"},
+                    severity="info"
+                ))
+        
+        # Detect Repository pattern
+        if re.search(r'interface\s+I\w*Repository', content) or re.search(r'class\s+\w*Repository', content):
+            patterns.append(PatternMatch(
+                pattern_name="Repository",
+                location=f"{file_path}:1",
+                confidence=0.85,
+                details={"language": "C#", "type": "Structural"},
+                severity="info"
+            ))
+        
+        # Detect large methods (code smell)
+        method_matches = re.finditer(r'(public|private|protected)\s+\w+\s+\w+\s*\([^)]*\)\s*{', content)
+        for match in method_matches:
+            start = match.end()
+            brace_count = 1
+            end = start
+            for i in range(start, len(content)):
+                if content[i] == '{':
+                    brace_count += 1
+                elif content[i] == '}':
+                    brace_count -= 1
+                    if brace_count == 0:
+                        end = i
+                        break
+            
+            method_lines = content[start:end].count('\n')
+            if method_lines > 50:
+                line_num = content[:start].count('\n') + 1
+                smells.append(CodeSmell(
+                    smell_type="Long Method",
+                    location=f"{file_path}:{line_num}",
+                    severity="warning",
+                    description=f"Method has {method_lines} lines (recommended: < 50)",
+                    suggestion="Consider breaking this method into smaller, focused methods"
+                ))
+        
+        return {
+            "file_path": str(file_path),
+            "patterns": [asdict(p) for p in patterns],
+            "code_smells": [asdict(s) for s in smells],
+            "security_issues": [asdict(sec) for sec in security]
+        }
+    
+    def _analyze_typescript_file(self, file_path: Path, content: str) -> Dict[str, Any]:
+        """Analyze TypeScript/JavaScript file using regex patterns."""
+        patterns = []
+        smells = []
+        security = []
+        
+        # Detect Singleton pattern (class with private constructor and getInstance)
+        if re.search(r'class\s+\w+.*?private\s+constructor', content, re.DOTALL):
+            if re.search(r'static\s+getInstance', content):
+                patterns.append(PatternMatch(
+                    pattern_name="Singleton",
+                    location=f"{file_path}:1",
+                    confidence=0.8,
+                    details={"language": "TypeScript", "type": "Creational"},
+                    severity="info"
+                ))
+        
+        # Detect Factory pattern
+        if re.search(r'(class|function)\s+\w*Factory\w*', content):
+            if re.search(r'(create|build)\w*\s*\(', content, re.IGNORECASE):
+                patterns.append(PatternMatch(
+                    pattern_name="Factory",
+                    location=f"{file_path}:1",
+                    confidence=0.75,
+                    details={"language": "TypeScript", "type": "Creational"},
+                    severity="info"
+                ))
+        
+        # Detect Observer pattern (EventEmitter, addEventListener, or subject/observer)
+        if re.search(r'(EventEmitter|addEventListener|removeEventListener)', content):
+            patterns.append(PatternMatch(
+                pattern_name="Observer",
+                location=f"{file_path}:1",
+                confidence=0.7,
+                details={"language": "TypeScript", "type": "Behavioral"},
+                severity="info"
+            ))
+        
+        # Detect custom hooks pattern (React)
+        hook_matches = re.findall(r'export\s+(function|const)\s+(use[A-Z]\w+)', content)
+        if hook_matches:
+            patterns.append(PatternMatch(
+                pattern_name="Custom Hook",
+                location=f"{file_path}:1",
+                confidence=0.9,
+                details={"language": "TypeScript/React", "type": "Architectural", "hooks": [h[1] for h in hook_matches]},
+                severity="info"
+            ))
+        
+        # Detect long functions (code smell)
+        function_matches = re.finditer(r'(function|const)\s+\w+\s*[=\(][^{]*{', content)
+        for match in function_matches:
+            start = match.end() - 1  # Start at the opening brace
+            brace_count = 0
+            end = start
+            for i in range(start, len(content)):
+                if content[i] == '{':
+                    brace_count += 1
+                elif content[i] == '}':
+                    brace_count -= 1
+                    if brace_count == 0:
+                        end = i
+                        break
+            
+            func_lines = content[start:end].count('\n')
+            if func_lines > 50:
+                line_num = content[:start].count('\n') + 1
+                smells.append(CodeSmell(
+                    smell_type="Long Function",
+                    location=f"{file_path}:{line_num}",
+                    severity="warning",
+                    description=f"Function has {func_lines} lines (recommended: < 50)",
+                    suggestion="Consider breaking this function into smaller, focused functions"
+                ))
+        
+        return {
+            "file_path": str(file_path),
+            "patterns": [asdict(p) for p in patterns],
+            "code_smells": [asdict(s) for s in smells],
+            "security_issues": [asdict(sec) for sec in security]
+        }
     
     def analyze_directory(
         self,
@@ -466,9 +633,16 @@ class PatternMiner:
             logger.warning(f"Directory {directory} not in user project directories")
             return {"error": "Directory not in user project"}
         
-        # Find all Python files
-        pattern = "**/*.py" if recursive else "*.py"
-        files = list(directory.rglob(pattern)) if recursive else list(directory.glob(pattern))
+        # Find all source code files (Python, C#, TypeScript, JavaScript)
+        file_extensions = ["*.py", "*.cs", "*.ts", "*.tsx", "*.js", "*.jsx"]
+        files = []
+        
+        for ext in file_extensions:
+            pattern = f"**/{ext}" if recursive else ext
+            if recursive:
+                files.extend(directory.rglob(ext))
+            else:
+                files.extend(directory.glob(ext))
         
         logger.info(f"Analyzing {len(files)} files for patterns...")
         

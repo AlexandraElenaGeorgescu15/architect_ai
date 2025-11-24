@@ -44,11 +44,11 @@
     "provider": "groq",
     "size_gb": null,
     "vram_required_gb": null,
-    "status": "no_api_key",
+    "status": "available",
     "is_trained": false,
     "base_model": null,
     "metadata": {
-      "api_key_configured": false
+      "api_key_configured": true
     }
   },
   "groq:llama-3.1-70b-versatile": {
@@ -57,11 +57,11 @@
     "provider": "groq",
     "size_gb": null,
     "vram_required_gb": null,
-    "status": "no_api_key",
+    "status": "available",
     "is_trained": false,
     "base_model": null,
     "metadata": {
-      "api_key_configured": false
+      "api_key_configured": true
     }
   },
   "groq:llama-3.1-8b-instant": {
@@ -70,11 +70,11 @@
     "provider": "groq",
     "size_gb": null,
     "vram_required_gb": null,
-    "status": "no_api_key",
+    "status": "available",
     "is_trained": false,
     "base_model": null,
     "metadata": {
-      "api_key_configured": false
+      "api_key_configured": true
     }
   },
   "groq:mixtral-8x7b-32768": {
@@ -83,11 +83,11 @@
     "provider": "groq",
     "size_gb": null,
     "vram_required_gb": null,
-    "status": "no_api_key",
+    "status": "available",
     "is_trained": false,
     "base_model": null,
     "metadata": {
-      "api_key_configured": false
+      "api_key_configured": true
     }
   },
   "openai:gpt-4-turbo": {

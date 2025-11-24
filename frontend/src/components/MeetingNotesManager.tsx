@@ -485,7 +485,7 @@ export default function MeetingNotesManager() {
                     >
                       <Check className="w-4 h-4" />
                     </button>
-                    <button
+              <button
                       onClick={() => {
                         setRenamingFolder(null)
                         setNewFolderNameEdit('')
@@ -496,24 +496,27 @@ export default function MeetingNotesManager() {
                     </button>
                   </div>
                 ) : (
-                  <button
-                    onClick={() => setSelectedFolder(folder.id)}
-                    className={`w-full text-left p-3 rounded-lg transition-all duration-200 flex items-center justify-between group ${
-                      selectedFolder === folder.id
-                        ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-                        : 'hover:bg-background/50 text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <Folder className={`w-4 h-4 ${selectedFolder === folder.id ? 'fill-current' : ''}`} />
-                      <span className="font-medium text-sm">{folder.name}</span>
-                    </div>
+                  <div
+                onClick={() => setSelectedFolder(folder.id)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedFolder(folder.id) }}
+                    className={`w-full text-left p-3 rounded-lg transition-all duration-200 flex items-center justify-between group cursor-pointer ${
+                  selectedFolder === folder.id
+                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+                    : 'hover:bg-background/50 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Folder className={`w-4 h-4 ${selectedFolder === folder.id ? 'fill-current' : ''}`} />
+                  <span className="font-medium text-sm">{folder.name}</span>
+                </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        selectedFolder === folder.id ? 'bg-white/20' : 'bg-black/10'
-                      }`}>
-                        {folder.notes_count}
-                      </span>
+                <span className={`text-xs px-2 py-0.5 rounded-full ${
+                   selectedFolder === folder.id ? 'bg-white/20' : 'bg-black/10'
+                }`}>
+                   {folder.notes_count}
+                </span>
                       <div className="relative">
                         <button
                           onClick={(e) => {
@@ -557,7 +560,7 @@ export default function MeetingNotesManager() {
                         )}
                       </div>
                     </div>
-                  </button>
+                  </div>
                 )}
               </div>
             ))}
