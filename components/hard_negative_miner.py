@@ -11,7 +11,7 @@ Strategy:
 Improves edge case handling by ~20-30%.
 """
 
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Any
 from dataclasses import dataclass, field
 from collections import defaultdict
 import json

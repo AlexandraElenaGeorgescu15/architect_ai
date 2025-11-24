@@ -161,7 +161,8 @@ class RAGCache:
         """
         if meeting_notes:
             # Invalidate specific entry
-            notes_hash = self._get_hash(meeting_notes)
+            repo_mtime = self._get_repo_modification_time()
+            notes_hash = self._get_hash(meeting_notes, repo_mtime)
             
             # Clear from memory
             if notes_hash in self._memory_cache:

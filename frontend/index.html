@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Architect.AI - AI-Powered Architecture Generation</title>
+    <style>
+      /* Critical CSS - Force dark mode colors immediately */
+      .dark {
+        --background: 220 40% 6%;
+        --foreground: 0 0% 100%;
+        --card: 220 30% 14%;
+        --card-foreground: 0 0% 100%;
+        --primary: 199 100% 60%;
+        --primary-foreground: 220 40% 6%;
+        --muted: 220 30% 18%;
+        --muted-foreground: 220 15% 85%;
+        --accent: 142 76% 55%;
+        --border: 220 25% 28%;
+      }
+      
+      /* Apply dark mode immediately if stored */
+      html.dark {
+        background-color: hsl(220, 40%, 6%);
+        color: hsl(0, 0%, 100%);
+      }
+    </style>
+    <script>
+      // Apply dark mode class immediately before any rendering
+      (function() {
+        const isDark = localStorage.getItem('darkMode') === 'true';
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
+

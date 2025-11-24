@@ -80,78 +80,9 @@ SUPPORTED_DATASET_EXTENSIONS = {
 }
 
 BUILTIN_MERMAID_ARTIFACTS: List[Dict[str, str]] = [
-    # === ERD EXAMPLES ===
-    {
-        "instruction": "Generate a clean ERD diagram for the following entities.",
-        "input": "Entities: User (id, email, name), Post (id, title, content, userId), Comment (id, text, postId, userId)",
-        "output": (
-            "erDiagram\n"
-            "    User ||--o{ Post : creates\n"
-            "    User ||--o{ Comment : writes\n"
-            "    Post ||--o{ Comment : has\n"
-            "\n"
-            "    User {\n"
-            "        int id PK\n"
-            "        string email\n"
-            "        string name\n"
-            "    }\n"
-            "\n"
-            "    Post {\n"
-            "        int id PK\n"
-            "        string title\n"
-            "        string content\n"
-            "        int userId FK\n"
-            "    }\n"
-            "\n"
-            "    Comment {\n"
-            "        int id PK\n"
-            "        string text\n"
-            "        int postId FK\n"
-            "        int userId FK\n"
-            "    }"
-        ),
-    },
-    {
-        "instruction": "Generate an ERD for an e-commerce system.",
-        "input": "Requirements: Track customers, orders, products, and order items with proper relationships.",
-        "output": (
-            "erDiagram\n"
-            "    Customer ||--o{ Order : places\n"
-            "    Order ||--o{ OrderItem : contains\n"
-            "    Product ||--o{ OrderItem : orderedAs\n"
-            "\n"
-            "    Customer {\n"
-            "        int id PK\n"
-            "        string email\n"
-            "        string name\n"
-            "        string address\n"
-            "    }\n"
-            "\n"
-            "    Order {\n"
-            "        int id PK\n"
-            "        int customerId FK\n"
-            "        date orderDate\n"
-            "        string status\n"
-            "        decimal total\n"
-            "    }\n"
-            "\n"
-            "    Product {\n"
-            "        int id PK\n"
-            "        string name\n"
-            "        string description\n"
-            "        decimal price\n"
-            "        int stock\n"
-            "    }\n"
-            "\n"
-            "    OrderItem {\n"
-            "        int id PK\n"
-            "        int orderId FK\n"
-            "        int productId FK\n"
-            "        int quantity\n"
-            "        decimal price\n"
-            "    }"
-        ),
-    },
+    # NOTE: ERD examples are now provided by expanded_artifact_examples.ERD_EXAMPLES (50+ examples)
+    # This list focuses on other artifact types not covered by expanded_artifact_examples
+    
     # === FLOWCHART EXAMPLES ===
     {
         "instruction": "Create a flowchart for user authentication flow.",
@@ -5326,10 +5257,15 @@ class FineTuningDatasetBuilder:
         return summary
 
     def _generate_builtin_artifact_examples(self) -> List[Dict[str, str]]:
-        """Generate examples from BUILTIN_MERMAID_ARTIFACTS + ALL_EXPANDED_EXAMPLES (100+ examples)."""
+        """
+        Generate examples from BUILTIN_MERMAID_ARTIFACTS + ALL_EXPANDED_EXAMPLES (100+ examples).
+        
+        Note: ERD examples are provided by expanded_artifact_examples.ERD_EXAMPLES to avoid duplication.
+        BUILTIN_MERMAID_ARTIFACTS now focuses on flowchart, API docs, code, and JIRA examples.
+        """
         examples: List[Dict[str, str]] = []
         
-        # Original builtin examples
+        # Builtin examples (flowchart, API docs, code, JIRA - ERD examples removed to avoid duplication)
         for artifact in BUILTIN_MERMAID_ARTIFACTS:
             instruction = artifact["instruction"]
             input_text = artifact["input"]

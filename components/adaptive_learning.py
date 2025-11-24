@@ -30,61 +30,12 @@ if sys.platform == 'win32':
 import json
 import time
 from typing import Dict, List, Tuple, Optional, Any
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict
 from pathlib import Path
 from datetime import datetime
-from enum import Enum
 import asyncio
 
-
-class FeedbackType(Enum):
-    """Type of feedback received"""
-    SUCCESS = "success"  # AI output accepted without changes
-    USER_CORRECTION = "user_correction"  # User modified AI output
-    VALIDATION_FAILURE = "validation_failure"  # Failed programmatic validation
-    EXPLICIT_POSITIVE = "explicit_positive"  # User clicked "Good"
-    EXPLICIT_NEGATIVE = "explicit_negative"  # User clicked "Bad"
-
-
-@dataclass
-class FeedbackEvent:
-    """Single feedback event from production"""
-    timestamp: float
-    feedback_type: FeedbackType
-    input_data: str  # Original user request
-    ai_output: str  # What AI generated
-    corrected_output: Optional[str]  # What user corrected it to (if applicable)
-    context: Dict[str, Any]  # RAG context, meeting notes, etc.
-    validation_score: float  # 0-100 from output_validator
-    artifact_type: str  # 'erd', 'code', 'html', etc.
-    model_used: str  # Which model generated this
-    reward_signal: float  # -1 to +1 (RL reward)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    
-    def to_training_example(self) -> Dict[str, str]:
-        """Convert to training example format"""
-        # For successful outputs, use AI output
-        # For corrected outputs, use user correction as target
-        target = self.corrected_output if self.corrected_output else self.ai_output
-        
-        return {
-            'instruction': f"Generate {self.artifact_type}",
-            'input': self.input_data,
-            'output': target,
-            'context': json.dumps(self.context),
-            'quality_score': self.validation_score
-        }
-
-
-@dataclass
-class TrainingBatch:
-    """Batch of training examples ready for fine-tuning"""
-    batch_id: str
-    created_at: float
-    examples: List[Dict[str, str]]
-    priority: int  # 1-10, higher = more important
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
+from components.feedback_models import FeedbackEvent, FeedbackType, TrainingBatch
 
 class RewardCalculator:
     """
@@ -332,14 +283,7 @@ class AdaptiveLearningLoop:
         # Trigger fine-tuning for this specific pair
         self._trigger_finetuning_for_pair(batch, artifact_type, model_used)
     
-    def _create_training_batch(self, events: List[FeedbackEvent]):
-        """DEPRECATED: Use _create_training_batch_for_pair instead"""
-        # Fallback for old code paths
-        if not events:
-            return
-        artifact_type = events[0].artifact_type
-        model_used = events[0].model_used
-        self._create_training_batch_for_pair(artifact_type, model_used, events)
+    # Removed deprecated _create_training_batch method - use _create_training_batch_for_pair instead
     
     def _trigger_finetuning_for_pair(
         self, 

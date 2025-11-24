@@ -1,1 +1,0 @@
-{"timestamp": 1762543903.9985662, "feedback_type": "success", "input_data": "Generate ERD for user system", "ai_output": "erDiagram\n  User ||--o{ Role : has", "corrected_output": null, "context": {"test": "simple"}, "validation_score": 85.0, "artifact_type": "erd", "model_used": "codellama:7b", "reward_signal": 0.7, "metadata": {}}

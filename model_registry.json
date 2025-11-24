@@ -1,149 +1,314 @@
 {
-  "codellama-7b-finetuned-20251102_163319": {
-    "model_id": "codellama-7b-finetuned-20251102_163319",
-    "model_name": "Codellama 7B (Fine-tuned)",
-    "base_model": "codellama-7b",
-    "status": "trained",
-    "model_path": "./finetuned_models/codellama-7b_finetuned",
-    "created_at": "2025-11-02T16:33:19.068526",
-    "trained_at": "2025-11-02T16:33:19.068526",
-    "training_config": {
-      "model_name": "codellama-7b",
-      "epochs": 3,
-      "learning_rate": 0.002,
-      "batch_size": 2,
-      "lora_rank": 8,
-      "lora_alpha": 16,
-      "lora_dropout": 0.05,
-      "use_4bit": true,
-      "use_8bit": false,
-      "max_length": 512
-    },
-    "metrics": {
-      "final_loss": 0.44760213212834465,
-      "epochs_completed": 3
+  "gemini:gemini-2.0-flash-exp": {
+    "id": "gemini:gemini-2.0-flash-exp",
+    "name": "Gemini 2.0 Flash Experimental",
+    "provider": "gemini",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": true
     }
   },
-  "codellama-7b-finetuned-20251103_220708": {
-    "model_id": "codellama-7b-finetuned-20251103_220708",
-    "model_name": "Codellama 7B (Fine-tuned)",
-    "base_model": "codellama-7b",
-    "status": "trained",
-    "model_path": "finetuned_models\\codellama-7b\\codellama-7b_finetuned-20251103_220707",
-    "created_at": "2025-11-03T22:07:08.180826",
-    "trained_at": "2025-11-03T22:07:08.180826",
-    "training_config": {
-      "model_name": "codellama-7b",
-      "epochs": 3,
-      "learning_rate": 0.002,
-      "batch_size": 2,
-      "lora_rank": 16,
-      "lora_alpha": 32,
-      "lora_dropout": 0.05,
-      "use_4bit": true,
-      "use_8bit": false,
-      "max_length": 512
-    },
-    "metrics": {
-      "final_loss": 1.2063082343056089,
-      "epochs_completed": 3
+  "gemini:gemini-1.5-pro": {
+    "id": "gemini:gemini-1.5-pro",
+    "name": "Gemini 1.5 Pro",
+    "provider": "gemini",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": true
     }
   },
-  "codellama-7b-finetuned-20251104_093722": {
-    "model_id": "codellama-7b-finetuned-20251104_093722",
-    "model_name": "Codellama 7B (Fine-tuned)",
-    "base_model": "codellama-7b",
-    "status": "trained",
-    "model_path": "finetuned_models\\codellama-7b\\codellama-7b_finetuned-20251104_093722",
-    "created_at": "2025-11-04T09:37:22.757533",
-    "trained_at": "2025-11-04T09:37:22.757533",
-    "training_config": {
-      "model_name": "codellama-7b",
-      "epochs": 3,
-      "learning_rate": 0.002,
-      "batch_size": 2,
-      "lora_rank": 16,
-      "lora_alpha": 32,
-      "lora_dropout": 0.05,
-      "use_4bit": true,
-      "use_8bit": false,
-      "max_length": 512
-    },
-    "metrics": {
-      "final_loss": 8.30685043334961,
-      "epochs_completed": 3
+  "gemini:gemini-1.5-flash": {
+    "id": "gemini:gemini-1.5-flash",
+    "name": "Gemini 1.5 Flash",
+    "provider": "gemini",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": true
     }
   },
-  "codellama-7b-finetuned-20251105_151102": {
-    "model_id": "codellama-7b-finetuned-20251105_151102",
-    "model_name": "Codellama 7B (Fine-tuned)",
-    "base_model": "codellama-7b",
-    "status": "trained",
-    "model_path": "finetuned_models\\codellama-7b\\codellama-7b_finetuned-20251105_151102",
-    "created_at": "2025-11-05T15:11:02.932853",
-    "trained_at": "2025-11-05T15:11:02.932853",
-    "training_config": {
-      "model_name": "codellama-7b",
-      "epochs": 10,
-      "learning_rate": 0.00032,
-      "batch_size": 4,
-      "lora_rank": 29,
-      "lora_alpha": 59,
-      "lora_dropout": 0.05,
-      "use_4bit": true,
-      "use_8bit": false,
-      "max_length": 512
-    },
-    "metrics": {
-      "final_loss": 2.0802550293150404,
-      "epochs_completed": 10
+  "groq:llama-3.3-70b-versatile": {
+    "id": "groq:llama-3.3-70b-versatile",
+    "name": "Llama 3.3 70B Versatile",
+    "provider": "groq",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "no_api_key",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": false
     }
   },
-  "codellama-7b-finetuned-20251105_173606": {
-    "model_id": "codellama-7b-finetuned-20251105_173606",
-    "model_name": "Codellama 7B (Fine-tuned)",
-    "base_model": "codellama-7b",
-    "status": "trained",
-    "model_path": "finetuned_models\\codellama-7b\\codellama-7b_finetuned-20251105_173606",
-    "created_at": "2025-11-05T17:36:06.410764",
-    "trained_at": "2025-11-05T17:36:06.410764",
-    "training_config": {
-      "model_name": "codellama-7b",
-      "epochs": 3,
-      "learning_rate": 0.0002,
-      "batch_size": 2,
-      "lora_rank": 16,
-      "lora_alpha": 32,
-      "lora_dropout": 0.05,
-      "use_4bit": true,
-      "use_8bit": false,
-      "max_length": 512
-    },
-    "metrics": {
-      "final_loss": 2.4016088008880616,
-      "epochs_completed": 3
+  "groq:llama-3.1-70b-versatile": {
+    "id": "groq:llama-3.1-70b-versatile",
+    "name": "Llama 3.1 70B Versatile",
+    "provider": "groq",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "no_api_key",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": false
     }
   },
-  "deepseek-coder-6.7b-downloaded": {
-    "model_id": "deepseek-coder-6.7b-downloaded",
-    "model_name": "Deepseek Coder 6.7B",
-    "base_model": "deepseek-coder-6.7b",
-    "status": "downloaded",
-    "model_path": "models\\deepseek-coder-6.7b",
-    "created_at": "2025-11-12T16:19:54.557642",
-    "trained_at": null,
-    "training_config": null,
-    "metrics": null
+  "groq:llama-3.1-8b-instant": {
+    "id": "groq:llama-3.1-8b-instant",
+    "name": "Llama 3.1 8B Instant",
+    "provider": "groq",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "no_api_key",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": false
+    }
   },
-  "mistral-7b-downloaded": {
-    "model_id": "mistral-7b-downloaded",
-    "model_name": "Mistral 7B",
-    "base_model": "mistral-7b",
-    "status": "downloaded",
-    "model_path": "models\\mistral-7b",
-    "created_at": "2025-11-12T16:49:48.144895",
-    "trained_at": null,
-    "training_config": null,
-    "metrics": null
+  "groq:mixtral-8x7b-32768": {
+    "id": "groq:mixtral-8x7b-32768",
+    "name": "Mixtral 8x7B",
+    "provider": "groq",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "no_api_key",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": false
+    }
+  },
+  "openai:gpt-4-turbo": {
+    "id": "openai:gpt-4-turbo",
+    "name": "GPT-4 Turbo",
+    "provider": "openai",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": true
+    }
+  },
+  "openai:gpt-4": {
+    "id": "openai:gpt-4",
+    "name": "GPT-4",
+    "provider": "openai",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": true
+    }
+  },
+  "openai:gpt-3.5-turbo": {
+    "id": "openai:gpt-3.5-turbo",
+    "name": "GPT-3.5 Turbo",
+    "provider": "openai",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": true
+    }
+  },
+  "anthropic:claude-3-5-sonnet-20241022": {
+    "id": "anthropic:claude-3-5-sonnet-20241022",
+    "name": "Claude 3.5 Sonnet",
+    "provider": "anthropic",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "no_api_key",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": false
+    }
+  },
+  "anthropic:claude-3-opus-20240229": {
+    "id": "anthropic:claude-3-opus-20240229",
+    "name": "Claude 3 Opus",
+    "provider": "anthropic",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "no_api_key",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": false
+    }
+  },
+  "anthropic:claude-3-sonnet-20240229": {
+    "id": "anthropic:claude-3-sonnet-20240229",
+    "name": "Claude 3 Sonnet",
+    "provider": "anthropic",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "no_api_key",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": false
+    }
+  },
+  "ollama:deepseek-coder:6.7b-instruct-q4_K_M": {
+    "id": "ollama:deepseek-coder:6.7b-instruct-q4_K_M",
+    "name": "deepseek-coder:6.7b-instruct-q4_K_M",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 4083031689
+    }
+  },
+  "ollama:qwen2.5-coder:7b-instruct-q4_K_M": {
+    "id": "ollama:qwen2.5-coder:7b-instruct-q4_K_M",
+    "name": "qwen2.5-coder:7b-instruct-q4_K_M",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 4683087561
+    }
+  },
+  "ollama:mistral-nemo:12b-instruct-2407-q4_K_M": {
+    "id": "ollama:mistral-nemo:12b-instruct-2407-q4_K_M",
+    "name": "mistral-nemo:12b-instruct-2407-q4_K_M",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 7477217229
+    }
+  },
+  "ollama:qwen2.5-coder:14b-instruct-q4_K_M": {
+    "id": "ollama:qwen2.5-coder:14b-instruct-q4_K_M",
+    "name": "qwen2.5-coder:14b-instruct-q4_K_M",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 8988124298
+    }
+  },
+  "ollama:mistral:7b-instruct": {
+    "id": "ollama:mistral:7b-instruct",
+    "name": "mistral:7b-instruct",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 4372824384
+    }
+  },
+  "ollama:codellama:7b-instruct": {
+    "id": "ollama:codellama:7b-instruct",
+    "name": "codellama:7b-instruct",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 3825910662
+    }
+  },
+  "ollama:llama3:8b-instruct-q4_K_M": {
+    "id": "ollama:llama3:8b-instruct-q4_K_M",
+    "name": "llama3:8b-instruct-q4_K_M",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 4920747238
+    }
+  },
+  "ollama:mistral:7b-instruct-q4_K_M": {
+    "id": "ollama:mistral:7b-instruct-q4_K_M",
+    "name": "mistral:7b-instruct-q4_K_M",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 4369387754
+    }
+  },
+  "ollama:mistral:7b": {
+    "id": "ollama:mistral:7b",
+    "name": "mistral:7b",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 4372824384
+    }
+  },
+  "ollama:llama3.2:3b": {
+    "id": "ollama:llama3.2:3b",
+    "name": "llama3.2:3b",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 2019393189
+    }
+  },
+  "ollama:codellama:7b-instruct-q4_K_M": {
+    "id": "ollama:codellama:7b-instruct-q4_K_M",
+    "name": "codellama:7b-instruct-q4_K_M",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 4081107848
+    }
   }
 }

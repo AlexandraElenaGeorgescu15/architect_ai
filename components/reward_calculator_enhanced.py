@@ -10,35 +10,9 @@ Implements sophisticated reward calculation with:
 import math
 import time
 from typing import Dict, Any, Optional
-from dataclasses import dataclass
 from collections import defaultdict
-from enum import Enum
 
-
-class FeedbackType(Enum):
-    """Type of feedback received"""
-    SUCCESS = "success"
-    USER_CORRECTION = "user_correction"
-    VALIDATION_FAILURE = "validation_failure"
-    EXPLICIT_POSITIVE = "explicit_positive"
-    EXPLICIT_NEGATIVE = "explicit_negative"
-
-
-@dataclass
-class FeedbackEvent:
-    """Single feedback event from production"""
-    timestamp: float
-    feedback_type: FeedbackType
-    input_data: str
-    ai_output: str
-    corrected_output: Optional[str]
-    context: Dict[str, Any]
-    validation_score: float
-    artifact_type: str
-    model_used: str
-    reward_signal: float = 0.0
-    metadata: Dict[str, Any] = None
-
+from components.feedback_models import FeedbackEvent, FeedbackType
 
 class DifficultyEstimator:
     """Estimate example difficulty for weighting"""

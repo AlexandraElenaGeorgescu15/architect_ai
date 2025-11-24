@@ -1,0 +1,189 @@
+/**
+ * Sequence Diagram Adapter
+ * Handles Mermaid sequence diagrams
+ */
+
+import { BaseDiagramAdapter, DiagramParseResult, MermaidGenerateOptions } from './baseDiagramAdapter'
+import { ReactFlowNode, ReactFlowEdge } from '../diagramService'
+
+export class SequenceAdapter extends BaseDiagramAdapter {
+  parseFromMermaid(mermaidCode: string): DiagramParseResult {
+    const nodes: ReactFlowNode[] = []
+    const edges: ReactFlowEdge[] = []
+
+    // Extract participants
+    const participantRegex = /participant\s+(\w+)(?:\s+as\s+(.+))?/g
+    const participantMatches = mermaidCode.matchAll(participantRegex)
+
+    const participants = new Map<string, string>()
+
+    for (const match of participantMatches) {
+      const id = match[1]
+      const label = match[2]?.trim() || id
+      participants.set(id, label)
+    }
+
+    // Extract messages (interactions)
+    const messageRegex = /(\w+)\s*(->>?|-->>?)\s*(\w+)\s*:\s*([^\n]+)/g
+    const messageMatches = mermaidCode.matchAll(messageRegex)
+
+    // Auto-detect participants from messages if not explicitly declared
+    for (const match of messageMatches) {
+      const from = match[1]
+      const to = match[3]
+      if (!participants.has(from)) {
+        participants.set(from, from)
+      }
+      if (!participants.has(to)) {
+        participants.set(to, to)
+      }
+    }
+
+    // Create participant nodes (horizontal layout)
+    let index = 0
+    const horizontalSpacing = 250
+    for (const [id, label] of participants.entries()) {
+      nodes.push({
+        id,
+        type: 'participant',
+        data: {
+          label,
+          color: this.getColorForParticipant(label),
+        },
+        position: {
+          x: index * horizontalSpacing + 100,
+          y: 100,
+        },
+      })
+      index++
+    }
+
+    // Create message edges (vertical flow)
+    let messageIndex = 0
+    const messageMatchesArray = Array.from(mermaidCode.matchAll(messageRegex))
+
+    for (let i = 0; i < messageMatchesArray.length; i++) {
+      const match = messageMatchesArray[i]
+      const from = match[1]
+      const arrowType = match[2]
+      const to = match[3]
+      const message = match[4]?.trim()
+
+      // Determine if it's synchronous or asynchronous
+      const isAsync = arrowType.includes('--')
+
+      edges.push({
+        id: `msg_${messageIndex++}`,
+        source: from,
+        target: to,
+        label: message,
+        type: 'message',
+        data: {
+          messageType: isAsync ? 'async' : 'sync',
+          order: i + 1,
+        },
+      } as any)
+    }
+
+    return { nodes, edges }
+  }
+
+  generateMermaid(
+    nodes: ReactFlowNode[],
+    edges: ReactFlowEdge[],
+    options?: MermaidGenerateOptions
+  ): string {
+    if (nodes.length === 0) {
+      return 'sequenceDiagram\n  participant A\n  participant B\n  A->>B: Message'
+    }
+
+    let mermaid = 'sequenceDiagram\n'
+
+    // Add participants
+    for (const node of nodes) {
+      const id = this.sanitizeId(node.id)
+      const label = this.sanitizeLabel(node.data.label || node.id)
+      
+      if (id === label) {
+        mermaid += `  participant ${id}\n`
+      } else {
+        mermaid += `  participant ${id} as ${label}\n`
+      }
+    }
+
+    mermaid += '\n'
+
+    // Sort edges by order if available
+    const sortedEdges = [...edges].sort((a, b) => {
+      const orderA = (a as any).data?.order || 0
+      const orderB = (b as any).data?.order || 0
+      return orderA - orderB
+    })
+
+    // Add messages
+    for (const edge of sortedEdges) {
+      const from = this.sanitizeId(edge.source)
+      const to = this.sanitizeId(edge.target)
+      const message = this.sanitizeLabel(edge.label || 'Message')
+      const messageType = (edge as any).data?.messageType || 'sync'
+
+      const arrow = messageType === 'async' ? '-->>' : '->>'
+
+      mermaid += `  ${from}${arrow}${to}: ${message}\n`
+    }
+
+    return mermaid
+  }
+
+  validate(mermaidCode: string): { valid: boolean; errors: string[] } {
+    const errors: string[] = []
+
+    if (!mermaidCode.includes('sequenceDiagram')) {
+      errors.push('Missing "sequenceDiagram" declaration')
+    }
+
+    // Check for at least one message
+    if (!mermaidCode.match(/\w+\s*(->>?|-->>?)\s*\w+/)) {
+      errors.push('No messages found. Use format: A->>B: message')
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors,
+    }
+  }
+
+  getDefaultNodeType(): string {
+    return 'participant'
+  }
+
+  getDefaultEdgeType(): string {
+    return 'message'
+  }
+
+  /**
+   * Assign colors based on participant role
+   */
+  private getColorForParticipant(label: string): string {
+    const lowerLabel = label.toLowerCase()
+
+    if (lowerLabel.includes('user') || lowerLabel.includes('client')) {
+      return '#3b82f6' // blue
+    }
+    if (lowerLabel.includes('server') || lowerLabel.includes('api')) {
+      return '#22c55e' // green
+    }
+    if (lowerLabel.includes('database') || lowerLabel.includes('db')) {
+      return '#f97316' // orange
+    }
+    if (lowerLabel.includes('cache') || lowerLabel.includes('redis')) {
+      return '#ef4444' // red
+    }
+    if (lowerLabel.includes('queue') || lowerLabel.includes('mq')) {
+      return '#a855f7' // purple
+    }
+
+    return '#6366f1' // default indigo
+  }
+}
+

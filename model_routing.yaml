@@ -1,0 +1,318 @@
+api_docs:
+  enabled: true
+  fallback_models:
+  - ollama:llama3
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:codellama
+backlog:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+code_prototype:
+  enabled: true
+  fallback_models:
+  - ollama:llama3
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:codellama
+dev_visual_prototype:
+  enabled: true
+  fallback_models:
+  - ollama:llama3
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:codellama
+estimations:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+feature_scoring:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_api_sequence:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_architecture:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_c4_component:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_c4_container:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_c4_context:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_c4_deployment:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_class:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_component:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_data_flow:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_erd:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_flowchart:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_gantt:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_git_graph:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_journey:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_mindmap:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_pie:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_sequence:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_state:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_system_overview:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_timeline:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_uml:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+html_user_flow:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+jira:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+mermaid_api_sequence:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_architecture:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_c4_component:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_c4_container:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_c4_context:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_c4_deployment:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_class:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_component:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_data_flow:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_erd:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_flowchart:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_gantt:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_git_graph:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_journey:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_mindmap:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_pie:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_sequence:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_state:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_system_overview:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_timeline:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_uml:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+mermaid_user_flow:
+  enabled: true
+  fallback_models:
+  - ollama:codellama
+  - gemini:gemini-2.0-flash-exp
+  primary_model: ollama:llama3
+personas:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3
+workflows:
+  enabled: true
+  fallback_models:
+  - gemini:gemini-2.0-flash-exp
+  - openai:gpt-4-turbo
+  primary_model: ollama:llama3

@@ -37,16 +37,13 @@ if sys.platform == 'win32':
 import json
 import time
 from typing import Dict, List, Tuple, Optional, Any
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict
 from pathlib import Path
 from datetime import datetime
-from enum import Enum
 
-# Import all enhanced components
+from components.feedback_models import FeedbackEvent, FeedbackType, TrainingBatch
 from components.reward_calculator_enhanced import (
-    EnhancedRewardCalculator,
-    FeedbackType,
-    FeedbackEvent as RewardFeedbackEvent
+    EnhancedRewardCalculator
 )
 from components.similarity_metrics import SimilarityCalculator, calculate_similarity
 from components.batch_manager_adaptive import AdaptiveBatchManager
@@ -57,44 +54,6 @@ from components.hyperparameter_optimizer import HyperparameterOptimizer, Hyperpa
 from components.preference_learner import PreferenceLearner, PreferencePair
 from components.data_augmenter import DataAugmenter, TrainingExample as AugmentedExample
 from components.hard_negative_miner import HardNegativeMiner, FailureCase
-
-
-@dataclass
-class FeedbackEvent:
-    """Single feedback event from production (compatible with enhanced components)"""
-    timestamp: float
-    feedback_type: FeedbackType
-    input_data: str
-    ai_output: str
-    corrected_output: Optional[str]
-    context: Dict[str, Any]
-    validation_score: float
-    artifact_type: str
-    model_used: str
-    reward_signal: float = 0.0
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    
-    def to_training_example(self) -> Dict[str, str]:
-        """Convert to training example format"""
-        target = self.corrected_output if self.corrected_output else self.ai_output
-        return {
-            'instruction': f"Generate {self.artifact_type}",
-            'input': self.input_data,
-            'output': target,
-            'context': json.dumps(self.context),
-            'quality_score': self.validation_score
-        }
-
-
-@dataclass
-class TrainingBatch:
-    """Batch of training examples ready for fine-tuning"""
-    batch_id: str
-    created_at: float
-    examples: List[Dict[str, str]]
-    priority: int
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    hyperparameters: Optional[HyperparameterConfig] = None  # NEW: Include optimal hyperparams
 
 
 class EnhancedAdaptiveLearningLoop:

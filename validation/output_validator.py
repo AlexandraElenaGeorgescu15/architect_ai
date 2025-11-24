@@ -53,7 +53,7 @@ class ArtifactValidator:
     
     def __init__(self):
         """Initialize validator with type-specific rules"""
-        self.min_passing_score = 60.0  # Minimum score to pass validation
+        self.min_passing_score = 80.0  # Minimum score to pass validation (increased from 60.0)
         self.validators = {
             'erd': self.validate_erd,
             'architecture': self.validate_architecture,

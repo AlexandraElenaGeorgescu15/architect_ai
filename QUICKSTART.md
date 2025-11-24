@@ -1,239 +1,249 @@
-# 🚀 Architect.AI - Quick Start Guide
+# Architect.AI - Quick Start Guide ⚡
 
-**Get up and running in 5 minutes!**
-
----
-
-## Prerequisites
-
-- **Python 3.9+** installed
-- **Git** (to clone the repository)
-- **Ollama** (recommended) or Cloud AI API keys (Groq, OpenAI, or Gemini)
+Get up and running with Architect.AI in 5 minutes!
 
 ---
 
-## Step 1: Clone & Install (2 minutes)
+## Prerequisites ✅
 
+- **Python 3.10+** (3.11 recommended)
+- **Node.js 18+** 
+- **Git**
+- **Ollama** (optional, for local models) - [Download here](https://ollama.ai)
+
+---
+
+## Step 1: Install Dependencies (2 minutes)
+
+### Backend (Python)
 ```bash
-# Clone repository
-git clone <repository-url>
 cd architect_ai_cursor_poc
-
-# Install dependencies
 pip install -r requirements.txt
 ```
 
----
-
-## Step 2: Configure AI Provider (1 minute)
-
-**Option A: Use Ollama (Recommended - Free & Local)**
-
+### Frontend (Node.js)
 ```bash
-# Install Ollama
-# Visit: https://ollama.com/download
-
-# Download a model (3-8GB)
-ollama pull llama3.2:3b
-
-# Verify it's running
-ollama list
+cd frontend
+npm install
+cd ..
 ```
-
-**Option B: Use Cloud AI (Requires API Key)**
-
-Create `.env` file:
-```bash
-# Choose ONE provider:
-GROQ_API_KEY=gsk_xxxxxxxxxxxxx
-# OR
-OPENAI_API_KEY=sk-xxxxxxxxxxxxx
-# OR
-GEMINI_API_KEY=xxxxxxxxxxxxx
-```
-
-Get API keys:
-- **Groq:** https://console.groq.com/keys (Free tier available)
-- **OpenAI:** https://platform.openai.com/api-keys (Paid)
-- **Gemini:** https://makersuite.google.com/app/apikey (Free tier available)
 
 ---
 
-## Step 3: Prepare Your Codebase (30 seconds)
+## Step 2: Configure API Keys (1 minute) - OPTIONAL
 
-Place your project code in a sibling directory:
+Create a `.env` file in `architect_ai_cursor_poc/`:
 
+```bash
+# Google Gemini (recommended - free tier available)
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# OpenAI (optional)
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Groq (optional - fast Llama inference)
+GROQ_API_KEY=your_groq_api_key_here
+
+# Anthropic Claude (optional)
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
 ```
-Dawn-final-project/
-├── architect_ai_cursor_poc/  ← The AI tool
-├── your-project/             ← Your code goes here
-└── another-project/          ← Or here
-```
 
-**Note:** The tool automatically excludes itself and only analyzes your project directories.
+**Get API Keys:**
+- **Gemini**: https://ai.google.dev/ (Free tier: 60 requests/minute)
+- **OpenAI**: https://platform.openai.com/api-keys
+- **Groq**: https://console.groq.com/
+- **Anthropic**: https://console.anthropic.com/
+
+**Note:** You can use Architect.AI with just local Ollama models (no API keys needed), but cloud models provide better quality.
 
 ---
 
-## Step 4: Launch the App (30 seconds)
+## Step 3: Install Local Models (1 minute) - OPTIONAL
+
+If you want to use local models (free, private, no API keys):
 
 ```bash
-# From architect_ai_cursor_poc directory
+# Install Ollama from https://ollama.ai
+
+# Pull recommended models
+ollama pull deepseek-coder:6.7b-instruct-q4_K_M
+ollama pull qwen2.5-coder:7b-instruct-q4_K_M
+ollama pull mistral-nemo:12b-instruct-2407-q4_K_M
+```
+
+---
+
+## Step 4: Launch Architect.AI (30 seconds)
+
+### Option 1: Launcher Script (Recommended)
+```bash
 python launch.py
-
-# Or directly:
-streamlit run app/app_v2.py
 ```
 
-The app will open in your browser at `http://localhost:8501`
+### Option 2: Windows
+```bash
+launch.bat
+```
+
+### Option 3: Linux/Mac
+```bash
+chmod +x launch.sh
+./launch.sh
+```
+
+The launcher will:
+1. Start the FastAPI backend on http://localhost:8000
+2. Start the React frontend on http://localhost:3000
+3. Auto-index your project files
+4. Build Knowledge Graph and Pattern Mining
+5. Open your browser automatically
 
 ---
 
 ## Step 5: Generate Your First Artifact (1 minute)
 
-1. **Upload Meeting Notes**
-   - Go to the "📝 Meeting Notes" section
-   - Enter your feature requirements (minimum 80 characters)
-   - Example: "Create a user authentication system with login, registration, password reset, and JWT tokens"
+1. **Add Meeting Notes** (left panel)
+   - Type: "Create a user authentication system with login, signup, and password reset"
+   - Or upload a requirements file (.txt, .md, .pdf)
 
-2. **Generate Artifacts**
-   - Scroll down to "Artifact Generation"
-   - Click **"Generate ERD"** (fastest, 10-20 seconds)
-   - View your Entity-Relationship Diagram!
+2. **Build Context** (center panel)
+   - Click the "Build Context" button
+   - Wait 5-10 seconds for RAG, Knowledge Graph, and Pattern Mining to activate
 
-3. **Explore More Artifacts**
-   - **Architecture Diagram:** System component relationships
-   - **API Documentation:** Endpoint specifications
-   - **Code:** Actual implementation
-   - **JIRA Tasks:** Story points and subtasks
-   - **Visual Prototype:** HTML/Angular/React prototype
+3. **Generate Artifact**
+   - Select artifact type: "ERD (Entity-Relationship Diagram)"
+   - Click "Generate"
+   - Wait 10-15 seconds
 
----
-
-## What Just Happened?
-
-Architect.AI analyzed YOUR codebase and used:
-
-1. **RAG (Retrieval-Augmented Generation):** Retrieved relevant code snippets from YOUR repository
-2. **Knowledge Graph:** Mapped YOUR component relationships using AST parsing
-3. **Pattern Mining:** Detected YOUR design patterns (Singleton, Factory, Observer)
-4. **5-Layer Context:** Combined meeting notes + RAG + analysis + KG + patterns
-5. **Validation:** Checked artifact quality (Mermaid syntax, 0-100 score, auto-retry)
-
-**Result:** Production-ready artifacts that understand YOUR architecture, not generic templates!
+4. **View Result** (right panel - Outputs)
+   - Click the generated artifact to open viewer
+   - Preview the Mermaid diagram
+   - Provide feedback (👍/👎)
+   - Download or export
 
 ---
 
-## Verification Checklist
+## 🎉 You're Done!
 
-Run the verification script:
+### Next Steps:
 
-```bash
-python tests/run_tests.py
-```
+1. **Add Your Project**
+   - Place your project files in: `agents/`, `components/`, `final_project/`, or `final-proj-sln/`
+   - Restart the app to auto-index your codebase
 
-Expected output:
-```
-[TEST 1/5] Critical imports ................... [PASS]
-[TEST 2/5] ChromaDB connection ................ [PASS]
-[TEST 3/5] AI agent initialization ............ [PASS]
-[TEST 4/5] Validation system .................. [PASS]
-[TEST 5/5] File system ........................ [PASS]
+2. **Explore Artifact Types**
+   - Try: Architecture Diagram, Sequence Diagram, Code Prototype, API Docs, Jira Tasks
 
-RESULTS: 5/5 tests passed
-```
+3. **Visit Intelligence Page**
+   - View Knowledge Graph (your architecture map)
+   - See Pattern Mining results (design patterns, code smells)
+   - Configure model routing
+   - Check training data
+
+4. **Fine-Tune Models**
+   - Provide feedback on generated artifacts (👍/👎)
+   - After 50+ examples, fine-tune local models
+   - Models learn your coding style and architecture
 
 ---
 
-## Troubleshooting
+## 🆘 Troubleshooting
 
-### "Ollama not running"
+### Backend won't start
 ```bash
-# Start Ollama service
-ollama serve
-
-# In another terminal, verify
-ollama list
-```
-
-### "No API key configured"
-- Check your `.env` file exists
-- Ensure key starts with correct prefix (gsk_/sk_/AIza)
-- Restart the app after adding keys
-
-### "Meeting notes too short"
-- Minimum 80 characters required
-- Add more context: feature description, technical requirements, use cases
-
-### "No RAG results"
-- Ensure your project code is in a sibling directory (not inside `architect_ai_cursor_poc/`)
-- Check `rag/index/` exists and has data
-- Run manual indexing: `python -m rag.ingest`
-
-### "Import errors"
-```bash
-# Reinstall dependencies
-pip install --upgrade -r requirements.txt
-
 # Check Python version
-python --version  # Must be 3.9+
+python --version  # Should be 3.10+
+
+# Reinstall dependencies
+pip install -r requirements.txt --upgrade
+
+# Check port 8000 is free
+netstat -ano | findstr :8000  # Windows
+lsof -i :8000                  # Linux/Mac
+```
+
+### Frontend won't start
+```bash
+cd frontend
+npm install
+npm run dev  # Should open on http://localhost:3000
+```
+
+### No models appearing
+```bash
+# Check Ollama is running
+ollama list
+
+# Pull a model
+ollama pull deepseek-coder:6.7b-instruct-q4_K_M
+
+# Verify API keys
+python check_api_keys.py
+```
+
+### RAG index not building
+```bash
+# Check user project directories exist
+ls agents/ components/ final_project/ final-proj-sln/
+
+# Manual reindex
+python -m rag.ingest
+```
+
+### Permission errors on Windows
+```bash
+# Run PowerShell as Administrator
+Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 ```
 
 ---
 
-## Next Steps
+## 📚 Learn More
 
-### Explore Advanced Features
-
-1. **Fine-Tuning (Adaptive Learning)**
-   - Go to "🎓 Fine-Tuning" tab
-   - Add feedback when AI makes mistakes
-   - System learns from corrections
-
-2. **Knowledge Graph Visualization**
-   - Go to "🧠 Knowledge Graph" section
-   - View YOUR component relationships as a graph
-   - See coupling metrics, complexity scores
-
-3. **Pattern Mining Analysis**
-   - Go to "🔍 Pattern Mining" section
-   - See YOUR design patterns detected
-   - Get code quality recommendations
-
-4. **Batch Generation**
-   - Generate all 8+ artifacts at once
-   - Click "Generate All Artifacts"
-   - Takes 2-5 minutes depending on AI provider
-
-### Read Full Documentation
-
-- **README.md** - Complete feature list and architecture
-- **TECHNICAL_DOCUMENTATION.md** - Deep dive into systems
-- **FINETUNING_GUIDE.md** - Complete fine-tuning workflow
-- **TROUBLESHOOTING.md** - Common issues and solutions
+- **Full Documentation**: [README.md](./README.md)
+- **API Reference**: [documentation/API.md](./documentation/API.md)
+- **Architecture Guide**: [documentation/ARCHITECTURE.md](./documentation/ARCHITECTURE.md)
+- **Changelog**: [CHANGELOG.md](./CHANGELOG.md)
+- **API Keys Setup**: [API_KEYS_SETUP.md](./API_KEYS_SETUP.md)
 
 ---
 
-## Quick Tips
+## 🎓 Tutorial Video
 
-💡 **Tip 1:** Use Ollama for fast, free local generation (works offline!)  
-💡 **Tip 2:** Use Groq (cloud) for fastest generation (0.5-2 seconds per artifact)  
-💡 **Tip 3:** Use GPT-4/Claude for highest quality (but slower and paid)  
-💡 **Tip 4:** Enable "Enhanced RAG" for better context (100 chunks vs 18)  
-💡 **Tip 5:** Add feedback to fine-tune the AI to your coding style
+Check out our interactive onboarding tour when you first open the app - it walks you through all the key features!
+
+You can replay it anytime by clicking **"🎓 Replay Onboarding"** at the bottom of the sidebar.
 
 ---
 
-## Support
+## 💡 Pro Tips
 
-- **GitHub Issues:** Report bugs or request features
-- **Documentation:** Read `README.md` and `TECHNICAL_DOCUMENTATION.md`
-- **Tests:** Run `python tests/run_tests.py` to verify setup
+1. **Use Build Context**: Always click "Build Context" before generating artifacts for best quality
+2. **Provide Feedback**: Thumbs up/down helps the AI learn your preferences
+3. **Organize Notes**: Create folders for different features/modules in Meeting Notes
+4. **Try Different Models**: Some artifact types work better with specific models
+5. **Fine-Tune Locally**: After 50+ feedback examples, fine-tune Ollama models for personalized results
+6. **Keyboard Shortcuts**: Check the sidebar for useful shortcuts
 
 ---
 
-## Success! 🎉
+## 🚀 What Can I Build?
 
-You're now ready to transform meeting notes into production-ready artifacts that understand YOUR codebase!
+With Architect.AI, you can generate:
 
-**Happy architecting!** 🏗️
+- **Diagrams**: ERD, Architecture, Sequence, Class, State, Flowchart, C4, UML, Data Flow, Git Graph
+- **Code**: Full React/Angular/Vue/Python prototypes with tests
+- **Documentation**: API docs, system overviews, technical specs
+- **Project Management**: Jira tasks, backlog, user stories, estimations, feature scoring
+- **UX**: User personas, journey maps, workflows
+
+All tailored to YOUR specific codebase and requirements!
+
+---
+
+**Need help? Check the [troubleshooting guide](./frontend/TROUBLESHOOTING.md) or open an issue on GitHub.**
+
+**Happy building! 🎉**
+
+*Last updated: November 24, 2025*
 

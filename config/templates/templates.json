@@ -1,0 +1,45 @@
+[
+  {
+    "id": "ecommerce-platform",
+    "name": "E-commerce Platform",
+    "description": "Full-stack store with catalog, payments, and fulfilment.",
+    "meeting_notes": "Build an e-commerce platform with catalog, cart, checkout, payment integration, and order management. Include admin dashboard and inventory tracking.",
+    "recommended_artifacts": [
+      "mermaid_erd",
+      "mermaid_sequence",
+      "api_docs",
+      "jira"
+    ],
+    "tags": ["commerce", "payments", "inventory"],
+    "complexity": "high"
+  },
+  {
+    "id": "saas-analytics",
+    "name": "SaaS Analytics Dashboard",
+    "description": "Multi-tenant analytics SaaS with role-based access.",
+    "meeting_notes": "Design a SaaS analytics dashboard for B2B customers with tenant isolation, role-based access, scheduled reports, and alerting workflows.",
+    "recommended_artifacts": [
+      "mermaid_architecture",
+      "mermaid_sequence",
+      "code_prototype",
+      "jira"
+    ],
+    "tags": ["saas", "analytics"],
+    "complexity": "medium"
+  },
+  {
+    "id": "mobile-banking",
+    "name": "Mobile Banking App",
+    "description": "Secure banking app with KYC and transaction monitoring.",
+    "meeting_notes": "Create a mobile banking platform with onboarding/KYC, account management, transfers, card controls, notifications, and fraud monitoring.",
+    "recommended_artifacts": [
+      "mermaid_flowchart",
+      "mermaid_state",
+      "api_docs",
+      "feature_scoring"
+    ],
+    "tags": ["finance", "security"],
+    "complexity": "high"
+  }
+]
+
