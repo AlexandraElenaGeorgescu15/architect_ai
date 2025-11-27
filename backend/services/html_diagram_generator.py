@@ -80,6 +80,75 @@ class HTMLDiagramGenerator:
         """
         return self.MERMAID_TO_HTML_MAP.get(mermaid_artifact_type)
     
+    async def generate_html_directly(
+        self,
+        html_artifact_type: ArtifactType,
+        meeting_notes: str,
+        rag_context: str = "",
+        use_ai: bool = True
+    ) -> str:
+        """
+        Generate HTML diagram directly from meeting notes (without Mermaid).
+        
+        Args:
+            html_artifact_type: HTML artifact type (e.g., HTML_ERD, HTML_FLOWCHART)
+            meeting_notes: Meeting notes/requirements
+            rag_context: RAG context for AI generation
+            use_ai: Whether to use AI for generation
+        
+        Returns:
+            HTML content
+        """
+        if not self.renderer:
+            logger.warning("HTML renderer not available, cannot generate HTML directly")
+            return self._create_basic_html("", html_artifact_type)
+        
+        # Map HTML artifact type to diagram type
+        html_to_diagram_type = {
+            ArtifactType.HTML_ERD: "erd",
+            ArtifactType.HTML_ARCHITECTURE: "architecture",
+            ArtifactType.HTML_SEQUENCE: "sequence",
+            ArtifactType.HTML_CLASS: "class",
+            ArtifactType.HTML_STATE: "state",
+            ArtifactType.HTML_FLOWCHART: "flowchart",
+            ArtifactType.HTML_DATA_FLOW: "data_flow",
+            ArtifactType.HTML_USER_FLOW: "user_flow",
+            ArtifactType.HTML_COMPONENT: "component",
+            ArtifactType.HTML_SYSTEM_OVERVIEW: "system_overview",
+            ArtifactType.HTML_API_SEQUENCE: "api_sequence",
+            ArtifactType.HTML_UML: "uml",
+            ArtifactType.HTML_GANTT: "gantt",
+            ArtifactType.HTML_PIE: "pie",
+            ArtifactType.HTML_JOURNEY: "journey",
+            ArtifactType.HTML_MINDMAP: "mindmap",
+            ArtifactType.HTML_GIT_GRAPH: "git_graph",
+            ArtifactType.HTML_TIMELINE: "timeline",
+            ArtifactType.HTML_C4_CONTEXT: "c4_context",
+            ArtifactType.HTML_C4_CONTAINER: "c4_container",
+            ArtifactType.HTML_C4_COMPONENT: "c4_component",
+            ArtifactType.HTML_C4_DEPLOYMENT: "c4_deployment",
+        }
+        
+        diagram_type = html_to_diagram_type.get(html_artifact_type, "flowchart")
+        
+        try:
+            if use_ai and meeting_notes:
+                # Generate HTML directly from meeting notes (no Mermaid needed)
+                html_content = await self.renderer.generate_html_visualization_with_gemini(
+                    mermaid_content="",  # Empty - we're generating directly
+                    meeting_notes=meeting_notes,
+                    diagram_type=diagram_type,
+                    rag_context=rag_context
+                )
+                logger.info(f"✅ [HTML_GEN] Generated HTML diagram directly: type={html_artifact_type.value}, diagram_type={diagram_type}")
+                return html_content
+            else:
+                logger.warning("AI generation required for direct HTML generation")
+                return self._create_basic_html("", html_artifact_type)
+        except Exception as e:
+            logger.error(f"Error generating HTML directly: {e}")
+            return self._create_basic_html("", html_artifact_type)
+    
     async def generate_html_from_mermaid(
         self,
         mermaid_content: str,

@@ -127,3 +127,41 @@ async def get_context_stats(
         "cache_stats": builder.rag_cache.get_stats()
     }
 
+
+@router.get("/{context_id}", response_model=ContextResponse)
+async def get_context(
+    context_id: str,
+    current_user: Optional[Dict[str, Any]] = Depends(get_current_user),
+):
+    """
+    Retrieve a previously built context by ID.
+
+    Note:
+        - Context IDs correspond to the `context_id` / `created_at` field returned
+          from the /build endpoint.
+        - Contexts are kept in-memory for the lifetime of the backend process and
+          may be evicted on restart.
+    """
+    builder = get_builder()
+    stored = builder._context_store.get(context_id)  # internal in-memory store
+
+    if not stored:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Context '{context_id}' not found. Contexts are stored in-memory and may expire on server restart. Please rebuild the context using /api/context/build",
+        )
+
+    return ContextResponse(
+        success=True,
+        context_id=stored.get("context_id") or stored.get("created_at", context_id),
+        assembled_context=stored.get("assembled_context", ""),
+        sources=stored.get("sources", {}),
+        from_cache=stored.get("from_cache", False),
+        metadata={
+            "meeting_notes_length": len(stored.get("meeting_notes", "") or ""),
+            "folder_id": stored.get("metadata", {}).get("folder_id"),
+            "sources_included": list(stored.get("sources", {}).keys()),
+            "created_at": stored.get("created_at"),
+        },
+    )
+

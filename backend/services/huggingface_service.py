@@ -3,6 +3,7 @@ HuggingFace Model Service - Search, download, and manage models from HuggingFace
 """
 
 import sys
+import platform
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Callable, Awaitable
 import logging
@@ -24,6 +25,37 @@ try:
 except ImportError:
     HUGGINGFACE_AVAILABLE = False
     logger.warning("huggingface_hub not available. Install with: pip install huggingface_hub")
+
+
+async def _run_subprocess(command: str, *_, **kwargs) -> subprocess.CompletedProcess:
+    """
+    Cross-platform subprocess execution that works reliably on Windows.
+
+    Design:
+        - Uses blocking subprocess.run under the hood.
+        - Wraps it with asyncio.to_thread so callers can still 'await' it.
+        - Ignores low-level asyncio subprocess APIs to avoid NotImplementedError
+          on certain Windows event loop implementations.
+
+    Args:
+        command: Shell command to execute (string form).
+        timeout (kwarg, optional): Max seconds to wait before killing the process.
+    """
+    timeout = kwargs.pop("timeout", None)
+
+    def _inner() -> subprocess.CompletedProcess:
+        full_command = command if isinstance(command, str) else " ".join(command)
+        return subprocess.run(
+            full_command,
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=False,  # we inspect returncode manually
+            timeout=timeout,
+        )
+
+    return await asyncio.to_thread(_inner)
 
 
 class HuggingFaceService:
@@ -170,12 +202,17 @@ class HuggingFaceService:
             model_dir = self.downloads_dir / model_id.replace("/", "_")
             model_dir.mkdir(parents=True, exist_ok=True)
             
-            logger.info(f"Downloading model {model_id}...")
+            logger.info(f"📥 [HF_DOWNLOAD] Starting download for {model_id}...")
+            
+            # Update progress
+            self.active_downloads[model_id]["progress"] = 0.1
             
             # Try to find and download GGUF files first (for Ollama compatibility)
             downloaded_path = None
             try:
                 if self.api:
+                    logger.info(f"🔍 [HF_DOWNLOAD] Fetching model info for {model_id}...")
+                    self.active_downloads[model_id]["progress"] = 0.2
                     model_info = self.api.model_info(model_id)
                     # Get file list from model info
                     model_files = [f.rfilename for f in model_info.siblings] if hasattr(model_info, 'siblings') else []
@@ -188,20 +225,38 @@ class HuggingFaceService:
                             if hasattr(model_info, 'siblings') and model_info.siblings:
                                 for file in model_info.siblings:
                                     if file.rfilename.endswith(".gguf"):
-                                        gguf_sizes[file.rfilename] = getattr(file, 'size', 0)
+                                        file_size = getattr(file, 'size', None)
+                                        # Only add if size is not None and is a valid number
+                                        if file_size is not None and isinstance(file_size, (int, float)) and file_size > 0:
+                                            gguf_sizes[file.rfilename] = file_size
                         except (AttributeError, KeyError, TypeError) as e:
                             logger.debug(f"Could not get GGUF file sizes for {model_id}: {e}")
                         
                         if gguf_sizes:
-                            largest_gguf = max(gguf_sizes.items(), key=lambda x: x[1])[0]
-                            downloaded_path = hf_hub_download(
-                                repo_id=model_id,
-                                filename=largest_gguf,
-                                cache_dir=str(model_dir)
-                            )
-                            logger.info(f"Downloaded GGUF file: {largest_gguf}")
+                            # Filter out None values before max
+                            valid_sizes = {k: v for k, v in gguf_sizes.items() if v is not None and v > 0}
+                            if valid_sizes:
+                                largest_gguf = max(valid_sizes.items(), key=lambda x: x[1])[0]
+                                logger.info(f"⬇️ [HF_DOWNLOAD] Downloading GGUF file: {largest_gguf} (size: {gguf_sizes[largest_gguf] / (1024**3):.2f} GB)")
+                                self.active_downloads[model_id]["progress"] = 0.3
+                                downloaded_path = hf_hub_download(
+                                    repo_id=model_id,
+                                    filename=largest_gguf,
+                                    cache_dir=str(model_dir),
+                                    resume_download=True
+                                )
+                                logger.info(f"✅ [HF_DOWNLOAD] Downloaded GGUF file: {largest_gguf}")
+                                self.active_downloads[model_id]["progress"] = 0.8
+                            else:
+                                # Fallback: download first GGUF file if sizes are invalid
+                                downloaded_path = hf_hub_download(
+                                    repo_id=model_id,
+                                    filename=gguf_files[0],
+                                    cache_dir=str(model_dir)
+                                )
+                                logger.info(f"Downloaded GGUF file: {gguf_files[0]} (size info unavailable)")
                         else:
-                            # Download first GGUF file
+                            # Download first GGUF file if no size info available
                             downloaded_path = hf_hub_download(
                                 repo_id=model_id,
                                 filename=gguf_files[0],
@@ -210,23 +265,34 @@ class HuggingFaceService:
                             logger.info(f"Downloaded GGUF file: {gguf_files[0]}")
                 
                 if not downloaded_path:
-                    # No GGUF file, download config.json as fallback
-                    downloaded_path = hf_hub_download(
-                        repo_id=model_id,
-                        filename="config.json",
-                        cache_dir=str(model_dir)
-                    )
-                    logger.warning(f"No GGUF file found for {model_id}, downloaded config.json")
+                    # No GGUF file, try to download config.json as fallback
+                    try:
+                        downloaded_path = hf_hub_download(
+                            repo_id=model_id,
+                            filename="config.json",
+                            cache_dir=str(model_dir)
+                        )
+                        logger.warning(f"No GGUF file found for {model_id}, downloaded config.json")
+                    except Exception as config_error:
+                        logger.error(f"Failed to download config.json for {model_id}: {config_error}")
+                        raise ValueError(f"Model {model_id} not found or has no downloadable files (GGUF or config.json)")
             except Exception as e:
-                logger.warning(f"Error finding GGUF files: {e}, downloading config.json")
+                logger.warning(f"Error finding GGUF files: {e}")
                 if not downloaded_path:
-                    downloaded_path = hf_hub_download(
-                        repo_id=model_id,
-                        filename="config.json",
-                        cache_dir=str(model_dir)
-                    )
+                    # Try config.json as last resort
+                    try:
+                        downloaded_path = hf_hub_download(
+                            repo_id=model_id,
+                            filename="config.json",
+                            cache_dir=str(model_dir)
+                        )
+                        logger.info(f"Downloaded config.json as fallback for {model_id}")
+                    except Exception as config_error:
+                        logger.error(f"Failed to download config.json for {model_id}: {config_error}")
+                        raise ValueError(f"Model {model_id} not found or inaccessible: {config_error}")
             
             # Register downloaded model
+            logger.info(f"📝 [HF_DOWNLOAD] Registering downloaded model {model_id}...")
             self.downloaded_models[model_id] = {
                 "id": model_id,
                 "path": str(model_dir),
@@ -234,9 +300,23 @@ class HuggingFaceService:
                 "convert_to_ollama": convert_to_ollama
             }
             self._save_registry()
+            self.active_downloads[model_id]["progress"] = 0.9
+            
+            # Register in model_registry for UI visibility
+            try:
+                from components.model_registry import model_registry
+                model_registry.register_downloaded_model(
+                    base_model=model_id.replace("/", "-"),
+                    model_path=str(model_dir)
+                )
+                logger.info(f"✅ [HF_DOWNLOAD] Model registered in UI registry: {model_id}")
+            except Exception as e:
+                logger.warning(f"⚠️ [HF_DOWNLOAD] Failed to register in UI registry: {e}")
             
             # Convert to Ollama format if requested
             if convert_to_ollama:
+                logger.info(f"🔄 [HF_DOWNLOAD] Converting {model_id} to Ollama format...")
+                self.active_downloads[model_id]["progress"] = 0.95
                 conversion_result = await self._convert_to_ollama(model_id, model_dir)
                 if conversion_result.get("success"):
                     return {
@@ -292,10 +372,7 @@ class HuggingFaceService:
     ) -> Dict[str, Any]:
         """
         Convert a HuggingFace model to Ollama format.
-        
-        This attempts to use ollama import for GGUF files or ollama pull for existing models.
-        For full conversion, the model needs to be in GGUF format.
-        
+
         Returns:
             Dict with success status, ollama_name, and message
         """
@@ -310,12 +387,7 @@ class HuggingFaceService:
             
             # Check if Ollama is available
             try:
-                result = await asyncio.create_subprocess_exec(
-                    "ollama", "--version",
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                )
-                await result.communicate()
+                result = await _run_subprocess("ollama --version")
                 if result.returncode != 0:
                     raise FileNotFoundError("Ollama not found")
             except FileNotFoundError:
@@ -341,13 +413,8 @@ class HuggingFaceService:
             
             # Check if model is already in Ollama
             try:
-                result = await asyncio.create_subprocess_exec(
-                    "ollama", "list",
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
-                )
-                stdout, _ = await result.communicate()
-                existing_models = stdout.decode().lower()
+                result = await _run_subprocess("ollama list")
+                existing_models = (result.stdout or "").lower()
                 if ollama_name.lower() in existing_models:
                     logger.info(f"Model {ollama_name} already exists in Ollama")
                     # Register in ModelService
@@ -382,12 +449,11 @@ class HuggingFaceService:
                 
                 # Use ollama import (better than create for GGUF files)
                 # Format: ollama import <model_name> <path_to_gguf>
-                result = await asyncio.create_subprocess_exec(
-                    "ollama", "import", ollama_name, str(gguf_path),
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE
+                result = await _run_subprocess(
+                    f"ollama import {ollama_name} {str(gguf_path)}"
                 )
-                stdout, stderr = await result.communicate()
+                stdout = result.stdout or ""
+                stderr = result.stderr or ""
                 
                 if result.returncode == 0:
                     logger.info(f"Successfully imported {model_id} to Ollama as {ollama_name}")
@@ -424,12 +490,11 @@ PARAMETER top_k 40
 """
                     modelfile_path.write_text(modelfile_content, encoding='utf-8')
                     
-                    result = await asyncio.create_subprocess_exec(
-                        "ollama", "create", ollama_name, "-f", str(modelfile_path),
-                        stdout=asyncio.subprocess.PIPE,
-                        stderr=asyncio.subprocess.PIPE
+                    result = await _run_subprocess(
+                        f"ollama create {ollama_name} -f {str(modelfile_path)}"
                     )
-                    stdout, stderr = await result.communicate()
+                    stdout = result.stdout or ""
+                    stderr = result.stderr or ""
                     
                     if result.returncode == 0:
                         logger.info(f"Successfully created {ollama_name} in Ollama using Modelfile")
@@ -441,7 +506,7 @@ PARAMETER top_k 40
                             "method": "modelfile"
                         }
                     else:
-                        error_msg = f"Failed to import to Ollama: {stderr.decode()}"
+                        error_msg = f"Failed to import to Ollama: {stderr}"
                         logger.error(error_msg)
                         return {
                             "success": False,
@@ -473,12 +538,9 @@ PARAMETER top_k 40
                             except Exception:
                                 pass
                         
-                        result = await asyncio.create_subprocess_exec(
-                            "ollama", "pull", name,
-                            stdout=asyncio.subprocess.PIPE,
-                            stderr=asyncio.subprocess.PIPE
-                        )
-                        stdout, stderr = await result.communicate()
+                        result = await _run_subprocess(f"ollama pull {name}")
+                        stdout = result.stdout or ""
+                        stderr = result.stderr or ""
                         
                         if result.returncode == 0:
                             logger.info(f"Successfully pulled {name} from Ollama Hub")

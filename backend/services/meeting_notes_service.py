@@ -152,6 +152,42 @@ Folder name:"""
                 if folder_path.is_dir():
                     folders.append(folder_path.name)
         return folders
+    
+    def get_notes_by_folder(self, folder_id: str) -> List[Dict[str, Any]]:
+        """
+        Get all notes from a specific folder.
+        
+        Args:
+            folder_id: The folder name/ID
+            
+        Returns:
+            List of note dictionaries with id, name, content, etc.
+        """
+        from backend.api.meeting_notes import MEETING_NOTES_DIR
+        
+        folder_path = MEETING_NOTES_DIR / folder_id
+        if not folder_path.exists() or not folder_path.is_dir():
+            logger.warning(f"Folder not found: {folder_id}")
+            return []
+        
+        notes = []
+        # Read all .md and .txt files in the folder
+        for note_file in folder_path.glob("*"):
+            if note_file.suffix in [".md", ".txt"] and note_file.is_file():
+                try:
+                    content = note_file.read_text(encoding="utf-8")
+                    notes.append({
+                        "id": note_file.stem,
+                        "name": note_file.name,
+                        "content": content,
+                        "created_at": datetime.fromtimestamp(note_file.stat().st_ctime).isoformat(),
+                        "updated_at": datetime.fromtimestamp(note_file.stat().st_mtime).isoformat(),
+                    })
+                except Exception as e:
+                    logger.error(f"Error reading note {note_file}: {e}")
+                    continue
+        
+        return notes
 
 
 # Global service instance

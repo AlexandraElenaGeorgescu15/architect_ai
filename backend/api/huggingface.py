@@ -41,7 +41,7 @@ async def search_models(
     return {"success": True, "results": results, "count": len(results)}
 
 
-@router.post("/download/{model_id}", summary="Download a model from HuggingFace")
+@router.post("/download/{model_id:path}", summary="Download a model from HuggingFace")
 @limiter.limit("2/minute")
 async def download_model(
     request: Request,
@@ -84,20 +84,29 @@ async def download_model(
             }
     
     # Start download in background with error handling
-    async def download_with_error_handling():
+    def download_with_error_handling():
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         try:
-            result = await service.download_model(model_id, convert_to_ollama)
+            logger.info(f"🚀 [HF_DOWNLOAD] Background download started for {model_id}")
+            result = loop.run_until_complete(service.download_model(model_id, convert_to_ollama))
             if not result.get("success"):
-                logger.error(f"Download failed for {model_id}: {result.get('error')}")
+                logger.error(f"❌ [HF_DOWNLOAD] Download failed for {model_id}: {result.get('error')}")
+            else:
+                logger.info(f"✅ [HF_DOWNLOAD] Download completed for {model_id}: {result.get('message')}")
         except Exception as e:
-            logger.error(f"Background download error for {model_id}: {e}", exc_info=True)
+            logger.error(f"❌ [HF_DOWNLOAD] Background download error for {model_id}: {e}", exc_info=True)
             service.active_downloads[model_id] = {
                 "status": "failed",
                 "error": str(e),
                 "progress": 0.0
             }
+        finally:
+            loop.close()
     
     background_tasks.add_task(download_with_error_handling)
+    logger.info(f"📥 [HF_DOWNLOAD] Download task queued for {model_id}")
     
     return {
         "success": True,
@@ -107,7 +116,7 @@ async def download_model(
     }
 
 
-@router.get("/download/{model_id}/status", summary="Get download status")
+@router.get("/download/{model_id:path}/status", summary="Get download status")
 async def get_download_status(
     model_id: str,
     current_user: UserPublic = Depends(get_current_user)
@@ -151,7 +160,7 @@ async def list_downloaded_models(
     return {"success": True, "models": models, "count": len(models)}
 
 
-@router.get("/info/{model_id}", summary="Get model information")
+@router.get("/info/{model_id:path}", summary="Get model information")
 async def get_model_info(
     model_id: str,
     current_user: UserPublic = Depends(get_current_user)

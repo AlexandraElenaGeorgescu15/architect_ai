@@ -21,6 +21,14 @@ export default function ModelMapping() {
   useEffect(() => {
     loadRoutings()
     fetchModels()
+    
+    // Auto-refresh models every 30 seconds to catch newly created fine-tuned models
+    const interval = setInterval(() => {
+      fetchModels()
+      loadRoutings()
+    }, 30000)
+    
+    return () => clearInterval(interval)
   }, [])
 
   const loadRoutings = async () => {
@@ -67,14 +75,29 @@ export default function ModelMapping() {
   const searchHuggingface = async () => {
     if (!searchQuery.trim()) return
     
+    console.log('🔎 [HUGGINGFACE] Searching models for query:', searchQuery)
     setSearching(true)
     try {
       const response = await api.get('/api/huggingface/search', {
         params: { query: searchQuery, limit: 10 }
       })
       setHuggingfaceResults(response.data.results || [])
-    } catch (error) {
-      // Failed to search HuggingFace - handle in UI
+      console.log('🔎 [HUGGINGFACE] Search results:', response.data)
+    } catch (error: any) {
+      console.error('❌ [HUGGINGFACE] Search failed:', error)
+      const status = error?.response?.status
+      const detail =
+        error?.response?.data?.detail ||
+        error?.response?.data?.error ||
+        error?.message ||
+        'Failed to search HuggingFace'
+
+      // Surface rate-limit and server errors so user understands why nothing changed
+      if (status === 429) {
+        alert('HuggingFace search rate limit reached (10/min). Please wait a bit before searching again.')
+      } else {
+        alert(`HuggingFace search error: ${detail}`)
+      }
     } finally {
       setSearching(false)
     }
@@ -82,9 +105,12 @@ export default function ModelMapping() {
 
   const downloadModel = async (modelId: string) => {
     try {
-      const response = await api.post(`/api/huggingface/download/${modelId}`, {
-        convert_to_ollama: true
-      })
+      // Use a much longer timeout for long-running downloads (e.g. 10 minutes)
+      const response = await api.post(
+        `/api/huggingface/download/${modelId}`,
+        { convert_to_ollama: true },
+        { timeout: 10 * 60 * 1000 }
+      )
       
       if (response.data.success) {
         alert(`Download started for ${modelId}. This may take several minutes.`)
@@ -115,7 +141,14 @@ export default function ModelMapping() {
         alert(`Download failed: ${response.data.error || 'Unknown error'}`)
       }
     } catch (error: any) {
-      const errorMsg = error?.response?.data?.detail || error?.response?.data?.error || error?.message || 'Failed to start download'
+      // Improve error message for timeouts vs real backend errors
+      const isTimeout = error?.code === 'ECONNABORTED' || /timeout/i.test(error?.message || '')
+      const errorMsg =
+        error?.response?.data?.detail ||
+        error?.response?.data?.error ||
+        (isTimeout ? 'Request timed out while starting download. The backend may still be working in the background; please check status after a moment.' : error?.message) ||
+        'Failed to start download'
+
       alert(`Download error: ${errorMsg}`)
       console.error('Download error:', error)
     }

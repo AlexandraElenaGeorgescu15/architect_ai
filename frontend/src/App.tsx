@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { WebSocketProvider } from './contexts/WebSocketContext'
 import Layout from './components/layout/Layout'
@@ -7,6 +7,9 @@ import Intelligence from './pages/Intelligence'
 import Canvas from './pages/Canvas'
 import OnboardingTour from './components/OnboardingTour'
 import CelebrationEffect from './components/CelebrationEffect'
+import SystemLoadingOverlay from './components/SystemLoadingOverlay'
+import { useSystemStatus } from './hooks/useSystemStatus'
+import { useAppLoading } from './hooks/useAppLoading'
 
 // Simple error boundary
 class ErrorBoundary extends React.Component<
@@ -53,37 +56,55 @@ function App() {
   const token = localStorage.getItem('access_token') || undefined
   // Use a default room ID (could be user-specific in production)
   const defaultRoomId = 'main'
+  const { status: systemStatus, isReady: backendReady, isChecking, error: systemError, retry } = useSystemStatus()
+  const { isFullyLoaded, loadingProgress, loadingMessage } = useAppLoading()
 
   return (
     <ErrorBoundary>
       <WebSocketProvider defaultRoomId={defaultRoomId} token={token}>
-        <Router 
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true
-          }}
-        >
-          <Routes>
-            <Route
-              path="*"
-              element={
-                <Layout>
-                  <Routes>
-                    <Route path="/" element={<Navigate to="/studio" replace />} />
-                    <Route path="/studio" element={<Studio />} />
-                    <Route path="/intelligence" element={<Intelligence />} />
-                    <Route path="/canvas" element={<Canvas />} />
-                    <Route path="*" element={<Navigate to="/studio" replace />} />
-                  </Routes>
-                </Layout>
-              }
-            />
-          </Routes>
-          {/* Global onboarding tour - works on all pages */}
-          <OnboardingTour />
-          {/* Celebration effect for successful generations */}
-          <CelebrationEffect />
-        </Router>
+        {/* Only show main UI when everything is fully loaded */}
+        {isFullyLoaded ? (
+          <Router 
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true
+            }}
+          >
+            <Routes>
+              <Route
+                path="*"
+                element={
+                  <Layout>
+                    <Routes>
+                      <Route path="/" element={<Navigate to="/studio" replace />} />
+                      <Route path="/studio" element={<Studio />} />
+                      <Route path="/intelligence" element={<Intelligence />} />
+                      <Route path="/canvas" element={<Canvas />} />
+                      <Route path="*" element={<Navigate to="/studio" replace />} />
+                    </Routes>
+                  </Layout>
+                }
+              />
+            </Routes>
+            {/* Global onboarding tour - works on all pages */}
+            <OnboardingTour />
+            {/* Celebration effect for successful generations */}
+            <CelebrationEffect />
+          </Router>
+        ) : null}
+        <SystemLoadingOverlay 
+          status={{
+            ...systemStatus,
+            message: loadingMessage || systemStatus?.message || 'Loading...',
+            ready: isFullyLoaded,
+            overall_status: isFullyLoaded ? 'ready' : 'loading',
+          } as any} 
+          error={systemError} 
+          isChecking={!isFullyLoaded || isChecking} 
+          onRetry={retry}
+          loadingProgress={loadingProgress}
+          loadingMessage={loadingMessage}
+        />
       </WebSocketProvider>
     </ErrorBoundary>
   )

@@ -91,6 +91,9 @@ class EnhancedGenerationService:
         if options:
             opts.update(options)
         
+        logger.info(f"🚀 [ENHANCED_GEN] Starting generation pipeline: artifact_type={artifact_type.value}, "
+                   f"meeting_notes_length={len(meeting_notes)}, context_id={context_id}")
+        
         # Record metrics
         metrics.increment("generation_requests_total", tags={"artifact_type": artifact_type.value})
         
@@ -99,12 +102,14 @@ class EnhancedGenerationService:
             await progress_callback(10.0, "Building context from repository...")
         
         # Build context if not provided (with artifact-specific RAG targeting)
+        logger.info(f"🏗️ [ENHANCED_GEN] Building context (artifact_type={artifact_type.value})")
         with metrics.timer("context_building", tags={"artifact_type": artifact_type.value}):
             if context_id:
+                logger.info(f"♻️ [ENHANCED_GEN] Attempting to use pre-built context: {context_id}")
                 # Try to get context by ID
                 context = await self.context_builder.get_context_by_id(context_id)
                 if not context:
-                    logger.warning(f"Context {context_id} not found, building new context")
+                    logger.warning(f"⚠️ [ENHANCED_GEN] Context {context_id} not found, building new context")
                     if progress_callback:
                         await progress_callback(15.0, "Context not found, building new context...")
                     context = await self.context_builder.build_context(
@@ -114,7 +119,11 @@ class EnhancedGenerationService:
                         include_patterns=True,
                         artifact_type=artifact_type.value  # Pass artifact type for targeted RAG
                     )
+                    logger.info(f"✅ [ENHANCED_GEN] New context built successfully")
+                else:
+                    logger.info(f"✅ [ENHANCED_GEN] Using cached context: {context_id}")
             else:
+                logger.info(f"🏗️ [ENHANCED_GEN] Building new context from repository")
                 context = await self.context_builder.build_context(
                     meeting_notes=meeting_notes,
                     include_rag=True,
@@ -122,19 +131,32 @@ class EnhancedGenerationService:
                     include_patterns=True,
                     artifact_type=artifact_type.value  # Pass artifact type for targeted RAG
                 )
+                logger.info(f"✅ [ENHANCED_GEN] Context built successfully")
         
         # Progress: Context ready (30%)
         if progress_callback:
             await progress_callback(30.0, "Context built successfully")
         
         assembled_context = context.get("assembled_context", "")
+        logger.info(f"📊 [ENHANCED_GEN] Context assembled: length={len(assembled_context)}, "
+                   f"has_rag={bool(context.get('rag'))}, has_kg={bool(context.get('knowledge_graph'))}")
         
         # Get models for this artifact type
+        # This now properly prioritizes fine-tuned models first
+        logger.info(f"🔍 [ENHANCED_GEN] Getting models for artifact type: {artifact_type.value}")
         local_models = self.model_service.get_models_for_artifact(artifact_type)
+        logger.info(f"📋 [ENHANCED_GEN] Found {len(local_models)} local model(s) for {artifact_type.value}")
+        
+        # Log which models will be tried (first 3)
+        if local_models:
+            model_preview = ", ".join(local_models[:3])
+            if len(local_models) > 3:
+                model_preview += f" (+{len(local_models) - 3} more)"
+            logger.info(f"🎯 [ENHANCED_GEN] Model priority order: {model_preview}")
         
         if not local_models:
             error_msg = "No local models available. Please ensure Ollama is running and models are installed."
-            logger.error(error_msg)
+            logger.error(f"❌ [ENHANCED_GEN] {error_msg}")
             if progress_callback:
                 await progress_callback(100.0, f"Error: {error_msg}")
             return {
@@ -153,21 +175,24 @@ class EnhancedGenerationService:
             await progress_callback(40.0, f"Starting generation with {len(local_models)} local model(s)...")
         
         # Step 1: Try local models (with retry logic per model)
+        logger.info(f"🔄 [ENHANCED_GEN] Starting local model attempts: {len(local_models)} model(s)")
         for model_idx, model_id in enumerate(local_models):
             if not self.ollama_client:
+                logger.warning(f"⚠️ [ENHANCED_GEN] Ollama client not available, skipping local models")
                 break
             
             # Check if this is a local model (Ollama) or cloud model
             if ":" in model_id:
                 provider, model_name = model_id.split(":", 1)
                 if provider != "ollama":
+                    logger.debug(f"⏭️ [ENHANCED_GEN] Skipping cloud model in local phase: {model_id}")
                     # Skip cloud models in local phase
                     continue
             else:
                 # Assume Ollama model if no provider prefix
                 model_name = model_id
             
-            logger.info(f"Trying local model: {model_name} for {artifact_type.value}")
+            logger.info(f"🤖 [ENHANCED_GEN] Attempting local model [{model_idx + 1}/{len(local_models)}]: {model_name} for {artifact_type.value}")
             
             # Progress: Trying model
             if progress_callback:
@@ -182,13 +207,17 @@ class EnhancedGenerationService:
                         f"Retrying {model_name} (attempt {retry + 1}/{opts['max_retries'] + 1})..."
                     )
                 try:
+                    logger.info(f"🔄 [ENHANCED_GEN] Model attempt {retry + 1}/{opts['max_retries'] + 1}: {model_name}")
                     # Load model (with VRAM management)
                     await self.ollama_client.ensure_model_available(model_name)
+                    logger.debug(f"✅ [ENHANCED_GEN] Model {model_name} is available")
                     
                     # Build prompt with context
                     prompt = self._build_prompt(meeting_notes, assembled_context, artifact_type)
+                    logger.debug(f"📝 [ENHANCED_GEN] Prompt built: length={len(prompt)}")
                     
                     # Generate
+                    logger.info(f"⚡ [ENHANCED_GEN] Generating with {model_name}...")
                     response = await self.ollama_client.generate(
                         model_name=model_name,
                         prompt=prompt,
@@ -197,17 +226,22 @@ class EnhancedGenerationService:
                     )
                     
                     if not response.success or not response.content:
-                        logger.warning(f"Generation failed with {model_name} (attempt {retry + 1}): {response.error_message}")
+                        logger.warning(f"⚠️ [ENHANCED_GEN] Generation failed with {model_name} (attempt {retry + 1}): {response.error_message}")
                         if retry < opts["max_retries"]:
+                            logger.info(f"🔄 [ENHANCED_GEN] Retrying {model_name}...")
                             continue  # Retry same model
                         else:
+                            logger.warning(f"❌ [ENHANCED_GEN] All retries exhausted for {model_name}, moving to next model")
                             break  # Move to next model
+                    
+                    logger.info(f"✅ [ENHANCED_GEN] Generation successful with {model_name}: content_length={len(response.content)}")
                     
                     # Progress: Validating (75%)
                     if progress_callback:
                         await progress_callback(75.0, f"Validating output from {model_name}...")
                     
                     # Validate
+                    logger.info(f"🔍 [ENHANCED_GEN] Validating output from {model_name}...")
                     validation_result = await self.validation_service.validate_artifact(
                         artifact_type=artifact_type,
                         content=response.content,
@@ -217,6 +251,9 @@ class EnhancedGenerationService:
                     
                     score = validation_result.score
                     is_valid = validation_result.is_valid and score >= opts["validation_threshold"]
+                    logger.info(f"📊 [ENHANCED_GEN] Validation result for {model_name}: score={score:.1f}, "
+                               f"is_valid={is_valid}, threshold={opts['validation_threshold']}, "
+                               f"errors={len(validation_result.errors)}")
                     
                     attempt = {
                         "model": model_name,
@@ -228,15 +265,37 @@ class EnhancedGenerationService:
                         "retry": retry
                     }
                     attempts.append(attempt)
+                    logger.debug(f"📝 [ENHANCED_GEN] Attempt recorded: model={model_name}, score={score:.1f}, "
+                               f"total_attempts={len(attempts)}")
                     
                     # Track best attempt
                     if score > best_score:
+                        logger.info(f"🏆 [ENHANCED_GEN] New best attempt: {model_name} (score: {score:.1f}, "
+                                   f"previous best: {best_score:.1f})")
                         best_score = score
                         best_attempt = attempt
                     
                     # If valid (score >= 80), return immediately
                     if is_valid:
-                        logger.info(f"✅ Success with {model_name} (score: {score:.1f})")
+                        logger.info(f"✅ [ENHANCED_GEN] Success with {model_name} (score: {score:.1f}), "
+                                   f"returning result immediately")
+                        
+                        # Clean content for Mermaid diagrams (extract only diagram code)
+                        cleaned_content = response.content
+                        if artifact_type.value.startswith("mermaid_"):
+                            try:
+                                from backend.services.validation_service import ValidationService
+                                validator = ValidationService()
+                                cleaned_content = validator._extract_mermaid_diagram(response.content)
+                                if cleaned_content != response.content:
+                                    logger.info(f"🧹 [ENHANCED_GEN] Cleaned Mermaid diagram: removed {len(response.content) - len(cleaned_content)} chars of extra text")
+                                
+                                # Fix ERD syntax if it's using class diagram syntax
+                                if artifact_type.value == "mermaid_erd" and ("class " in cleaned_content or "CLASS " in cleaned_content):
+                                    cleaned_content = validator._fix_erd_syntax(cleaned_content)
+                                    logger.info("🔧 [ENHANCED_GEN] Fixed ERD syntax (converted class diagram syntax to ERD)")
+                            except Exception as e:
+                                logger.warning(f"Failed to clean Mermaid diagram: {e}")
                         
                         # Progress: Success (90%)
                         if progress_callback:
@@ -257,7 +316,7 @@ class EnhancedGenerationService:
                                 finetuning_pool = get_pool()
                                 finetuning_pool.add_example(
                                     artifact_type=artifact_type.value,
-                                    content=response.content,
+                                    content=cleaned_content,  # Use cleaned content
                                     meeting_notes=meeting_notes,
                                     validation_score=score,
                                     model_used=model_name,
@@ -274,7 +333,7 @@ class EnhancedGenerationService:
                                 from backend.services.html_diagram_generator import get_generator
                                 html_generator = get_generator()
                                 html_content = await html_generator.generate_html_from_mermaid(
-                                    mermaid_content=response.content,
+                                    mermaid_content=cleaned_content,  # Use cleaned content
                                     mermaid_artifact_type=artifact_type,
                                     meeting_notes=meeting_notes,
                                     rag_context=assembled_context,
@@ -292,23 +351,90 @@ class EnhancedGenerationService:
                             version_service.create_version(
                                 artifact_id=artifact_id,
                                 artifact_type=artifact_type.value,
-                                content=response.content,
+                                content=cleaned_content,  # Use cleaned content
                                 metadata={
                                     "model_used": model_name,
                                     "provider": "ollama",
                                     "validation_score": score,
                                     "is_valid": True,
                                     "meeting_notes": meeting_notes[:200],  # First 200 chars
-                                    "html_content": html_content  # Include HTML version if generated
+                                    "html_content": html_content,  # Include HTML version if generated
+                                    "attempts": attempts  # Include all attempts for tracking
                                 }
                             )
                             logger.info(f"Created version for artifact {artifact_id}")
                         except Exception as e:
                             logger.warning(f"Failed to create version: {e}")
                         
+                        # Update model routing if this model performed well (score >= 80)
+                        # This promotes successful models to primary position
+                        # IMPORTANT: Do this BEFORE returning, so routing is updated for future generations
+                        if score >= 80.0:
+                            try:
+                                from backend.services.model_service import get_service as get_model_service
+                                from backend.models.dto import ModelRoutingDTO
+                                model_service = get_model_service()
+                                
+                                # Get current routing
+                                routing = model_service.get_routing_for_artifact(artifact_type)
+                                
+                                # Normalize model name - handle both "llama3" and "ollama:llama3" formats
+                                if ":" in model_name:
+                                    # Already has provider prefix, use as-is
+                                    model_id = model_name
+                                else:
+                                    # Add ollama prefix
+                                    model_id = f"ollama:{model_name}"
+                                
+                                # Also check for common variations (llama3:latest, llama3:8b, etc.)
+                                model_variations = [model_id]
+                                if model_name.startswith("llama3"):
+                                    model_variations.extend([
+                                        f"ollama:llama3",
+                                        f"ollama:llama3:latest",
+                                        f"ollama:{model_name}:latest"
+                                    ])
+                                
+                                if routing:
+                                    # Check if current primary matches any variation of this model
+                                    current_primary = routing.primary_model
+                                    model_already_primary = any(
+                                        current_primary == var or 
+                                        current_primary.endswith(f":{model_name}") or
+                                        current_primary == model_name
+                                        for var in model_variations
+                                    )
+                                    
+                                    # If current primary is different and this model scored well, promote it
+                                    # Lower threshold to 80 for promotion (was 85)
+                                    if not model_already_primary and score >= 80.0:
+                                        # Move current primary to fallback if not already there
+                                        if current_primary not in routing.fallback_models:
+                                            routing.fallback_models.insert(0, current_primary)
+                                        # Set successful model as primary (use the normalized model_id)
+                                        routing.primary_model = model_id
+                                        model_service.update_routing([routing])
+                                        logger.info(f"✅ [ENHANCED_GEN] Promoted {model_name} ({model_id}) to primary for {artifact_type.value} (score: {score:.1f}, previous: {current_primary})")
+                                    elif model_already_primary:
+                                        logger.debug(f"✅ [ENHANCED_GEN] Model {model_name} already primary for {artifact_type.value}, no update needed")
+                                    else:
+                                        logger.debug(f"⚠️ [ENHANCED_GEN] Model {model_name} scored {score:.1f} but not promoting (already primary or score < 80)")
+                                else:
+                                    # Create new routing with this successful model
+                                    routing = ModelRoutingDTO(
+                                        artifact_type=artifact_type,
+                                        primary_model=model_id,
+                                        fallback_models=["ollama:llama3", "gemini:gemini-2.0-flash-exp"],
+                                        enabled=True
+                                    )
+                                    model_service.update_routing([routing])
+                                    logger.info(f"✅ [ENHANCED_GEN] Created routing for {artifact_type.value} with {model_name} ({model_id}) as primary (score: {score:.1f})")
+                            except Exception as e:
+                                logger.warning(f"⚠️ [ENHANCED_GEN] Failed to update routing: {e}", exc_info=True)
+                        
                         return {
                             "success": True,
-                            "content": response.content,
+                            "content": cleaned_content,  # Use cleaned content
                             "model_used": model_name,
                             "provider": "ollama",
                             "validation_score": score,
@@ -406,7 +532,8 @@ class EnhancedGenerationService:
                                     "validation_score": cloud_result["score"],
                                     "is_valid": True,
                                     "meeting_notes": meeting_notes[:200],
-                                    "html_content": html_content  # Include HTML version if generated
+                                    "html_content": html_content,  # Include HTML version if generated
+                                    "attempts": attempts  # Include all attempts for tracking
                                 }
                             )
                             logger.info(f"Created version for artifact {artifact_id}")
@@ -445,7 +572,8 @@ class EnhancedGenerationService:
                         "provider": best_attempt["provider"],
                         "validation_score": best_score,
                         "is_valid": best_score >= opts["validation_threshold"],
-                        "meeting_notes": meeting_notes[:200]
+                        "meeting_notes": meeting_notes[:200],
+                        "attempts": attempts  # Include all attempts for tracking
                     }
                 )
                 logger.info(f"Created version for artifact {artifact_id} (low quality)")

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Artifact } from '../../types'
-import { FileCode, ExternalLink, ThumbsUp, ThumbsDown } from 'lucide-react'
+import { FileCode, ExternalLink, ThumbsUp, ThumbsDown, History } from 'lucide-react'
 import { useArtifactStore } from '../../stores/artifactStore'
 import { useUIStore } from '../../stores/uiStore'
 import { submitFeedback, FeedbackType } from '../../services/feedbackService'
@@ -34,13 +34,29 @@ export default function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
       })
       addNotification('success', 
         type === 'approval' 
-          ? '👍 Thanks! This will help improve future generations.'
-          : 'Feedback received. We\'ll work on improving this.'
+          ? '👍 Thanks! This feedback will be used for model training.'
+          : '👎 Feedback received. This will help improve the model.'
       )
     } catch (error) {
       addNotification('error', 'Failed to submit feedback. Please try again.')
     } finally {
       setIsSubmittingFeedback(false)
+    }
+  }
+
+  const handleVersionHistory = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    try {
+      const response = await fetch(`/api/versions/${artifact.id}`)
+      if (response.ok) {
+        const versions = await response.json()
+        addNotification('info', `Found ${versions.length} version(s) for this artifact`)
+        // TODO: Open version history modal/panel
+      } else {
+        addNotification('info', 'No version history available for this artifact')
+      }
+    } catch (error) {
+      addNotification('error', 'Failed to load version history')
     }
   }
 
@@ -79,27 +95,51 @@ export default function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
           <span>{new Date(artifact.created_at).toLocaleDateString()}</span>
           <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
+        {/* Model and Attempt Info */}
+        {(artifact.model_used || artifact.attempts) && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1 border-t border-border/50">
+            {artifact.model_used && (
+              <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">
+                {artifact.model_used.replace('ollama:', '').replace('huggingface:', '')}
+              </span>
+            )}
+            {artifact.attempts && artifact.attempts.length > 0 && (
+              <span className="text-muted-foreground">
+                Try {artifact.attempts[artifact.attempts.length - 1].retry + 1} of {artifact.attempts.length}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Feedback Buttons */}
-      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+      <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-border">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={(e) => handleFeedback(e, 'approval')}
+            disabled={isSubmittingFeedback}
+            className="flex items-center gap-1.5 px-2 py-1.5 text-xs rounded-md hover:bg-green-500/20 hover:text-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed group/thumb"
+            title="This looks good! Will be used for model training"
+          >
+            <ThumbsUp className="w-3.5 h-3.5 group-hover/thumb:scale-110 transition-transform" />
+            <span className="hidden sm:inline">Good</span>
+          </button>
+          <button
+            onClick={(e) => handleFeedback(e, 'correction')}
+            disabled={isSubmittingFeedback}
+            className="flex items-center gap-1.5 px-2 py-1.5 text-xs rounded-md hover:bg-red-500/20 hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed group/thumb"
+            title="Needs improvement - feedback helps training"
+          >
+            <ThumbsDown className="w-3.5 h-3.5 group-hover/thumb:scale-110 transition-transform" />
+            <span className="hidden sm:inline">Improve</span>
+          </button>
+        </div>
         <button
-          onClick={(e) => handleFeedback(e, 'approval')}
-          disabled={isSubmittingFeedback}
-          className="flex items-center gap-1.5 px-2 py-1.5 text-xs rounded-md hover:bg-green-500/20 hover:text-green-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed group/thumb"
-          title="This looks good! Help improve future generations"
+          onClick={handleVersionHistory}
+          className="flex items-center gap-1 px-2 py-1.5 text-xs rounded-md hover:bg-primary/20 hover:text-primary transition-colors"
+          title="View version history"
         >
-          <ThumbsUp className="w-3.5 h-3.5 group-hover/thumb:scale-110 transition-transform" />
-          <span className="hidden sm:inline">Good</span>
-        </button>
-        <button
-          onClick={(e) => handleFeedback(e, 'correction')}
-          disabled={isSubmittingFeedback}
-          className="flex items-center gap-1.5 px-2 py-1.5 text-xs rounded-md hover:bg-red-500/20 hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed group/thumb"
-          title="Needs improvement"
-        >
-          <ThumbsDown className="w-3.5 h-3.5 group-hover/thumb:scale-110 transition-transform" />
-          <span className="hidden sm:inline">Improve</span>
+          <History className="w-3.5 h-3.5" />
         </button>
       </div>
 

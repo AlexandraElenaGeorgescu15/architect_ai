@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/robot-icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Architect.AI - AI-Powered Architecture Generation</title>
     <style>
@@ -27,11 +27,17 @@
       }
     </style>
     <script>
-      // Apply dark mode class immediately before any rendering
+      // Apply light mode as default (dark mode only if explicitly set)
       (function() {
         const isDark = localStorage.getItem('darkMode') === 'true';
         if (isDark) {
           document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+          // Ensure light mode is default
+          if (!localStorage.getItem('darkMode')) {
+            localStorage.setItem('darkMode', 'false');
+          }
         }
       })();
     </script>

@@ -8,6 +8,13 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 import logging
+import os
+
+# Disable ChromaDB telemetry before import
+os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
+os.environ.setdefault("CHROMA_TELEMETRY", "False")
+os.environ.setdefault("CHROMA_DISABLE_TELEMETRY", "True")
+
 import chromadb
 from chromadb.config import Settings as ChromaSettings
 
@@ -48,11 +55,9 @@ class RAGRetriever:
         """
         self.index_path = Path(index_path or settings.rag_index_path)
         
-        # Initialize ChromaDB client with connection pooling
-        self.client = chromadb.PersistentClient(
-            path=str(self.index_path),
-            settings=ChromaSettings(anonymized_telemetry=False)
-        )
+        # Use shared ChromaDB client to avoid "different settings" conflicts
+        from backend.core.chromadb_client import get_shared_chromadb_client
+        self.client = get_shared_chromadb_client(str(self.index_path))
         
         # Get collection
         self.collection = self.client.get_or_create_collection(

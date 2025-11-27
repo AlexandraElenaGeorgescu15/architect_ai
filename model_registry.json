@@ -310,5 +310,18 @@
     "metadata": {
       "size": 4081107848
     }
+  },
+  "ollama:llama3:latest": {
+    "id": "ollama:llama3:latest",
+    "name": "llama3:latest",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 4661224676
+    }
   }
 }

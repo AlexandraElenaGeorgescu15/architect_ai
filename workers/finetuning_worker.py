@@ -138,16 +138,135 @@ class FinetuningWorker:
             
             logger.info(f"✅ Training data saved to {training_file}")
             
-            # STEP 4: Trigger Ollama fine-tuning (if available)
-            # NOTE: This requires Ollama fine-tuning support
-            # For now, we just log that we would trigger it
-            logger.info(f"⏳ Fine-tuning would be triggered here...")
-            logger.info(f"Command: ollama create {finetuned_model_name} --from {base_model} --training-data {training_file}")
+            # STEP 4: Actually create Ollama fine-tuned model
+            # NOTE: This uses Ollama's Modelfile approach, NOT HuggingFace models
+            # The base_model must already be an Ollama model (e.g., "llama3:8b")
+            logger.info(f"🚀 Creating Ollama fine-tuned model: {finetuned_model_name}")
+            logger.info(f"Base model (must be Ollama format): {base_model}")
             
-            # STEP 5: Update model registry with (artifact_type, base_model) -> fine-tuned model mapping
+            try:
+                from components.ollama_finetuning import ollama_finetuner
+                
+                # Verify base_model is an Ollama model (not HuggingFace)
+                # Ollama models typically have format: "model:tag" or just "model"
+                if "/" in base_model and ":" not in base_model:
+                    logger.warning(f"⚠️ Base model '{base_model}' looks like HuggingFace format.")
+                    logger.warning(f"⚠️ Ollama fine-tuning requires Ollama models (e.g., 'llama3:8b').")
+                    logger.warning(f"⚠️ If you need HuggingFace models, convert them first using HuggingFace Service.")
+                
+                # Convert training data to examples format for Ollama fine-tuning
+                examples = []
+                for example in training_data:
+                    examples.append({
+                        "question": example.get("prompt", ""),
+                        "answer": example.get("completion", "")
+                    })
+                
+                # Create Modelfile and build model
+                modelfile_path = ollama_finetuner.create_modelfile(
+                    base_model=base_model,
+                    examples=examples,
+                    custom_name=finetuned_model_name,
+                    artifact_type=artifact_type
+                )
+                
+                # Build the actual Ollama model
+                success = ollama_finetuner.build_custom_model(
+                    modelfile_path=modelfile_path,
+                    custom_name=finetuned_model_name
+                )
+                
+                if not success:
+                    raise Exception("Failed to build Ollama model")
+                
+                logger.info(f"✅ Ollama model created successfully: {finetuned_model_name}")
+                
+            except ImportError:
+                logger.warning("Ollama fine-tuning not available, skipping model creation")
+                success = False
+            except Exception as e:
+                logger.error(f"❌ Failed to create Ollama model: {e}")
+                raise
+            
+            # STEP 5: Register model in ModelService so it appears in UI
+            try:
+                import sys
+                from pathlib import Path
+                sys.path.insert(0, str(Path(__file__).parent.parent))
+                from backend.services.model_service import get_service
+                
+                model_service = get_service()
+                model_id = f"ollama:{finetuned_model_name}"
+                
+                # Register in ModelService
+                from backend.models.dto import ModelInfoDTO
+                model_service.models[model_id] = ModelInfoDTO(
+                    id=model_id,
+                    name=f"{finetuned_model_name} (Fine-tuned)",
+                    provider="ollama",
+                    status="available",
+                    is_trained=True,
+                    metadata={
+                        "artifact_type": artifact_type,
+                        "base_model": base_model,
+                        "created_at": datetime.now().isoformat()
+                    }
+                )
+                model_service._save_registry()
+                logger.info(f"✅ Model registered in ModelService: {model_id}")
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to register model in ModelService: {e}")
+            
+            # STEP 6: Update model registry with (artifact_type, base_model) -> fine-tuned model mapping
             self._update_registry_for_pair(artifact_type, model_used, finetuned_model_name, base_model)
             
-            # STEP 6: Mark job as completed
+            # STEP 7: Update routing to use fine-tuned model for this artifact type
+            # This ensures the fine-tuned model is used first for this artifact type
+            try:
+                import sys
+                from pathlib import Path
+                sys.path.insert(0, str(Path(__file__).parent.parent))
+                from backend.services.model_service import get_service
+                from backend.models.dto import ModelRoutingDTO, ArtifactType
+                
+                model_service = get_service()
+                
+                # Try to find matching artifact type
+                artifact_type_enum = None
+                for at in ArtifactType:
+                    if at.value.lower() == artifact_type.lower().replace("-", "_"):
+                        artifact_type_enum = at
+                        break
+                
+                if artifact_type_enum:
+                    # Get or create routing
+                    routing = model_service.get_routing_for_artifact(artifact_type_enum)
+                    if not routing:
+                        routing = ModelRoutingDTO(
+                            artifact_type=artifact_type_enum,
+                            primary_model=f"ollama:{finetuned_model_name}",
+                            fallback_models=[f"ollama:{base_model}"],
+                            enabled=True
+                        )
+                    else:
+                        # CRITICAL: Set fine-tuned model as PRIMARY (first in list)
+                        # This ensures it's tried first
+                        routing.primary_model = f"ollama:{finetuned_model_name}"
+                        # Add base model as first fallback if not already present
+                        if f"ollama:{base_model}" not in routing.fallback_models:
+                            routing.fallback_models.insert(0, f"ollama:{base_model}")
+                    
+                    model_service.update_routing([routing])
+                    logger.info(f"✅ Routing updated for {artifact_type} to use {finetuned_model_name} as PRIMARY")
+                    logger.info(f"✅ Fine-tuned model will be tried FIRST for {artifact_type} artifacts")
+                else:
+                    logger.warning(f"⚠️ Could not find ArtifactType enum for {artifact_type}")
+            except Exception as e:
+                logger.warning(f"⚠️ Failed to update routing: {e}")
+                import traceback
+                logger.debug(traceback.format_exc())
+            
+            # STEP 8: Mark job as completed
             job["status"] = "completed"
             job["finetuned_model"] = finetuned_model_name
             job["completed_at"] = datetime.now().isoformat()
@@ -158,6 +277,7 @@ class FinetuningWorker:
             
             logger.info(f"✅ Fine-tuning job completed for ({artifact_type}, {model_used})")
             logger.info(f"Fine-tuned model: {finetuned_model_name}")
+            logger.info(f"🎯 Model is now available in UI and mapped to {artifact_type} artifacts")
             
             return True
             
@@ -170,7 +290,7 @@ class FinetuningWorker:
             job["failed_at"] = datetime.now().isoformat()
             
             job_file = Path(job["file_path"])
-            with open(job_file, 'w') as f:
+            with open(job_file, 'w', encoding='utf-8') as f:
                 json.dump(job, f, indent=2)
             
             return False
@@ -270,12 +390,6 @@ class FinetuningWorker:
         """DEPRECATED: Use _update_registry_for_pair instead"""
         # Fallback for old code paths
         self._update_registry_for_pair(artifact_type, base_model, model_name, base_model)
-        
-        # Save registry
-        with open(self.registry_path, 'w', encoding='utf-8') as f:
-            json.dump(registry, f, indent=2)
-        
-        logger.info(f"✅ Model registry updated: {artifact_type} -> {model_name}")
     
     def run(self):
         """Main worker loop"""

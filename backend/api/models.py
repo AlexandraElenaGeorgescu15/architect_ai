@@ -10,7 +10,7 @@ from backend.models.dto import (
     ModelInfoDTO, ModelRoutingDTO, ModelRoutingUpdateRequest,
     ArtifactType
 )
-from backend.services.model_service import get_service
+from backend.services.model_service import get_service, OLLAMA_AVAILABLE
 from backend.core.auth import get_current_user
 from backend.models.dto import UserPublic
 from backend.core.middleware import limiter
@@ -89,15 +89,40 @@ async def download_model(
     # Check if model already exists
     existing_model = await service.get_model(model_id)
     if existing_model and existing_model.status == "downloaded":
-        return {"message": f"Model {model_id} already downloaded"}
+        return {
+            "success": True,
+            "message": f"Model {model_id} already downloaded",
+            "model_id": model_id,
+            "status": "downloaded"
+        }
+    
+    # Check if already downloading
+    if existing_model and existing_model.status == "downloading":
+        return {
+            "success": True,
+            "message": f"Model {model_id} is already downloading",
+            "model_id": model_id,
+            "status": "downloading"
+        }
     
     # Start download in background
-    background_tasks.add_task(service.download_model, model_id, provider)
+    async def download_with_notification():
+        success = await service.download_model(model_id, provider)
+        if success:
+            # Refresh models list after download
+            await service.list_models()
+            logger.info(f"✅ Model {model_id} download completed and registered")
+        else:
+            logger.error(f"❌ Model {model_id} download failed")
+    
+    background_tasks.add_task(download_with_notification)
     
     return {
+        "success": True,
         "message": f"Download of {model_id} started in background",
         "model_id": model_id,
-        "provider": provider
+        "provider": provider,
+        "status": "downloading"
     }
 
 
@@ -132,6 +157,33 @@ async def get_model_stats(
     service = get_service()
     stats = service.get_stats()
     return {"success": True, "stats": stats}
+
+
+@router.post("/refresh", summary="Refresh model list from Ollama")
+async def refresh_models(
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """
+    Refresh the model list from Ollama and cloud providers.
+    This will update the registry with newly downloaded/fine-tuned models.
+    """
+    service = get_service()
+    
+    # Refresh Ollama models
+    if OLLAMA_AVAILABLE:
+        await service._refresh_ollama_models()
+    
+    # Refresh cloud models
+    await service._refresh_cloud_models()
+    
+    # Get updated list
+    models = await service.list_models()
+    
+    return {
+        "success": True,
+        "message": f"Refreshed {len(models)} models",
+        "models_count": len(models)
+    }
 
 
 @router.get("/api-keys/status", summary="Check API key status for cloud providers")

@@ -5,9 +5,12 @@ Automatically maps artifact types to appropriate Ollama models.
 Supports both base models and fine-tuned models for each artifact type.
 """
 
+import logging
 from typing import Dict, Optional, List
 from enum import Enum
 from dataclasses import dataclass
+
+logger = logging.getLogger(__name__)
 
 
 class ArtifactType(Enum):
@@ -239,22 +242,48 @@ class ArtifactModelMapper:
     def _load_fine_tuned_models(self):
         """Load fine-tuned models from registry"""
         try:
-            from components.model_registry import model_registry
-            trained_models = model_registry.get_trained_models()
-            
-            # Map fine-tuned models by artifact type
-            for model in trained_models:
-                # Extract artifact type from model name or metadata
-                # Format: "{artifact_type}_finetuned" or similar
-                model_name_lower = model.model_name.lower()
+            # Try ModelService first (newer system)
+            try:
+                import sys
+                from pathlib import Path
+                sys.path.insert(0, str(Path(__file__).parent.parent))
+                from backend.services.model_service import get_service
+                model_service = get_service()
                 
-                # Try to match artifact types
-                for artifact_type in ArtifactType:
-                    if artifact_type.value in model_name_lower:
-                        self.fine_tuned_models[artifact_type.value] = model.model_name
-                        break
-        except Exception:
-            pass  # Silently fail if registry not available
+                # Load fine-tuned models from registry
+                model_service._load_finetuned_models_from_registry()
+                
+                # Map fine-tuned models by artifact type
+                for model_id, model_info in model_service.models.items():
+                    if model_info.is_trained and model_info.provider == "ollama":
+                        artifact_type = model_info.metadata.get("artifact_type", "")
+                        if artifact_type:
+                            # Extract model name (remove "ollama:" prefix)
+                            model_name = model_id.split(":", 1)[1] if ":" in model_id else model_id
+                            self.fine_tuned_models[artifact_type.lower().replace("-", "_")] = model_name
+                            logger.info(f"✅ Loaded fine-tuned model: {artifact_type} -> {model_name}")
+            except Exception as e:
+                logger.debug(f"Could not load from ModelService: {e}")
+            
+            # Fallback: Try old model_registry
+            try:
+                from components.model_registry import model_registry
+                trained_models = model_registry.get_trained_models()
+                
+                # Map fine-tuned models by artifact type
+                for model in trained_models:
+                    # Extract artifact type from model name or metadata
+                    model_name_lower = model.model_name.lower()
+                    
+                    # Try to match artifact types
+                    for artifact_type in ArtifactType:
+                        if artifact_type.value in model_name_lower:
+                            self.fine_tuned_models[artifact_type.value] = model.model_name
+                            break
+            except Exception:
+                pass  # Silently fail if registry not available
+        except Exception as e:
+            logger.debug(f"Error loading fine-tuned models: {e}")
     
     def get_model_for_artifact(
         self, 

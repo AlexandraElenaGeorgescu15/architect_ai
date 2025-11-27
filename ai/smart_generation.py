@@ -633,11 +633,32 @@ class SmartGenerationOrchestrator:
                 
                 _log(f"[DEBUG] Validation context keys: {list(validation_context.keys())}", to_ui=False)
                 
-                validation_result, validation_errors, quality_score = self.validator.validate(
-                    validation_enum,
-                    response.content,
-                    validation_context
-                )
+                # Support both ValidationService (validate_artifact) and old OutputValidator (validate)
+                if hasattr(self.validator, 'validate_artifact'):
+                    # New ValidationService API
+                    from backend.models.dto import ArtifactType as BackendArtifactType
+                    try:
+                        backend_artifact_type = BackendArtifactType(artifact_type)
+                    except ValueError:
+                        # Fallback to ERD if type not found
+                        backend_artifact_type = BackendArtifactType.MERMAID_ERD
+                    
+                    validation_result_dto = await self.validator.validate_artifact(
+                        artifact_type=backend_artifact_type,
+                        content=response.content,
+                        meeting_notes=meeting_notes,
+                        context=validation_context
+                    )
+                    validation_result = validation_result_dto.is_valid
+                    validation_errors = validation_result_dto.errors
+                    quality_score = validation_result_dto.score
+                else:
+                    # Old OutputValidator API
+                    validation_result, validation_errors, quality_score = self.validator.validate(
+                        validation_enum,
+                        response.content,
+                        validation_context
+                    )
                 
                 _log(f"📊 Quality: {quality_score}/100 (threshold: {self.min_quality_threshold})")
                 
@@ -759,11 +780,32 @@ class SmartGenerationOrchestrator:
                 if meeting_notes:
                     validation_context['meeting_notes'] = meeting_notes
                 
-                validation_result, validation_errors, quality_score = self.validator.validate(
-                    validation_enum,
-                    cloud_content,
-                    validation_context
-                )
+                # Support both ValidationService (validate_artifact) and old OutputValidator (validate)
+                if hasattr(self.validator, 'validate_artifact'):
+                    # New ValidationService API
+                    from backend.models.dto import ArtifactType as BackendArtifactType
+                    try:
+                        backend_artifact_type = BackendArtifactType(artifact_type)
+                    except ValueError:
+                        # Fallback to ERD if type not found
+                        backend_artifact_type = BackendArtifactType.MERMAID_ERD
+                    
+                    validation_result_dto = await self.validator.validate_artifact(
+                        artifact_type=backend_artifact_type,
+                        content=cloud_content,
+                        meeting_notes=meeting_notes,
+                        context=validation_context
+                    )
+                    validation_result = validation_result_dto.is_valid
+                    validation_errors = validation_result_dto.errors
+                    quality_score = validation_result_dto.score
+                else:
+                    # Old OutputValidator API
+                    validation_result, validation_errors, quality_score = self.validator.validate(
+                        validation_enum,
+                        cloud_content,
+                        validation_context
+                    )
                 
                 print(f"[CLOUD_FALLBACK] Quality: {quality_score}/100")
                 

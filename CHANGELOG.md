@@ -9,9 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Unified model selection system - any Ollama model can work with any artifact type
+- Automatic fine-tuned model prioritization - fine-tuned models always tried first
+- Fine-tuning worker now actually creates Ollama models (not just logs)
+- Model auto-refresh in UI (every 30 seconds) to catch newly created models
+- Model download with streaming progress and status updates
+- Automatic routing updates when fine-tuned models are created
+
+### Fixed
+- Fine-tuning integration - models now properly registered and appear in UI
+- Model selection priority - fine-tuned models always checked first
+- Model registry synchronization - fine-tuned models loaded on startup
+- Model download registration - models appear immediately after download
+- Artifact-to-model mapping - fine-tuned models automatically mapped to artifact types
+- Model routing consistency - unified system across all services
+
 ### Changed
 - Enhanced onboarding tour with detailed descriptions and centered modal with overlay
-- Cleaned up 58+ redundant documentation files
+- Model selection now uses unified priority system (fine-tuned → routing → base → any model)
+- Fine-tuning worker creates actual Ollama models using Modelfile approach
+- ModelService automatically prioritizes fine-tuned models on startup
+- Cleaned up redundant documentation files (removed 10+ temporary status/fix/implementation docs)
 
 ---
 

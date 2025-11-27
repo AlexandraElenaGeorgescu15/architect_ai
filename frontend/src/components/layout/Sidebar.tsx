@@ -84,7 +84,7 @@ export default function Sidebar() {
         </div>
         <div className="flex items-center gap-2 pl-1 text-xs font-mono text-muted-foreground font-bold">
           <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.8)] animate-pulse' : 'bg-destructive'}`} />
-          <span>SYSTEM v3.5.2</span>
+          <span>SYSTEM</span>
         </div>
       </div>
 

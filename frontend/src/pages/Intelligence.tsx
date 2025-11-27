@@ -3,9 +3,10 @@ import { useModelStore } from '../stores/modelStore'
 import { useTrainingStore } from '../stores/trainingStore'
 import { useTraining } from '../hooks/useTraining'
 import { listModels } from '../services/modelService'
-import { listTrainingJobs, triggerTraining } from '../services/trainingService'
+import { listTrainingJobs, triggerTraining, getTrainingStats } from '../services/trainingService'
+import { ArtifactType } from '../services/generationService'
 import ModelMapping from '../components/ModelMapping'
-import { Loader2, Brain, Database, Play, RefreshCw, Network, Search as SearchIcon, Sparkles, Trash2, GraduationCap, AlertCircle, CheckCircle, TrendingUp } from 'lucide-react'
+import { Loader2, Brain, Database, Play, RefreshCw, Network, Search as SearchIcon, Sparkles, Trash2, GraduationCap, AlertCircle, CheckCircle, TrendingUp, Clock } from 'lucide-react'
 import KnowledgeGraphViewer from '../components/KnowledgeGraphViewer'
 import PatternMiningResults from '../components/PatternMiningResults'
 import { generateSyntheticData, getAllStats, clearSynthetic, SyntheticStats } from '../services/syntheticDataService'
@@ -32,6 +33,8 @@ export default function Intelligence() {
   // Synthetic data state
   const [syntheticStats, setSyntheticStats] = useState<Record<string, SyntheticStats> | null>(null)
   const [isGenerating, setIsGenerating] = useState<string | null>(null)
+  const [selectedArtifactType, setSelectedArtifactType] = useState<ArtifactType>('mermaid_erd')
+  const [feedbackCounts, setFeedbackCounts] = useState<Record<string, number>>({})
   const { addNotification } = useUIStore()
 
   useEffect(() => {
@@ -40,6 +43,7 @@ export default function Intelligence() {
     loadKnowledgeGraph()
     loadPatternMining()
     loadSyntheticStats()
+    loadFeedbackCounts()
   }, [])
   
   const loadUniversalContext = async () => {
@@ -67,8 +71,34 @@ export default function Intelligence() {
           type: 'success',
           message: 'Universal Context rebuild started. This will take a few moments...'
         })
-        // Poll for completion
-        setTimeout(() => loadUniversalContext(), 5000)
+        // Poll for completion and refresh all data
+        const pollInterval = setInterval(async () => {
+          const status = await fetch('/api/universal-context/status')
+          if (status.ok) {
+            const data = await status.json()
+            setUniversalContextStatus(data)
+            
+            // Also refresh KG and PM data to sync everything
+            await Promise.all([
+              loadKnowledgeGraph(),
+              loadPatternMining()
+            ])
+            
+            clearInterval(pollInterval)
+            setIsLoadingUniversalContext(false)
+            addNotification({
+              id: Date.now().toString(),
+              type: 'success',
+              message: 'Universal Context rebuilt successfully!'
+            })
+          }
+        }, 3000)
+        
+        // Stop polling after 30 seconds
+        setTimeout(() => {
+          clearInterval(pollInterval)
+          setIsLoadingUniversalContext(false)
+        }, 30000)
       }
     } catch (error) {
       addNotification({
@@ -76,7 +106,6 @@ export default function Intelligence() {
         type: 'error',
         message: 'Failed to rebuild Universal Context'
       })
-    } finally {
       setIsLoadingUniversalContext(false)
     }
   }
@@ -104,10 +133,13 @@ export default function Intelligence() {
       const response = await fetch('/api/analysis/patterns/current')
       if (response.ok) {
         const data = await response.json()
-        setPmData(data)
+        // The API returns { success: true, analysis: { patterns: [...], summary: {...} } }
+        // Extract the actual pattern data from the nested structure
+        const patternData = data.analysis || data
+        setPmData(patternData)
       }
     } catch (error) {
-      // Failed to load PM
+      console.error('Failed to load pattern mining:', error)
     } finally {
       setIsLoadingPM(false)
     }
@@ -178,12 +210,35 @@ export default function Intelligence() {
     }
   }
 
-  const handleTriggerTraining = async () => {
+  const loadFeedbackCounts = async () => {
     try {
-      await startTraining()
-      await refreshJobs()
+      const response = await fetch('/api/feedback/stats')
+      if (response.ok) {
+        const stats = await response.json()
+        setFeedbackCounts(stats.by_artifact_type || {})
+      }
     } catch (error) {
-      // Failed to trigger training
+      console.error('Failed to load feedback counts:', error)
+    }
+  }
+
+  const handleTriggerTraining = async () => {
+    const statsForType = syntheticStats?.[selectedArtifactType]
+    const count = statsForType?.total_examples ?? 0
+    if (count < 10) {
+      addNotification(
+        'warning',
+        `Only ${count} training examples (real + synthetic) for ${selectedArtifactType}. Need at least 10 for meaningful training (or adjust thresholds).`
+      )
+      return
+    }
+
+    try {
+      await startTraining({ artifact_type: selectedArtifactType, force: false })
+      await refreshJobs()
+      addNotification('success', `Training started for ${selectedArtifactType} with ${count} examples (real + synthetic)`)
+    } catch (error) {
+      addNotification('error', 'Failed to trigger training')
     }
   }
 
@@ -243,11 +298,11 @@ export default function Intelligence() {
           <div className="text-xs font-bold text-foreground uppercase tracking-widest">Active Training</div>
         </div>
         <div className="glass-panel rounded-2xl p-6 text-center hover:border-primary/30 transition-all">
-          <div className="text-4xl font-black text-foreground mb-2">{kgData?.components?.length || 0}</div>
+          <div className="text-4xl font-black text-foreground mb-2">{universalContextStatus?.kg_nodes || kgData?.summary?.total_components || 0}</div>
           <div className="text-xs font-bold text-foreground uppercase tracking-widest">KG Components</div>
         </div>
         <div className="glass-panel rounded-2xl p-6 text-center hover:border-primary/30 transition-all">
-          <div className="text-4xl font-black text-foreground mb-2">{pmData?.patterns?.length || 0}</div>
+          <div className="text-4xl font-black text-foreground mb-2">{universalContextStatus?.patterns_found || 0}</div>
           <div className="text-xs font-bold text-foreground uppercase tracking-widest">Patterns Found</div>
         </div>
       </div>
@@ -404,138 +459,11 @@ export default function Intelligence() {
         <PatternMiningResults data={pmData} isLoading={isLoadingPM} />
       </div>
 
-      {/* Training Data Management Section - INTEGRATED */}
-      {syntheticStats && (
-        <div className="glass-panel rounded-2xl p-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center border border-primary/30">
-                <Database className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-foreground">Training Data Management</h2>
-                <p className="text-xs text-muted-foreground">Real feedback examples + synthetic bootstrap data</p>
-              </div>
-            </div>
-            <button
-              onClick={loadSyntheticStats}
-              className="p-2 border border-border rounded-lg hover:bg-primary/10 transition-colors"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(syntheticStats).map(([artifactType, stats]) => (
-              <div
-                key={artifactType}
-                className={`bg-card border rounded-lg p-4 transition-all ${
-                  stats.ready_for_training
-                    ? 'border-green-500/30 bg-green-500/5'
-                    : stats.needs_bootstrap
-                    ? 'border-yellow-500/30 bg-yellow-500/5'
-                    : 'border-border'
-                }`}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-foreground capitalize text-sm">
-                      {artifactType.replace(/_/g, ' ')}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      {stats.ready_for_training ? (
-                        <CheckCircle className="w-3 h-3 text-green-500" />
-                      ) : stats.needs_bootstrap ? (
-                        <AlertCircle className="w-3 h-3 text-yellow-500" />
-                      ) : (
-                        <TrendingUp className="w-3 h-3 text-blue-500" />
-                      )}
-                      <span className="text-xs text-muted-foreground">
-                        {stats.ready_for_training
-                          ? 'Ready to train'
-                          : stats.needs_bootstrap
-                          ? 'Bootstrap recommended'
-                          : 'Collecting data'}
-                      </span>
-                    </div>
-                  </div>
-                  {stats.ready_for_graduation && (
-                    <GraduationCap className="w-4 h-4 text-purple-500" title="Ready to graduate to pure feedback data" />
-                  )}
-                </div>
-
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Real (feedback):</span>
-                    <span className="font-mono font-semibold text-green-500">{stats.real_examples}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Synthetic:</span>
-                    <span className="font-mono font-semibold text-blue-500">{stats.synthetic_examples}</span>
-                  </div>
-                  <div className="flex justify-between pt-2 border-t border-border">
-                    <span className="text-foreground font-medium">Total:</span>
-                    <span className="font-mono font-bold text-foreground">{stats.total_examples}/50</span>
-                  </div>
-                  {stats.synthetic_percentage > 0 && (
-                    <div className="text-[10px] text-muted-foreground">
-                      {stats.synthetic_percentage}% synthetic
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-4 flex flex-col gap-2">
-                  {stats.needs_bootstrap && (
-                    <button
-                      onClick={() => handleGenerateBootstrap(artifactType)}
-                      disabled={isGenerating === artifactType}
-                      className="w-full py-2 px-3 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 text-primary-foreground rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isGenerating === artifactType ? (
-                        <>
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="w-3 h-3" />
-                          Generate Bootstrap ({50 - stats.total_examples})
-                        </>
-                      )}
-                    </button>
-                  )}
-
-                  {stats.ready_for_graduation && stats.synthetic_examples > 0 && (
-                    <button
-                      onClick={() => handleClearSynthetic(artifactType)}
-                      className="w-full py-2 px-3 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5 transition-all"
-                    >
-                      <GraduationCap className="w-3 h-3" />
-                      Graduate ({stats.real_examples} real)
-                    </button>
-                  )}
-
-                  {stats.synthetic_examples > 0 && !stats.ready_for_graduation && (
-                    <button
-                      onClick={() => handleClearSynthetic(artifactType)}
-                      className="w-full py-1.5 px-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-lg text-[10px] font-medium flex items-center justify-center gap-1 transition-all"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      Clear Synthetic
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Model Mapping - Consolidated HuggingFace Search */}
       <ModelMapping />
 
       {/* Models and Training Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[2fr,1fr] gap-6">
         {/* Models Section */}
         <div className="glass-panel rounded-2xl p-8">
           <div className="flex items-center justify-between mb-6">
@@ -581,7 +509,7 @@ export default function Intelligence() {
             </div>
           )}
 
-          <div className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar">
+          <div className="space-y-2 max-h-[32rem] overflow-y-auto custom-scrollbar">
             {filteredModels.length === 0 ? (
               <div className="text-center py-8 text-foreground">
                 <p>No models found</p>
@@ -631,43 +559,119 @@ export default function Intelligence() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-                <Play className="w-5 h-5 text-primary" />
+                <GraduationCap className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-foreground">Training</h2>
-                <p className="text-xs text-foreground uppercase tracking-wider">Model Fine-tuning</p>
+                <h2 className="text-xl font-bold text-foreground">Model Fine-tuning</h2>
+                <p className="text-xs text-muted-foreground">Train models on your feedback data</p>
               </div>
             </div>
+          </div>
+
+          {/* Workflow Explanation */}
+          <div className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-lg">
+            <h3 className="text-sm font-semibold mb-2 text-foreground flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              How Fine-tuning Works
+            </h3>
+            <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+              <li>Generate artifacts and provide feedback (👍/👎 buttons on artifact cards)</li>
+              <li>System collects your feedback as training examples</li>
+              <li>Select an artifact type below and start training (minimum 10 examples recommended)</li>
+              <li>Model learns from your preferences to generate better artifacts</li>
+            </ol>
+          </div>
+
+          {/* Artifact Type Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-semibold mb-3 text-foreground">Select Artifact Type to Train</label>
+            <select
+              value={selectedArtifactType}
+              onChange={(e) => setSelectedArtifactType(e.target.value as ArtifactType)}
+              className="w-full px-4 py-3 text-sm glass-input rounded-xl text-foreground outline-none focus:border-primary focus:shadow-lg focus:shadow-primary/10 transition-all duration-300 shadow-sm hover:shadow-md border-2 border-border bg-background"
+            >
+              {(syntheticStats
+                ? (Object.keys(syntheticStats) as ArtifactType[])
+                : (['mermaid_erd', 'mermaid_sequence', 'mermaid_class', 'html_prototype'] as ArtifactType[])
+              ).map((type) => {
+                const statsForType = syntheticStats?.[type]
+                const count = statsForType?.total_examples ?? 0
+                const hasEnough = count >= 10
+                const displayName = type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                const statusIcon = hasEnough ? '✅' : '⚠️'
+                const statusText = hasEnough ? `${count} examples` : `${count} examples (need ${10 - count} more)`
+                return (
+                  <option key={type} value={type} className="bg-card text-foreground">
+                    {statusIcon} {displayName} - {statusText}
+                  </option>
+                )
+              })}
+            </select>
+            
+            {/* Show selected artifact details */}
+            {selectedArtifactType && syntheticStats?.[selectedArtifactType] && (
+              <div className="mt-3 p-3 rounded-lg bg-muted/30 border border-border">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-foreground">
+                    {selectedArtifactType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                  </span>
+                  <span className={`text-sm font-bold ${
+                    (syntheticStats[selectedArtifactType]?.total_examples ?? 0) >= 10 
+                      ? 'text-green-500' 
+                      : 'text-yellow-500'
+                  }`}>
+                    {(syntheticStats[selectedArtifactType]?.total_examples ?? 0) >= 10 ? '✅ Ready' : '⚠️ Need More'}
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {(syntheticStats[selectedArtifactType]?.total_examples ?? 0)} training examples available
+                </div>
+              </div>
+            )}
+            
             <button
               onClick={handleTriggerTraining}
               disabled={isTraining}
-              className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              className="mt-4 w-full px-4 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold"
             >
               {isTraining ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-              {isTraining ? 'Training...' : 'Start Training'}
+              {isTraining ? 'Training...' : `Train ${selectedArtifactType.replace(/_/g, ' ')}`}
             </button>
           </div>
 
+          {/* Active Jobs */}
           <div className="space-y-4">
             <div>
-              <h3 className="text-sm font-semibold mb-2 text-foreground">Active Jobs</h3>
+              <h3 className="text-sm font-semibold mb-3 text-foreground flex items-center gap-2">
+                <Loader2 className="w-4 h-4" />
+                Active Jobs
+              </h3>
               {activeJobs.length === 0 ? (
-                <p className="text-sm text-foreground">No active training jobs</p>
+                <p className="text-sm text-muted-foreground bg-muted/30 p-4 rounded-lg text-center">
+                  No active training jobs
+                </p>
               ) : (
                 <div className="space-y-2">
                   {activeJobs.map((job) => (
-                    <div key={job.id} className="p-3 border border-border rounded-lg bg-primary/5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-foreground">{job.artifact_type}</span>
-                        <span className="text-xs text-foreground">{job.status}</span>
+                    <div key={job.id} className="p-4 border border-border rounded-lg bg-primary/5">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-foreground capitalize">
+                          {job.artifact_type?.replace(/_/g, ' ')}
+                        </span>
+                        <span className="text-xs px-2 py-1 rounded-full bg-primary/20 text-primary font-medium">
+                          {job.status}
+                        </span>
                       </div>
                       {job.progress !== undefined && (
-                        <div className="mt-2 h-2 bg-background rounded-full overflow-hidden">
-                          <div 
-                            className="h-full bg-primary transition-all" 
-                            style={{ width: `${job.progress}%` }}
-                          />
-                        </div>
+                        <>
+                          <div className="h-2 bg-background rounded-full overflow-hidden mb-1">
+                            <div 
+                              className="h-full bg-primary transition-all" 
+                              style={{ width: `${job.progress}%` }}
+                            />
+                          </div>
+                          <div className="text-xs text-muted-foreground text-right">{job.progress}%</div>
+                        </>
                       )}
                     </div>
                   ))}
@@ -675,11 +679,43 @@ export default function Intelligence() {
               )}
             </div>
 
+            {/* Completed Jobs */}
             <div>
-              <h3 className="text-sm font-semibold mb-2 text-foreground">Completed Jobs ({completedJobs.length})</h3>
-              <div className="text-sm text-foreground">
-                Successfully completed training jobs
-              </div>
+              <h3 className="text-sm font-semibold mb-3 text-foreground flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                Completed Jobs ({completedJobs.length})
+              </h3>
+              {completedJobs.length === 0 ? (
+                <p className="text-sm text-muted-foreground bg-muted/30 p-4 rounded-lg text-center">
+                  No completed training jobs yet
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {completedJobs.slice(0, 5).map((job) => (
+                    <div key={job.id} className="p-3 border border-border rounded-lg bg-green-500/5 hover:bg-green-500/10 transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-sm capitalize">
+                            {job.artifact_type?.replace(/_/g, ' ')}
+                          </div>
+                          {job.created_at && (
+                            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                              <Clock className="w-3 h-3" />
+                              {new Date(job.created_at).toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                      </div>
+                      {job.metrics && (
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          {job.metrics.final_loss && `Loss: ${job.metrics.final_loss.toFixed(4)}`}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

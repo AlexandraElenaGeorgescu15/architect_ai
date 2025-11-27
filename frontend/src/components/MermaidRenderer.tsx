@@ -46,6 +46,105 @@ export default function MermaidRenderer({ content, className = '' }: MermaidRend
         // Clear previous content
         container.innerHTML = ''
 
+        // Extract Mermaid diagram from content (remove any surrounding text)
+        let diagramContent = content.trim()
+        
+        // Try to extract from markdown code blocks first
+        const mermaidPattern = /```(?:mermaid)?\s*\n(.*?)```/s
+        const codeBlockMatch = diagramContent.match(mermaidPattern)
+        if (codeBlockMatch) {
+          diagramContent = codeBlockMatch[1].trim()
+        } else {
+          // If no code block, check if content already is mermaid code
+          // Look for mermaid diagram type declarations
+          const diagramTypes = [
+            'erDiagram', 'flowchart', 'graph', 'sequenceDiagram',
+            'classDiagram', 'stateDiagram', 'gantt', 'pie', 'journey',
+            'gitgraph', 'mindmap', 'timeline', 'C4Context', 'C4Container',
+            'C4Component', 'C4Deployment'
+          ]
+          
+          // If content contains a diagram type, extract from there
+          for (const dt of diagramTypes) {
+            const idx = diagramContent.indexOf(dt)
+            if (idx !== -1) {
+              let extracted = diagramContent.substring(idx).trim()
+              
+              // Try to remove trailing explanatory text
+              const lines = extracted.split('\n')
+              const diagramLines: string[] = []
+              
+              for (const line of lines) {
+                const lineTrimmed = line.trim()
+                // Stop if we hit explanatory text
+                if (lineTrimmed.startsWith('**Explanation') || 
+                    lineTrimmed.startsWith('**Note') ||
+                    lineTrimmed.startsWith('Explanation') ||
+                    (lineTrimmed.startsWith('1.') && diagramLines.length > 5)) {
+                  break
+                }
+                // Skip markdown formatting lines
+                if (lineTrimmed && !lineTrimmed.startsWith('**') && !lineTrimmed.startsWith('#')) {
+                  diagramLines.push(line)
+                }
+              }
+              
+              if (diagramLines.length > 0) {
+                diagramContent = diagramLines.join('\n').trim()
+                // Remove any remaining markdown formatting
+                diagramContent = diagramContent.replace(/\*\*.*?\*\*/g, '')
+                diagramContent = diagramContent.replace(/^#+\s+.*$/gm, '')
+                diagramContent = diagramContent.trim()
+              } else {
+                diagramContent = extracted
+              }
+              break
+            }
+          }
+        }
+        
+        // Fix ERD syntax if it's using class diagram syntax (client-side safety net)
+        if (diagramContent.includes('erDiagram') && (diagramContent.includes('class ') || diagramContent.includes('CLASS '))) {
+          // Convert class diagram syntax to ERD syntax
+          diagramContent = diagramContent.replace(/class\s+(\w+)\s*\{([^}]+)\}/gi, (match, entityName, fieldsText) => {
+            const erdFields: string[] = []
+            for (const line of fieldsText.split('\n')) {
+              const trimmed = line.trim()
+              if (!trimmed || !trimmed.startsWith('-')) continue
+              
+              const fieldText = trimmed.substring(1).trim()
+              const fieldMatch = fieldText.match(/(\w+)(?:\s*\(([^)]+)\))?/)
+              if (fieldMatch) {
+                const fieldName = fieldMatch[1]
+                const description = fieldMatch[2] || ''
+                
+                let fieldType = 'string'
+                if (fieldName.endsWith('_id') || fieldName === 'id') {
+                  fieldType = 'int'
+                } else if (fieldName.toLowerCase().includes('date') || fieldName.toLowerCase().includes('time')) {
+                  fieldType = 'datetime'
+                } else if (description.toLowerCase().includes('boolean') || fieldName.startsWith('is_') || fieldName.startsWith('has_')) {
+                  fieldType = 'boolean'
+                }
+                
+                let keySuffix = ''
+                if (description.toLowerCase().includes('primary key') || fieldName === 'id') {
+                  keySuffix = ' PK'
+                } else if (description.toLowerCase().includes('foreign key') || (fieldName.endsWith('_id') && fieldName !== 'id')) {
+                  keySuffix = ' FK'
+                }
+                
+                erdFields.push(`        ${fieldType} ${fieldName}${keySuffix}`)
+              }
+            }
+            
+            if (erdFields.length > 0) {
+              return `${entityName} {\n${erdFields.join('\n')}\n    }`
+            }
+            return `${entityName} {\n        int id PK\n    }`
+          })
+        }
+
         // Generate unique ID for this diagram
         const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`
 
@@ -53,10 +152,10 @@ export default function MermaidRenderer({ content, className = '' }: MermaidRend
         const tempDiv = document.createElement('div')
         tempDiv.id = id
         tempDiv.className = 'mermaid'
-        tempDiv.textContent = content
+        tempDiv.textContent = diagramContent
 
         // Render the diagram
-        const { svg } = await mermaid.render(id, content)
+        const { svg } = await mermaid.render(id, diagramContent)
         
         // Insert the SVG
         container.innerHTML = svg

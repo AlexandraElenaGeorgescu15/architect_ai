@@ -66,7 +66,12 @@ class ValidationService:
         Returns:
             ValidationResultDTO with score, is_valid, and details
         """
+        logger.info(f"🔍 [VALIDATION] Starting validation: artifact_type={artifact_type.value}, "
+                   f"content_length={len(content) if content else 0}, "
+                   f"has_meeting_notes={bool(meeting_notes)}, has_context={bool(context)}")
+        
         if not content or not content.strip():
+            logger.warning(f"⚠️ [VALIDATION] Empty artifact content, returning invalid result")
             return ValidationResultDTO(
                 score=0.0,
                 is_valid=False,
@@ -77,23 +82,55 @@ class ValidationService:
         
         # Use ArtifactValidator if available
         if self.validator:
+            logger.info(f"✅ [VALIDATION] Using ArtifactValidator for validation")
             try:
+                # Build context dict for ArtifactValidator
+                validation_context = context or {}
+                if meeting_notes:
+                    validation_context["meeting_notes"] = meeting_notes
+                logger.debug(f"📋 [VALIDATION] Validation context keys: {list(validation_context.keys())}")
+                
+                # ArtifactValidator.validate returns a ValidationResult dataclass.
+                # Convert it into our DTO representation.
                 result = self.validator.validate(
                     artifact_type=artifact_type.value,
                     content=content,
-                    meeting_notes=meeting_notes or ""
+                    context=validation_context
                 )
-                
+
+                score = float(getattr(result, "score", 0.0) or 0.0)
+                is_valid = bool(getattr(result, "is_valid", False))
+                result_errors = list(getattr(result, "errors", []) or [])
+                result_warnings = list(getattr(result, "warnings", []) or [])
+
+                logger.info(
+                    f"📊 [VALIDATION] ArtifactValidator result: score={score:.1f}, "
+                    f"is_valid={is_valid}, "
+                    f"errors={len(result_errors)}, "
+                    f"warnings={len(result_warnings)}"
+                )
+
                 dto = ValidationResultDTO(
-                    score=result.get("score", 0.0),
-                    is_valid=result.get("is_valid", False),
-                    validators=result.get("validators", {}),
-                    errors=result.get("errors", []),
-                    warnings=result.get("warnings", [])
+                    score=score,
+                    is_valid=is_valid,
+                    validators={
+                        "artifact_validator": {
+                            "score": score,
+                            "errors": len(result_errors),
+                            "warnings": len(result_warnings),
+                        }
+                    },
+                    errors=result_errors,
+                    warnings=result_warnings,
                 )
-                return self._apply_custom_validators(artifact_type, content, dto)
+                final_dto = self._apply_custom_validators(artifact_type, content, dto)
+                logger.info(
+                    f"✅ [VALIDATION] Final validation result: score={final_dto.score:.1f}, "
+                    f"is_valid={final_dto.is_valid}"
+                )
+                return final_dto
             except Exception as e:
-                logger.error(f"Error in ArtifactValidator: {e}", exc_info=True)
+                logger.error(f"❌ [VALIDATION] Error in ArtifactValidator: {e}", exc_info=True)
                 # Fall through to basic validation
         
         # Fallback: Basic validation
@@ -129,7 +166,7 @@ class ValidationService:
         
         # Artifact-specific validation
         if artifact_type.value.startswith("mermaid_"):
-            # Mermaid diagram validation
+            # Mermaid diagram validation (uses cleaned content internally)
             mermaid_errors = self._validate_mermaid(content)
             errors.extend(mermaid_errors)
             score -= len(mermaid_errors) * 10.0
@@ -151,6 +188,12 @@ class ValidationService:
             api_errors = self._validate_api_docs(content)
             errors.extend(api_errors)
             score -= len(api_errors) * 10.0
+        
+        elif artifact_type.value.startswith("html_"):
+            # HTML validation
+            html_errors = self._validate_html(content)
+            errors.extend(html_errors)
+            score -= len(html_errors) * 10.0
         
         # Meeting notes relevance (if provided)
         if meeting_notes:
@@ -177,37 +220,189 @@ class ValidationService:
             warnings=warnings
         )
     
+    def _fix_erd_syntax(self, content: str) -> str:
+        """
+        Fix ERD diagrams that incorrectly use class diagram syntax.
+        Converts: class USER { - id (primary key) } 
+        To: USER { int id PK }
+        """
+        import re
+        
+        # Only fix if this is an ERD diagram
+        if "erDiagram" not in content:
+            return content
+        
+        # Pattern to match class diagram syntax in ERD: class ENTITY { - field (description) }
+        class_pattern = r'class\s+(\w+)\s*\{([^}]+)\}'
+        
+        def convert_class_to_erd(match):
+            entity_name = match.group(1)
+            fields_text = match.group(2)
+            
+            # Parse fields: "- id (primary key)" -> "int id PK"
+            erd_fields = []
+            for line in fields_text.split('\n'):
+                line = line.strip()
+                if not line or not line.startswith('-'):
+                    continue
+                
+                # Remove leading dash and whitespace
+                field_text = line[1:].strip()
+                
+                # Extract field name and description
+                # Pattern: "id (primary key)" or "username" or "user_id (foreign key references USER(id))"
+                field_match = re.match(r'(\w+)(?:\s*\(([^)]+)\))?', field_text)
+                if field_match:
+                    field_name = field_match.group(1)
+                    description = field_match.group(2) if field_match.group(2) else ""
+                    
+                    # Determine type (default to string/int based on field name)
+                    field_type = "string"
+                    if field_name.endswith("_id") or field_name == "id":
+                        field_type = "int"
+                    elif "date" in field_name.lower() or "time" in field_name.lower():
+                        field_type = "datetime"
+                    elif "boolean" in description.lower() or field_name.startswith("is_") or field_name.startswith("has_"):
+                        field_type = "boolean"
+                    
+                    # Determine PK/FK
+                    key_suffix = ""
+                    if "primary key" in description.lower() or field_name == "id":
+                        key_suffix = " PK"
+                    elif "foreign key" in description.lower() or (field_name.endswith("_id") and field_name != "id"):
+                        key_suffix = " FK"
+                    
+                    erd_fields.append(f"        {field_type} {field_name}{key_suffix}")
+            
+            # Return ERD format
+            if erd_fields:
+                return f"{entity_name} {{\n" + "\n".join(erd_fields) + "\n    }}"
+            else:
+                return f"{entity_name} {{\n        int id PK\n    }}"
+        
+        # Replace all class definitions with ERD format
+        fixed = re.sub(class_pattern, convert_class_to_erd, content, flags=re.MULTILINE | re.DOTALL)
+        
+        # Also fix "CLASS ENTITY" (uppercase)
+        class_pattern_upper = r'CLASS\s+(\w+)\s*\{([^}]+)\}'
+        fixed = re.sub(class_pattern_upper, convert_class_to_erd, fixed, flags=re.MULTILINE | re.DOTALL)
+        
+        return fixed
+    
+    def _extract_mermaid_diagram(self, content: str) -> str:
+        """
+        Extract Mermaid diagram code from markdown code blocks or plain text.
+        Removes any surrounding text and returns only the diagram code.
+        """
+        import re
+        
+        # Try to extract from markdown code blocks first
+        mermaid_pattern = r'```(?:mermaid)?\s*\n(.*?)```'
+        matches = re.findall(mermaid_pattern, content, re.DOTALL | re.IGNORECASE)
+        if matches:
+            # Return the first (and usually only) mermaid code block
+            diagram = matches[0].strip()
+            # Remove any leading/trailing whitespace and newlines
+            return diagram.strip()
+        
+        # If no code block found, check if content already is mermaid code
+        # Look for mermaid diagram type declarations
+        diagram_types = [
+            "erDiagram", "flowchart", "graph", "sequenceDiagram",
+            "classDiagram", "stateDiagram", "gantt", "pie", "journey",
+            "gitgraph", "mindmap", "timeline", "C4Context", "C4Container",
+            "C4Component", "C4Deployment"
+        ]
+        
+        # If content contains a diagram type, try to extract just the diagram
+        for dt in diagram_types:
+            if dt in content:
+                idx = content.find(dt)
+                # Extract from diagram type onwards
+                diagram = content[idx:].strip()
+                
+                # Try to find the end of the diagram by looking for balanced braces
+                # For most diagram types, we can find the last meaningful line
+                lines = diagram.split('\n')
+                diagram_lines = []
+                brace_count = 0
+                bracket_count = 0
+                paren_count = 0
+                
+                for line in lines:
+                    # Count braces/brackets to detect when diagram ends
+                    brace_count += line.count('{') - line.count('}')
+                    bracket_count += line.count('[') - line.count(']')
+                    paren_count += line.count('(') - line.count(')')
+                    
+                    # Add line if it looks like diagram content
+                    line_stripped = line.strip()
+                    if line_stripped and not line_stripped.startswith('**') and not line_stripped.startswith('#'):
+                        diagram_lines.append(line)
+                    
+                    # Stop if we hit explanatory text (common patterns)
+                    if (line_stripped.startswith('**Explanation') or 
+                        line_stripped.startswith('**Note') or
+                        line_stripped.startswith('Explanation') or
+                        (line_stripped.startswith('1.') and len(diagram_lines) > 5)):
+                        break
+                
+                # If we collected lines, return them
+                if diagram_lines:
+                    extracted = '\n'.join(diagram_lines).strip()
+                    # Remove any trailing markdown formatting
+                    extracted = re.sub(r'\*\*.*?\*\*', '', extracted)  # Remove bold text
+                    extracted = re.sub(r'^#+\s+.*$', '', extracted, flags=re.MULTILINE)  # Remove headers
+                    return extracted.strip()
+                
+                # Fallback: return from diagram type to end (original behavior)
+                return diagram
+        
+        # If no mermaid found, return original content (will fail validation)
+        return content
+    
     def _validate_mermaid(self, content: str) -> List[str]:
         """Validate Mermaid diagram syntax."""
-        errors = []
+        errors: List[str] = []
+        warnings: List[str] = []
+        
+        # Extract clean mermaid diagram first
+        clean_content = self._extract_mermaid_diagram(content)
+        
+        # Fix ERD syntax if it's using class diagram syntax
+        if "erDiagram" in clean_content and ("class " in clean_content or "CLASS " in clean_content):
+            clean_content = self._fix_erd_syntax(clean_content)
         
         # Check for Mermaid diagram type
         diagram_types = [
             "erDiagram", "flowchart", "graph", "sequenceDiagram",
-            "classDiagram", "stateDiagram", "gantt", "pie", "journey"
+            "classDiagram", "stateDiagram", "gantt", "pie", "journey",
+            "gitgraph", "mindmap", "timeline", "C4Context", "C4Container",
+            "C4Component", "C4Deployment"
         ]
         
-        has_diagram_type = any(dt in content for dt in diagram_types)
+        has_diagram_type = any(dt in clean_content for dt in diagram_types)
         if not has_diagram_type:
             errors.append("Missing Mermaid diagram type declaration")
         
         # Check for balanced brackets
-        if content.count('{') != content.count('}'):
+        if clean_content.count('{') != clean_content.count('}'):
             errors.append("Unbalanced curly braces")
         
-        if content.count('[') != content.count(']'):
+        if clean_content.count('[') != clean_content.count(']'):
             errors.append("Unbalanced square brackets")
         
         # Check for basic syntax
-        if '-->' not in content and '---' not in content and '||' not in content:
-            if "erDiagram" not in content and "gantt" not in content and "pie" not in content:
+        if '-->' not in clean_content and '---' not in clean_content and '||' not in clean_content:
+            if "erDiagram" not in clean_content and "gantt" not in clean_content and "pie" not in clean_content:
                 warnings.append("No relationships/connections found")
         
         return errors
     
     def _validate_code(self, content: str) -> List[str]:
         """Validate code prototype."""
-        errors = []
+        errors: List[str] = []
+        warnings: List[str] = []
         
         # Check for code structure
         if 'def ' not in content and 'function ' not in content and 'class ' not in content:
@@ -225,7 +420,8 @@ class ValidationService:
     
     def _validate_api_docs(self, content: str) -> List[str]:
         """Validate API documentation."""
-        errors = []
+        errors: List[str] = []
+        warnings: List[str] = []
         
         # Check for API endpoints
         api_patterns = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH']
@@ -237,6 +433,32 @@ class ValidationService:
         # Check for paths
         if '/' not in content and 'api' not in content.lower():
             warnings.append("No API paths found")
+        
+        return errors
+    
+    def _validate_html(self, content: str) -> List[str]:
+        """Validate HTML artifacts."""
+        errors: List[str] = []
+        warnings: List[str] = []
+        
+        # Check for basic HTML structure
+        if '<html' not in content.lower() and '<div' not in content.lower() and '<body' not in content.lower():
+            errors.append("No HTML structure found")
+        
+        # Check for balanced tags (basic)
+        open_tags = content.count('<')
+        close_tags = content.count('>')
+        if open_tags != close_tags:
+            warnings.append("Unbalanced HTML tags detected")
+        
+        # Check for common HTML elements
+        has_elements = any(tag in content.lower() for tag in ['<div', '<span', '<button', '<input', '<form', '<table', '<ul', '<ol'])
+        if not has_elements:
+            warnings.append("No common HTML elements found")
+        
+        # Check for proper closing tags (basic check)
+        if content.count('</div>') > 0 and content.count('<div') > content.count('</div>'):
+            warnings.append("Some div tags may not be properly closed")
         
         return errors
     

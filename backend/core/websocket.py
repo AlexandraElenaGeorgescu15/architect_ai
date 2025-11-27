@@ -276,7 +276,7 @@ class WebSocketManager:
                 "message": message,
                 "quality_prediction": quality_prediction,
             },
-            room_id=job_id
+            room_id=None  # Broadcast to all rooms so frontend receives it
         )
     
     async def emit_generation_chunk(self, job_id: str, chunk: str, progress: float):
@@ -288,32 +288,66 @@ class WebSocketManager:
                 "chunk": chunk,
                 "progress": progress
             },
-            room_id=job_id
+            room_id=None  # Broadcast to all rooms so frontend receives it
         )
     
-    async def emit_generation_complete(self, job_id: str, artifact_id: str, validation_score: float, is_valid: bool):
+    async def emit_generation_complete(
+        self, 
+        job_id: str, 
+        artifact_id: str, 
+        validation_score: float, 
+        is_valid: bool,
+        artifact: Optional[Dict[str, Any]] = None
+    ):
         """Emit generation complete event."""
+        logger.info(f"📡 [WEBSOCKET] Emitting generation_complete: job_id={job_id}, "
+                   f"artifact_id={artifact_id}, validation_score={validation_score:.1f}, "
+                   f"is_valid={is_valid}, has_artifact={bool(artifact)}")
+        event_data = {
+            "job_id": job_id,
+            "artifact_id": artifact_id,
+            "validation_score": validation_score,
+            "is_valid": is_valid
+        }
+        # Include artifact if provided (for immediate UI display)
+        if artifact:
+            # Convert artifact_type to type for frontend compatibility
+            artifact_for_frontend = artifact.copy()
+            if "artifact_type" in artifact_for_frontend:
+                artifact_for_frontend["type"] = artifact_for_frontend.pop("artifact_type")
+            # Ensure id field exists
+            if "id" not in artifact_for_frontend and "artifact_id" in artifact_for_frontend:
+                artifact_for_frontend["id"] = artifact_for_frontend["artifact_id"]
+            # Add created_at/updated_at if missing
+            from datetime import datetime
+            if "created_at" not in artifact_for_frontend:
+                artifact_for_frontend["created_at"] = datetime.now().isoformat()
+            if "updated_at" not in artifact_for_frontend:
+                artifact_for_frontend["updated_at"] = datetime.now().isoformat()
+            event_data["artifact"] = artifact_for_frontend
+            logger.debug(f"📦 [WEBSOCKET] Artifact included in event: type={artifact_for_frontend.get('type')}, "
+                        f"content_length={len(artifact_for_frontend.get('content', ''))}")
+        
+        # Broadcast to both job_id room AND main room (for frontend connected to 'main')
         await self.emit_event(
             EventType.GENERATION_COMPLETE,
-            {
-                "job_id": job_id,
-                "artifact_id": artifact_id,
-                "validation_score": validation_score,
-                "is_valid": is_valid
-            },
-            room_id=job_id
+            event_data,
+            room_id=None  # Broadcast to all rooms
         )
+        logger.info(f"✅ [WEBSOCKET] Successfully emitted generation_complete event: job_id={job_id} (broadcast to all rooms)")
     
     async def emit_generation_error(self, job_id: str, error: str):
         """Emit generation error event."""
+        logger.error(f"📡 [WEBSOCKET] Emitting generation_error: job_id={job_id}, error={error[:100]}")
         await self.emit_event(
             EventType.GENERATION_ERROR,
             {
                 "job_id": job_id,
                 "error": error
             },
-            room_id=job_id
+            room_id=None  # Broadcast to all rooms so frontend receives it
         )
+        logger.info(f"✅ [WEBSOCKET] Successfully emitted generation_error event: job_id={job_id} (broadcast to all rooms)")
     
     async def emit_training_progress(self, job_id: str, progress: float, epoch: Optional[int] = None, loss: Optional[float] = None):
         """Emit training progress event."""

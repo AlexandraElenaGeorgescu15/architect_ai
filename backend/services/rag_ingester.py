@@ -67,11 +67,9 @@ class RAGIngester:
         self.index_path = Path(index_path or settings.rag_index_path)
         self.index_path.mkdir(parents=True, exist_ok=True)
         
-        # Initialize ChromaDB client
-        self.client = chromadb.PersistentClient(
-            path=str(self.index_path),
-            settings=ChromaSettings(anonymized_telemetry=False)
-        )
+        # Use shared ChromaDB client to avoid "different settings" conflicts
+        from backend.core.chromadb_client import get_shared_chromadb_client
+        self.client = get_shared_chromadb_client(str(self.index_path))
         
         # Get or create collection
         self.collection = self.client.get_or_create_collection(
@@ -304,6 +302,8 @@ class RAGIngester:
         stats = {
             "files_processed": 0,
             "files_indexed": 0,
+            "files_skipped": 0,  # Already indexed (unchanged)
+            "files_excluded": 0,  # Excluded by filters
             "chunks_created": 0,
             "errors": 0
         }
@@ -325,7 +325,21 @@ class RAGIngester:
             
             stats["files_processed"] += 1
             
+            # Check if file should be indexed
+            if not self._should_index_file(file_path):
+                stats["files_excluded"] += 1
+                continue
+            
             try:
+                # Check if file is already indexed and unchanged
+                current_hash = self._calculate_file_hash(file_path)
+                existing_hash = self.file_hashes.get(str(file_path), "")
+                
+                if current_hash == existing_hash and existing_hash:
+                    stats["files_skipped"] += 1
+                    continue
+                
+                # Index the file
                 if await self.index_file(file_path):
                     stats["files_indexed"] += 1
                     # Count chunks (approximate)

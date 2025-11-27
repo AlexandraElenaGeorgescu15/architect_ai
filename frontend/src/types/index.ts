@@ -13,6 +13,13 @@ export interface Artifact {
   score?: number
   created_at: string
   updated_at: string
+  model_used?: string
+  attempts?: Array<{
+    model: string
+    provider: string
+    score: number
+    retry: number
+  }>
 }
 
 // Context Types

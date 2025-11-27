@@ -13,6 +13,15 @@ interface ArtifactViewerProps {
 }
 
 export default function ArtifactViewer({ artifact, onUpdate }: ArtifactViewerProps) {
+  // Safety check: return early if artifact is not provided
+  if (!artifact) {
+    return (
+      <div className="bg-card border border-border rounded-lg overflow-hidden p-6">
+        <p className="text-muted-foreground">No artifact selected</p>
+      </div>
+    )
+  }
+
   const [isEditing, setIsEditing] = useState(false)
   const [editedContent, setEditedContent] = useState(artifact.content)
   const [showFeedbackModal, setShowFeedbackModal] = useState(false)
@@ -21,8 +30,9 @@ export default function ArtifactViewer({ artifact, onUpdate }: ArtifactViewerPro
   const [isComparisonOpen, setComparisonOpen] = useState(false)
   const { addNotification } = useUIStore()
 
-  const isMermaid = artifact.type.startsWith('mermaid_')
-  const isCode = artifact.type === 'code_prototype' || artifact.type === 'api_docs'
+  const isMermaid = artifact?.type?.startsWith('mermaid_') || false
+  const isCode = artifact?.type === 'code_prototype' || artifact?.type === 'api_docs'
+  const isHTML = artifact?.type?.startsWith('html_') || !!(artifact as any)?.html_content
 
   const handleCopy = async () => {
     try {
@@ -98,6 +108,22 @@ export default function ArtifactViewer({ artifact, onUpdate }: ArtifactViewerPro
             </span>
           )}
         </div>
+        
+        {/* Model and Attempt Info */}
+        {(artifact.model_used || artifact.attempts) && (
+          <div className="flex items-center gap-3 text-xs text-muted-foreground px-6 pb-2">
+            {artifact.model_used && (
+              <span className="px-2 py-1 bg-primary/10 text-primary rounded font-medium">
+                Model: {artifact.model_used.replace('ollama:', '').replace('huggingface:', '')}
+              </span>
+            )}
+            {artifact.attempts && artifact.attempts.length > 0 && (
+              <span className="px-2 py-1 bg-secondary text-muted-foreground rounded">
+                Attempt {artifact.attempts[artifact.attempts.length - 1].retry + 1} of {artifact.attempts.length}
+              </span>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center gap-3">
           {/* Version Selector */}
@@ -157,7 +183,16 @@ export default function ArtifactViewer({ artifact, onUpdate }: ArtifactViewerPro
 
       {/* Content */}
       <div className="p-6">
-        {isMermaid ? (
+        {isHTML ? (
+          <div className="bg-muted rounded-lg overflow-hidden border border-border">
+            <iframe
+              srcDoc={(artifact as any).html_content || artifact.content}
+              className="w-full h-[600px] border-0"
+              title="HTML Preview"
+              sandbox="allow-scripts allow-same-origin allow-forms"
+            />
+          </div>
+        ) : isMermaid ? (
           <div className="bg-muted rounded-lg p-4 overflow-auto">
             <pre className="text-sm font-mono whitespace-pre-wrap">{artifact.content}</pre>
             <div className="mt-4 text-xs text-muted-foreground">

@@ -59,7 +59,7 @@ class ProjectAwareChatService:
     async def chat(
         self,
         message: str,
-        conversation_history: Optional[List[Dict[str, str]]] = None,
+        conversation_history: Optional[List[Any]] = None,
         include_project_context: bool = True,
         stream: bool = False
     ) -> AsyncGenerator[Dict[str, Any], None]:
@@ -75,7 +75,7 @@ class ProjectAwareChatService:
         Yields:
             Dictionary with response chunks or final response
         """
-        metrics.counter("chat_requests_total", "Total chat requests").inc()
+        metrics.increment("chat_requests_total")
         
         # Build comprehensive project context
         project_context = ""
@@ -162,7 +162,7 @@ class ProjectAwareChatService:
         
         # Fallback to cloud (Gemini preferred for chat)
         try:
-            cloud_response = await self._call_cloud_chat(
+            cloud_response = self._call_cloud_chat(
                 message=message,
                 system_message=system_message,
                 prompt=prompt,
@@ -173,7 +173,12 @@ class ProjectAwareChatService:
                 async for chunk in cloud_response:
                     yield chunk
             else:
-                yield cloud_response
+                # For non-streaming, collect all chunks and yield the final result
+                final_chunk = None
+                async for chunk in cloud_response:
+                    final_chunk = chunk
+                if final_chunk:
+                    yield final_chunk
                 
         except Exception as e:
             logger.error(f"Cloud chat failed: {e}")
@@ -292,7 +297,7 @@ Use this context to provide accurate, project-specific answers."""
     def _build_prompt(
         self,
         message: str,
-        conversation_history: Optional[List[Dict[str, str]]],
+        conversation_history: Optional[List[Any]],
         project_context: str
     ) -> str:
         """Build chat prompt with history and context."""
@@ -306,8 +311,19 @@ Use this context to provide accurate, project-specific answers."""
         if conversation_history:
             parts.append("## Conversation History:")
             for msg in conversation_history[-5:]:  # Last 5 messages
-                role = msg.get("role", "user")
-                content = msg.get("content", "")
+                # Handle both Pydantic models and dicts
+                if hasattr(msg, 'role') and hasattr(msg, 'content'):
+                    # Pydantic model (ChatMessage)
+                    role = msg.role
+                    content = msg.content
+                elif isinstance(msg, dict):
+                    # Dictionary
+                    role = msg.get("role", "user")
+                    content = msg.get("content", "")
+                else:
+                    # Fallback
+                    role = "user"
+                    content = str(msg)
                 parts.append(f"{role.capitalize()}: {content}")
             parts.append("")
         

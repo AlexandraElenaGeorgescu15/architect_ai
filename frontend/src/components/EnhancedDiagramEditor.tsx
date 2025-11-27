@@ -19,7 +19,7 @@ import ReactFlow, {
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 
-import { Wand2, Download, Eye, Code as CodeIcon, Loader2 } from 'lucide-react'
+import { Wand2, Download, Eye, Code as CodeIcon, Loader2, Plus, Square, Circle, Table, Box, Save } from 'lucide-react'
 import { useArtifactStore } from '../stores/artifactStore'
 import { useUIStore } from '../stores/uiStore'
 import { nodeTypes } from './nodes'
@@ -28,16 +28,21 @@ import { parseDiagram, improveDiagram } from '../services/diagramService'
 import { getAdapterForDiagramType } from '../services/diagrams'
 import type { ReactFlowNode, ReactFlowEdge } from '../services/diagramService'
 
-export default function EnhancedDiagramEditor() {
+interface EnhancedDiagramEditorProps {
+  selectedArtifactId?: string | null
+}
+
+export default function EnhancedDiagramEditor({ selectedArtifactId: propSelectedArtifactId }: EnhancedDiagramEditorProps = {}) {
   const { artifacts, updateArtifact } = useArtifactStore()
   const { addNotification } = useUIStore()
 
   // State
-  const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null)
+  const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(propSelectedArtifactId || null)
   const [viewMode, setViewMode] = useState<'canvas' | 'code'>('canvas')
   const [mermaidCode, setMermaidCode] = useState('')
   const [isSyncing, setIsSyncing] = useState(false)
   const [isImproving, setIsImproving] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   // React Flow state
   const [nodes, setNodes, onNodesChange] = useNodesState([])
@@ -48,17 +53,38 @@ export default function EnhancedDiagramEditor() {
     ? artifacts.find((a) => a.id === selectedArtifactId)
     : null
 
-  // Get diagram artifacts
+  // Get diagram artifacts (only Mermaid, no HTML)
   const diagramArtifacts = artifacts.filter(
-    (a) => a.type.startsWith('mermaid_') || a.type.startsWith('html_')
+    (a) => a.type.startsWith('mermaid_')
   )
 
-  // Initialize with first artifact
+  // Update selected artifact when prop changes
   useEffect(() => {
-    if (diagramArtifacts.length > 0 && !selectedArtifactId) {
+    if (propSelectedArtifactId) {
+      setSelectedArtifactId(propSelectedArtifactId)
+    }
+  }, [propSelectedArtifactId])
+
+  // Initialize with first artifact if no prop provided
+  useEffect(() => {
+    if (diagramArtifacts.length > 0 && !selectedArtifactId && !propSelectedArtifactId) {
       setSelectedArtifactId(diagramArtifacts[0].id)
     }
-  }, [diagramArtifacts.length, selectedArtifactId])
+  }, [diagramArtifacts.length, selectedArtifactId, propSelectedArtifactId])
+  
+  // Reload artifacts when component mounts or artifacts change
+  useEffect(() => {
+    const loadArtifacts = async () => {
+      try {
+        const { listArtifacts } = await import('../services/generationService')
+        const loadedArtifacts = await listArtifacts()
+        useArtifactStore.getState().setArtifacts(loadedArtifacts)
+      } catch (error) {
+        console.error('Failed to reload artifacts:', error)
+      }
+    }
+    loadArtifacts()
+  }, [])
 
   // Load artifact content when selected
   useEffect(() => {
@@ -252,11 +278,113 @@ export default function EnhancedDiagramEditor() {
   )
 
   /**
+   * Handle adding new nodes to canvas
+   */
+  const handleAddNode = useCallback((nodeType: 'custom' | 'entity' | 'component' | 'decision' = 'custom') => {
+    const newNode: Node = {
+      id: `node-${Date.now()}`,
+      type: nodeType,
+      position: {
+        x: Math.random() * 400 + 100,
+        y: Math.random() * 300 + 100,
+      },
+      data: {
+        label: nodeType === 'entity' ? 'New Entity' : nodeType === 'component' ? 'New Component' : nodeType === 'decision' ? 'Decision?' : 'New Node',
+        onChange: handleNodeDataChange,
+        onDelete: handleNodeDelete,
+        ...(nodeType === 'entity' ? { properties: [] } : {}),
+      },
+    }
+    
+    setNodes((nds) => [...nds, newNode])
+    
+    // Auto-sync to code
+    setTimeout(() => {
+      generateMermaidFromCanvas()
+    }, 500)
+  }, [handleNodeDataChange, handleNodeDelete, generateMermaidFromCanvas])
+
+  /**
+   * Handle adding table node (for ERD diagrams)
+   */
+  const handleAddTable = useCallback(() => {
+    const newNode: Node = {
+      id: `table-${Date.now()}`,
+      type: 'entity',
+      position: {
+        x: Math.random() * 400 + 100,
+        y: Math.random() * 300 + 100,
+      },
+      data: {
+        label: 'New Table',
+        properties: ['id (PK)', 'name', 'created_at'],
+        onChange: handleNodeDataChange,
+        onDelete: handleNodeDelete,
+      },
+    }
+    
+    setNodes((nds) => [...nds, newNode])
+    
+    // Auto-sync to code
+    setTimeout(() => {
+      generateMermaidFromCanvas()
+    }, 500)
+  }, [handleNodeDataChange, handleNodeDelete, generateMermaidFromCanvas])
+
+  /**
    * Handle code editor changes
    */
   const handleCodeChange = useCallback((code: string) => {
     setMermaidCode(code)
   }, [])
+
+  /**
+   * Save diagram to backend
+   */
+  const handleSave = useCallback(async () => {
+    if (!selectedArtifact) {
+      addNotification({
+        type: 'error',
+        message: 'No artifact selected',
+      })
+      return
+    }
+
+    try {
+      setIsSaving(true)
+      
+      // Generate current Mermaid code from canvas
+      const adapter = getAdapterForDiagramType(selectedArtifact.type)
+      const generated = adapter.generateMermaid(
+        nodes as ReactFlowNode[],
+        edges as ReactFlowEdge[],
+        { includeStyles: true }
+      )
+
+      // Update local store
+      updateArtifact(selectedArtifact.id, {
+        content: generated,
+        updated_at: new Date().toISOString(),
+      })
+
+      // Save to backend
+      const { updateArtifact: updateArtifactAPI } = await import('../services/generationService')
+      await updateArtifactAPI(selectedArtifact.id, generated)
+
+      addNotification({
+        type: 'success',
+        message: 'Diagram saved successfully!',
+      })
+    } catch (error) {
+      console.error('Failed to save diagram:', error)
+      addNotification({
+        type: 'error',
+        message: 'Failed to save diagram. Check console for details.',
+      })
+    } finally {
+      setIsSaving(false)
+    }
+  }, [selectedArtifact, nodes, edges, updateArtifact, addNotification])
 
   /**
    * Download diagram as PNG
@@ -304,7 +432,61 @@ export default function EnhancedDiagramEditor() {
             <Controls />
 
             {/* Top Toolbar */}
-            <Panel position="top-center" className="bg-white rounded-lg shadow-lg p-2 flex gap-2 items-center border border-gray-200">
+            <Panel position="top-center" className="bg-white rounded-lg shadow-lg p-2 flex gap-2 items-center border border-gray-200 z-10">
+              {/* Add Node Controls */}
+              <div className="flex items-center gap-1 border-r border-gray-300 pr-2">
+                <button
+                  onClick={() => handleAddNode('custom')}
+                  className="px-2 py-1.5 bg-blue-500 text-white rounded-md text-xs font-medium flex items-center gap-1 hover:bg-blue-600"
+                  title="Add Node"
+                >
+                  <Plus size={14} />
+                  Node
+                </button>
+                <button
+                  onClick={() => handleAddNode('entity')}
+                  className="px-2 py-1.5 bg-green-500 text-white rounded-md text-xs font-medium flex items-center gap-1 hover:bg-green-600"
+                  title="Add Entity/Table"
+                >
+                  <Table size={14} />
+                  Table
+                </button>
+                <button
+                  onClick={() => handleAddNode('component')}
+                  className="px-2 py-1.5 bg-purple-500 text-white rounded-md text-xs font-medium flex items-center gap-1 hover:bg-purple-600"
+                  title="Add Component"
+                >
+                  <Box size={14} />
+                  Component
+                </button>
+                <button
+                  onClick={() => handleAddNode('decision')}
+                  className="px-2 py-1.5 bg-orange-500 text-white rounded-md text-xs font-medium flex items-center gap-1 hover:bg-orange-600"
+                  title="Add Decision"
+                >
+                  <Circle size={14} />
+                  Decision
+                </button>
+              </div>
+
+              <div className="w-px h-6 bg-gray-300"></div>
+
+              <button
+                onClick={handleSave}
+                disabled={isSaving || !selectedArtifact}
+                className="px-3 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium flex items-center gap-1.5 hover:bg-green-700 disabled:opacity-50"
+                title="Save Diagram"
+              >
+                {isSaving ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Save size={16} />
+                )}
+                Save
+              </button>
+
+              <div className="w-px h-6 bg-gray-300"></div>
+
               <button
                 onClick={handleMagicImprovement}
                 disabled={isImproving}

@@ -1,0 +1,17 @@
+[
+  {
+    "version": 1,
+    "artifact_id": "mermaid_erd_20251126_163029",
+    "artifact_type": "mermaid_erd",
+    "content": "Here is a Mermaid ERD (Entity-Relationship Diagram) based on the requirements:\n\n```mermaid\nerDiagram\n  Phone-Swap ||--o{ User : owns\n  Phone-Swap ||--| { Phone : requested-for, offered-in-exchange\n  Phone-Swap ||--o{ Status : has\n\n  User {\n    id int primary key,\n    name string\n  }\n\n  Phone {\n    id int primary key,\n    model string,\n    condition string\n  }\n\n  Phone-Swap {\n    id int primary key,\n    requester-id int references User(id),\n    requested-phone-id int references Phone(id),\n    offered-phone-id int references Phone(id),\n    comment text,\n    status-id int references Status(id)\n  }\n\n  Status {\n    id int primary key,\n    name string\n  }\n```\n\nThis ERD represents the main entities involved in the phone swap request feature: `User`, `Phone`, and `Phone-Swap`. The relationships between these entities are as follows:\n\n* A `User` can own multiple `Phone`s (one-to-many).\n* A `Phone-Swap` is requested by a `User` who owns one or more `Phone`s. This relationship is represented by the `owns` association.\n* A `Phone-Swap` involves two `Phone`s: the one being requested and the one being offered in exchange. This relationship is represented by the `requested-for` and `offered-in-exchange` associations.\n* The status of a `Phone-Swap` is represented by the `Status` entity, which has a many-to-one relationship with `Phone-Swap`.\n\nThe ERD also includes the necessary attributes for each entity: `id`, `name`, `model`, `condition`, and `comment`.",
+    "metadata": {
+      "model_used": "llama3",
+      "provider": "ollama",
+      "validation_score": 80.0,
+      "is_valid": true,
+      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo"
+    },
+    "created_at": "2025-11-26T16:30:29.635260",
+    "is_current": true
+  }
+]

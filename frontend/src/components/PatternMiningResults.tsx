@@ -79,7 +79,14 @@ export default function PatternMiningResults({ data, isLoading }: PatternMiningR
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <div className="font-medium text-foreground truncate">{pattern.name || 'Unnamed'}</div>
-                        <div className="text-xs text-muted-foreground truncate mt-1">{pattern.file || 'Unknown file'}</div>
+                        <div className="text-xs text-muted-foreground truncate mt-1">
+                          {pattern.file ? (
+                            // Extract filename from path
+                            pattern.file.split(/[\\/]/).pop() || pattern.file
+                          ) : (
+                            pattern.pattern_type || 'Pattern'
+                          )}
+                        </div>
                         {pattern.description && (
                           <div className="text-xs text-muted-foreground mt-2">{pattern.description}</div>
                         )}

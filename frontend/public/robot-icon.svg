@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- Background circle for better visibility -->
+  <circle cx="50" cy="50" r="48" fill="#3b82f6" opacity="0.1"/>
+  
+  <!-- Robot Head -->
+  <rect x="25" y="18" width="50" height="32" rx="6" fill="#3b82f6" stroke="#2563eb" stroke-width="2.5"/>
+  
+  <!-- Robot Eyes (glowing) -->
+  <circle cx="40" cy="32" r="5" fill="#ffffff"/>
+  <circle cx="60" cy="32" r="5" fill="#ffffff"/>
+  <circle cx="40" cy="32" r="3" fill="#60a5fa"/>
+  <circle cx="60" cy="32" r="3" fill="#60a5fa"/>
+  
+  <!-- Robot Antenna -->
+  <rect x="47" y="8" width="6" height="12" fill="#8b5cf6" rx="1"/>
+  <circle cx="50" cy="6" r="4" fill="#8b5cf6"/>
+  <circle cx="50" cy="6" r="2" fill="#a78bfa"/>
+  
+  <!-- Robot Body -->
+  <rect x="28" y="50" width="44" height="28" rx="6" fill="#3b82f6" stroke="#2563eb" stroke-width="2.5"/>
+  
+  <!-- Robot Chest Panel (with grid pattern) -->
+  <rect x="38" y="55" width="24" height="18" rx="3" fill="#1e40af" opacity="0.4"/>
+  <line x1="44" y1="55" x2="44" y2="73" stroke="#60a5fa" stroke-width="1" opacity="0.6"/>
+  <line x1="50" y1="55" x2="50" y2="73" stroke="#60a5fa" stroke-width="1" opacity="0.6"/>
+  <line x1="56" y1="55" x2="56" y2="73" stroke="#60a5fa" stroke-width="1" opacity="0.6"/>
+  <line x1="38" y1="61" x2="62" y2="61" stroke="#60a5fa" stroke-width="1" opacity="0.6"/>
+  <line x1="38" y1="67" x2="62" y2="67" stroke="#60a5fa" stroke-width="1" opacity="0.6"/>
+  
+  <!-- Robot Arms -->
+  <rect x="18" y="52" width="12" height="22" rx="4" fill="#3b82f6" stroke="#2563eb" stroke-width="2"/>
+  <rect x="70" y="52" width="12" height="22" rx="4" fill="#3b82f6" stroke="#2563eb" stroke-width="2"/>
+  
+  <!-- Robot Legs -->
+  <rect x="32" y="78" width="14" height="14" rx="3" fill="#3b82f6" stroke="#2563eb" stroke-width="2"/>
+  <rect x="54" y="78" width="14" height="14" rx="3" fill="#3b82f6" stroke="#2563eb" stroke-width="2"/>
+</svg>
+

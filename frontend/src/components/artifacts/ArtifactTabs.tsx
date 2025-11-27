@@ -5,12 +5,14 @@ import ArtifactCard from './ArtifactCard'
 import ArtifactViewer from './ArtifactViewer'
 import { Search } from 'lucide-react'
 
-type TabType = 'all' | 'diagrams' | 'code' | 'docs' | 'pm'
+type TabType = 'all' | 'diagrams' | 'code' | 'docs' | 'pm' | 'html' | 'prototypes'
 
 const tabs: { value: TabType; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'diagrams', label: 'Diagrams' },
+  { value: 'html', label: 'HTML' },
   { value: 'code', label: 'Code' },
+  { value: 'prototypes', label: 'Prototypes' },
   { value: 'docs', label: 'Docs' },
   { value: 'pm', label: 'PM' },
 ]
@@ -22,7 +24,9 @@ export default function ArtifactTabs() {
   const filteredArtifacts = artifacts.filter((artifact) => {
     if (activeTab === 'all') return true
     if (activeTab === 'diagrams') return artifact.type.startsWith('mermaid_')
+    if (activeTab === 'html') return artifact.type.startsWith('html_')
     if (activeTab === 'code') return artifact.type === 'code_prototype'
+    if (activeTab === 'prototypes') return ['visual_prototype', 'interactive_prototype', 'html_component'].includes(artifact.type)
     if (activeTab === 'docs') return artifact.type === 'api_docs'
     if (activeTab === 'pm') {
       return ['jira', 'workflows', 'backlog', 'personas', 'estimations', 'feature_scoring'].includes(artifact.type)
@@ -47,7 +51,9 @@ export default function ArtifactTabs() {
              >
                {tab.label} <span className="opacity-50 ml-1 text-[10px]">{tab.value === 'all' ? artifacts.length : artifacts.filter(a => {
                   if (tab.value === 'diagrams') return a.type.startsWith('mermaid_')
+                  if (tab.value === 'html') return a.type.startsWith('html_')
                   if (tab.value === 'code') return a.type === 'code_prototype'
+                  if (tab.value === 'prototypes') return ['visual_prototype', 'interactive_prototype', 'html_component'].includes(a.type)
                   if (tab.value === 'docs') return a.type === 'api_docs'
                   if (tab.value === 'pm') return ['jira', 'workflows', 'backlog', 'personas', 'estimations', 'feature_scoring'].includes(a.type)
                   return true

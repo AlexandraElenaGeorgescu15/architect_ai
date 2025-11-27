@@ -36,19 +36,31 @@ async def list_folders(
     current_user: UserPublic = Depends(get_current_user)
 ) -> Dict[str, Any]:
     """List all folders containing meeting notes."""
-    folders = []
-    if MEETING_NOTES_DIR.exists():
-        for folder_path in MEETING_NOTES_DIR.iterdir():
-            if folder_path.is_dir():
-                notes_count = len(list(folder_path.glob("*.md"))) + len(list(folder_path.glob("*.txt")))
-                folders.append({
-                    "id": folder_path.name,
-                    "name": folder_path.name,
-                    "notes_count": notes_count,
-                    "created_at": datetime.fromtimestamp(folder_path.stat().st_ctime).isoformat(),
-                })
-    
-    return {"success": True, "folders": folders}
+    try:
+        folders = []
+        if MEETING_NOTES_DIR.exists():
+            for folder_path in MEETING_NOTES_DIR.iterdir():
+                if folder_path.is_dir():
+                    try:
+                        notes_count = len(list(folder_path.glob("*.md"))) + len(list(folder_path.glob("*.txt")))
+                        folders.append({
+                            "id": folder_path.name,
+                            "name": folder_path.name,
+                            "notes_count": notes_count,
+                            "created_at": datetime.fromtimestamp(folder_path.stat().st_ctime).isoformat(),
+                        })
+                    except Exception as e:
+                        logger.warning(f"Error reading folder {folder_path}: {e}")
+                        continue
+        
+        logger.debug(f"📁 [MEETING_NOTES] Returning {len(folders)} folders")
+        return {"success": True, "folders": folders}
+    except Exception as e:
+        logger.error(f"Error listing folders: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list folders: {str(e)}"
+        )
 
 
 @router.post("/folders", summary="Create a new folder")

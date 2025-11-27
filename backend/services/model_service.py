@@ -89,16 +89,26 @@ class ModelService:
                 with open(self.routing_file, 'r', encoding='utf-8') as f:
                     data = yaml.safe_load(f) or {}
                     for artifact_type, routing_data in data.items():
-                        self.routing[artifact_type] = ModelRoutingDTO(
-                            artifact_type=ArtifactType(artifact_type),
-                            **routing_data
-                        )
+                        try:
+                            artifact_type_enum = ArtifactType(artifact_type)
+                            self.routing[artifact_type] = ModelRoutingDTO(
+                                artifact_type=artifact_type_enum,
+                                **routing_data
+                            )
+                        except ValueError:
+                            # Skip invalid artifact types
+                            logger.debug(f"Skipping invalid artifact type in routing: {artifact_type}")
+                            continue
                 logger.info(f"Loaded routing for {len(self.routing)} artifact types")
             except Exception as e:
                 logger.error(f"Error loading routing config: {e}")
         else:
             # Create default routing
             self._create_default_routing()
+        
+        # After loading routing, check for fine-tuned models and update routing
+        # This ensures fine-tuned models are always prioritized
+        self._update_routing_with_finetuned_models()
     
     def _save_routing(self):
         """Save model routing configuration to file."""
@@ -115,6 +125,53 @@ class ModelService:
                 yaml.dump(data, f, default_flow_style=False)
         except Exception as e:
             logger.error(f"Error saving routing config: {e}")
+    
+    def _update_routing_with_finetuned_models(self):
+        """Update routing to prioritize fine-tuned models."""
+        try:
+            # Load fine-tuned models from registry
+            self._load_finetuned_models_from_registry()
+            
+            # Check each fine-tuned model and update routing
+            for model_id, model_info in self.models.items():
+                if model_info.is_trained and model_info.provider == "ollama":
+                    artifact_type_str = model_info.metadata.get("artifact_type", "")
+                    if artifact_type_str:
+                        # Find matching ArtifactType enum
+                        artifact_type_enum = None
+                        for at in ArtifactType:
+                            if at.value.lower() == artifact_type_str.lower().replace("-", "_"):
+                                artifact_type_enum = at
+                                break
+                        
+                        if artifact_type_enum:
+                            # Extract model name
+                            model_name = model_id.split(":", 1)[1] if ":" in model_id else model_id
+                            
+                            # Get or create routing
+                            routing = self.get_routing_for_artifact(artifact_type_enum)
+                            if not routing:
+                                # Create new routing with fine-tuned model as primary
+                                base_model = model_info.metadata.get("base_model", "llama3")
+                                routing = ModelRoutingDTO(
+                                    artifact_type=artifact_type_enum,
+                                    primary_model=f"ollama:{model_name}",
+                                    fallback_models=[f"ollama:{base_model}"],
+                                    enabled=True
+                                )
+                                self.routing[artifact_type_enum.value] = routing
+                                logger.info(f"✅ Created routing for {artifact_type_str} with fine-tuned model {model_name}")
+                            else:
+                                # Update existing routing to prioritize fine-tuned model
+                                if not routing.primary_model.startswith(f"ollama:{model_name}"):
+                                    # Move current primary to fallback
+                                    if routing.primary_model not in routing.fallback_models:
+                                        routing.fallback_models.insert(0, routing.primary_model)
+                                    # Set fine-tuned as primary
+                                    routing.primary_model = f"ollama:{model_name}"
+                                    logger.info(f"✅ Updated routing for {artifact_type_str} to prioritize {model_name}")
+        except Exception as e:
+            logger.debug(f"Could not update routing with fine-tuned models: {e}")
     
     def _create_default_routing(self):
         """Create default model routing configuration for all artifact types."""
@@ -252,6 +309,9 @@ class ModelService:
         Returns:
             List of model information
         """
+        # Load fine-tuned models from registry first
+        self._load_finetuned_models_from_registry()
+        
         # Refresh Ollama models if available
         if OLLAMA_AVAILABLE:
             await self._refresh_ollama_models()
@@ -382,22 +442,93 @@ class ModelService:
                         model_name = model_info.get("name", "")
                         model_id = f"ollama:{model_name}"
                         
+                        # Check if this is a fine-tuned model (contains artifact type or _ft_)
+                        is_trained = "_ft_" in model_name or any(
+                            artifact_type.value in model_name.lower() 
+                            for artifact_type in ArtifactType
+                        )
+                        
                         if model_id not in self.models:
                             self.models[model_id] = ModelInfoDTO(
                                 id=model_id,
                                 name=model_name,
                                 provider="ollama",
                                 status="available",
-                                is_trained=False,
-                                metadata={"size": model_info.get("size", 0)}
+                                is_trained=is_trained,
+                                metadata={
+                                    "size": model_info.get("size", 0),
+                                    "created_at": model_info.get("modified_at", "")
+                                }
                             )
                         else:
                             # Update existing model
                             self.models[model_id].status = "available"
+                            self.models[model_id].is_trained = is_trained
+                    
+                    # Also load fine-tuned models from registry file
+                    self._load_finetuned_models_from_registry()
                     
                     self._save_registry()
         except Exception as e:
             logger.warning(f"Could not refresh Ollama models: {e}")
+    
+    def _load_finetuned_models_from_registry(self):
+        """Load fine-tuned models from the model_registry.json file."""
+        try:
+            registry_file = self.registry_file
+            if registry_file.exists():
+                with open(registry_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    
+                    # Check for "pairs" structure (from finetuning_worker)
+                    if "pairs" in data:
+                        for pair_key, pair_data in data["pairs"].items():
+                            finetuned_model_name = pair_data.get("finetuned_model", "")
+                            if finetuned_model_name:
+                                model_id = f"ollama:{finetuned_model_name}"
+                                artifact_type = pair_data.get("artifact_type", "")
+                                
+                                if model_id not in self.models:
+                                    self.models[model_id] = ModelInfoDTO(
+                                        id=model_id,
+                                        name=f"{finetuned_model_name} (Fine-tuned)",
+                                        provider="ollama",
+                                        status="available",
+                                        is_trained=True,
+                                        metadata={
+                                            "artifact_type": artifact_type,
+                                            "base_model": pair_data.get("base_model", ""),
+                                            "created_at": pair_data.get("created_at", "")
+                                        }
+                                    )
+                                else:
+                                    # Update existing model
+                                    self.models[model_id].is_trained = True
+                                    if "artifact_type" not in self.models[model_id].metadata:
+                                        self.models[model_id].metadata["artifact_type"] = artifact_type
+                    
+                    # Also check for old "models" structure
+                    if "models" in data:
+                        for artifact_type, model_data in data["models"].items():
+                            finetuned_model_name = model_data.get("finetuned_model", "")
+                            if finetuned_model_name:
+                                model_id = f"ollama:{finetuned_model_name}"
+                                
+                                if model_id not in self.models:
+                                    self.models[model_id] = ModelInfoDTO(
+                                        id=model_id,
+                                        name=f"{finetuned_model_name} (Fine-tuned)",
+                                        provider="ollama",
+                                        status="available",
+                                        is_trained=True,
+                                        metadata={
+                                            "artifact_type": artifact_type,
+                                            "base_model": model_data.get("base_model", ""),
+                                            "created_at": model_data.get("created_at", "")
+                                        }
+                                    )
+        except Exception as e:
+            logger.warning(f"Could not load fine-tuned models from registry: {e}")
     
     async def get_model(self, model_id: str) -> Optional[ModelInfoDTO]:
         """
@@ -426,45 +557,125 @@ class ModelService:
     def get_models_for_artifact(self, artifact_type: ArtifactType) -> List[str]:
         """
         Get ordered list of models to try for an artifact type.
+        
+        Priority order:
+        1. Fine-tuned models for this artifact type (from registry)
+        2. User-configured routing (primary + fallbacks)
+        3. Base model mappings (from ArtifactModelMapper)
+        4. Any available Ollama models (universal fallback)
+        
         Returns only local (Ollama) models for the local phase.
         
         Args:
             artifact_type: Artifact type
         
         Returns:
-            List of model IDs to try in order (only Ollama models)
+            List of model names to try in order (only Ollama models, no "ollama:" prefix)
         """
-        routing = self.get_routing_for_artifact(artifact_type)
-        if not routing or not routing.enabled:
-            # Default fallback (Ollama models only) - return model names without prefix
-            return ["llama3", "codellama"]
-        
         models = []
-        # Add primary model (extract Ollama model name)
-        primary = routing.primary_model
-        if primary.startswith("ollama:"):
-            models.append(primary.split(":", 1)[1])  # Extract model name (e.g., "llama3")
-        elif ":" not in primary:
-            # Assume Ollama if no prefix (backward compatibility)
-            models.append(primary)
-        # Skip cloud models in primary (they'll be tried in cloud phase)
+        artifact_type_str = artifact_type.value.lower().replace("-", "_")
         
-        # Add fallback models (only Ollama)
-        for fallback in routing.fallback_models:
-            if fallback.startswith("ollama:"):
-                model_name = fallback.split(":", 1)[1]
-                if model_name not in models:
-                    models.append(model_name)  # Extract model name
-            elif ":" not in fallback:
+        # STEP 1: Check for fine-tuned models (HIGHEST PRIORITY)
+        # Load fine-tuned models from registry
+        self._load_finetuned_models_from_registry()
+        
+        # Find fine-tuned models for this artifact type
+        for model_id, model_info in self.models.items():
+            if model_info.is_trained and model_info.provider == "ollama":
+                # Check if this fine-tuned model is for this artifact type
+                model_artifact_type = model_info.metadata.get("artifact_type", "").lower().replace("-", "_")
+                
+                # Match by exact artifact type or by name pattern
+                if (model_artifact_type == artifact_type_str or 
+                    artifact_type_str in model_id.lower() or
+                    artifact_type_str in model_info.name.lower()):
+                    # Extract model name (remove "ollama:" prefix)
+                    model_name = model_id.split(":", 1)[1] if ":" in model_id else model_id
+                    if model_name not in models:
+                        models.append(model_name)
+                        logger.info(f"✅ Found fine-tuned model for {artifact_type_str}: {model_name}")
+        
+        # STEP 2: Check user-configured routing
+        routing = self.get_routing_for_artifact(artifact_type)
+        if routing and routing.enabled:
+            logger.info(f"📋 [MODEL_SERVICE] Found routing for {artifact_type_str}: primary={routing.primary_model}, fallbacks={routing.fallback_models}")
+            
+            # Add primary model (extract Ollama model name)
+            primary = routing.primary_model
+            # Handle different formats: "ollama:model", "model (ollama)", or just "model"
+            if primary.startswith("ollama:"):
+                model_name = primary.split(":", 1)[1]
+            elif " (ollama)" in primary:
+                # Handle display format like "model (ollama)"
+                model_name = primary.replace(" (ollama)", "").strip()
+            elif ":" in primary and not primary.startswith("ollama:"):
+                # Handle format like "deepseek-coder:6.7b-instruct-q4_K_M" (no provider prefix)
+                model_name = primary
+            else:
                 # Assume Ollama if no prefix (backward compatibility)
-                if fallback not in models:
-                    models.append(fallback)
-            # Skip cloud models (they'll be tried in cloud phase)
+                model_name = primary
+            
+            if model_name and model_name not in models:
+                models.append(model_name)
+                logger.info(f"✅ [MODEL_SERVICE] Added primary model: {model_name}")
+            
+            # Add fallback models (only Ollama)
+            for fallback in routing.fallback_models:
+                # Handle different formats: "ollama:model", "model (ollama)", or just "model"
+                if fallback.startswith("ollama:"):
+                    model_name = fallback.split(":", 1)[1]
+                elif " (ollama)" in fallback:
+                    # Handle display format like "model (ollama)"
+                    model_name = fallback.replace(" (ollama)", "").strip()
+                elif ":" in fallback and not fallback.startswith("ollama:"):
+                    # Handle format like "deepseek-coder:6.7b-instruct-q4_K_M" (no provider prefix)
+                    model_name = fallback
+                else:
+                    # Assume Ollama if no prefix (backward compatibility)
+                    model_name = fallback
+                
+                if model_name and model_name not in models:
+                    models.append(model_name)
+                    logger.debug(f"✅ [MODEL_SERVICE] Added fallback model: {model_name}")
+        else:
+            if routing:
+                logger.warning(f"⚠️ [MODEL_SERVICE] Routing for {artifact_type_str} exists but is disabled")
+            else:
+                logger.debug(f"📋 [MODEL_SERVICE] No routing found for {artifact_type_str}, using defaults")
         
-        # If no Ollama models found, return defaults
+        # STEP 3: Check base model mappings (from ArtifactModelMapper)
+        try:
+            from config.artifact_model_mapping import get_artifact_mapper
+            artifact_mapper = get_artifact_mapper()
+            mapping = artifact_mapper.get_model_for_artifact(artifact_type_str, prefer_fine_tuned=False)
+            
+            # Add base model and priority models
+            if mapping.base_model and mapping.base_model not in models:
+                models.append(mapping.base_model)
+            
+            if mapping.priority_models:
+                for priority_model in mapping.priority_models:
+                    if priority_model not in models:
+                        models.append(priority_model)
+        except Exception as e:
+            logger.debug(f"Could not load base model mappings: {e}")
+        
+        # STEP 4: Universal fallback - any available Ollama model
+        # This ensures ANY model can work with ANY artifact
         if not models:
-            return ["llama3", "codellama"]
+            # Get all available Ollama models
+            for model_id, model_info in self.models.items():
+                if model_info.provider == "ollama" and model_info.status == "available":
+                    model_name = model_id.split(":", 1)[1] if ":" in model_id else model_id
+                    if model_name not in models:
+                        models.append(model_name)
+            
+            # If still no models, use defaults
+            if not models:
+                models = ["llama3", "codellama"]
+                logger.warning(f"No models found for {artifact_type_str}, using defaults: {models}")
         
+        logger.info(f"📋 Models for {artifact_type_str}: {models[:5]}... ({len(models)} total)")
         return models
     
     def update_routing(self, routings: List[ModelRoutingDTO]) -> bool:
@@ -500,29 +711,65 @@ class ModelService:
                 # Extract model name from ID (format: "ollama:model-name")
                 model_name = model_id.split(":", 1)[1] if ":" in model_id else model_id
                 
-                async with httpx.AsyncClient(timeout=300.0) as client:
-                    response = await client.post(
+                # Update status to downloading
+                if model_id not in self.models:
+                    self.models[model_id] = ModelInfoDTO(
+                        id=model_id,
+                        name=model_name,
+                        provider="ollama",
+                        status="downloading",
+                        is_trained=False
+                    )
+                else:
+                    self.models[model_id].status = "downloading"
+                self._save_registry()
+                
+                # Stream download progress
+                async with httpx.AsyncClient(timeout=600.0) as client:
+                    async with client.stream(
+                        "POST",
                         f"{settings.ollama_base_url}/api/pull",
                         json={"name": model_name}
-                    )
-                    if response.status_code == 200:
-                        # Update registry
-                        if model_id not in self.models:
-                            self.models[model_id] = ModelInfoDTO(
-                                id=model_id,
-                                name=model_name,
-                                provider="ollama",
-                                status="downloaded",
-                                is_trained=False
-                            )
+                    ) as response:
+                        if response.status_code == 200:
+                            async for line in response.aiter_lines():
+                                if line:
+                                    try:
+                                        import json
+                                        data = json.loads(line)
+                                        if "status" in data:
+                                            logger.debug(f"Download progress: {data.get('status', '')}")
+                                    except:
+                                        pass
+                            
+                            # Update registry after successful download
+                            if model_id not in self.models:
+                                self.models[model_id] = ModelInfoDTO(
+                                    id=model_id,
+                                    name=model_name,
+                                    provider="ollama",
+                                    status="downloaded",
+                                    is_trained=False
+                                )
+                            else:
+                                self.models[model_id].status = "downloaded"
+                            
+                            self._save_registry()
+                            logger.info(f"✅ Downloaded model: {model_id}")
+                            
+                            # Refresh Ollama models to ensure it's in the list
+                            await self._refresh_ollama_models()
+                            
+                            return True
                         else:
-                            self.models[model_id].status = "downloaded"
-                        
-                        self._save_registry()
-                        logger.info(f"Downloaded model: {model_id}")
-                        return True
+                            error_text = await response.aread()
+                            raise Exception(f"Download failed: {error_text.decode()}")
             except Exception as e:
                 logger.error(f"Error downloading model {model_id}: {e}")
+                # Update status to failed
+                if model_id in self.models:
+                    self.models[model_id].status = "failed"
+                    self._save_registry()
                 return False
         
         return False

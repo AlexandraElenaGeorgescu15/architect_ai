@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { ArtifactType } from '../services/generationService'
+import { useSystemStatus } from '../hooks/useSystemStatus'
 import { 
   Loader2, Sparkles, FileText, CheckCircle2, Folder, Code, FileCode, 
-  Download, Key, Settings, Search, Network, ListTodo, Sliders, Edit3
+  Download, Key, Settings, Search, Network, ListTodo, Sliders, Edit3, GitBranch
 } from 'lucide-react'
 import MeetingNotesManager from './MeetingNotesManager'
 import ArtifactTabs from './artifacts/ArtifactTabs'
@@ -14,6 +15,7 @@ import ApiKeysManager from './ApiKeysManager'
 import InteractivePrototypeEditor from './InteractivePrototypeEditor'
 import CodeWithTestsEditor from './CodeWithTestsEditor'
 import MermaidRenderer from './MermaidRenderer'
+import VersionControl from './VersionControl'
 import { bulkGenerate } from '../services/generationService'
 import { useArtifactStore } from '../stores/artifactStore'
 import { useUIStore } from '../stores/uiStore'
@@ -61,10 +63,15 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
   const [folders, setFolders] = useState<Array<{ id: string; name: string; notes_count: number }>>([])
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
   
-  // Load folders when generate tab is active
+  // Import useSystemStatus to check backend readiness
+  const { isReady: backendReady } = useSystemStatus()
+  
+  // Load folders when generate tab is active and backend is ready
   useEffect(() => {
-    loadFolders()
-  }, [])
+    if (backendReady) {
+      loadFolders()
+    }
+  }, [backendReady])
   
   const loadFolders = async () => {
     try {
@@ -73,6 +80,7 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
       setFolders(response.data.folders || [])
     } catch (error) {
       // Failed to load folders - handle in UI
+      console.error('Failed to load folders:', error)
     }
   }
 
@@ -220,6 +228,7 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
               { id: 'context', label: 'Context', icon: FileText },
               { id: 'studio', label: 'Studio', icon: Sparkles },
               { id: 'library', label: 'Library', icon: Folder },
+              { id: 'version-control', label: 'Version Control', icon: GitBranch },
               { id: 'settings', label: 'Settings', icon: Settings },
             ].map((tab) => {
               const Icon = tab.icon
@@ -513,6 +522,15 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
               <div className="glass-panel rounded-2xl p-8 min-h-[500px] border-border bg-card shadow-elevated hover:shadow-floating transition-shadow duration-300">
                  <ArtifactTabs />
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* VERSION CONTROL VIEW */}
+        {activeView === 'version-control' && (
+          <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar p-4 animate-fade-in-up">
+            <div className="max-w-7xl mx-auto">
+              <VersionControl />
             </div>
           </div>
         )}

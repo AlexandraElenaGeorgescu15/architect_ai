@@ -78,3 +78,32 @@ export const useModelStore = create<ModelStore>((set, get) => ({
   },
 }))
 
+// Auto-refresh models every 30 seconds to catch newly created fine-tuned models
+if (typeof window !== 'undefined') {
+  let refreshInterval: ReturnType<typeof setInterval> | null = null
+  
+  const startAutoRefresh = () => {
+    if (refreshInterval) return
+    
+    refreshInterval = setInterval(() => {
+      const store = useModelStore.getState()
+      if (!store.isLoading) {
+        store.fetchModels()
+      }
+    }, 30000) // Refresh every 30 seconds
+  }
+  
+  const stopAutoRefresh = () => {
+    if (refreshInterval) {
+      clearInterval(refreshInterval)
+      refreshInterval = null
+    }
+  }
+  
+  // Start auto-refresh when store is first used
+  startAutoRefresh()
+  
+  // Stop on page unload
+  window.addEventListener('beforeunload', stopAutoRefresh)
+}
+

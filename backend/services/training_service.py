@@ -218,10 +218,18 @@ class TrainingService:
             if j.status in [TrainingStatus.PREPARING, TrainingStatus.TRAINING, TrainingStatus.CONVERTING]
         ]
         
-        # Get examples by artifact type from feedback service
-        feedback_service = get_feedback_service()
-        stats = feedback_service.get_training_stats()
-        examples_by_artifact = stats.get("feedback_by_artifact_type", {})
+        # Get examples by artifact type from finetuning pool (real + synthetic)
+        try:
+            from backend.services.finetuning_pool import get_pool
+            pool = get_pool()
+            examples_by_artifact: Dict[str, int] = {}
+            # Use pool keys so we reflect all artifact types that actually have data
+            for atype in pool.pools.keys():
+                breakdown = pool.get_source_breakdown(atype)
+                examples_by_artifact[atype] = breakdown.get("total_examples", 0)
+        except Exception as e:
+            logger.warning(f"Failed to load examples from finetuning pool for queue status: {e}")
+            examples_by_artifact = {}
         
         return TrainingQueueDTO(
             queued_jobs=queued,
@@ -244,11 +252,15 @@ class TrainingService:
         Returns:
             Created training job
         """
-        # Get examples count from feedback service
-        feedback_service = get_feedback_service()
-        stats = feedback_service.get_training_stats()
-        examples_by_artifact = stats.get("feedback_by_artifact_type", {})
-        examples_count = examples_by_artifact.get(artifact_type.value, 0)
+        # Get examples count from finetuning pool (real + synthetic)
+        try:
+            from backend.services.finetuning_pool import get_pool
+            pool = get_pool()
+            breakdown = pool.get_source_breakdown(artifact_type.value)
+            examples_count = breakdown.get("total_examples", 0)
+        except Exception as e:
+            logger.warning(f"Failed to load examples from finetuning pool for training: {e}")
+            examples_count = 0
         
         # Get base model from routing
         from backend.services.model_service import get_service as get_model_service

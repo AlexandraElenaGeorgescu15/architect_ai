@@ -71,6 +71,10 @@ class GenerationService:
             Progress updates and final artifact
         """
         job_id = f"gen_{uuid.uuid4().hex[:8]}"
+        logger.info(f"🎯 [GEN_SERVICE] Starting generation: job_id={job_id}, "
+                   f"artifact_type={artifact_type.value}, "
+                   f"meeting_notes_length={len(meeting_notes)}, "
+                   f"context_id={context_id}, stream={stream}")
         
         # Default options
         opts = {
@@ -82,6 +86,7 @@ class GenerationService:
         }
         if options:
             opts.update(options)
+        logger.info(f"⚙️ [GEN_SERVICE] Generation options: {opts}")
         
         # Initialize job
         self.active_jobs[job_id] = {
@@ -92,9 +97,11 @@ class GenerationService:
             "created_at": datetime.now().isoformat(),
             "meeting_notes": meeting_notes
         }
+        logger.info(f"📋 [GEN_SERVICE] Job initialized: {job_id}")
         
         try:
             # Step 1: Build context (if not provided)
+            logger.info(f"🔨 [GEN_SERVICE] Step 1: Building context (job_id={job_id})")
             if stream:
                 yield {
                     "type": "progress",
@@ -106,9 +113,11 @@ class GenerationService:
             
             if context_id:
                 # Use pre-built context (would fetch from cache/DB)
+                logger.info(f"♻️ [GEN_SERVICE] Using pre-built context: {context_id}")
                 context = {"context_id": context_id}
             else:
                 # Build context
+                logger.info(f"🏗️ [GEN_SERVICE] Building new context from repository...")
                 context = await self.context_builder.build_context(
                     meeting_notes=meeting_notes,
                     include_rag=True,
@@ -116,6 +125,10 @@ class GenerationService:
                     include_patterns=True,
                     include_ml_features=False  # Skip ML features for speed
                 )
+                logger.info(f"✅ [GEN_SERVICE] Context built successfully: "
+                           f"has_rag={bool(context.get('rag'))}, "
+                           f"has_kg={bool(context.get('knowledge_graph'))}, "
+                           f"has_patterns={bool(context.get('patterns'))}")
             
             if stream:
                 yield {
@@ -126,12 +139,23 @@ class GenerationService:
                     "message": "Context built successfully"
                 }
             
+            logger.info(f"🔮 [GEN_SERVICE] Step 2: Predicting quality (job_id={job_id})")
             quality_prediction = self.quality_predictor.predict(
                 artifact_type=artifact_type,
                 meeting_notes=meeting_notes,
                 context=context if isinstance(context, dict) else None,
             )
-            self.active_jobs[job_id]["quality_prediction"] = quality_prediction.to_dict()
+            qp_dict = quality_prediction.to_dict()
+            self.active_jobs[job_id]["quality_prediction"] = qp_dict
+            # Use the 'score' field from QualityPrediction; keep logging robust if structure changes
+            score = getattr(quality_prediction, "score", qp_dict.get("score"))
+            logger.info(
+                "📊 [GEN_SERVICE] Quality prediction: %s (confidence=%.2f, score=%.2f, reasons=%s)",
+                quality_prediction.label,
+                quality_prediction.confidence,
+                float(score) if isinstance(score, (int, float)) else 0.0,
+                qp_dict.get("reasons", {}),
+            )
 
             if stream:
                 yield {
@@ -144,6 +168,7 @@ class GenerationService:
                 }
             
             # Step 2: Generate artifact
+            logger.info(f"🤖 [GEN_SERVICE] Step 3: Generating artifact (job_id={job_id})")
             if stream:
                 yield {
                     "type": "progress",
@@ -188,12 +213,28 @@ class GenerationService:
             
             if result.get("success"):
                 artifact_content = result["content"]
+                
+                # Clean Mermaid diagrams to extract only the diagram code
+                if artifact_type.value.startswith("mermaid_") and artifact_content:
+                    try:
+                        from backend.services.validation_service import ValidationService
+                        validator = ValidationService()
+                        cleaned_content = validator._extract_mermaid_diagram(artifact_content)
+                        if cleaned_content != artifact_content:
+                            logger.info(f"🧹 [GEN_SERVICE] Cleaned Mermaid diagram: removed {len(artifact_content) - len(cleaned_content)} chars of extra text (job_id={job_id})")
+                            artifact_content = cleaned_content
+                    except Exception as e:
+                        logger.warning(f"⚠️ [GEN_SERVICE] Failed to clean Mermaid diagram: {e} (job_id={job_id})")
+                
                 validation_score = result.get("validation_score", 0.0)
                 model_used = result.get("model_used", "unknown")
+                logger.info(f"✅ [GEN_SERVICE] Generation successful: job_id={job_id}, "
+                           f"model={model_used}, validation_score={validation_score:.1f}, "
+                           f"content_length={len(artifact_content)}")
             else:
                 # Enhanced generation failed - log error and return failure
                 error_msg = result.get("error", "Generation failed")
-                logger.error(f"Enhanced generation failed: {error_msg}")
+                logger.error(f"❌ [GEN_SERVICE] Enhanced generation failed: job_id={job_id}, error={error_msg}")
                 artifact_content = f"# {artifact_type.value}\n\nError: {error_msg}"
                 validation_score = 0.0
                 model_used = "failed"
@@ -208,10 +249,15 @@ class GenerationService:
                 }
             
             # Step 3: Validate (if enabled) - threshold is now 80.0
+            logger.info(f"🔍 [GEN_SERVICE] Step 4: Validation check (job_id={job_id}): "
+                       f"score={validation_score:.1f}, threshold=80.0, use_validation={opts['use_validation']}")
             is_valid = validation_score >= 80.0 if opts["use_validation"] else True
+            logger.info(f"✅ [GEN_SERVICE] Validation result: is_valid={is_valid} (job_id={job_id})")
             
             # Step 4: Add to finetuning pool if score >= 85.0
             if validation_score >= 85.0:
+                logger.info(f"🎓 [GEN_SERVICE] High-quality artifact detected (score={validation_score:.1f} >= 85.0), "
+                           f"adding to finetuning pool (job_id={job_id})")
                 try:
                     from backend.services.finetuning_pool import get_pool
                     finetuning_pool = get_pool()
@@ -223,12 +269,20 @@ class GenerationService:
                         model_used=model_used,
                         context={"context_id": context_id} if context_id else None
                     )
-                    logger.info(f"Added example to finetuning pool (score: {validation_score:.1f})")
+                    logger.info(f"✅ [GEN_SERVICE] Successfully added example to finetuning pool "
+                               f"(score: {validation_score:.1f}, job_id={job_id})")
                 except Exception as e:
-                    logger.warning(f"Failed to add example to finetuning pool: {e}")
+                    logger.warning(f"⚠️ [GEN_SERVICE] Failed to add example to finetuning pool: {e} (job_id={job_id})")
+            else:
+                logger.debug(f"📊 [GEN_SERVICE] Artifact score {validation_score:.1f} < 85.0, "
+                            f"skipping finetuning pool (job_id={job_id})")
             
-            # Step 5: If Mermaid diagram, also generate HTML version
+            # Step 5: Generate HTML version if needed
+            html_content = None
             if artifact_type.value.startswith("mermaid_"):
+                # If Mermaid diagram, also generate HTML version
+                logger.info(f"🎨 [GEN_SERVICE] Step 5: Generating HTML version for Mermaid diagram "
+                           f"(job_id={job_id}, type={artifact_type.value})")
                 try:
                     from backend.services.html_diagram_generator import get_generator
                     html_generator = get_generator()
@@ -240,21 +294,82 @@ class GenerationService:
                         use_ai=True
                     )
                     # Store HTML version (would be saved to outputs in production)
-                    logger.info(f"Generated HTML version for {artifact_type.value}")
+                    logger.info(f"✅ [GEN_SERVICE] HTML version generated successfully: "
+                               f"job_id={job_id}, html_length={len(html_content) if html_content else 0}")
                 except Exception as e:
-                    logger.warning(f"Failed to generate HTML version: {e}")
+                    logger.warning(f"⚠️ [GEN_SERVICE] Failed to generate HTML version: {e} (job_id={job_id})")
+                    html_content = None
+            elif artifact_type.value.startswith("html_"):
+                # If HTML diagram type, the content IS the HTML (already generated by enhanced_gen)
+                # No additional processing needed - artifact_content is already HTML
+                logger.info(f"✅ [GEN_SERVICE] HTML diagram generated directly: "
+                           f"job_id={job_id}, type={artifact_type.value}, content_length={len(artifact_content)}")
+                html_content = artifact_content  # Content is already HTML
+            else:
+                html_content = None
+                logger.debug(f"📄 [GEN_SERVICE] Skipping HTML generation (not a diagram type, job_id={job_id})")
             
-            # Update job status
+            # Create artifact object
+            logger.info(f"📦 [GEN_SERVICE] Step 6: Creating artifact object (job_id={job_id})")
+            artifact_obj = {
+                "id": job_id,
+                "artifact_id": job_id,
+                "artifact_type": artifact_type.value,
+                "content": artifact_content,
+                "validation": {
+                    "score": validation_score,
+                    "is_valid": is_valid
+                },
+                "quality_prediction": quality_prediction.to_dict(),
+                "model_used": model_used,
+                "generated_at": datetime.now().isoformat()
+            }
+            if html_content:
+                artifact_obj["html_content"] = html_content
+            logger.info(f"✅ [GEN_SERVICE] Artifact object created: job_id={job_id}, "
+                       f"type={artifact_type.value}, has_html={bool(html_content)}")
+            
+            # Update job status with full artifact
+            logger.info(f"💾 [GEN_SERVICE] Updating job status: job_id={job_id}, status=COMPLETED")
             self.active_jobs[job_id].update({
                 "status": GenerationStatus.COMPLETED.value,
                 "progress": 100.0,
-                "artifact_content": artifact_content,
+                "artifact": artifact_obj,  # Full artifact object
+                "artifact_content": artifact_content,  # Keep for backward compatibility
                 "validation_score": validation_score,
                 "is_valid": is_valid,
                 "model_used": model_used,
                 "quality_prediction": quality_prediction.to_dict(),
                 "completed_at": datetime.now().isoformat()
             })
+            logger.info(f"✅ [GEN_SERVICE] Job status updated successfully: job_id={job_id}")
+            
+            # Save to VersionService for persistent storage
+            # Use artifact_id from result if available (from enhanced_generation), otherwise use job_id
+            artifact_id_for_version = result.get("artifact_id") or job_id
+            try:
+                from backend.services.version_service import get_version_service
+                version_service = get_version_service()
+                # Use artifact_id from enhanced_generation if available, otherwise use job_id
+                version_service.create_version(
+                    artifact_id=artifact_id_for_version,
+                    artifact_type=artifact_type.value,
+                    content=artifact_content,  # Already cleaned if Mermaid
+                    metadata={
+                        "model_used": model_used,
+                        "provider": "ollama" if "ollama" in model_used.lower() else "cloud",
+                        "validation_score": validation_score,
+                        "is_valid": is_valid,
+                        "meeting_notes": meeting_notes[:200] if meeting_notes else "",
+                        "html_content": html_content,  # Include HTML version if generated
+                        "quality_prediction": quality_prediction.to_dict(),
+                        "job_id": job_id,  # Keep reference to job_id for tracking
+                        "attempts": result.get("attempts", [])  # Include all attempts for tracking
+                    }
+                )
+                logger.info(f"✅ [GEN_SERVICE] Saved artifact to VersionService: artifact_id={artifact_id_for_version}, job_id={job_id}")
+            except Exception as e:
+                logger.warning(f"⚠️ [GEN_SERVICE] Failed to save artifact to VersionService: {e} (artifact_id={artifact_id_for_version}, job_id={job_id})")
             
             # Final result
             if stream:
@@ -296,15 +411,17 @@ class GenerationService:
                 }
             
         except Exception as e:
-            logger.error(f"Error generating artifact: {e}", exc_info=True)
+            logger.error(f"❌ [GEN_SERVICE] Generation failed: job_id={job_id}, error={e}", exc_info=True)
             
             self.active_jobs[job_id].update({
                 "status": GenerationStatus.FAILED.value,
                 "error": str(e),
                 "completed_at": datetime.now().isoformat()
             })
+            logger.info(f"💾 [GEN_SERVICE] Job status updated to FAILED: job_id={job_id}")
             
             if stream:
+                logger.info(f"📤 [GEN_SERVICE] Yielding error event: job_id={job_id}")
                 yield {
                     "type": "error",
                     "job_id": job_id,

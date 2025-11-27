@@ -3,12 +3,16 @@ import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
-// Initialize dark mode from localStorage on app load
+// Initialize light mode as default (dark mode only if explicitly set)
 const isDarkMode = localStorage.getItem('darkMode') === 'true'
 if (isDarkMode) {
   document.documentElement.classList.add('dark')
 } else {
   document.documentElement.classList.remove('dark')
+  // Ensure light mode is default
+  if (!localStorage.getItem('darkMode')) {
+    localStorage.setItem('darkMode', 'false')
+  }
 }
 
 // Error boundary for development

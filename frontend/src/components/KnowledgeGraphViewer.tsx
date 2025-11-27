@@ -66,8 +66,15 @@ export default function KnowledgeGraphViewer({ data, isLoading }: KnowledgeGraph
                   {component.type === 'class' ? <Folder className="w-4 h-4" /> : <FileCode className="w-4 h-4" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-foreground truncate">{component.name}</div>
-                  <div className="text-xs text-muted-foreground truncate">{component.file || 'Unknown file'}</div>
+                  <div className="font-medium text-foreground truncate">{component.name || component.id}</div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {component.file ? (
+                      // Extract filename from path
+                      component.file.split(/[\\/]/).pop() || component.file
+                    ) : (
+                      component.type
+                    )}
+                  </div>
                 </div>
                 <div className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
                   {component.type}

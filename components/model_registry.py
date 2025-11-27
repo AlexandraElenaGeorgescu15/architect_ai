@@ -48,13 +48,26 @@ class ModelRegistry:
         """Load registry from disk"""
         if self.registry_path.exists():
             try:
-                with open(self.registry_path, 'r') as f:
+                with open(self.registry_path, 'r', encoding='utf-8') as f:
                     data = json.load(f)
-                    self.models = {
-                        model_id: RegisteredModel(**model_data)
-                        for model_id, model_data in data.items()
-                    }
-                logger.info(f"Loaded {len(self.models)} models from registry")
+                    self.models = {}
+                    for model_id, model_data in data.items():
+                        try:
+                            # Handle both 'id' and 'model_id' keys for backward compatibility
+                            if 'id' in model_data and 'model_id' not in model_data:
+                                model_data['model_id'] = model_data.pop('id')
+                            # Handle both 'name' and 'model_name' keys for backward compatibility
+                            if 'name' in model_data and 'model_name' not in model_data:
+                                model_data['model_name'] = model_data.pop('name')
+                            # Remove fields that don't exist in RegisteredModel
+                            valid_fields = {'model_id', 'model_name', 'base_model', 'status', 'model_path', 
+                                          'created_at', 'trained_at', 'training_config', 'metrics'}
+                            model_data = {k: v for k, v in model_data.items() if k in valid_fields}
+                            self.models[model_id] = RegisteredModel(**model_data)
+                        except Exception as e:
+                            logger.warning(f"Failed to load model {model_id}: {e}, skipping")
+                            continue
+                    logger.info(f"Loaded {len(self.models)} models from registry")
             except Exception as e:
                 logger.error(f"Failed to load registry: {e}")
                 self.models = {}
@@ -68,12 +81,12 @@ class ModelRegistry:
             # Ensure parent directory exists
             self.registry_path.parent.mkdir(parents=True, exist_ok=True)
             
-            with open(self.registry_path, 'w') as f:
+            with open(self.registry_path, 'w', encoding='utf-8') as f:
                 data = {
                     model_id: asdict(model)
                     for model_id, model in self.models.items()
                 }
-                json.dump(data, f, indent=2)
+                json.dump(data, f, indent=2, ensure_ascii=False)
             logger.info(f"Saved {len(self.models)} models to registry")
         except Exception as e:
             logger.error(f"Failed to save registry: {e}")

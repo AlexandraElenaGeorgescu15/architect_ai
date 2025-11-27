@@ -1,0 +1,18 @@
+[
+  {
+    "version": 1,
+    "artifact_id": "mermaid_erd_20251124_180441",
+    "artifact_type": "mermaid_erd",
+    "content": "Here's a comprehensive Mermaid ERD (Entity-Relationship Diagram) based on the requirements:\n\n```mermaid\nerDiagram\n  User ||--o{ Phone: owns\n  Phone ||--|{ SwapRequest: contains\n  SwapRequest }|--> ReasonForRequest : has\n  SwapRequest }|--> Status : has\n\nclassDef phone green fill, stroke;\nclassDef swapRequest blue fill, stroke;\nclassDef reasonForRequest orange fill, stroke;\nclassDef status red fill, stroke;\n\nclass Phone {\n  - id string\n  - ownerId string\n  - modelName string\n}\n\nclass SwapRequest {\n  - id string\n  - requestId string references User(id)\n  - requestedPhoneId string references Phone(id)\n  - offeredPhoneId string references Phone(id)\n  - comment text\n  - status Status default \"Pending\"\n}\n\nclass ReasonForRequest {\n  - id string\n  - requestSwapRequestId string references SwapRequest(id)\n  - reason text\n}\n\nclass Status {\n  - id string\n  - name string\n  - description text\n}\n```\n\nThis ERD defines the following entities:\n\n1. **User**: represents a user who owns phones.\n2. **Phone**: represents a phone that can be requested or offered in exchange.\n3. **SwapRequest**: represents a request to swap one phone for another. It has relationships with:\n\t* **ReasonForRequest**: an optional reason for the request (if provided).\n\t* **Status**: the status of the request (defaulting to \"Pending\").\n4. **ReasonForRequest**: an entity that stores the reason for a swap request.\n5. **Status**: an enumeration of possible statuses for a swap request.\n\nThe relationships between entities are as follows:\n\n1. A user owns multiple phones (one-to-many).\n2. A phone can be requested or offered in exchange (many-to-many).\n3. A swap request is associated with one reason and one status.\n4. A status applies to multiple swap requests.\n\nThis ERD captures the essential relationships and entities required for implementing the Phone Swap Request feature.",
+    "metadata": {
+      "model_used": "llama3",
+      "provider": "ollama",
+      "validation_score": 90.0,
+      "is_valid": true,
+      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
+      "html_content": null
+    },
+    "created_at": "2025-11-24T18:04:41.347501",
+    "is_current": true
+  }
+]

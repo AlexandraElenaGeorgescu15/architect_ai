@@ -27,45 +27,78 @@ async def get_current_patterns():
     Returns the cached pattern mining results if available.
     """
     try:
+        # First try to get from analysis service (which includes cached results)
         from backend.services.analysis_service import get_service
         
         service = get_service()
         result = await service.get_current_patterns()
         
-        if not result:
+        if result and result.get("patterns"):
+            # Analysis service returned data - use it
+            return {
+                "success": True,
+                "patterns": result.get("patterns", []),
+                "summary": result.get("summary", {
+                    "total_patterns": len(result.get("patterns", [])),
+                    "confidence_avg": 0
+                })
+            }
+        
+        # Fallback to pattern miner directly
+        miner = get_miner()
+        
+        if not miner.patterns_detected:
+            try:
+                miner.load_cached_results()
+            except Exception as e:
+                logger.debug(f"Could not load cached results: {e}")
+        
+        if not miner.patterns_detected:
             logger.info("No pattern analysis available")
             return {
                 "success": False,
-                "analysis": None,
-                "message": "No pattern analysis available. Run analysis first.",
                 "patterns": [],
                 "summary": {
-                    "total_files": 0,
                     "total_patterns": 0,
-                    "design_patterns": 0,
-                    "anti_patterns": 0,
-                    "code_smells": 0
+                    "confidence_avg": 0
                 }
             }
         
+        # Extract patterns from miner
+        patterns = []
+        total_confidence = 0
+        
+        for pattern in miner.patterns_detected[:50]:  # Limit to first 50
+            pattern_data = {
+                "id": f"{pattern.pattern_name}_{pattern.location}",
+                "name": pattern.details.get("class_name") or pattern.details.get("function_name") or "Unnamed",
+                "pattern_type": pattern.pattern_name,
+                "file": pattern.location.split(':')[0] if hasattr(pattern, 'location') else "",
+                "confidence": pattern.confidence if hasattr(pattern, 'confidence') else 0.5,
+                "description": pattern.details.get("description", f"{pattern.pattern_name} pattern detected") if hasattr(pattern, 'details') else ""
+            }
+            patterns.append(pattern_data)
+            total_confidence += pattern_data["confidence"]
+        
+        avg_confidence = total_confidence / len(patterns) if patterns else 0
+        
         return {
             "success": True,
-            "analysis": result
+            "patterns": patterns,
+            "summary": {
+                "total_patterns": len(miner.patterns_detected),
+                "confidence_avg": avg_confidence
+            }
         }
+        
     except Exception as e:
         logger.error(f"Error getting patterns: {e}", exc_info=True)
-        # Return empty state instead of HTTP error
         return {
             "success": False,
-            "analysis": None,
-            "message": f"Error loading patterns: {str(e)}",
             "patterns": [],
             "summary": {
-                "total_files": 0,
                 "total_patterns": 0,
-                "design_patterns": 0,
-                "anti_patterns": 0,
-                "code_smells": 0
+                "confidence_avg": 0
             },
             "error": str(e)
         }
@@ -196,55 +229,4 @@ async def analyze_single_file(request: Request, body: dict):
     result = miner.analyze_file(file_path)
     
     return result
-
-
-@router.get("/current")
-async def get_current_patterns():
-    """
-    Get current pattern mining results in simplified format for frontend.
-    Returns detected patterns and summary statistics.
-    """
-    miner = get_miner()
-    
-    # Try to load from cache or return empty state
-    if not miner.patterns_detected:
-        try:
-            miner.load_cached_results()
-        except Exception as e:
-            logger.debug(f"Could not load cached results: {e}")
-    
-    if not miner.patterns_detected:
-        return {
-            "patterns": [],
-            "summary": {
-                "total_patterns": 0,
-                "confidence_avg": 0
-            }
-        }
-    
-    # Extract patterns
-    patterns = []
-    total_confidence = 0
-    
-    for pattern in miner.patterns_detected[:50]:  # Limit to first 50
-        pattern_data = {
-            "id": f"{pattern.pattern_name}_{pattern.location}",
-            "name": pattern.details.get("class_name") or pattern.details.get("function_name") or "Unnamed",
-            "pattern_type": pattern.pattern_name,
-            "file": pattern.location.split(':')[0],
-            "confidence": pattern.confidence,
-            "description": pattern.details.get("description", f"{pattern.pattern_name} pattern detected")
-        }
-        patterns.append(pattern_data)
-        total_confidence += pattern.confidence
-    
-    avg_confidence = total_confidence / len(patterns) if patterns else 0
-    
-    return {
-        "patterns": patterns,
-        "summary": {
-            "total_patterns": len(miner.patterns_detected),
-            "confidence_avg": avg_confidence
-        }
-    }
 

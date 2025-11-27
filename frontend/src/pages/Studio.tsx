@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useGeneration } from '../hooks/useGeneration'
 import { useContext } from '../hooks/useContext'
 import { useArtifactStore } from '../stores/artifactStore'
-import { ArtifactType } from '../services/generationService'
+import { ArtifactType, listArtifacts } from '../services/generationService'
 import UnifiedStudioTabs from '../components/UnifiedStudioTabs'
 import TemplateGallery from '../components/TemplateGallery'
 import { TemplateApplyResponse } from '../services/templateService'
@@ -15,7 +15,32 @@ export default function Studio() {
   
   const { isGenerating, progress, generate, clearProgress } = useGeneration()
   const { isBuilding, build } = useContext()
-  const { artifacts, getArtifactsByType } = useArtifactStore()
+  const { artifacts, getArtifactsByType, setArtifacts, setLoading } = useArtifactStore()
+
+  // Load artifacts on mount and when location changes
+  useEffect(() => {
+    const loadArtifacts = async () => {
+      try {
+        setLoading(true)
+        console.log('📥 [STUDIO] Loading artifacts from backend...')
+        const loadedArtifacts = await listArtifacts()
+        console.log(`✅ [STUDIO] Loaded ${loadedArtifacts.length} artifacts`)
+        setArtifacts(loadedArtifacts)
+      } catch (error) {
+        console.error('❌ [STUDIO] Failed to load artifacts:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadArtifacts()
+    
+    // Also reload when window regains focus (user navigated back)
+    const handleFocus = () => {
+      loadArtifacts()
+    }
+    window.addEventListener('focus', handleFocus)
+    return () => window.removeEventListener('focus', handleFocus)
+  }, [setArtifacts, setLoading])
 
   const artifactTypes: { value: ArtifactType; label: string; category: string }[] = [
     // Mermaid Diagrams (Fully Parsable to Canvas - 7 types)

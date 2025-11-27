@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { Folder, FolderPlus, FileText, Upload, Sparkles, Check, X, Search, Info, ChevronRight, Trash2, Move, MoreVertical, Edit2 } from 'lucide-react'
 import api from '../services/api'
 import { useUIStore } from '../stores/uiStore'
+import { useSystemStatus } from '../hooks/useSystemStatus'
 
 interface Folder {
   id: string
@@ -60,15 +61,20 @@ export default function MeetingNotesManager() {
     [folders, selectedFolder]
   )
 
-  useEffect(() => {
-    loadFolders()
-  }, [])
+  // Import useSystemStatus to check backend readiness
+  const { isReady: backendReady } = useSystemStatus()
 
   useEffect(() => {
-    if (selectedFolder) {
+    if (backendReady) {
+      loadFolders()
+    }
+  }, [backendReady])
+
+  useEffect(() => {
+    if (selectedFolder && backendReady) {
       loadNotes(selectedFolder)
     }
-  }, [selectedFolder])
+  }, [selectedFolder, backendReady])
 
   const normalizeSuggestion = (raw: any): FolderSuggestion => {
     if (!raw) {
@@ -122,8 +128,13 @@ export default function MeetingNotesManager() {
     try {
       const response = await api.get('/api/meeting-notes/folders')
       setFolders(response.data.folders || [])
-    } catch (error) {
-      // Failed to load folders - handle in UI
+    } catch (error: any) {
+      // Failed to load folders - log error but don't crash
+      console.error('Failed to load folders:', error)
+      // Only show error if it's not a connection error (backend not ready)
+      if (error.response?.status !== 500 && error.code !== 'ECONNREFUSED') {
+        addNotification('error', error.response?.data?.detail || 'Failed to load folders')
+      }
     }
   }
 
