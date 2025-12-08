@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback, memo } from 'react'
 import { useGeneration } from '../hooks/useGeneration'
 import { useContext } from '../hooks/useContext'
 import { useArtifactStore } from '../stores/artifactStore'
@@ -7,7 +7,7 @@ import UnifiedStudioTabs from '../components/UnifiedStudioTabs'
 import TemplateGallery from '../components/TemplateGallery'
 import { TemplateApplyResponse } from '../services/templateService'
 
-export default function Studio() {
+function Studio() {
   const [meetingNotes, setMeetingNotes] = useState('')
   const [selectedArtifactType, setSelectedArtifactType] = useState<ArtifactType>('mermaid_erd')
   const [contextId, setContextId] = useState<string | null>(null)
@@ -22,12 +22,10 @@ export default function Studio() {
     const loadArtifacts = async () => {
       try {
         setLoading(true)
-        console.log('📥 [STUDIO] Loading artifacts from backend...')
         const loadedArtifacts = await listArtifacts()
-        console.log(`✅ [STUDIO] Loaded ${loadedArtifacts.length} artifacts`)
         setArtifacts(loadedArtifacts)
       } catch (error) {
-        console.error('❌ [STUDIO] Failed to load artifacts:', error)
+        console.error('Failed to load artifacts:', error)
       } finally {
         setLoading(false)
       }
@@ -42,7 +40,8 @@ export default function Studio() {
     return () => window.removeEventListener('focus', handleFocus)
   }, [setArtifacts, setLoading])
 
-  const artifactTypes: { value: ArtifactType; label: string; category: string }[] = [
+  // Memoize artifact types to prevent recreation on every render
+  const artifactTypes = useMemo<{ value: ArtifactType; label: string; category: string }[]>(() => [
     // Mermaid Diagrams (Fully Parsable to Canvas - 7 types)
     { value: 'mermaid_flowchart', label: 'Flowchart', category: 'Mermaid' },
     { value: 'mermaid_erd', label: 'ERD Diagram', category: 'Mermaid' },
@@ -103,38 +102,29 @@ export default function Studio() {
     { value: 'personas', label: 'Personas', category: 'PM' },
     { value: 'estimations', label: 'Estimations', category: 'PM' },
     { value: 'feature_scoring', label: 'Feature Scoring', category: 'PM' },
-  ]
+  ], [])
 
-  const handleTemplateApply = (payload: TemplateApplyResponse) => {
+  // Memoize callback to prevent unnecessary re-renders
+  const handleTemplateApply = useCallback((payload: TemplateApplyResponse) => {
     setMeetingNotes(payload.meeting_notes)
     if (payload.artifact_types?.length) {
       setSelectedArtifactType(payload.artifact_types[0])
     }
-  }
+  }, [])
 
   return (
-    <div className="h-full flex flex-col space-y-6 animate-fade-in-up overflow-y-auto custom-scrollbar">
-      <div className="relative glass-panel rounded-2xl p-6 border-border shadow-elevated bg-card flex-shrink-0 mx-6 mt-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-black tracking-tight text-foreground flex items-center gap-3">
-              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Studio</span>
-            </h1>
-            <p className="text-muted-foreground mt-2 flex items-center gap-2 text-sm">
-              <span className="w-2 h-2 bg-primary rounded-full animate-pulse shadow-[0_0_8px_rgba(37,99,235,0.6)]" />
-              Generate architecture artifacts from your requirements
-            </p>
-          </div>
-          <button
-            onClick={() => setTemplateGalleryOpen(true)}
-            className="px-6 py-3 text-sm font-bold bg-gradient-to-r from-primary to-primary/90 text-primary-foreground border border-primary/30 rounded-xl hover:shadow-lg hover:shadow-primary/30 transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 shadow-md"
-          >
-            📚 Browse Templates
-          </button>
-        </div>
+    <div className="h-full flex flex-col animate-fade-in-up overflow-hidden">
+      {/* Compact Action Bar - No redundant title */}
+      <div className="flex-shrink-0 px-6 py-3 border-b border-border bg-card/30 flex items-center justify-between">
+        <button
+          onClick={() => setTemplateGalleryOpen(true)}
+          className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all duration-200"
+        >
+          📚 Browse Templates
+        </button>
       </div>
 
-      <div className="flex-1 overflow-hidden mx-6 mb-6">
+      <div className="flex-1 overflow-hidden px-6 py-4">
         <UnifiedStudioTabs
         meetingNotes={meetingNotes}
         setMeetingNotes={setMeetingNotes}
@@ -162,3 +152,5 @@ export default function Studio() {
     </div>
   )
 }
+
+export default memo(Studio)

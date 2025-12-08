@@ -1,15 +1,17 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { WebSocketProvider } from './contexts/WebSocketContext'
 import Layout from './components/layout/Layout'
-import Studio from './pages/Studio'
-import Intelligence from './pages/Intelligence'
-import Canvas from './pages/Canvas'
 import OnboardingTour from './components/OnboardingTour'
 import CelebrationEffect from './components/CelebrationEffect'
 import SystemLoadingOverlay from './components/SystemLoadingOverlay'
 import { useSystemStatus } from './hooks/useSystemStatus'
 import { useAppLoading } from './hooks/useAppLoading'
+
+// Lazy load pages
+const Studio = React.lazy(() => import('./pages/Studio'))
+const Intelligence = React.lazy(() => import('./pages/Intelligence'))
+const Canvas = React.lazy(() => import('./pages/Canvas'))
 
 // Simple error boundary
 class ErrorBoundary extends React.Component<
@@ -75,13 +77,19 @@ function App() {
                 path="*"
                 element={
                   <Layout>
-                    <Routes>
-                      <Route path="/" element={<Navigate to="/studio" replace />} />
-                      <Route path="/studio" element={<Studio />} />
-                      <Route path="/intelligence" element={<Intelligence />} />
-                      <Route path="/canvas" element={<Canvas />} />
-                      <Route path="*" element={<Navigate to="/studio" replace />} />
-                    </Routes>
+                    <Suspense fallback={
+                      <div className="flex h-full items-center justify-center">
+                        <div className="text-gray-500">Loading page...</div>
+                      </div>
+                    }>
+                      <Routes>
+                        <Route path="/" element={<Navigate to="/studio" replace />} />
+                        <Route path="/studio" element={<Studio />} />
+                        <Route path="/intelligence" element={<Intelligence />} />
+                        <Route path="/canvas" element={<Canvas />} />
+                        <Route path="*" element={<Navigate to="/studio" replace />} />
+                      </Routes>
+                    </Suspense>
                   </Layout>
                 }
               />

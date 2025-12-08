@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense, memo } from 'react'
 import { ArtifactType } from '../services/generationService'
 import { useSystemStatus } from '../hooks/useSystemStatus'
 import { 
@@ -6,20 +6,34 @@ import {
   Download, Key, Settings, Search, Network, ListTodo, Sliders, Edit3, GitBranch
 } from 'lucide-react'
 import MeetingNotesManager from './MeetingNotesManager'
-import ArtifactTabs from './artifacts/ArtifactTabs'
-import CodeEditor from './CodeEditor'
-import ExportManager from './ExportManager'
-import SemanticSearchPanel from './SemanticSearchPanel'
 import BulkGenerationDialog from './BulkGenerationDialog'
-import ApiKeysManager from './ApiKeysManager'
-import InteractivePrototypeEditor from './InteractivePrototypeEditor'
-import CodeWithTestsEditor from './CodeWithTestsEditor'
-import MermaidRenderer from './MermaidRenderer'
-import VersionControl from './VersionControl'
 import { bulkGenerate } from '../services/generationService'
 import { useArtifactStore } from '../stores/artifactStore'
 import { useUIStore } from '../stores/uiStore'
 import { useKeyboardShortcuts, COMMON_SHORTCUTS } from '../hooks/useKeyboardShortcuts'
+
+// Lazy load heavy components for better initial load performance
+const ArtifactTabs = lazy(() => import('./artifacts/ArtifactTabs'))
+const CodeEditor = lazy(() => import('./CodeEditor'))
+const ExportManager = lazy(() => import('./ExportManager'))
+const SemanticSearchPanel = lazy(() => import('./SemanticSearchPanel'))
+const ApiKeysManager = lazy(() => import('./ApiKeysManager'))
+const InteractivePrototypeEditor = lazy(() => import('./InteractivePrototypeEditor'))
+const CodeWithTestsEditor = lazy(() => import('./CodeWithTestsEditor'))
+const MermaidRenderer = lazy(() => import('./MermaidRenderer'))
+const VersionControl = lazy(() => import('./VersionControl'))
+
+// Loading fallback component
+const LoadingFallback = memo(function LoadingFallback() {
+  return (
+    <div className="flex items-center justify-center h-full min-h-[200px]">
+      <div className="flex flex-col items-center gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <span className="text-sm text-muted-foreground">Loading...</span>
+      </div>
+    </div>
+  )
+})
 
 interface UnifiedStudioTabsProps {
   meetingNotes: string
@@ -39,8 +53,73 @@ interface UnifiedStudioTabsProps {
   artifactTypes: { value: ArtifactType; label: string; category: string }[]
 }
 
-export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
+// Memoized tab button component to prevent unnecessary re-renders
+const TabButton = memo(function TabButton({ 
+  id, 
+  label, 
+  icon: Icon, 
+  isActive, 
+  onClick 
+}: { 
+  id: string
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  isActive: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      data-tab={id}
+      onClick={onClick}
+      className={`
+        px-4 py-2 text-xs font-semibold rounded-lg transition-all duration-200 flex items-center gap-2
+        ${isActive
+          ? 'text-primary-foreground bg-primary shadow-md'
+          : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+        }
+      `}
+    >
+      <Icon className={`w-4 h-4 ${isActive ? 'text-primary-foreground' : ''}`} />
+      <span>{label}</span>
+    </button>
+  )
+})
+
+// Memoized artifact type button for the grid
+const ArtifactTypeButton = memo(function ArtifactTypeButton({
+  type,
+  isSelected,
+  onClick
+}: {
+  type: { value: ArtifactType; label: string; category: string }
+  isSelected: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`text-left px-3 py-2.5 text-xs rounded-lg border transition-all ${
+        isSelected
+          ? 'border-primary bg-primary/10 text-primary font-bold shadow-sm'
+          : 'border-transparent bg-background/30 hover:bg-background/50 text-muted-foreground hover:text-foreground'
+      }`}
+    >
+      {type.label}
+    </button>
+  )
+})
+
+function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
   const [activeView, setActiveView] = useState('context')
+  
+  // Memoize tabs configuration
+  const tabs = useMemo(() => [
+    { id: 'context', label: 'Context', icon: FileText },
+    { id: 'studio', label: 'Studio', icon: Sparkles },
+    { id: 'library', label: 'Library', icon: Folder },
+    { id: 'version-control', label: 'Version Control', icon: GitBranch },
+    { id: 'settings', label: 'Settings', icon: Settings },
+  ], [])
   
   const [aiQuestion, setAiQuestion] = useState('')
   const [aiResponse, setAiResponse] = useState<string | null>(null)
@@ -219,51 +298,27 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
   useKeyboardShortcuts(keyboardShortcuts)
 
   return (
-    <div className="h-full flex flex-col gap-6">
-      {/* Floating Pill Navigation */}
-      <div className="flex-shrink-0 animate-scale-in">
-        <div className="glass-panel rounded-2xl p-2 flex items-center justify-between shadow-elevated hover:shadow-floating transition-shadow duration-300 bg-card border-border">
-          <div className="flex items-center gap-2">
-            {[
-              { id: 'context', label: 'Context', icon: FileText },
-              { id: 'studio', label: 'Studio', icon: Sparkles },
-              { id: 'library', label: 'Library', icon: Folder },
-              { id: 'version-control', label: 'Version Control', icon: GitBranch },
-              { id: 'settings', label: 'Settings', icon: Settings },
-            ].map((tab) => {
-              const Icon = tab.icon
-              return (
-                <button
-                  key={tab.id}
-                  data-tab={tab.id}
-                  onClick={() => setActiveView(tab.id)}
-                  className={`
-                    px-6 py-3 text-sm font-bold rounded-xl transition-all duration-500 flex items-center gap-2 uppercase tracking-wider relative overflow-hidden group
-                    ${activeView === tab.id
-                      ? 'text-primary-foreground bg-gradient-to-br from-primary to-primary/90 shadow-lg shadow-primary/40 scale-105'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-card/50 hover:scale-105'
-                    }
-                  `}
-                >
-                  <Icon className={`w-4 h-4 relative z-10 transition-transform duration-300 ${activeView === tab.id ? 'animate-pulse' : 'group-hover:scale-110'}`} />
-                  <span className="relative z-10">{tab.label}</span>
-                </button>
-              )
-            })}
-          </div>
-          
-          <div className="px-6 flex items-center gap-3 text-xs text-muted-foreground font-mono border-l border-border/50">
-             <span className="font-bold">WORKSPACE</span>
-             <span className="text-primary flex items-center gap-2 font-bold">
-               <span className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_8px_rgba(37,99,235,0.6)]" />
-               ACTIVE
-             </span>
+    <div className="h-full flex flex-col gap-3">
+      {/* Compact Tab Navigation */}
+      <div className="flex-shrink-0">
+        <div className="glass-panel rounded-xl p-1.5 flex items-center justify-between bg-card border-border">
+          <div className="flex items-center gap-1">
+            {tabs.map((tab) => (
+              <TabButton
+                key={tab.id}
+                id={tab.id}
+                label={tab.label}
+                icon={tab.icon}
+                isActive={activeView === tab.id}
+                onClick={() => setActiveView(tab.id)}
+              />
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Content Area */}
-      <div className="flex-1 overflow-hidden relative">
+      {/* Content Area - Maximum Space */}
+      <div className="flex-1 overflow-hidden relative min-h-0">
         
         {/* CONTEXT VIEW */}
         {activeView === 'context' && (
@@ -281,7 +336,9 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                    </div>
                 </div>
                 <div className="flex-1 overflow-auto custom-scrollbar p-6 bg-background/10">
-                  <MeetingNotesManager />
+                  <Suspense fallback={<LoadingFallback />}>
+                    <MeetingNotesManager />
+                  </Suspense>
                 </div>
                 <div className="p-6 border-t border-border bg-secondary/10 text-center">
                   <p className="text-xs text-muted-foreground">
@@ -365,17 +422,12 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                       <label className="text-[10px] font-bold text-primary uppercase tracking-widest mb-3 block">Select Artifact</label>
                       <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
                         {props.artifactTypes.map((type) => (
-                          <button
+                          <ArtifactTypeButton
                             key={type.value}
+                            type={type}
+                            isSelected={props.selectedArtifactType === type.value}
                             onClick={() => props.setSelectedArtifactType(type.value)}
-                            className={`text-left px-3 py-2.5 text-xs rounded-lg border transition-all ${
-                              props.selectedArtifactType === type.value
-                                ? 'border-primary bg-primary/10 text-primary font-bold shadow-sm'
-                                : 'border-transparent bg-background/30 hover:bg-background/50 text-muted-foreground hover:text-foreground'
-                            }`}
-                          >
-                            {type.label}
-                          </button>
+                          />
                         ))}
                       </div>
                     </div>
@@ -443,26 +495,28 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                       <>
                         {/* Mermaid Diagram Rendering */}
                         <div className="flex-1 overflow-hidden">
-                          {(() => {
-                            const latestArtifact = props.getArtifactsByType(props.selectedArtifactType)?.[0]
-                            if (latestArtifact?.content) {
-                              return <MermaidRenderer content={latestArtifact.content} />
-                            } else if (props.progress?.artifact?.content) {
-                              return <MermaidRenderer content={props.progress.artifact.content} />
-                            } else {
-                              return (
-                                <div className="h-full flex items-center justify-center p-8">
-                                  <div className="text-center max-w-md">
-                                    <FileCode className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                                    <h3 className="text-lg font-semibold text-muted-foreground mb-2">No Diagram Generated Yet</h3>
-                                    <p className="text-sm text-muted-foreground">
-                                      Click "Generate" to create your {props.artifactTypes.find(t => t.value === props.selectedArtifactType)?.label || 'diagram'}
-                                    </p>
+                          <Suspense fallback={<LoadingFallback />}>
+                            {(() => {
+                              const latestArtifact = props.getArtifactsByType(props.selectedArtifactType)?.[0]
+                              if (latestArtifact?.content) {
+                                return <MermaidRenderer content={latestArtifact.content} />
+                              } else if (props.progress?.artifact?.content) {
+                                return <MermaidRenderer content={props.progress.artifact.content} />
+                              } else {
+                                return (
+                                  <div className="h-full flex items-center justify-center p-8">
+                                    <div className="text-center max-w-md">
+                                      <FileCode className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                                      <h3 className="text-lg font-semibold text-muted-foreground mb-2">No Diagram Generated Yet</h3>
+                                      <p className="text-sm text-muted-foreground">
+                                        Click "Generate" to create your {props.artifactTypes.find(t => t.value === props.selectedArtifactType)?.label || 'diagram'}
+                                      </p>
+                                    </div>
                                   </div>
-                                </div>
-                              )
-                            }
-                          })()}
+                                )
+                              }
+                            })()}
+                          </Suspense>
                         </div>
                         {/* Small Footer - Canvas Editor Link */}
                         <div className="border-t border-border px-4 py-3 bg-secondary/10 flex items-center justify-between flex-shrink-0">
@@ -490,11 +544,17 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                         </div>
                       </div>
                     ) : props.selectedArtifactType === 'code_prototype' ? (
-                      <CodeWithTestsEditor />
+                      <Suspense fallback={<LoadingFallback />}>
+                        <CodeWithTestsEditor />
+                      </Suspense>
                     ) : props.selectedArtifactType === 'dev_visual_prototype' || props.selectedArtifactType === 'html_prototype' ? (
-                      <InteractivePrototypeEditor />
+                      <Suspense fallback={<LoadingFallback />}>
+                        <InteractivePrototypeEditor />
+                      </Suspense>
                     ) : (
-                      <ArtifactTabs />
+                      <Suspense fallback={<LoadingFallback />}>
+                        <ArtifactTabs />
+                      </Suspense>
                     )}
                  </div>
               </div>
@@ -520,7 +580,9 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                 </div>
               </div>
               <div className="glass-panel rounded-2xl p-8 min-h-[500px] border-border bg-card shadow-elevated hover:shadow-floating transition-shadow duration-300">
-                 <ArtifactTabs />
+                 <Suspense fallback={<LoadingFallback />}>
+                   <ArtifactTabs />
+                 </Suspense>
               </div>
             </div>
           </div>
@@ -530,7 +592,9 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
         {activeView === 'version-control' && (
           <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar p-4 animate-fade-in-up">
             <div className="max-w-7xl mx-auto">
-              <VersionControl />
+              <Suspense fallback={<LoadingFallback />}>
+                <VersionControl />
+              </Suspense>
             </div>
           </div>
         )}
@@ -578,7 +642,9 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                     <p className="text-xs text-muted-foreground mt-2 ml-13">Manage your API keys and credentials</p>
                  </div>
                  <div className="p-8">
-                    <ApiKeysManager />
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ApiKeysManager />
+                    </Suspense>
                  </div>
               </div>
 
@@ -593,7 +659,9 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                     <p className="text-xs text-muted-foreground mt-1 ml-11 truncate-with-ellipsis">Export your artifacts</p>
                  </div>
                  <div className="p-6">
-                    <ExportManager />
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ExportManager />
+                    </Suspense>
                  </div>
               </div>
             </div>
@@ -610,3 +678,6 @@ export default function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
     </div>
   )
 }
+
+// Export with memo for shallow prop comparison optimization
+export default memo(UnifiedStudioTabs)

@@ -19,28 +19,21 @@ export default function Header() {
 
   return (
     <header 
-      className="h-20 px-8 flex items-center justify-between flex-shrink-0 z-40 border-b border-border backdrop-blur-md bg-card"
+      className="h-14 px-6 flex items-center justify-between flex-shrink-0 z-40 border-b border-border bg-card/50 backdrop-blur-sm"
     >
-      {/* Left: Page Title & Breadcrumbs */}
-      <div className="flex items-center gap-4">
+      {/* Left: Compact Title */}
+      <div className="flex items-center gap-3">
         <button 
           onClick={toggleSidebar}
-          className="p-2.5 rounded-xl hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all duration-300 lg:hidden shadow-sm hover:shadow-md"
+          className="p-2 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all duration-200 lg:hidden"
           aria-label="Toggle sidebar"
         >
-          <Menu className="w-6 h-6" />
+          <Menu className="w-5 h-5" />
         </button>
         
-        <div className="flex flex-col animate-fade-in-left">
-          <h1 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
-            {getPageTitle()}
-          </h1>
-          <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
-            <span className="opacity-50">ARCHITECT.AI</span>
-            <span className="opacity-30">/</span>
-            <span className="text-primary uppercase tracking-wider font-bold">{location.pathname.substring(1)}</span>
-          </div>
-        </div>
+        <h1 className="text-lg font-bold tracking-tight text-foreground">
+          {getPageTitle()}
+        </h1>
       </div>
 
       {/* Center: Spacer */}

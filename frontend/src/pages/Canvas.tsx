@@ -24,24 +24,14 @@ export default function Canvas() {
   }, [diagramArtifacts.length, selectedArtifactId])
 
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar p-6 flex flex-col animate-fade-in-up">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold flex items-center gap-2 text-primary">
-          <FileCode className="w-8 h-8 animate-pulse-glow" />
-          Canvas - Interactive Diagram Editor
-        </h1>
-        <p className="text-muted-foreground mt-2 flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary/50" />
-          Visual diagram editor with Miro-like features - drag, drop, connect, and edit nodes
-        </p>
-      </div>
+    <div className="h-full overflow-hidden flex flex-col p-4 animate-fade-in-up">
       
-      {/* Diagram Selector */}
+      {/* Compact Diagram Selector */}
       {diagramArtifacts.length > 1 && (
-        <div className="mb-4 relative">
+        <div className="mb-3 relative flex-shrink-0">
           <button
             onClick={() => setShowSelector(!showSelector)}
-            className="w-full px-4 py-2 bg-card border border-border rounded-lg flex items-center justify-between hover:border-primary transition-colors"
+            className="w-full px-3 py-2 text-sm bg-card border border-border rounded-lg flex items-center justify-between hover:border-primary transition-colors"
           >
             <span className="text-sm font-medium">
               {selectedArtifact ? `${selectedArtifact.type.replace('mermaid_', '').replace(/_/g, ' ')}` : 'Select Diagram'}

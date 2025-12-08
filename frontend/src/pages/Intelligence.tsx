@@ -44,6 +44,7 @@ export default function Intelligence() {
     loadPatternMining()
     loadSyntheticStats()
     loadFeedbackCounts()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   
   const loadUniversalContext = async () => {
@@ -270,18 +271,7 @@ export default function Intelligence() {
   }
 
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar p-6 space-y-6">
-      {/* Header with Stats */}
-      <div>
-        <h1 className="text-3xl font-bold flex items-center gap-2">
-          <Brain className="w-8 h-8" />
-          Intelligence
-        </h1>
-        <p className="text-foreground mt-2">
-          AI models, knowledge graph, pattern mining, and training
-        </p>
-      </div>
-
+    <div className="h-full overflow-y-auto custom-scrollbar p-4 space-y-4">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="glass-panel rounded-2xl p-6 text-center hover:border-primary/30 transition-all">

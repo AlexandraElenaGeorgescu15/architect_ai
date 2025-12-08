@@ -47,66 +47,65 @@
 
   .dark {
     /* 
-      DEEP NAVY PROFESSIONAL THEME
-      Concept: Professional dev tool aesthetic with deep navy blues and teal accents
-      Matching the Canvas screenshot - dark navy with teal/cyan highlights
-      Inspired by: GitHub Dark, VS Code Dark+, Professional IDEs
-      Color Psychology: Deep navy = professionalism, Teal = modern & technical
+      HIGH CONTRAST DARK THEME
+      Maximum contrast - no grey on grey, no blue on blue
+      Pure blacks with bright accents
     */
     
-    /* Rich dark backgrounds with excellent contrast */
-    --background: 220 40% 6%;         /* #0A0E14 - Very dark navy (matching screenshot) */
-    --foreground: 210 25% 88%;        /* #DBE1E8 - Light gray-blue text */
+    /* Backgrounds: True deep black for maximum contrast */
+    --background: 0 0% 0%;          /* #000000 - Pure black */
+    --foreground: 0 0% 100%;        /* #ffffff - Pure white text */
     
-    /* Elevated surfaces with clear differentiation */
-    --card: 215 30% 12%;              /* #161D29 - Dark navy card */
-    --card-foreground: 210 40% 98%;
+    /* Cards: Very dark with clear separation */
+    --card: 0 0% 8%;                /* #141414 - Dark grey */
+    --card-foreground: 0 0% 100%;   /* Pure white */
     
-    --popover: 215 28% 16%;           /* #1D2633 - Popover surface */
-    --popover-foreground: 210 40% 98%;
+    /* Popovers */
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 100%;
     
-    /* Electric Sapphire Blue - Main accent */
-    --primary: 195 75% 50%;           /* #20A4C4 - Teal-blue (matching screenshot) */
-    --primary-foreground: 0 0% 100%;
+    /* Primary: Bright vibrant blue */
+    --primary: 217 91% 65%;         /* #4c8bf5 - Brighter blue */
+    --primary-foreground: 0 0% 0%;  /* Black text on blue */
     
-    /* Secondary surfaces with good contrast */
-    --secondary: 215 28% 20%;         /* #252E3F - Medium navy surface */
-    --secondary-foreground: 210 20% 85%;
+    /* Secondary: Clearly distinct from background */
+    --secondary: 0 0% 15%;          /* #262626 */
+    --secondary-foreground: 0 0% 100%;
     
-    /* Muted elements - MAXIMUM contrast for readability */
-    --muted: 215 15% 42%;             /* #5B6574 - Canvas gray-blue */
-    --muted-foreground: 210 30% 95%;  /* #E8EDF2 - Much lighter text for dark mode */
+    /* Muted: Mid grey with high contrast text */
+    --muted: 0 0% 20%;              /* #333333 */
+    --muted-foreground: 0 0% 85%;   /* #d9d9d9 - Light grey for excellent readability */
     
-    /* Royal Violet - Secondary accent for highlights and special elements */
-    --accent: 190 80% 55%;            /* #2BB0D7 - Bright cyan */
-    --accent-foreground: 220 40% 6%;
+    /* Accent: Bright purple */
+    --accent: 270 100% 70%;         /* #b366ff - Vibrant purple */
+    --accent-foreground: 0 0% 0%;
     
-    /* Vibrant destructive with better visibility */
-    --destructive: 0 90% 58%;         /* #EF4444 - Vibrant red, slightly softer */
+    /* Destructive */
+    --destructive: 0 90% 60%;       /* #f53838 - Bright red */
     --destructive-foreground: 0 0% 100%;
     
-    /* Refined borders - clearly visible */
-    --border: 215 22% 22%;            /* #2C3543 - Subtle navy border */
-    --input: 215 30% 12%;             /* #161D29 - Input surface (same as card) */
-    --ring: 195 75% 50%;              /* Teal-blue focus ring */
+    /* Borders: Clear visible grey */
+    --border: 0 0% 25%;             /* #404040 - Visible border */
+    --input: 0 0% 12%;              /* #1f1f1f - Input background */
+    --ring: 217 91% 65%;
     
-    /* Premium Glass Effects - Better visibility */
-    --glass-bg: rgba(22, 29, 41, 0.88);               /* Dark navy translucent */
-    --glass-border: rgba(32, 164, 196, 0.22);         /* Teal borders */
-    --glass-shadow: rgba(0, 0, 0, 0.8);               /* Deep shadows */
-    --glass-highlight: rgba(255, 255, 255, 0.06);     /* Subtle highlight */
+    /* Glass Effects - High contrast */
+    --glass-bg: rgba(0, 0, 0, 0.9);           /* Nearly opaque black */
+    --glass-border: rgba(255, 255, 255, 0.15); /* Bright border */
+    --glass-shadow: rgba(0, 0, 0, 0.8);
+    --glass-highlight: rgba(255, 255, 255, 0.1);
+
+    /* Semantic Colors - Bright and visible */
+    --success: 142 80% 50%;         /* Bright green */
+    --warning: 38 100% 60%;         /* Bright orange */
+    --info: 217 91% 65%;            /* Bright blue */
     
-    /* Additional semantic colors */
-    --success: 150 80% 45%;           /* #1FD66B - Vibrant emerald green */
-    --warning: 38 100% 60%;           /* #FFAA33 - Warm gold */
-    --info: 215 100% 60%;             /* #3366FF - Sapphire blue (matches primary) */
+    /* Gradients */
+    --gradient-start: 217 91% 65%;
+    --gradient-end: 270 100% 70%;
     
-    /* Special gradient stops for advanced effects */
-    --gradient-start: 215 100% 60%;   /* Sapphire */
-    --gradient-end: 265 100% 68%;     /* Violet */
-    
-    /* Header-specific background */
-    --header: 234 91% 9%;             /* rgb(2, 6, 45) - Very dark blue header */
+    /* Header Background */
+    --header: 0 0% 3%;              /* Nearly black */
   }
 }
 
@@ -165,8 +164,8 @@
   
   /* Header specific background in dark mode */
   .dark header {
-    background-color: rgb(2, 6, 45) !important;
-    border-bottom-color: rgba(32, 164, 196, 0.15);
+    background-color: hsl(var(--header)) !important;
+    border-bottom-color: hsl(var(--border));
   }
 }
 
@@ -178,8 +177,8 @@
   */
   .glass-panel {
     background: var(--glass-bg);
-    backdrop-filter: blur(40px) saturate(200%) brightness(110%);
-    -webkit-backdrop-filter: blur(40px) saturate(200%) brightness(110%);
+    backdrop-filter: blur(24px) saturate(180%) brightness(105%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(105%);
     border: 1.5px solid var(--glass-border);
     box-shadow: 
       0 24px 72px -12px var(--glass-shadow),      /* Deep ambient shadow */
@@ -295,7 +294,7 @@
       hsl(var(--primary) / 0.05) 100%
     );
     border: 1.5px solid var(--glass-border);
-    backdrop-filter: blur(20px) saturate(180%) brightness(105%);
+    backdrop-filter: blur(12px) saturate(160%) brightness(105%);
     cursor: pointer;
     box-shadow: 
       0 6px 16px -4px rgba(0, 0, 0, 0.4),
@@ -380,7 +379,7 @@
       hsl(var(--card)) 100%
     );
     border: 1.5px solid var(--glass-border);
-    backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(12px) saturate(160%);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 
       inset 0 2px 6px rgba(0, 0, 0, 0.35),
@@ -532,37 +531,6 @@
       opacity: 1;
       transform: scale(1);
     }
-  }
-
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-  
-  .animate-pulse-glow {
-    animation: pulse-glow 3s ease-in-out infinite;
-  }
-  
-  .animate-shimmer {
-    background: linear-gradient(
-      90deg,
-      rgba(255,255,255,0) 0%,
-      rgba(255,255,255,0.1) 50%,
-      rgba(255,255,255,0) 100%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 2s infinite;
-  }
-  
-  .animate-fade-in-up {
-    animation: fade-in-up 0.6s ease-out;
-  }
-  
-  .animate-fade-in-left {
-    animation: fade-in-left 0.5s ease-out;
-  }
-  
-  .animate-scale-in {
-    animation: scale-in 0.4s ease-out;
   }
   
   /* Smooth entrance animations */

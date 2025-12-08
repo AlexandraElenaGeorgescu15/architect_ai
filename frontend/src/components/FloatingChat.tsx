@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { MessageSquare, X, Send, Bot, Minimize2, Maximize2 } from 'lucide-react'
 import { sendChatMessage, streamChatMessage } from '../services/chatService'
 
@@ -9,7 +9,41 @@ interface Message {
   timestamp: Date
 }
 
-export default function FloatingChat() {
+// Memoized message component to prevent re-renders
+const ChatMessage = memo(function ChatMessage({ message }: { message: Message }) {
+  return (
+    <div
+      className={`flex gap-3 animate-fade-in-up ${
+        message.role === 'user' ? 'justify-end' : 'justify-start'
+      }`}
+    >
+      {message.role === 'assistant' && (
+        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/30 shadow-md">
+          <Bot className="w-5 h-5 text-primary" />
+        </div>
+      )}
+      <div
+        className={`max-w-[80%] rounded-2xl p-4 shadow-elegant transition-all duration-300 hover:shadow-elevated backdrop-blur-sm ${
+          message.role === 'user'
+            ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground shadow-primary/20 rounded-tr-none'
+            : 'bg-card/80 text-foreground border border-border/50 rounded-tl-none'
+        }`}
+      >
+        <p className="whitespace-pre-wrap text-sm leading-relaxed line-clamp-[20]">{message.content}</p>
+        <p className="text-[10px] opacity-70 mt-2 text-right font-mono">
+          {message.timestamp.toLocaleTimeString()}
+        </p>
+      </div>
+      {message.role === 'user' && (
+        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/30">
+          <div className="w-5 h-5 rounded-full bg-primary-foreground/30" />
+        </div>
+      )}
+    </div>
+  )
+})
+
+function FloatingChat() {
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(true)
   const [messages, setMessages] = useState<Message[]>([
@@ -24,17 +58,17 @@ export default function FloatingChat() {
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }
+  }, [])
 
   useEffect(() => {
     if (isOpen && !isMinimized) {
       scrollToBottom()
     }
-  }, [messages, isOpen, isMinimized])
+  }, [messages, isOpen, isMinimized, scrollToBottom])
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!input.trim() || isLoading) return
 
     const userMessage: Message = {
@@ -101,14 +135,14 @@ export default function FloatingChat() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [input, isLoading, messages])
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSend()
     }
-  }
+  }, [handleSend])
 
   if (!isOpen) {
     return (
@@ -179,35 +213,7 @@ export default function FloatingChat() {
             {/* Messages */}
             <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar bg-gradient-to-b from-background/10 to-background/5">
               {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex gap-3 animate-fade-in-up ${
-                    message.role === 'user' ? 'justify-end' : 'justify-start'
-                  }`}
-                >
-                  {message.role === 'assistant' && (
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/30 shadow-md">
-                      <Bot className="w-5 h-5 text-primary" />
-                    </div>
-                  )}
-                  <div
-                    className={`max-w-[80%] rounded-2xl p-4 shadow-elegant transition-all duration-300 hover:shadow-elevated backdrop-blur-sm ${
-                      message.role === 'user'
-                        ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground shadow-primary/20 rounded-tr-none'
-                        : 'bg-card/80 text-foreground border border-border/50 rounded-tl-none'
-                    }`}
-                  >
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed line-clamp-[20]">{message.content}</p>
-                    <p className="text-[10px] opacity-70 mt-2 text-right font-mono">
-                      {message.timestamp.toLocaleTimeString()}
-                    </p>
-                  </div>
-                  {message.role === 'user' && (
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center flex-shrink-0 shadow-lg shadow-primary/30">
-                      <div className="w-5 h-5 rounded-full bg-primary-foreground/30" />
-                    </div>
-                  )}
-                </div>
+                <ChatMessage key={message.id} message={message} />
               ))}
               {isLoading && (
                 <div className="flex gap-3 justify-start animate-fade-in-up">
@@ -256,3 +262,5 @@ export default function FloatingChat() {
     </div>
   )
 }
+
+export default memo(FloatingChat)
