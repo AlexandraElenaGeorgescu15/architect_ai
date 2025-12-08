@@ -139,8 +139,8 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
   })
 
   return (
-    <div className="fixed inset-0 z-[1000] flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 px-4 backdrop-blur-sm">
-      <div className="w-full max-w-4xl rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-2xl shadow-slate-900/10">
+    <div className="fixed inset-0 z-[1000] flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 px-4 backdrop-blur-sm overflow-y-auto">
+      <div className="w-full max-w-4xl rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-2xl shadow-slate-900/10 my-8">
         {/* Header Section with Game */}
         <div className="mb-6">
           <div className="flex items-start gap-6 mb-4">

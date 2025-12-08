@@ -496,7 +496,7 @@ async def update_artifact(
     
     # Create new version
     try:
-        from backend.services.version_service import get_service as get_version_service
+        from backend.services.version_service import get_version_service
         version_service = get_version_service()
         version_service.create_version(
             artifact_id=artifact_id,

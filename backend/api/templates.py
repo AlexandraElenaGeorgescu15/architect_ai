@@ -24,14 +24,21 @@ async def apply_template(
     current_user=Depends(get_current_user),
 ):
     """Return meeting notes + artifact bundle for the selected template."""
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Applying template: {request.template_id}")
+    
     service = get_template_service()
     template = service.get_template(request.template_id)
+    
     if not template:
+        logger.error(f"Template not found: {request.template_id}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Template not found",
         )
 
+    logger.info(f"Template applied successfully: {template.get('name')}")
     return TemplateApplyResponse(
         template=template,
         meeting_notes=template["meeting_notes"],

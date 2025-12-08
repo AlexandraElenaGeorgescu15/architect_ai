@@ -24,7 +24,7 @@ export default function Canvas() {
   }, [diagramArtifacts.length, selectedArtifactId])
 
   return (
-    <div className="h-full overflow-hidden flex flex-col p-4 animate-fade-in-up">
+    <div className="h-full min-h-0 flex flex-col p-4 animate-fade-in-up">
       
       {/* Compact Diagram Selector */}
       {diagramArtifacts.length > 1 && (

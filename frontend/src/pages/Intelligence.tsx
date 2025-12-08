@@ -271,7 +271,7 @@ export default function Intelligence() {
   }
 
   return (
-    <div className="h-full overflow-y-auto custom-scrollbar p-4 space-y-4">
+    <div className="h-full min-h-0 overflow-auto custom-scrollbar p-4 space-y-4">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="glass-panel rounded-2xl p-6 text-center hover:border-primary/30 transition-all">

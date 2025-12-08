@@ -32,7 +32,9 @@ class VersionService:
     
     def __init__(self):
         """Initialize Version Service."""
-        self.versions_dir = Path("data/versions")
+        # Use settings.base_path to ensure correct path resolution regardless of CWD
+        base_path = Path(settings.base_path)
+        self.versions_dir = base_path / "data" / "versions"
         self.versions_dir.mkdir(parents=True, exist_ok=True)
         
         # In-memory version store
@@ -45,13 +47,17 @@ class VersionService:
     
     def _load_versions(self):
         """Load version history from disk."""
+        logger.info(f"Loading versions from {self.versions_dir}")
+        count = 0
         for artifact_file in self.versions_dir.glob("*.json"):
             try:
                 artifact_id = artifact_file.stem
                 with open(artifact_file, 'r', encoding='utf-8') as f:
                     self.versions[artifact_id] = json.load(f)
+                    count += 1
             except Exception as e:
                 logger.error(f"Error loading versions for {artifact_file}: {e}")
+        logger.info(f"Loaded versions for {count} artifacts")
     
     def _save_versions(self, artifact_id: str):
         """Save version history to disk."""

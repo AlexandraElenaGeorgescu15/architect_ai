@@ -49,20 +49,15 @@ export const useUIStore = create<UIStore>((set, get) => ({
     const id = `${Date.now()}-${Math.random()}`
     set((state) => ({
       notifications: [
-        ...state.notifications,
         {
           id,
           type,
           message,
           timestamp: Date.now(),
         },
+        ...state.notifications, 
       ],
     }))
-
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-      get().removeNotification(id)
-    }, 5000)
   },
 
   removeNotification: (id) =>

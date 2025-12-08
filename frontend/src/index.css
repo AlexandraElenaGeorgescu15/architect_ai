@@ -73,8 +73,8 @@
     --secondary-foreground: 0 0% 100%;
     
     /* Muted: Mid grey with high contrast text */
-    --muted: 0 0% 20%;              /* #333333 */
-    --muted-foreground: 0 0% 85%;   /* #d9d9d9 - Light grey for excellent readability */
+    --muted: 0 0% 15%;              /* #262626 - Darker muted background */
+    --muted-foreground: 0 0% 88%;   /* #e0e0e0 - Much lighter grey for readability */
     
     /* Accent: Bright purple */
     --accent: 270 100% 70%;         /* #b366ff - Vibrant purple */

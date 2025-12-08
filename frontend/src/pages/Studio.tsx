@@ -4,18 +4,33 @@ import { useContext } from '../hooks/useContext'
 import { useArtifactStore } from '../stores/artifactStore'
 import { ArtifactType, listArtifacts } from '../services/generationService'
 import UnifiedStudioTabs from '../components/UnifiedStudioTabs'
-import TemplateGallery from '../components/TemplateGallery'
-import { TemplateApplyResponse } from '../services/templateService'
+import { useLocation } from 'react-router-dom'
+import { useUIStore } from '../stores/uiStore'
 
 function Studio() {
   const [meetingNotes, setMeetingNotes] = useState('')
   const [selectedArtifactType, setSelectedArtifactType] = useState<ArtifactType>('mermaid_erd')
   const [contextId, setContextId] = useState<string | null>(null)
-  const [isTemplateGalleryOpen, setTemplateGalleryOpen] = useState(false)
   
   const { isGenerating, progress, generate, clearProgress } = useGeneration()
   const { isBuilding, build } = useContext()
   const { artifacts, getArtifactsByType, setArtifacts, setLoading } = useArtifactStore()
+  const { addNotification } = useUIStore()
+  const location = useLocation()
+
+  // Handle applied template from navigation state
+  useEffect(() => {
+    if (location.state?.appliedTemplate) {
+      const payload = location.state.appliedTemplate
+      setMeetingNotes(payload.meeting_notes)
+      if (payload.artifact_types?.length) {
+        setSelectedArtifactType(payload.artifact_types[0])
+      }
+      
+      // Clean up state
+      window.history.replaceState({}, document.title)
+    }
+  }, [location.state])
 
   // Load artifacts on mount and when location changes
   useEffect(() => {
@@ -104,27 +119,9 @@ function Studio() {
     { value: 'feature_scoring', label: 'Feature Scoring', category: 'PM' },
   ], [])
 
-  // Memoize callback to prevent unnecessary re-renders
-  const handleTemplateApply = useCallback((payload: TemplateApplyResponse) => {
-    setMeetingNotes(payload.meeting_notes)
-    if (payload.artifact_types?.length) {
-      setSelectedArtifactType(payload.artifact_types[0])
-    }
-  }, [])
-
   return (
-    <div className="h-full flex flex-col animate-fade-in-up overflow-hidden">
-      {/* Compact Action Bar - No redundant title */}
-      <div className="flex-shrink-0 px-6 py-3 border-b border-border bg-card/30 flex items-center justify-between">
-        <button
-          onClick={() => setTemplateGalleryOpen(true)}
-          className="px-4 py-2 text-sm font-semibold bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all duration-200"
-        >
-          📚 Browse Templates
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-hidden px-6 py-4">
+    <div className="h-full flex flex-col animate-fade-in-up min-h-0">
+      <div className="flex-1 min-h-0 px-4 py-3">
         <UnifiedStudioTabs
         meetingNotes={meetingNotes}
         setMeetingNotes={setMeetingNotes}
@@ -143,12 +140,6 @@ function Studio() {
         artifactTypes={artifactTypes}
         />
       </div>
-
-      <TemplateGallery
-        isOpen={isTemplateGalleryOpen}
-        onClose={() => setTemplateGalleryOpen(false)}
-        onApply={handleTemplateApply}
-      />
     </div>
   )
 }

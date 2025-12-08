@@ -1,693 +1,504 @@
 import { useState, useEffect, useMemo } from 'react'
-import { GitBranch, GitCommit, GitCompare, FileText, RefreshCw, Eye, AlertCircle, CheckCircle, X } from 'lucide-react'
-import { useArtifactStore } from '../stores/artifactStore'
+import { GitBranch, GitCommit, RefreshCw, FileText, Clock, CheckCircle, ChevronRight, Loader2, ArrowUpCircle, Eye, Plus, Minus, ArrowLeftRight, CheckSquare, Square } from 'lucide-react'
 import api from '../services/api'
-import { diffLines, Change } from 'diff'
+import { useUIStore } from '../stores/uiStore'
+import { useArtifactStore } from '../stores/artifactStore'
 
-interface GitStatus {
-  is_repo: boolean
-  status: string
-  files?: Array<{
-    file: string
-    absolute_path: string
-    status: 'tracked' | 'modified' | 'untracked' | 'added' | 'deleted'
-    name: string
-  }>
+interface VersionInfo {
+  version: number
+  artifact_id: string
+  artifact_type: string
+  content: string
+  metadata: {
+    model_used?: string
+    validation_score?: number
+    [key: string]: any
+  }
+  created_at: string
+  is_current: boolean
 }
 
-interface GitDiffResult {
-  file_path: string
-  absolute_path: string
-  is_tracked: boolean
-  diff: string
-  stats: {
-    additions: number
-    deletions: number
-    files_changed: number
-  }
-  error?: string
+interface AllVersionsResponse {
+  versions_by_type: Record<string, VersionInfo[]>
+  artifact_types: string[]
+  total_versions: number
+  total_artifacts: number
+}
+
+interface DiffLine {
+  type: 'added' | 'removed' | 'unchanged'
+  content: string
+  lineNumber: number
 }
 
 export default function VersionControl() {
-  const { artifacts } = useArtifactStore()
-  const [gitStatus, setGitStatus] = useState<GitStatus | null>(null)
-  const [selectedFile, setSelectedFile] = useState<string | null>(null)
-  const [gitDiff, setGitDiff] = useState<GitDiffResult | null>(null)
+  const [allVersions, setAllVersions] = useState<AllVersionsResponse | null>(null)
+  const [selectedType, setSelectedType] = useState<string | null>(null)
+  const [selectedArtifact, setSelectedArtifact] = useState<string | null>(null)
+  const [selectedVersion, setSelectedVersion] = useState<VersionInfo | null>(null)
+  
+  // Multi-select for comparison
+  const [compareSelection, setCompareSelection] = useState<VersionInfo[]>([])
+  const [showDiff, setShowDiff] = useState(false)
+  
   const [isLoading, setIsLoading] = useState(false)
-  const [isLoadingDiff, setIsLoadingDiff] = useState(false)
-  const [viewMode, setViewMode] = useState<'split' | 'unified'>('split')
-  const [baseRef, setBaseRef] = useState<string>('HEAD~1')
-  const [activeTab, setActiveTab] = useState<'artifacts' | 'git'>('artifacts')
-  const [artifactVersions, setArtifactVersions] = useState<Record<string, any[]>>({}) // artifact_type -> versions
-  const [selectedArtifactType, setSelectedArtifactType] = useState<string | null>(null)
-  const [isLoadingVersions, setIsLoadingVersions] = useState(false)
+  const [isRestoring, setIsRestoring] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  
+  const { addNotification } = useUIStore()
+  const { updateArtifact } = useArtifactStore()
 
   useEffect(() => {
-    loadGitStatus()
-    loadArtifactVersions()
-  }, [artifacts])
+    loadAllVersions()
+  }, [])
 
-  const loadArtifactVersions = async () => {
-    setIsLoadingVersions(true)
-    try {
-      // Group versions by artifact_type instead of artifact_id
-      // This way all ERD versions show together, even if they have different artifact_ids
-      const versionsByType: Record<string, any[]> = {}
-      
-      // Get unique artifact types from artifacts
-      const artifactTypes = new Set(artifacts.map(a => a.type))
-      
-      // Load versions for each artifact type
-      for (const artifactType of artifactTypes) {
-        try {
-          console.log(`📋 [VERSION_CONTROL] Loading versions for type: ${artifactType}`)
-          const response = await api.get(`/api/versions/by-type/${encodeURIComponent(artifactType)}`)
-          console.log(`📋 [VERSION_CONTROL] Got ${response.data?.length || 0} versions for ${artifactType}`)
-          if (response.data && response.data.length > 0) {
-            versionsByType[artifactType] = response.data
-            console.log(`✅ [VERSION_CONTROL] Loaded ${response.data.length} versions for ${artifactType}`)
-          } else {
-            console.log(`⚠️ [VERSION_CONTROL] No versions returned for ${artifactType}, trying fallback...`)
-            // Try loading by individual artifact IDs as fallback
-            const artifactsOfType = artifacts.filter(a => a.type === artifactType)
-            for (const artifact of artifactsOfType) {
-              try {
-                const response = await api.get(`/api/versions/${artifact.id}`)
-                if (response.data && response.data.length > 0) {
-                  if (!versionsByType[artifactType]) {
-                    versionsByType[artifactType] = []
-                  }
-                  // Add artifact_id to each version for reference
-                  const versionsWithId = response.data.map((v: any) => ({
-                    ...v,
-                    artifact_id: artifact.id
-                  }))
-                  versionsByType[artifactType].push(...versionsWithId)
-                }
-              } catch (err) {
-                // Artifact has no versions yet
-                continue
-              }
-            }
-          }
-        } catch (error: any) {
-          console.error(`❌ [VERSION_CONTROL] Error loading versions for ${artifactType}:`, error)
-          // Try loading by individual artifact IDs as fallback
-          const artifactsOfType = artifacts.filter(a => a.type === artifactType)
-          for (const artifact of artifactsOfType) {
-            try {
-              const response = await api.get(`/api/versions/${artifact.id}`)
-              if (response.data && response.data.length > 0) {
-                if (!versionsByType[artifactType]) {
-                  versionsByType[artifactType] = []
-                }
-                // Add artifact_id to each version for reference
-                const versionsWithId = response.data.map((v: any) => ({
-                  ...v,
-                  artifact_id: artifact.id
-                }))
-                versionsByType[artifactType].push(...versionsWithId)
-              }
-            } catch (err) {
-              // Artifact has no versions yet
-              continue
-            }
-          }
-        }
-      }
-      
-      // Convert to artifact_id-based map for compatibility with existing UI
-      // Group by artifact_type, but use artifact_type as the key
-      const versionsMap: Record<string, any[]> = {}
-      for (const [artifactType, versions] of Object.entries(versionsByType)) {
-        // Use artifact_type as key, but we'll need to update the UI to handle this
-        // For now, also create entries for each artifact_id
-        for (const version of versions) {
-          const artifactId = version.artifact_id || artifactType
-          if (!versionsMap[artifactId]) {
-            versionsMap[artifactId] = []
-          }
-          versionsMap[artifactId].push(version)
-        }
-      }
-      
-      // Also create a type-based mapping for easier access
-      setArtifactVersions(versionsByType as any)
-    } catch (error) {
-      console.error('Failed to load artifact versions:', error)
-    } finally {
-      setIsLoadingVersions(false)
-    }
-  }
-
-  const loadGitStatus = async () => {
+  const loadAllVersions = async () => {
     setIsLoading(true)
+    setError(null)
     try {
-      const response = await api.get('/api/git/status')
-      setGitStatus(response.data)
-    } catch (error) {
-      console.error('Failed to load git status:', error)
-      setGitStatus({
-        is_repo: false,
-        status: 'error'
-      })
+      const response = await api.get<AllVersionsResponse>('/api/versions/all')
+      setAllVersions(response.data)
+      
+      if (response.data.artifact_types.length > 0 && !selectedType) {
+        setSelectedType(response.data.artifact_types[0])
+      }
+    } catch (err: any) {
+      console.error('Failed to load versions:', err)
+      setError(err?.response?.data?.detail || 'Failed to load versions')
     } finally {
       setIsLoading(false)
     }
   }
 
-  const loadGitDiff = async (filePath: string) => {
-    setIsLoadingDiff(true)
-    setSelectedFile(filePath)
-    try {
-      const response = await api.get('/api/git/diff', {
-        params: {
-          file_path: filePath,
-          base_ref: baseRef || undefined
-        }
-      })
-      setGitDiff(response.data)
-    } catch (error: any) {
-      console.error('Failed to load git diff:', error)
-      setGitDiff({
-        file_path: filePath,
-        absolute_path: filePath,
-        is_tracked: false,
-        diff: '',
-        stats: { additions: 0, deletions: 0, files_changed: 0 },
-        error: error.response?.data?.detail || 'Failed to load diff'
-      })
-    } finally {
-      setIsLoadingDiff(false)
-    }
+  const formatArtifactType = (type: string) => {
+    return type.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
   }
 
-  const parsedDiff = useMemo(() => {
-    if (!gitDiff?.diff) return []
+  const getVersionsForType = (type: string): VersionInfo[] => {
+    return allVersions?.versions_by_type[type] || []
+  }
+
+  const getUniqueArtifacts = (type: string): string[] => {
+    const versions = getVersionsForType(type)
+    return [...new Set(versions.map(v => v.artifact_id))]
+  }
+
+  const getVersionsForArtifact = (artifactId: string): VersionInfo[] => {
+    if (!selectedType || !allVersions) return []
+    return allVersions.versions_by_type[selectedType]?.filter(v => v.artifact_id === artifactId) || []
+  }
+
+  // Compute diff between two versions
+  const computeDiff = useMemo((): DiffLine[] => {
+    if (compareSelection.length !== 2) return []
     
-    // Parse git diff format
-    const lines = gitDiff.diff.split('\n')
-    const changes: Array<{ type: 'context' | 'added' | 'removed'; line: string; lineNumber?: number }> = []
+    // Sort by version number to ensure intuitive diff (old -> new)
+    const sorted = [...compareSelection].sort((a, b) => a.version - b.version)
+    const [vOld, vNew] = sorted
     
-    let oldLineNum = 0
-    let newLineNum = 0
+    const oldLines = (vOld.content || '').split('\n')
+    const newLines = (vNew.content || '').split('\n')
+    const diff: DiffLine[] = []
     
-    for (const line of lines) {
-      if (line.startsWith('@@')) {
-        // Parse hunk header: @@ -old_start,old_count +new_start,new_count @@
-        const match = line.match(/@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/)
-        if (match) {
-          oldLineNum = parseInt(match[1]) - 1
-          newLineNum = parseInt(match[3]) - 1
-        }
-        continue
-      }
+    let lineNum = 1
+    const maxLen = Math.max(oldLines.length, newLines.length)
+    
+    for (let i = 0; i < maxLen; i++) {
+      const oldLine = oldLines[i]
+      const newLine = newLines[i]
       
-      if (line.startsWith('+') && !line.startsWith('+++')) {
-        newLineNum++
-        changes.push({ type: 'added', line: line.substring(1), lineNumber: newLineNum })
-      } else if (line.startsWith('-') && !line.startsWith('---')) {
-        oldLineNum++
-        changes.push({ type: 'removed', line: line.substring(1), lineNumber: oldLineNum })
-      } else if (line.startsWith(' ')) {
-        oldLineNum++
-        newLineNum++
-        changes.push({ type: 'context', line: line.substring(1), lineNumber: newLineNum })
+      if (oldLine === undefined && newLine !== undefined) {
+        diff.push({ type: 'added', content: newLine, lineNumber: lineNum++ })
+      } else if (newLine === undefined && oldLine !== undefined) {
+        diff.push({ type: 'removed', content: oldLine, lineNumber: lineNum++ })
+      } else if (oldLine !== newLine) {
+        diff.push({ type: 'removed', content: oldLine || '', lineNumber: lineNum })
+        diff.push({ type: 'added', content: newLine || '', lineNumber: lineNum++ })
+      } else {
+        diff.push({ type: 'unchanged', content: newLine || '', lineNumber: lineNum++ })
       }
     }
     
-    return changes
-  }, [gitDiff])
+    return diff
+  }, [compareSelection])
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'tracked':
-        return 'text-green-500 bg-green-500/10'
-      case 'modified':
-        return 'text-yellow-500 bg-yellow-500/10'
-      case 'untracked':
-        return 'text-gray-500 bg-gray-500/10'
-      case 'added':
-        return 'text-blue-500 bg-blue-500/10'
-      case 'deleted':
-        return 'text-red-500 bg-red-500/10'
-      default:
-        return 'text-muted-foreground bg-muted'
+  const handleRestoreVersion = async (version: VersionInfo) => {
+    if (!confirm(`Restore version ${version.version} as the current version? This will update the artifact in the library.`)) {
+      return
+    }
+    
+    setIsRestoring(true)
+    try {
+      // Call the restore endpoint
+      await api.post(`/api/versions/${version.artifact_id}/restore/${version.version}`)
+      
+      // Update the artifact store with the restored content
+      updateArtifact(version.artifact_id, {
+        content: version.content,
+        score: version.metadata?.validation_score,
+        model_used: version.metadata?.model_used
+      })
+      
+      addNotification('success', `Version ${version.version} restored as current`)
+      
+      // Reload versions to reflect the change
+      await loadAllVersions()
+    } catch (err: any) {
+      console.error('Failed to restore version:', err)
+      addNotification('error', err?.response?.data?.detail || 'Failed to restore version')
+    } finally {
+      setIsRestoring(false)
     }
   }
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'tracked':
-        return <CheckCircle className="w-4 h-4" />
-      case 'modified':
-        return <AlertCircle className="w-4 h-4" />
-      case 'untracked':
-        return <FileText className="w-4 h-4" />
-      case 'added':
-        return <GitCommit className="w-4 h-4" />
-      case 'deleted':
-        return <X className="w-4 h-4" />
-      default:
-        return <FileText className="w-4 h-4" />
+  const toggleCompareSelect = (version: VersionInfo) => {
+    if (compareSelection.some(v => v.version === version.version)) {
+      setCompareSelection(prev => prev.filter(v => v.version !== version.version))
+    } else {
+      if (compareSelection.length >= 2) {
+        // Replace the first one (FIFO) or prevent? Let's prevent > 2
+        addNotification('warning', 'You can only compare 2 versions at a time')
+        return
+      }
+      setCompareSelection(prev => [...prev, version])
     }
   }
 
-  if (!gitStatus) {
+  const startCompare = () => {
+    if (compareSelection.length === 2) {
+      setShowDiff(true)
+    }
+  }
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading git status...</p>
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading version history...</p>
         </div>
       </div>
     )
   }
 
-  if (!gitStatus.is_repo) {
+  if (error) {
     return (
       <div className="glass-panel rounded-2xl p-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto mb-4">
-          <GitBranch className="w-8 h-8 text-muted-foreground" />
+        <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
+          <GitBranch className="w-8 h-8 text-red-500" />
         </div>
-        <h3 className="text-lg font-bold text-foreground mb-2">Not a Git Repository</h3>
-        <p className="text-muted-foreground mb-4">
-          This directory is not a git repository. Initialize git to track artifact changes.
-        </p>
+        <h3 className="text-lg font-bold text-foreground mb-2">Error Loading Versions</h3>
+        <p className="text-muted-foreground mb-4">{error}</p>
         <button
-          onClick={loadGitStatus}
+          onClick={loadAllVersions}
           className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
         >
           <RefreshCw className="w-4 h-4 inline mr-2" />
-          Refresh
+          Retry
         </button>
       </div>
     )
   }
 
-  const artifactFiles = gitStatus.files || []
-
   return (
-    <div className="h-full flex flex-col gap-6">
+    <div className="flex flex-col gap-4 min-h-[400px] h-full">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-shrink-0">
         <div>
-          <h2 className="text-2xl font-bold text-foreground flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-              <GitBranch className="w-5 h-5 text-primary" />
-            </div>
-            Version Control
+          <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <GitBranch className="w-5 h-5 text-primary" />
+            Version History
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Track and compare artifact versions
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {allVersions ? `${allVersions.total_versions} versions, ${allVersions.total_artifacts} artifacts` : 'Track versions'}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Tab Switcher */}
-          <div className="flex gap-1 bg-muted rounded-lg p-1">
+          {showDiff && (
             <button
-              onClick={() => setActiveTab('artifacts')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'artifacts'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
+              onClick={() => { setShowDiff(false); setCompareSelection([]) }}
+              className="px-3 py-1.5 text-xs bg-muted hover:bg-muted/80 text-foreground rounded-lg flex items-center gap-1"
             >
-              Artifact Versions
+              <ArrowLeftRight className="w-3 h-3" />
+              Exit Compare
             </button>
-            <button
-              onClick={() => setActiveTab('git')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                activeTab === 'git'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Git Diff
-            </button>
-          </div>
+          )}
           <button
-            onClick={() => {
-              if (activeTab === 'artifacts') {
-                loadArtifactVersions()
-              } else {
-                loadGitStatus()
-              }
-            }}
-            disabled={isLoading || isLoadingVersions}
-            className="px-4 py-2 border border-border rounded-lg hover:bg-card flex items-center gap-2 disabled:opacity-50"
+            onClick={loadAllVersions}
+            disabled={isLoading}
+            className="px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-card flex items-center gap-1 disabled:opacity-50"
           >
-            <RefreshCw className={`w-4 h-4 ${(isLoading || isLoadingVersions) ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-3 h-3 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
         </div>
       </div>
 
-      {activeTab === 'artifacts' ? (
-        /* Artifact Versions View */
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr,1fr] gap-6 flex-1 min-h-0">
-          {/* Left: Artifact List */}
-          <div className="glass-panel rounded-2xl p-6 flex flex-col min-h-0">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-foreground">Artifacts</h3>
-              <span className="text-sm text-muted-foreground">
-                {Object.keys(artifactVersions).length} artifacts with versions
-              </span>
+      {/* Main Content */}
+      {!allVersions || allVersions.total_versions === 0 ? (
+        <div className="glass-panel rounded-xl p-8 text-center flex-1">
+          <GitCommit className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+          <h3 className="font-bold text-foreground mb-1">No Versions Yet</h3>
+          <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+            Generate artifacts to start tracking version history.
+          </p>
+        </div>
+      ) : showDiff && compareSelection.length === 2 ? (
+        /* Diff View */
+        <div className="flex-1 flex flex-col min-h-0 glass-panel rounded-xl overflow-hidden">
+          <div className="p-3 border-b border-border bg-muted/30 flex items-center justify-between flex-shrink-0">
+            <div className="flex items-center gap-4 text-xs">
+              <span className="font-bold text-foreground">Diff View</span>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-1 bg-red-500/20 text-red-600 rounded font-medium flex items-center gap-1">
+                  <Minus className="w-3 h-3" />
+                  v{[...compareSelection].sort((a,b) => a.version - b.version)[0].version}
+                </span>
+                <span className="text-muted-foreground">→</span>
+                <span className="px-2 py-1 bg-green-500/20 text-green-600 rounded font-medium flex items-center gap-1">
+                  <Plus className="w-3 h-3" />
+                  v{[...compareSelection].sort((a,b) => a.version - b.version)[1].version}
+                </span>
+              </div>
             </div>
-            
-            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2">
-              {isLoadingVersions ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Loading versions...</p>
-                </div>
-              ) : Object.keys(artifactVersions).length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <GitCompare className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No artifact versions found</p>
-                  <p className="text-xs mt-2">Generate artifacts to see version history</p>
-                </div>
-              ) : (
-                // Group artifacts by type and show versions per type
-                Array.from(new Set(artifacts.map(a => a.type)))
-                  .filter(artifactType => artifactVersions[artifactType] && artifactVersions[artifactType].length > 0)
-                  .map((artifactType) => {
-                    const versions = artifactVersions[artifactType] || []
-                    const currentVersion = versions.find((v: any) => v.is_current) || versions[0]
+            {/* Allow restoring the newer version if not current */}
+             {[...compareSelection].sort((a,b) => a.version - b.version)[1].is_current ? (
+                <span className="text-xs text-green-600 font-medium px-2 py-1 bg-green-100 rounded flex items-center gap-1">
+                    <CheckCircle className="w-3 h-3" />
+                    Current
+                </span>
+             ) : (
+                <button
+                  onClick={() => handleRestoreVersion([...compareSelection].sort((a,b) => a.version - b.version)[1])}
+                  disabled={isRestoring}
+                  className="px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1"
+                >
+                  {isRestoring ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowUpCircle className="w-3 h-3" />}
+                  Restore v{[...compareSelection].sort((a,b) => a.version - b.version)[1].version}
+                </button>
+             )}
+          </div>
+          <div className="flex-1 overflow-auto font-mono text-xs p-2 bg-background/50">
+            {computeDiff.map((line, idx) => (
+              <div
+                key={idx}
+                className={`flex ${
+                  line.type === 'added' ? 'bg-green-500/10' :
+                  line.type === 'removed' ? 'bg-red-500/10' : ''
+                }`}
+              >
+                <span className="w-8 text-right pr-2 text-muted-foreground select-none border-r border-border mr-2 opacity-50">
+                  {line.lineNumber}
+                </span>
+                <span className="w-4 flex-shrink-0 flex items-center justify-center">
+                  {line.type === 'added' && <Plus className="w-3 h-3 text-green-500" />}
+                  {line.type === 'removed' && <Minus className="w-3 h-3 text-red-500" />}
+                </span>
+                <span className={`flex-1 whitespace-pre-wrap break-all ${
+                  line.type === 'added' ? 'text-green-600' :
+                  line.type === 'removed' ? 'text-red-600' : 'text-foreground'
+                }`}>
+                  {line.content || ' '}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        /* Normal View - 3 Column Layout */
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 flex-1 min-h-0">
+          {/* Left Panel: Artifact Types */}
+          <div className="col-span-1 md:col-span-3 glass-panel rounded-xl p-3 flex flex-col min-h-[150px] md:min-h-0">
+            <h3 className="text-xs font-bold text-foreground mb-2">Types</h3>
+            <div className="flex-1 overflow-y-auto space-y-1">
+              {allVersions.artifact_types.map((type) => {
+                const count = getVersionsForType(type).length
+                return (
+                  <button
+                    key={type}
+                    onClick={() => { setSelectedType(type); setSelectedArtifact(null); setSelectedVersion(null); setCompareSelection([]) }}
+                    className={`w-full text-left p-2 rounded-lg text-xs transition-all ${
+                      selectedType === type
+                        ? 'bg-primary/10 border-primary border'
+                        : 'border border-transparent hover:bg-muted/50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-foreground truncate">{formatArtifactType(type)}</span>
+                      <ChevronRight className={`w-3 h-3 text-muted-foreground ${selectedType === type ? 'rotate-90' : ''}`} />
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">{count} version{count !== 1 ? 's' : ''}</p>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Middle Panel: Artifacts */}
+          <div className="col-span-1 md:col-span-4 glass-panel rounded-xl p-3 flex flex-col min-h-[150px] md:min-h-0">
+            <h3 className="text-xs font-bold text-foreground mb-2">
+              {selectedType ? formatArtifactType(selectedType) : 'Select Type'}
+            </h3>
+            <div className="flex-1 overflow-y-auto space-y-1">
+              {selectedType ? (
+                getUniqueArtifacts(selectedType).length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-xs">No artifacts</p>
+                  </div>
+                ) : (
+                  getUniqueArtifacts(selectedType).map((artifactId) => {
+                    const versions = getVersionsForArtifact(artifactId)
+                    const latest = versions[0]
                     return (
                       <button
-                        key={artifactType}
-                        onClick={() => setSelectedArtifactType(artifactType)}
-                        className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                          selectedArtifactType === artifactType
+                        key={artifactId}
+                        onClick={() => { setSelectedArtifact(artifactId); setSelectedVersion(null); setCompareSelection([]) }}
+                        className={`w-full text-left p-2 rounded-lg border text-xs transition-all ${
+                          selectedArtifact === artifactId
                             ? 'border-primary bg-primary/10'
                             : 'border-border hover:border-primary/50'
                         }`}
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                              <span className="font-medium text-foreground truncate">
-                                {artifactType.replace(/_/g, ' ')}
-                              </span>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {versions.length} version{versions.length !== 1 ? 's' : ''} across {new Set(versions.map((v: any) => v.artifact_id)).size} artifact{new Set(versions.map((v: any) => v.artifact_id)).size !== 1 ? 's' : ''}
-                            </p>
-                          </div>
-                          <div className="px-2 py-1 rounded text-xs font-medium bg-primary/20 text-primary">
-                            v{currentVersion?.version || versions.length}
-                          </div>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <FileText className="w-3 h-3 text-muted-foreground" />
+                          <span className="font-medium text-foreground truncate">
+                            {artifactId.length > 25 ? artifactId.slice(0, 25) + '...' : artifactId}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+                          <span>{versions.length} version{versions.length !== 1 ? 's' : ''}</span>
+                          {latest && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-2.5 h-2.5" />
+                              {new Date(latest.created_at).toLocaleDateString()}
+                            </span>
+                          )}
                         </div>
                       </button>
                     )
                   })
+                )
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  <FileText className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-xs">Select a type</p>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Right: Version List */}
-          <div className="glass-panel rounded-2xl p-6 flex flex-col min-h-0">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-foreground">Versions</h3>
+          {/* Right Panel: Versions */}
+          <div className="col-span-1 md:col-span-5 glass-panel rounded-xl p-3 flex flex-col min-h-[300px] md:min-h-0">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-xs font-bold text-foreground">
+                {selectedArtifact ? 'Versions' : 'Select Artifact'}
+              </h3>
+              {compareSelection.length > 0 && (
+                <button
+                    onClick={startCompare}
+                    disabled={compareSelection.length !== 2}
+                    className="px-2 py-1 text-[10px] bg-primary text-primary-foreground rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-all"
+                >
+                    <ArrowLeftRight className="w-3 h-3" />
+                    Compare ({compareSelection.length}/2)
+                </button>
+              )}
             </div>
             
-            <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2">
-              {selectedArtifactType && artifactVersions[selectedArtifactType] ? (
-                artifactVersions[selectedArtifactType]
-                  .sort((a: any, b: any) => {
-                    // Sort by created_at descending (newest first)
-                    const dateA = new Date(a.created_at || 0).getTime()
-                    const dateB = new Date(b.created_at || 0).getTime()
-                    return dateB - dateA
-                  })
-                  .map((version: any, index: number) => (
+            <div className="flex-1 overflow-y-auto space-y-1.5">
+              {selectedArtifact ? (
+                getVersionsForArtifact(selectedArtifact).map((version) => {
+                  const isSelected = selectedVersion?.version === version.version
+                  const isChecked = compareSelection.some(v => v.version === version.version)
+                  
+                  return (
                     <div
-                      key={`${version.artifact_id}-${version.version}-${index}`}
-                      className={`p-4 rounded-lg border-2 ${
-                        version.is_current
-                          ? 'border-primary bg-primary/10'
-                          : 'border-border bg-card/50'
+                      key={`${version.artifact_id}-${version.version}`}
+                      className={`p-2.5 rounded-lg border text-xs transition-all ${
+                        isSelected ? 'border-primary bg-primary/5' :
+                        version.is_current ? 'border-green-500/30 bg-green-500/5' :
+                        'border-border bg-card/50'
                       }`}
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-foreground">
-                          Version {version.version}
-                          {version.is_current && (
-                            <span className="ml-2 text-xs px-2 py-0.5 bg-primary text-primary-foreground rounded">
-                              Current
-                            </span>
-                          )}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={(e) => { e.stopPropagation(); toggleCompareSelect(version); }}
+                                className={`p-0.5 rounded transition-colors ${isChecked ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                                title="Select for comparison"
+                            >
+                                {isChecked ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                            </button>
+                            
+                            <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => setSelectedVersion(version)}>
+                              <GitCommit className="w-3 h-3 text-muted-foreground" />
+                              <span className="font-bold text-foreground">v{version.version}</span>
+                              {version.is_current && (
+                                <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 bg-green-500 text-white rounded-full">
+                                  <CheckCircle className="w-2.5 h-2.5" />
+                                  Current
+                                </span>
+                              )}
+                            </div>
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">
                           {new Date(version.created_at).toLocaleString()}
                         </span>
                       </div>
-                      {version.artifact_id && (
-                        <p className="text-xs text-muted-foreground mb-1">
-                          Artifact ID: <span className="font-mono">{version.artifact_id}</span>
-                        </p>
-                      )}
-                      {version.metadata?.model_used && (
-                        <p className="text-xs text-muted-foreground mb-2">
-                          Model: {version.metadata.model_used.replace('ollama:', '').replace('huggingface:', '')}
-                        </p>
-                      )}
-                      {version.metadata?.validation_score !== undefined && (
-                        <p className="text-xs text-muted-foreground">
-                          Score: {version.metadata.validation_score}/100
-                        </p>
+                      
+                      <div className="text-[10px] text-muted-foreground mb-2 pl-6">
+                        {version.metadata?.model_used && (
+                          <span>Model: {version.metadata.model_used.replace('ollama:', '').replace('huggingface:', '')}</span>
+                        )}
+                        {version.content && (
+                          <span className="ml-2">{version.content.length.toLocaleString()} chars</span>
+                        )}
+                      </div>
+                      
+                      <div className="flex gap-1.5 pl-6">
+                        <button
+                          onClick={() => setSelectedVersion(version)}
+                          className={`flex-1 px-2 py-1 rounded text-[10px] font-medium flex items-center justify-center gap-1 ${
+                            isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
+                          }`}
+                        >
+                          <Eye className="w-3 h-3" />
+                          View
+                        </button>
+                        {!version.is_current && (
+                          <button
+                            onClick={() => handleRestoreVersion(version)}
+                            disabled={isRestoring}
+                            className="flex-1 px-2 py-1 rounded bg-green-500/10 hover:bg-green-500/20 text-green-600 text-[10px] font-medium flex items-center justify-center gap-1 disabled:opacity-50"
+                          >
+                            {isRestoring ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowUpCircle className="w-3 h-3" />}
+                            Make Current
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Content Preview if selected */}
+                      {isSelected && (
+                         <div className="mt-2 pl-6 pt-2 border-t border-border/50">
+                            <div className="max-h-32 overflow-y-auto bg-muted/30 p-2 rounded text-[10px] font-mono whitespace-pre-wrap">
+                                {version.content}
+                            </div>
+                         </div>
                       )}
                     </div>
-                  ))
+                  )
+                })
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <GitCommit className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>Select an artifact type to view versions</p>
+                <div className="text-center py-6 text-muted-foreground">
+                  <GitCommit className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-xs">Select an artifact</p>
                 </div>
               )}
             </div>
           </div>
-        </div>
-      ) : (
-        /* Git Diff View */
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr,1fr] gap-6 flex-1 min-h-0">
-          {/* Left: Artifact List */}
-          <div className="glass-panel rounded-2xl p-6 flex flex-col min-h-0">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-foreground">Artifacts</h3>
-              <span className="text-sm text-muted-foreground">
-                {artifactFiles.length} files
-              </span>
-            </div>
-          
-          <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2">
-            {artifactFiles.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>No artifact files found in outputs directory</p>
-              </div>
-            ) : (
-              artifactFiles.map((file, index) => (
-                <button
-                  key={index}
-                  onClick={() => loadGitDiff(file.absolute_path)}
-                  className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                    selectedFile === file.absolute_path
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border hover:border-primary/50'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                        <span className="font-medium text-foreground truncate">{file.name}</span>
-                      </div>
-                      <p className="text-xs text-muted-foreground truncate">{file.file}</p>
-                    </div>
-                    <div className={`px-2 py-1 rounded text-xs font-medium flex items-center gap-1 ${getStatusColor(file.status)}`}>
-                      {getStatusIcon(file.status)}
-                      <span className="capitalize">{file.status}</span>
-                    </div>
-                  </div>
-                </button>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Right: Git Diff Viewer */}
-        <div className="glass-panel rounded-2xl p-6 flex flex-col min-h-0">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-bold text-foreground">Git Diff</h3>
-            {gitDiff && (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={baseRef}
-                  onChange={(e) => setBaseRef(e.target.value)}
-                  placeholder="HEAD~1"
-                  className="px-3 py-1 text-sm border border-border rounded-lg bg-background text-foreground w-32"
-                />
-                <div className="flex items-center gap-1 bg-secondary/50 rounded-lg p-1">
-                  <button
-                    onClick={() => setViewMode('split')}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                      viewMode === 'split'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Split
-                  </button>
-                  <button
-                    onClick={() => setViewMode('unified')}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                      viewMode === 'unified'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Unified
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="flex-1 overflow-auto custom-scrollbar">
-            {isLoadingDiff ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-                  <p className="text-muted-foreground">Loading diff...</p>
-                </div>
-              </div>
-            ) : !selectedFile ? (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                <div className="text-center">
-                  <GitCompare className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>Select an artifact to view its git diff</p>
-                </div>
-              </div>
-            ) : gitDiff?.error ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="text-center">
-                  <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-                  <p className="text-foreground font-medium mb-1">Error loading diff</p>
-                  <p className="text-sm text-muted-foreground">{gitDiff.error}</p>
-                </div>
-              </div>
-            ) : gitDiff && gitDiff.diff ? (
-              <>
-                {/* Stats Bar */}
-                <div className="mb-4 p-3 bg-secondary/30 rounded-lg flex items-center gap-6 border border-border">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                    <span className="text-sm text-foreground">
-                      <span className="font-bold text-green-500">{gitDiff.stats.additions}</span> additions
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                    <span className="text-sm text-foreground">
-                      <span className="font-bold text-red-500">{gitDiff.stats.deletions}</span> deletions
-                    </span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {gitDiff.file_path}
-                  </div>
-                </div>
-
-                {/* Diff Content */}
-                {viewMode === 'split' ? (
-                  <div className="grid grid-cols-2 gap-0 border border-border rounded-lg overflow-hidden">
-                    {/* Left: Old Version */}
-                    <div className="bg-red-500/5">
-                      <div className="sticky top-0 bg-red-500/10 border-b border-border px-4 py-2 flex items-center gap-2 z-10">
-                        <span className="text-sm font-bold text-red-500">Old Version</span>
-                      </div>
-                      <div className="font-mono text-xs p-4">
-                        {parsedDiff.map((change, i) => {
-                          if (change.type === 'added') return null
-                          return (
-                            <div
-                              key={i}
-                              className={`py-0.5 ${
-                                change.type === 'removed'
-                                  ? 'bg-red-500/20 text-red-400'
-                                  : 'text-muted-foreground'
-                              }`}
-                            >
-                              {change.type === 'removed' && '-'} {change.line}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Right: New Version */}
-                    <div className="bg-green-500/5">
-                      <div className="sticky top-0 bg-green-500/10 border-b border-border px-4 py-2 flex items-center gap-2 z-10">
-                        <span className="text-sm font-bold text-green-500">New Version</span>
-                      </div>
-                      <div className="font-mono text-xs p-4">
-                        {parsedDiff.map((change, i) => {
-                          if (change.type === 'removed') return null
-                          return (
-                            <div
-                              key={i}
-                              className={`py-0.5 ${
-                                change.type === 'added'
-                                  ? 'bg-green-500/20 text-green-400'
-                                  : 'text-muted-foreground'
-                              }`}
-                            >
-                              {change.type === 'added' && '+'} {change.line}
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  /* Unified View */
-                  <div className="font-mono text-xs p-4 bg-background border border-border rounded-lg">
-                    {parsedDiff.map((change, i) => (
-                      <div
-                        key={i}
-                        className={`py-0.5 ${
-                          change.type === 'added'
-                            ? 'bg-green-500/20 text-green-400'
-                            : change.type === 'removed'
-                            ? 'bg-red-500/20 text-red-400'
-                            : 'text-muted-foreground'
-                        }`}
-                      >
-                        {change.type === 'added' && '+ '}
-                        {change.type === 'removed' && '- '}
-                        {change.type === 'context' && '  '}
-                        {change.line}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground">
-                <div className="text-center">
-                  <GitCompare className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>No changes detected</p>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
         </div>
       )}
     </div>
   )
 }
-
