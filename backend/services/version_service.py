@@ -227,6 +227,186 @@ class VersionService:
         
         logger.info(f"Restored version {version_number} for artifact {artifact_id}")
         return new_version
+    
+    def migrate_legacy_versions(self) -> Dict[str, Any]:
+        """
+        Migrate legacy timestamped artifact IDs to stable artifact type IDs.
+        
+        Legacy format: mermaid_erd_20251209_123456
+        New format: mermaid_erd
+        
+        This consolidates all versions of the same artifact type into one stable ID,
+        allowing proper versioning (v1, v2, v3, etc.) instead of each generation being v1.
+        
+        Returns:
+            Migration statistics
+        """
+        import re
+        
+        # Pattern to match timestamped artifact IDs
+        # e.g., mermaid_erd_20251209_123456, html_erd_20251208_094523
+        timestamp_pattern = re.compile(r'^(.+)_(\d{8}_\d{6})$')
+        
+        # Group legacy artifacts by their base type
+        legacy_groups: Dict[str, List[str]] = {}  # base_type -> list of artifact_ids
+        stable_ids = []  # Already stable IDs
+        
+        for artifact_id in list(self.versions.keys()):
+            match = timestamp_pattern.match(artifact_id)
+            if match:
+                base_type = match.group(1)  # e.g., "mermaid_erd"
+                if base_type not in legacy_groups:
+                    legacy_groups[base_type] = []
+                legacy_groups[base_type].append(artifact_id)
+            else:
+                stable_ids.append(artifact_id)
+        
+        migrated_count = 0
+        artifacts_consolidated = 0
+        
+        # Process each legacy group
+        for base_type, legacy_ids in legacy_groups.items():
+            # Sort by timestamp (embedded in the ID) to preserve chronological order
+            legacy_ids.sort()
+            
+            # Collect all versions from legacy artifacts
+            all_legacy_versions = []
+            for legacy_id in legacy_ids:
+                versions = self.versions.get(legacy_id, [])
+                for v in versions:
+                    # Add original artifact_id to metadata for reference
+                    v["metadata"] = v.get("metadata", {})
+                    v["metadata"]["migrated_from"] = legacy_id
+                    all_legacy_versions.append(v)
+            
+            if not all_legacy_versions:
+                continue
+            
+            # Sort all versions by created_at
+            all_legacy_versions.sort(key=lambda v: v.get("created_at", ""))
+            
+            # Check if we already have a stable artifact with this base_type
+            if base_type in self.versions:
+                # Append to existing stable artifact
+                existing_versions = self.versions[base_type]
+                start_version = len(existing_versions) + 1
+            else:
+                # Create new stable artifact
+                self.versions[base_type] = []
+                existing_versions = self.versions[base_type]
+                start_version = 1
+            
+            # Mark all existing versions as not current
+            for v in existing_versions:
+                v["is_current"] = False
+            
+            # Add all legacy versions with renumbered version numbers
+            for i, legacy_version in enumerate(all_legacy_versions):
+                new_version_num = start_version + i
+                legacy_version["version"] = new_version_num
+                legacy_version["artifact_id"] = base_type
+                legacy_version["is_current"] = (i == len(all_legacy_versions) - 1)  # Last one is current
+                existing_versions.append(legacy_version)
+                migrated_count += 1
+            
+            # Save the consolidated stable artifact
+            self._save_versions(base_type)
+            
+            # Delete legacy artifact files
+            for legacy_id in legacy_ids:
+                legacy_file = self.versions_dir / f"{legacy_id}.json"
+                if legacy_file.exists():
+                    legacy_file.unlink()
+                    logger.info(f"Deleted legacy version file: {legacy_file}")
+                # Remove from in-memory store
+                if legacy_id in self.versions:
+                    del self.versions[legacy_id]
+            
+            artifacts_consolidated += len(legacy_ids)
+            logger.info(f"Migrated {len(legacy_ids)} legacy artifacts to {base_type} with {len(all_legacy_versions)} total versions")
+        
+        logger.info(f"Migration complete: {migrated_count} versions migrated, {artifacts_consolidated} legacy artifacts consolidated")
+        
+        return {
+            "success": True,
+            "migrated_versions": migrated_count,
+            "artifacts_consolidated": artifacts_consolidated,
+            "legacy_groups": len(legacy_groups),
+            "stable_ids_unchanged": len(stable_ids)
+        }
+    
+    def get_migration_preview(self) -> Dict[str, Any]:
+        """
+        Preview what would be migrated without actually migrating.
+        
+        Returns:
+            Preview of migration that would occur
+        """
+        import re
+        
+        timestamp_pattern = re.compile(r'^(.+)_(\d{8}_\d{6})$')
+        
+        legacy_groups: Dict[str, List[Dict[str, Any]]] = {}
+        stable_artifacts = []
+        
+        for artifact_id, versions in self.versions.items():
+            match = timestamp_pattern.match(artifact_id)
+            if match:
+                base_type = match.group(1)
+                if base_type not in legacy_groups:
+                    legacy_groups[base_type] = []
+                legacy_groups[base_type].append({
+                    "artifact_id": artifact_id,
+                    "version_count": len(versions),
+                    "created_at": versions[0].get("created_at") if versions else None
+                })
+            else:
+                stable_artifacts.append({
+                    "artifact_id": artifact_id,
+                    "version_count": len(versions)
+                })
+        
+        return {
+            "legacy_groups": {
+                base_type: {
+                    "artifacts": artifacts,
+                    "total_versions": sum(a["version_count"] for a in artifacts)
+                }
+                for base_type, artifacts in legacy_groups.items()
+            },
+            "stable_artifacts": stable_artifacts,
+            "needs_migration": len(legacy_groups) > 0
+        }
+    
+    def delete_all_versions(self, artifact_id: str) -> Dict[str, Any]:
+        """
+        Delete all versions for an artifact.
+        
+        Args:
+            artifact_id: Artifact identifier
+        
+        Returns:
+            Deletion result
+        """
+        if artifact_id not in self.versions:
+            return {"error": "Artifact not found"}
+        
+        version_count = len(self.versions[artifact_id])
+        
+        # Remove from memory
+        del self.versions[artifact_id]
+        
+        # Remove from disk
+        version_file = self.versions_dir / f"{artifact_id}.json"
+        if version_file.exists():
+            version_file.unlink()
+        
+        logger.info(f"Deleted all {version_count} versions for artifact {artifact_id}")
+        return {
+            "success": True,
+            "artifact_id": artifact_id,
+            "versions_deleted": version_count
+        }
 
 
 # Global service instance

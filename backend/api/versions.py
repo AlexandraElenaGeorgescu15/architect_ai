@@ -205,4 +205,95 @@ async def restore_version(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=result["error"]
         )
+    
+    # Sync with GenerationService to ensure list_artifacts returns the restored version
+    try:
+        from backend.services.generation_service import get_service as get_generation_service
+        gen_service = get_generation_service()
+        # We update the artifact in generation service with the restored content
+        gen_service.update_artifact(
+            artifact_id=artifact_id,
+            content=result.get("content"),
+            metadata=result.get("metadata")
+        )
+        logger.info(f"🔄 [VERSIONS] Synced restored artifact {artifact_id} to GenerationService")
+    except Exception as e:
+        logger.warning(f"⚠️ [VERSIONS] Failed to sync restore with GenerationService: {e}")
+        
+    return result
+
+
+@router.get("/migration/preview", response_model=Dict[str, Any])
+@limiter.limit("10/minute")
+async def preview_migration(
+    request: Request,
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """
+    Preview what legacy timestamped artifacts would be migrated.
+    
+    This helps understand how many artifacts have the old timestamped format
+    and would be consolidated into stable artifact IDs.
+    """
+    service = get_version_service()
+    preview = service.get_migration_preview()
+    
+    logger.info(f"📋 [VERSIONS] Migration preview: needs_migration={preview.get('needs_migration')}, "
+                f"legacy_groups={len(preview.get('legacy_groups', {}))}")
+    
+    return preview
+
+
+@router.post("/migration/run", response_model=Dict[str, Any])
+@limiter.limit("2/minute")
+async def run_migration(
+    request: Request,
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """
+    Run migration to consolidate legacy timestamped artifacts.
+    
+    This converts artifacts like 'mermaid_erd_20251209_123456' into stable IDs
+    like 'mermaid_erd', allowing proper version tracking (v1, v2, v3, etc.).
+    
+    WARNING: This is a destructive operation. Legacy artifact files will be deleted.
+    """
+    service = get_version_service()
+    
+    # First get a preview
+    preview = service.get_migration_preview()
+    if not preview.get("needs_migration"):
+        return {
+            "success": True,
+            "message": "No migration needed - all artifacts already use stable IDs",
+            "migrated_versions": 0,
+            "artifacts_consolidated": 0
+        }
+    
+    # Run migration
+    result = service.migrate_legacy_versions()
+    
+    logger.info(f"✅ [VERSIONS] Migration complete: {result}")
+    
+    return result
+
+
+@router.delete("/{artifact_id}", response_model=Dict[str, Any])
+@limiter.limit("10/minute")
+async def delete_artifact_versions(
+    request: Request,
+    artifact_id: str,
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """Delete all versions for an artifact."""
+    service = get_version_service()
+    result = service.delete_all_versions(artifact_id)
+    
+    if "error" in result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=result["error"]
+        )
+    
+    logger.info(f"🗑️ [VERSIONS] Deleted all versions for artifact {artifact_id}")
     return result

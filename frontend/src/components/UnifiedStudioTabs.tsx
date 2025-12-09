@@ -591,7 +591,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
         {/* VERSION CONTROL VIEW */}
         {activeView === 'version-control' && (
           <div className="h-full overflow-auto custom-scrollbar p-4 animate-fade-in-up">
-            <div className="max-w-7xl mx-auto h-full">
+            <div className="w-full h-full">
               <Suspense fallback={<LoadingFallback />}>
                 <VersionControl />
               </Suspense>

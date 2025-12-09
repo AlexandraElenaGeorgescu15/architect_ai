@@ -26,7 +26,8 @@ interface UseAppLoadingResult {
 }
 
 export function useAppLoading(): UseAppLoadingResult {
-  const { isReady: backendReady, status: systemStatus } = useSystemStatus()
+  // Use a shorter poll interval during loading for better responsiveness
+  const { isReady: backendReady, status: systemStatus } = useSystemStatus(2000)
   const { artifacts, setArtifacts, setLoading: setArtifactLoading } = useArtifactStore()
   const { models, fetchModels, isLoading: modelsLoading } = useModelStore()
   
@@ -157,20 +158,63 @@ export function useAppLoading(): UseAppLoadingResult {
 
   // Calculate loading progress
   const loadingProgress = useCallback(() => {
-    const states = Object.values(loadingState)
-    const completed = states.filter(Boolean).length
-    return (completed / states.length) * 100
-  }, [loadingState])
+    // Weights for different stages
+    const WEIGHTS = {
+      backend: 60,   // Backend initialization is the biggest chunk
+      artifacts: 10,
+      models: 10,
+      routing: 10,
+      versions: 10
+    }
+
+    let progress = 0
+
+    // 1. Backend Progress
+    if (loadingState.backend) {
+      progress += WEIGHTS.backend
+    } else if (systemStatus?.phases) {
+      // Calculate partial progress based on backend phases
+      const phases = Object.values(systemStatus.phases)
+      if (phases.length > 0) {
+        const completedCount = phases.filter((p: any) => p.status === 'complete' || p.status === 'skipped').length
+        const runningCount = phases.filter((p: any) => p.status === 'running').length
+        
+        // Calculate fraction of backend phases done
+        // Give 0.5 weight to running phases
+        const phaseFraction = (completedCount + (runningCount * 0.5)) / phases.length
+        
+        // Apply to backend weight, capped at 95% of backend weight to ensure a jump when actually ready
+        progress += Math.min(phaseFraction * WEIGHTS.backend, WEIGHTS.backend * 0.95)
+      }
+    }
+
+    // 2. Application Loading Steps
+    if (loadingState.artifacts) progress += WEIGHTS.artifacts
+    if (loadingState.models) progress += WEIGHTS.models
+    if (loadingState.routing) progress += WEIGHTS.routing
+    if (loadingState.versions) progress += WEIGHTS.versions
+
+    return Math.min(progress, 100)
+  }, [loadingState, systemStatus])
 
   // Determine loading message
   const loadingMessage = useCallback(() => {
-    if (!loadingState.backend) return 'Initializing backend services...'
+    if (!loadingState.backend) {
+        // If we have detailed phase info, show it
+        if (systemStatus?.phases) {
+            const runningPhase = Object.values(systemStatus.phases).find((p: any) => p.status === 'running')
+            if (runningPhase) {
+                return `Initializing: ${runningPhase.title || runningPhase.name}...`
+            }
+        }
+        return 'Initializing backend services...'
+    }
     if (!loadingState.artifacts) return 'Loading artifacts...'
     if (!loadingState.models) return 'Loading models...'
     if (!loadingState.routing) return 'Loading model routing...'
     if (!loadingState.versions) return 'Loading artifact versions...'
     return 'Almost ready...'
-  }, [loadingState])
+  }, [loadingState, systemStatus])
 
   const isFullyLoaded = Object.values(loadingState).every(Boolean)
 

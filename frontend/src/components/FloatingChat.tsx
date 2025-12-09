@@ -168,9 +168,9 @@ function FloatingChat() {
           : 'w-[420px] h-[650px]'
       } animate-in slide-in-from-bottom-8 fade-in duration-700`}
     >
-      <div className="h-full glass-panel border border-primary/30 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.3)] hover:shadow-[0_24px_72px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden backdrop-blur-xl bg-gradient-to-br from-card/95 to-card/80 transition-shadow duration-300">
+      <div className="h-full glass-panel border border-primary/30 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.3)] hover:shadow-[0_24px_72px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden backdrop-blur-xl bg-card/95 dark:bg-card/95 transition-shadow duration-300">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-border/30 bg-gradient-to-r from-primary/5 to-transparent backdrop-blur-md">
+        <div className="flex items-center justify-between p-5 border-b border-border/30 bg-muted/20 backdrop-blur-md">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/30 to-primary/10 flex items-center justify-center animate-pulse-glow border border-primary/30 shadow-lg">
               <Bot className="w-6 h-6 text-primary" />

@@ -1,45 +1,50 @@
 [
   {
-    "id": "ecommerce-platform",
+    "id": "e-commerce-platform",
     "name": "E-commerce Platform",
-    "description": "Full-stack store with catalog, payments, and fulfilment.",
-    "meeting_notes": "Build an e-commerce platform with catalog, cart, checkout, payment integration, and order management. Include admin dashboard and inventory tracking.",
-    "recommended_artifacts": [
-      "mermaid_erd",
-      "mermaid_sequence",
-      "api_docs",
-      "jira"
-    ],
-    "tags": ["commerce", "payments", "inventory"],
-    "complexity": "high"
+    "description": "Full-stack online store with product catalog, cart, and checkout.",
+    "complexity": "medium",
+    "recommended_artifacts": ["mermaid_erd", "mermaid_flowchart", "mermaid_api_sequence"],
+    "meeting_notes": "Project: E-commerce Platform\n\nRequirements:\n1. User Authentication (Customers & Admins)\n2. Product Catalog (Categories, Search, Filters)\n3. Shopping Cart & Checkout (Stripe integration)\n4. Order Management (History, Status updates)\n5. Inventory Management\n\nTech Stack:\n- Frontend: React + Tailwind\n- Backend: FastAPI\n- Database: PostgreSQL\n- Payments: Stripe"
   },
   {
     "id": "saas-analytics",
     "name": "SaaS Analytics Dashboard",
-    "description": "Multi-tenant analytics SaaS with role-based access.",
-    "meeting_notes": "Design a SaaS analytics dashboard for B2B customers with tenant isolation, role-based access, scheduled reports, and alerting workflows.",
-    "recommended_artifacts": [
-      "mermaid_architecture",
-      "mermaid_sequence",
-      "code_prototype",
-      "jira"
-    ],
-    "tags": ["saas", "analytics"],
-    "complexity": "medium"
+    "description": "B2B dashboard for visualizing business metrics and reports.",
+    "complexity": "high",
+    "recommended_artifacts": ["mermaid_architecture", "mermaid_erd", "mermaid_class"],
+    "meeting_notes": "Project: SaaS Analytics Dashboard\n\nRequirements:\n1. Multi-tenant architecture\n2. Real-time data ingestion pipeline\n3. Interactive charts (Recharts/D3)\n4. Custom report builder\n5. Team collaboration features\n\nTech Stack:\n- Frontend: Next.js\n- Backend: Go / Python\n- DB: TimescaleDB / ClickHouse\n- Cache: Redis"
   },
   {
     "id": "mobile-banking",
     "name": "Mobile Banking App",
-    "description": "Secure banking app with KYC and transaction monitoring.",
-    "meeting_notes": "Create a mobile banking platform with onboarding/KYC, account management, transfers, card controls, notifications, and fraud monitoring.",
-    "recommended_artifacts": [
-      "mermaid_flowchart",
-      "mermaid_state",
-      "api_docs",
-      "feature_scoring"
-    ],
-    "tags": ["finance", "security"],
-    "complexity": "high"
+    "description": "Secure mobile application for personal finance management.",
+    "complexity": "high",
+    "recommended_artifacts": ["mermaid_sequence", "mermaid_state", "mermaid_flowchart"],
+    "meeting_notes": "Project: Mobile Banking App\n\nRequirements:\n1. Biometric Authentication\n2. Account Balance & Transaction History\n3. Money Transfers (P2P, Bank Wire)\n4. Bill Payments\n5. Security (Encryption, Audit logs)\n\nTech Stack:\n- Mobile: React Native / Flutter\n- Backend: Java Spring Boot\n- DB: Oracle / PostgreSQL"
+  },
+  {
+    "id": "healthcare-portal",
+    "name": "Healthcare Patient Portal",
+    "description": "HIPAA-compliant portal for patients to manage appointments and records.",
+    "complexity": "high",
+    "recommended_artifacts": ["mermaid_erd", "mermaid_sequence", "mermaid_c4_container"],
+    "meeting_notes": "Project: Healthcare Patient Portal\n\nRequirements:\n1. HIPAA Compliance & Security\n2. Patient Registration & Profile\n3. Appointment Scheduling (Calendar integration)\n4. Medical Records Access (Lab results, Prescriptions)\n5. Doctor-Patient Messaging\n\nTech Stack:\n- Frontend: Angular\n- Backend: .NET Core\n- DB: SQL Server"
+  },
+  {
+    "id": "fintech-trading",
+    "name": "Fintech Trading Dashboard",
+    "description": "Real-time stock trading interface with live charts and execution.",
+    "complexity": "high",
+    "recommended_artifacts": ["mermaid_architecture", "mermaid_state", "mermaid_api_sequence"],
+    "meeting_notes": "Project: Fintech Trading Dashboard\n\nRequirements:\n1. Real-time WebSocket Data Feed\n2. Order Execution (Buy/Sell/Limit)\n3. Portfolio Management\n4. Technical Analysis Charts\n5. Low-latency performance\n\nTech Stack:\n- Frontend: React + WebGL\n- Backend: Rust / C++\n- Messaging: Kafka"
+  },
+  {
+    "id": "social-media-analytics",
+    "name": "Social Media Analytics",
+    "description": "Platform to track and analyze brand sentiment across social networks.",
+    "complexity": "medium",
+    "recommended_artifacts": ["mermaid_flowchart", "mermaid_class", "mermaid_erd"],
+    "meeting_notes": "Project: Social Media Analytics Tool\n\nRequirements:\n1. API Integrations (Twitter, LinkedIn, Facebook)\n2. Sentiment Analysis (NLP)\n3. Keyword Tracking & Alerts\n4. Competitor Analysis\n5. Automated Reporting\n\nTech Stack:\n- Frontend: Vue.js\n- Backend: Python (FastAPI)\n- AI: HuggingFace Transformers"
   }
 ]
-

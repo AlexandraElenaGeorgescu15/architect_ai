@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { GitBranch, GitCommit, RefreshCw, FileText, Clock, CheckCircle, ChevronRight, Loader2, ArrowUpCircle, Eye, Plus, Minus, ArrowLeftRight, CheckSquare, Square } from 'lucide-react'
+import { GitBranch, GitCommit, RefreshCw, FileText, Clock, CheckCircle, ChevronRight, Loader2, ArrowUpCircle, Eye, Plus, Minus, ArrowLeftRight, CheckSquare, Square, AlertTriangle, Wand2 } from 'lucide-react'
 import api from '../services/api'
 import { useUIStore } from '../stores/uiStore'
 import { useArtifactStore } from '../stores/artifactStore'
@@ -43,6 +43,9 @@ export default function VersionControl() {
   
   const [isLoading, setIsLoading] = useState(false)
   const [isRestoring, setIsRestoring] = useState(false)
+  const [isMigrating, setIsMigrating] = useState(false)
+  const [migrationPreview, setMigrationPreview] = useState<any>(null)
+  const [showMigrationPanel, setShowMigrationPanel] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
   const { addNotification } = useUIStore()
@@ -85,7 +88,9 @@ export default function VersionControl() {
 
   const getVersionsForArtifact = (artifactId: string): VersionInfo[] => {
     if (!selectedType || !allVersions) return []
-    return allVersions.versions_by_type[selectedType]?.filter(v => v.artifact_id === artifactId) || []
+    const versions = allVersions.versions_by_type[selectedType]?.filter(v => v.artifact_id === artifactId) || []
+    // Sort by version number descending (newest first)
+    return [...versions].sort((a, b) => b.version - a.version)
   }
 
   // Compute diff between two versions
@@ -152,8 +157,10 @@ export default function VersionControl() {
   }
 
   const toggleCompareSelect = (version: VersionInfo) => {
-    if (compareSelection.some(v => v.version === version.version)) {
-      setCompareSelection(prev => prev.filter(v => v.version !== version.version))
+    // Use composite key (artifact_id + version) to handle both legacy timestamped artifacts (all v1) 
+    // and new stable artifacts (v1, v2, v3...)
+    if (compareSelection.some(v => v.artifact_id === version.artifact_id && v.version === version.version)) {
+      setCompareSelection(prev => prev.filter(v => !(v.artifact_id === version.artifact_id && v.version === version.version)))
     } else {
       if (compareSelection.length >= 2) {
         // Replace the first one (FIFO) or prevent? Let's prevent > 2
@@ -169,6 +176,44 @@ export default function VersionControl() {
       setShowDiff(true)
     }
   }
+
+  const checkMigrationNeeded = async () => {
+    try {
+      const response = await api.get('/api/versions/migration/preview')
+      setMigrationPreview(response.data)
+      if (response.data.needs_migration) {
+        setShowMigrationPanel(true)
+      }
+    } catch (err) {
+      console.error('Failed to check migration:', err)
+    }
+  }
+
+  const runMigration = async () => {
+    if (!confirm('This will consolidate legacy timestamped artifacts into stable IDs. This action cannot be undone. Continue?')) {
+      return
+    }
+    
+    setIsMigrating(true)
+    try {
+      const response = await api.post('/api/versions/migration/run')
+      addNotification('success', `Migration complete: ${response.data.migrated_versions} versions consolidated from ${response.data.artifacts_consolidated} artifacts`)
+      setShowMigrationPanel(false)
+      setMigrationPreview(null)
+      // Reload versions to show updated data
+      await loadAllVersions()
+    } catch (err: any) {
+      console.error('Migration failed:', err)
+      addNotification('error', err?.response?.data?.detail || 'Migration failed')
+    } finally {
+      setIsMigrating(false)
+    }
+  }
+
+  // Check for legacy data on mount
+  useEffect(() => {
+    checkMigrationNeeded()
+  }, [])
 
   if (isLoading) {
     return (
@@ -202,6 +247,103 @@ export default function VersionControl() {
 
   return (
     <div className="flex flex-col gap-4 min-h-[400px] h-full">
+      {/* Migration Warning Banner */}
+      {migrationPreview?.needs_migration && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h4 className="text-sm font-bold text-amber-600 dark:text-amber-400">Legacy Version Data Detected</h4>
+            <p className="text-xs text-muted-foreground mt-1">
+              You have {Object.keys(migrationPreview.legacy_groups || {}).length} artifact type(s) with timestamped IDs.
+              These show as separate v1 entries instead of proper version history.
+            </p>
+            <button
+              onClick={() => setShowMigrationPanel(true)}
+              className="mt-2 px-3 py-1.5 text-xs bg-amber-500 text-white rounded-lg hover:bg-amber-600 flex items-center gap-1.5"
+            >
+              <Wand2 className="w-3 h-3" />
+              View & Migrate
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Migration Panel Modal */}
+      {showMigrationPanel && migrationPreview && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-card border border-border rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-4 border-b border-border">
+              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <Wand2 className="w-5 h-5 text-primary" />
+                Migrate Legacy Versions
+              </h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                Consolidate timestamped artifacts into stable IDs for proper version tracking
+              </p>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {Object.entries(migrationPreview.legacy_groups || {}).map(([baseType, data]: [string, any]) => (
+                <div key={baseType} className="border border-border rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-foreground">{baseType.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span>
+                    <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
+                      {data.total_versions} version{data.total_versions !== 1 ? 's' : ''} → will become v1-v{data.total_versions}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    {data.artifacts.slice(0, 5).map((artifact: any) => (
+                      <div key={artifact.artifact_id} className="flex items-center justify-between">
+                        <span className="font-mono truncate max-w-[250px]">{artifact.artifact_id}</span>
+                        <span>{artifact.version_count} ver</span>
+                      </div>
+                    ))}
+                    {data.artifacts.length > 5 && (
+                      <div className="text-muted-foreground/70">... and {data.artifacts.length - 5} more</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              
+              {migrationPreview.stable_artifacts?.length > 0 && (
+                <div className="border border-green-500/30 bg-green-500/5 rounded-lg p-3">
+                  <h4 className="font-bold text-green-600 dark:text-green-400 text-sm mb-1">Already Using Stable IDs ✓</h4>
+                  <div className="text-xs text-muted-foreground">
+                    {migrationPreview.stable_artifacts.map((a: any) => a.artifact_id).join(', ')}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-4 border-t border-border flex items-center justify-between">
+              <button
+                onClick={() => setShowMigrationPanel(false)}
+                className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-muted"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={runMigration}
+                disabled={isMigrating}
+                className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-2"
+              >
+                {isMigrating ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Migrating...
+                  </>
+                ) : (
+                  <>
+                    <Wand2 className="w-4 h-4" />
+                    Run Migration
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between flex-shrink-0">
         <div>
@@ -263,7 +405,7 @@ export default function VersionControl() {
             </div>
             {/* Allow restoring the newer version if not current */}
              {[...compareSelection].sort((a,b) => a.version - b.version)[1].is_current ? (
-                <span className="text-xs text-green-600 font-medium px-2 py-1 bg-green-100 rounded flex items-center gap-1">
+                <span className="text-xs text-green-600 dark:text-green-400 font-medium px-2 py-1 bg-green-100 dark:bg-green-500/20 rounded flex items-center gap-1">
                     <CheckCircle className="w-3 h-3" />
                     Current
                 </span>
@@ -316,7 +458,7 @@ export default function VersionControl() {
                 return (
                   <button
                     key={type}
-                    onClick={() => { setSelectedType(type); setSelectedArtifact(null); setSelectedVersion(null); setCompareSelection([]) }}
+                    onClick={() => { setSelectedType(type); setSelectedArtifact(null); setSelectedVersion(null); /* Keep compareSelection for cross-type comparison */ }}
                     className={`w-full text-left p-2 rounded-lg text-xs transition-all ${
                       selectedType === type
                         ? 'bg-primary/10 border-primary border'
@@ -350,14 +492,18 @@ export default function VersionControl() {
                   getUniqueArtifacts(selectedType).map((artifactId) => {
                     const versions = getVersionsForArtifact(artifactId)
                     const latest = versions[0]
+                    // Check if any version from this artifact is in compareSelection
+                    const hasSelectedVersion = compareSelection.some(v => v.artifact_id === artifactId)
                     return (
                       <button
                         key={artifactId}
-                        onClick={() => { setSelectedArtifact(artifactId); setSelectedVersion(null); setCompareSelection([]) }}
+                        onClick={() => { setSelectedArtifact(artifactId); setSelectedVersion(null); /* Don't clear compareSelection to allow cross-artifact comparison */ }}
                         className={`w-full text-left p-2 rounded-lg border text-xs transition-all ${
                           selectedArtifact === artifactId
                             ? 'border-primary bg-primary/10'
-                            : 'border-border hover:border-primary/50'
+                            : hasSelectedVersion 
+                              ? 'border-blue-500/50 bg-blue-500/5'
+                              : 'border-border hover:border-primary/50'
                         }`}
                       >
                         <div className="flex items-center gap-1.5 mb-1">
@@ -394,23 +540,60 @@ export default function VersionControl() {
               <h3 className="text-xs font-bold text-foreground">
                 {selectedArtifact ? 'Versions' : 'Select Artifact'}
               </h3>
-              {compareSelection.length > 0 && (
-                <button
-                    onClick={startCompare}
-                    disabled={compareSelection.length !== 2}
-                    className="px-2 py-1 text-[10px] bg-primary text-primary-foreground rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 transition-all"
-                >
-                    <ArrowLeftRight className="w-3 h-3" />
-                    Compare ({compareSelection.length}/2)
-                </button>
-              )}
             </div>
+            
+            {/* Comparison Selection Bar - Always visible when versions selected */}
+            {compareSelection.length > 0 && (
+              <div className="mb-3 p-2 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                    Compare Selection ({compareSelection.length}/2)
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setCompareSelection([])}
+                      className="text-[10px] text-muted-foreground hover:text-foreground"
+                    >
+                      Clear
+                    </button>
+                    <button
+                      onClick={startCompare}
+                      disabled={compareSelection.length !== 2}
+                      className="px-2 py-1 text-[10px] bg-primary text-primary-foreground rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                    >
+                      <ArrowLeftRight className="w-3 h-3" />
+                      Compare
+                    </button>
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  {compareSelection.map((v, i) => (
+                    <div key={`${v.artifact_id}-${v.version}`} className="flex items-center justify-between text-[10px]">
+                      <span className="text-foreground truncate max-w-[200px]">
+                        <span className="text-muted-foreground">{i + 1}.</span> {v.artifact_id.length > 20 ? v.artifact_id.slice(0, 20) + '...' : v.artifact_id} <span className="font-bold">v{v.version}</span>
+                      </span>
+                      <button
+                        onClick={() => setCompareSelection(prev => prev.filter(x => !(x.artifact_id === v.artifact_id && x.version === v.version)))}
+                        className="text-red-500 hover:text-red-600 ml-2"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             <div className="flex-1 overflow-y-auto space-y-1.5">
               {selectedArtifact ? (
-                getVersionsForArtifact(selectedArtifact).map((version) => {
+                getVersionsForArtifact(selectedArtifact).length === 0 ? (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <GitCommit className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-xs">No versions for this artifact</p>
+                  </div>
+                ) : getVersionsForArtifact(selectedArtifact).map((version) => {
                   const isSelected = selectedVersion?.version === version.version
-                  const isChecked = compareSelection.some(v => v.version === version.version)
+                  const isChecked = compareSelection.some(v => v.artifact_id === version.artifact_id && v.version === version.version)
                   
                   return (
                     <div
@@ -435,7 +618,7 @@ export default function VersionControl() {
                               <GitCommit className="w-3 h-3 text-muted-foreground" />
                               <span className="font-bold text-foreground">v{version.version}</span>
                               {version.is_current && (
-                                <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 bg-green-500 text-white rounded-full">
+                                <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 bg-green-500 text-white rounded-full dark:bg-green-500/20 dark:text-green-400">
                                   <CheckCircle className="w-2.5 h-2.5" />
                                   Current
                                 </span>
@@ -447,12 +630,22 @@ export default function VersionControl() {
                         </span>
                       </div>
                       
-                      <div className="text-[10px] text-muted-foreground mb-2 pl-6">
+                      <div className="text-[10px] text-muted-foreground mb-2 pl-6 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        {version.metadata?.restored_from && (
+                          <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-600 rounded">
+                            ↩ restored from v{version.metadata.restored_from}
+                          </span>
+                        )}
                         {version.metadata?.model_used && (
-                          <span>Model: {version.metadata.model_used.replace('ollama:', '').replace('huggingface:', '')}</span>
+                          <span>Model: {version.metadata.model_used.replace('ollama:', '').replace('huggingface:', '').replace('gemini:', '')}</span>
+                        )}
+                        {version.metadata?.validation_score !== undefined && (
+                          <span className={`px-1 rounded ${version.metadata.validation_score >= 80 ? 'text-green-600' : version.metadata.validation_score >= 60 ? 'text-yellow-600' : 'text-red-600'}`}>
+                            Score: {version.metadata.validation_score.toFixed(1)}%
+                          </span>
                         )}
                         {version.content && (
-                          <span className="ml-2">{version.content.length.toLocaleString()} chars</span>
+                          <span>{version.content.length.toLocaleString()} chars</span>
                         )}
                       </div>
                       
@@ -492,7 +685,10 @@ export default function VersionControl() {
               ) : (
                 <div className="text-center py-6 text-muted-foreground">
                   <GitCommit className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p className="text-xs">Select an artifact</p>
+                  <p className="text-xs mb-2">Select an artifact to see its versions</p>
+                  <p className="text-[10px] text-muted-foreground/70">
+                    💡 Use checkboxes to select 2 versions to compare (can be from different artifacts)
+                  </p>
                 </div>
               )}
             </div>

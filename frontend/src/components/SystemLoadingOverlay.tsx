@@ -19,11 +19,11 @@ const statusLabel: Record<string, string> = {
 }
 
 const statusColor: Record<string, string> = {
-  pending: 'text-slate-500',
-  running: 'text-amber-600',
-  complete: 'text-emerald-600',
-  skipped: 'text-slate-400',
-  error: 'text-red-600',
+  pending: 'text-slate-500 dark:text-slate-400',
+  running: 'text-amber-600 dark:text-amber-400',
+  complete: 'text-emerald-600 dark:text-emerald-400',
+  skipped: 'text-slate-400 dark:text-slate-500',
+  error: 'text-red-600 dark:text-red-400',
 }
 
 const defaultPhases: Array<[string, SystemPhaseStatus]> = [
@@ -139,30 +139,30 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
   })
 
   return (
-    <div className="fixed inset-0 z-[1000] flex flex-col items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 px-4 backdrop-blur-sm overflow-y-auto">
-      <div className="w-full max-w-4xl rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-2xl shadow-slate-900/10 my-8">
+    <div className="fixed inset-0 z-[1000] flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm overflow-y-auto">
+      <div className="w-full max-w-4xl rounded-3xl border border-border bg-card/95 p-8 shadow-2xl shadow-black/10 my-8">
         {/* Header Section with Game */}
         <div className="mb-6">
           <div className="flex items-start gap-6 mb-4">
             <div className="flex-1 min-w-0">
-              <p className="text-sm uppercase tracking-[0.3em] text-slate-500 font-semibold">
+              <p className="text-sm uppercase tracking-[0.3em] text-muted-foreground font-semibold">
                 {status?.overall_status?.toUpperCase() ?? 'INITIALIZING'}
               </p>
-              <p className="text-2xl font-bold text-slate-900 mt-1">
+              <p className="text-2xl font-bold text-foreground mt-1">
                 {loadingMessage || status?.message || 'Preparing backend services...'}
               </p>
-              <p className="text-sm text-slate-600 mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 {status?.service ?? 'Architect.AI Backend'}
               </p>
               {loadingProgress !== undefined && (
                 <div className="mt-4">
-                  <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                  <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
                     <div 
                       className="bg-primary h-full transition-all duration-300 ease-out"
                       style={{ width: `${loadingProgress}%` }}
                     />
                   </div>
-                  <p className="text-xs text-slate-500 mt-2 text-center">
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
                     {Math.round(loadingProgress)}% complete
                   </p>
                 </div>
@@ -174,7 +174,7 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
           <div className="w-full flex justify-center">
             <div className="w-full max-w-md">
               <RobotGame className="w-full" />
-              <p className="text-xs text-slate-500 mt-2 text-center">
+              <p className="text-xs text-muted-foreground mt-2 text-center">
                 Press SPACE to play while waiting
               </p>
             </div>
@@ -185,11 +185,11 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
           {phases.map(([key, phase]) => (
             <div
               key={key}
-              className="flex items-start justify-between rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-3 transition-all hover:bg-slate-100/50"
+              className="flex items-start justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 transition-all hover:bg-muted/50"
             >
               <div className="flex-1">
-                <p className="text-sm font-semibold text-slate-900">{phase.title ?? formatPhaseTitle(key)}</p>
-                <p className="text-xs text-slate-600 mt-0.5">{phase.message ?? 'Pending...'}</p>
+                <p className="text-sm font-semibold text-foreground">{phase.title ?? formatPhaseTitle(key)}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{phase.message ?? 'Pending...'}</p>
               </div>
               <span className={`text-xs font-semibold uppercase px-2 py-1 rounded-full ${getStatusBadgeClass(phase.status)}`}>
                 {statusLabel[phase.status] ?? phase.status}
@@ -198,10 +198,10 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
           ))}
         </div>
 
-        <div className="mt-6 flex items-center justify-between pt-6 border-t border-slate-200">
-          <div className="text-xs text-slate-600">
+        <div className="mt-6 flex items-center justify-between pt-6 border-t border-border">
+          <div className="text-xs text-muted-foreground">
             {error ? (
-              <span className="text-red-600 font-medium">
+              <span className="text-destructive font-medium">
                 Unable to reach backend: {error}. Retrying {isChecking ? 'now…' : 'shortly'}.
               </span>
             ) : (
@@ -213,7 +213,7 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
               onClick={() => {
                 void onRetry()
               }}
-              className="rounded-full border border-slate-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-700 hover:bg-slate-50 hover:border-slate-400 transition-colors shadow-sm"
+              className="rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground hover:bg-muted transition-colors shadow-sm"
             >
               Retry Now
             </button>
@@ -223,7 +223,7 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
                 localStorage.setItem('skip_loading_overlay', 'true')
                 window.location.reload()
               }}
-              className="rounded-full border border-slate-400 bg-slate-100 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-600 hover:bg-slate-200 transition-colors shadow-sm"
+              className="rounded-full border border-border bg-muted px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-muted/80 transition-colors shadow-sm"
             >
               Skip
             </button>
@@ -242,18 +242,17 @@ function formatPhaseTitle(phaseKey: string): string {
 }
 
 function getStatusBadgeClass(status: string): string {
-  const baseClasses = 'text-xs font-semibold uppercase px-2 py-1 rounded-full'
   switch (status) {
     case 'complete':
-      return `${baseClasses} bg-emerald-100 text-emerald-700`
+      return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400'
     case 'running':
-      return `${baseClasses} bg-amber-100 text-amber-700`
+      return 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400'
     case 'error':
-      return `${baseClasses} bg-red-100 text-red-700`
+      return 'bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400'
     case 'skipped':
-      return `${baseClasses} bg-slate-100 text-slate-500`
+      return 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
     default:
-      return `${baseClasses} bg-slate-100 text-slate-600`
+      return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
   }
 }
 

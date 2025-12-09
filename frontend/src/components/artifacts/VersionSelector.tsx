@@ -33,10 +33,12 @@ export default function VersionSelector({ artifactId, currentContent, onVersionR
     setIsLoading(true)
     try {
       const response = await api.get(`/api/versions/${artifactId}`)
-      setVersions(response.data)
+      // Sort by version number descending (newest first)
+      const sortedVersions = [...response.data].sort((a: Version, b: Version) => b.version - a.version)
+      setVersions(sortedVersions)
       
       // Set current version
-      const current = response.data.find((v: Version) => v.is_current)
+      const current = sortedVersions.find((v: Version) => v.is_current)
       if (current) {
         setSelectedVersion(current.version)
       }
@@ -50,14 +52,13 @@ export default function VersionSelector({ artifactId, currentContent, onVersionR
 
   const handleRestore = async (version: number) => {
     try {
-      const response = await api.post(`/api/versions/${artifactId}/${version}/restore`)
-      if (response.data.success) {
+      // API endpoint: POST /api/versions/{artifact_id}/restore/{version_number}
+      const response = await api.post(`/api/versions/${artifactId}/restore/${version}`)
+      if (response.data) {
         // Reload versions and notify parent
         await loadVersions()
-        const restoredVersion = versions.find(v => v.version === version)
-        if (restoredVersion) {
-          onVersionRestore(restoredVersion.content, version)
-        }
+        // Use the restored content from the API response (which is the new version)
+        onVersionRestore(response.data.content, response.data.version)
       }
     } catch (error) {
       console.error('Failed to restore version:', error)
@@ -176,9 +177,16 @@ export default function VersionSelector({ artifactId, currentContent, onVersionR
                       {/* Metadata */}
                       {version.metadata && (
                         <div className="mt-2 space-y-1">
+                          {version.metadata.restored_from && (
+                            <p className="text-xs">
+                              <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-500 rounded">
+                                ↩ Restored from v{version.metadata.restored_from}
+                              </span>
+                            </p>
+                          )}
                           {version.metadata.model_used && (
                             <p className="text-xs text-muted-foreground">
-                              Model: <span className="text-foreground">{version.metadata.model_used}</span>
+                              Model: <span className="text-foreground">{version.metadata.model_used.replace('ollama:', '').replace('gemini:', '')}</span>
                             </p>
                           )}
                           {version.metadata.validation_score !== undefined && (
@@ -187,7 +195,7 @@ export default function VersionSelector({ artifactId, currentContent, onVersionR
                                 version.metadata.validation_score >= 80 ? 'text-green-500' :
                                 version.metadata.validation_score >= 60 ? 'text-yellow-500' :
                                 'text-red-500'
-                              }`}>{version.metadata.validation_score}/100</span>
+                              }`}>{version.metadata.validation_score.toFixed(1)}%</span>
                             </p>
                           )}
                           {version.metadata.update_type && (

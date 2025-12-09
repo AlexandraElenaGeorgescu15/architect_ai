@@ -344,27 +344,32 @@ class EnhancedGenerationService:
                                 logger.warning(f"Failed to auto-generate HTML version: {e}")
                         
                         # Create version for this artifact
-                        artifact_id = f"{artifact_type.value}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                        try:
-                            from backend.services.version_service import get_version_service
-                            version_service = get_version_service()
-                            version_service.create_version(
-                                artifact_id=artifact_id,
-                                artifact_type=artifact_type.value,
-                                content=cleaned_content,  # Use cleaned content
-                                metadata={
-                                    "model_used": model_name,
-                                    "provider": "ollama",
-                                    "validation_score": score,
-                                    "is_valid": True,
-                                    "meeting_notes": meeting_notes[:200],  # First 200 chars
-                                    "html_content": html_content,  # Include HTML version if generated
-                                    "attempts": attempts  # Include all attempts for tracking
-                                }
-                            )
-                            logger.info(f"Created version for artifact {artifact_id}")
-                        except Exception as e:
-                            logger.warning(f"Failed to create version: {e}")
+                        # Use stable artifact_id (the artifact type itself) to ensure versioning works correctly
+                        # instead of creating a new artifact for every generation.
+                        artifact_id = artifact_type.value
+                        
+                        # NOTE: GenerationService handles saving to VersionService using this artifact_id.
+                        # We avoid double-saving here.
+                        # try:
+                        #     from backend.services.version_service import get_version_service
+                        #     version_service = get_version_service()
+                        #     version_service.create_version(
+                        #         artifact_id=artifact_id,
+                        #         artifact_type=artifact_type.value,
+                        #         content=cleaned_content,  # Use cleaned content
+                        #         metadata={
+                        #             "model_used": model_name,
+                        #             "provider": "ollama",
+                        #             "validation_score": score,
+                        #             "is_valid": True,
+                        #             "meeting_notes": meeting_notes[:200],  # First 200 chars
+                        #             "html_content": html_content,  # Include HTML version if generated
+                        #             "attempts": attempts  # Include all attempts for tracking
+                        #         }
+                        #     )
+                        #     logger.info(f"Created version for artifact {artifact_id}")
+                        # except Exception as e:
+                        #     logger.warning(f"Failed to create version: {e}")
                         
                         # Update model routing if this model performed well (score >= 80)
                         # This promotes successful models to primary position
@@ -517,28 +522,9 @@ class EnhancedGenerationService:
                             except Exception as e:
                                 logger.warning(f"Failed to auto-generate HTML version: {e}")
                         
-                        # Create version for this artifact
-                        artifact_id = f"{artifact_type.value}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-                        try:
-                            from backend.services.version_service import get_version_service
-                            version_service = get_version_service()
-                            version_service.create_version(
-                                artifact_id=artifact_id,
-                                artifact_type=artifact_type.value,
-                                content=cloud_result["content"],
-                                metadata={
-                                    "model_used": cloud_result["model_used"],
-                                    "provider": cloud_result["provider"],
-                                    "validation_score": cloud_result["score"],
-                                    "is_valid": True,
-                                    "meeting_notes": meeting_notes[:200],
-                                    "html_content": html_content,  # Include HTML version if generated
-                                    "attempts": attempts  # Include all attempts for tracking
-                                }
-                            )
-                            logger.info(f"Created version for artifact {artifact_id}")
-                        except Exception as e:
-                            logger.warning(f"Failed to create version: {e}")
+                        # Use stable artifact_id (artifact type) for proper versioning
+                        # NOTE: Version creation is handled by GenerationService to avoid duplicates
+                        artifact_id = artifact_type.value
                         
                         return {
                             "success": True,
@@ -558,27 +544,9 @@ class EnhancedGenerationService:
             if progress_callback:
                 await progress_callback(95.0, f"Best attempt found (score: {best_score:.1f}), finalizing...")
             
-            # Create version even for low-quality artifacts
-            artifact_id = f"{artifact_type.value}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-            try:
-                from backend.services.version_service import get_version_service
-                version_service = get_version_service()
-                version_service.create_version(
-                    artifact_id=artifact_id,
-                    artifact_type=artifact_type.value,
-                    content=best_attempt["content"],
-                    metadata={
-                        "model_used": best_attempt["model"],
-                        "provider": best_attempt["provider"],
-                        "validation_score": best_score,
-                        "is_valid": best_score >= opts["validation_threshold"],
-                        "meeting_notes": meeting_notes[:200],
-                        "attempts": attempts  # Include all attempts for tracking
-                    }
-                )
-                logger.info(f"Created version for artifact {artifact_id} (low quality)")
-            except Exception as e:
-                logger.warning(f"Failed to create version: {e}")
+            # Use stable artifact_id (artifact type) for proper versioning
+            # NOTE: Version creation is handled by GenerationService to avoid duplicates
+            artifact_id = artifact_type.value
             
             return {
                 "success": True,
