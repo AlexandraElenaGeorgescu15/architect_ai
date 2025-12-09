@@ -976,6 +976,141 @@ Follow the repository's coding style and test patterns. Make tests realistic and
         return None
 
 
+# Simple result class for generate_with_fallback
+class GenerationResult:
+    """Simple result container for generate_with_fallback."""
+    def __init__(self, content: str, model_used: str, success: bool = True, error: Optional[str] = None):
+        self.content = content
+        self.model_used = model_used
+        self.success = success
+        self.error = error
+
+
+# Add generate_with_fallback method to EnhancedGenerationService
+async def _generate_with_fallback(
+    self,
+    prompt: str,
+    system_instruction: str = "",
+    model_routing: Optional[Any] = None,
+    response_format: str = "text",
+    temperature: float = 0.3
+) -> GenerationResult:
+    """
+    Generate content with model fallback support.
+    Used by Canvas AI improve/auto-fix features.
+    
+    Args:
+        prompt: The prompt to send to the model
+        system_instruction: System message for the model
+        model_routing: Optional routing configuration
+        response_format: Expected response format ("text" or "json")
+        temperature: Generation temperature
+    
+    Returns:
+        GenerationResult with content and model_used
+    """
+    logger.info(f"🔄 [ENHANCED_GEN] generate_with_fallback called: prompt_length={len(prompt)}, "
+               f"response_format={response_format}, temperature={temperature}")
+    
+    # Get models to try
+    models_to_try = []
+    
+    # If routing is provided, use it
+    if model_routing:
+        if hasattr(model_routing, 'primary_model'):
+            primary = model_routing.primary_model
+            if primary.startswith("ollama:"):
+                models_to_try.append(primary.split(":", 1)[1])
+            else:
+                models_to_try.append(primary)
+        
+        if hasattr(model_routing, 'fallback_models'):
+            for fallback in model_routing.fallback_models:
+                if fallback.startswith("ollama:"):
+                    models_to_try.append(fallback.split(":", 1)[1])
+                elif not ":" in fallback:  # Local model without prefix
+                    models_to_try.append(fallback)
+    
+    # Default models if none from routing
+    if not models_to_try:
+        models_to_try = ["llama3", "codellama", "mistral"]
+    
+    logger.info(f"📋 [ENHANCED_GEN] Models to try: {models_to_try[:5]}")
+    
+    # Try local models first
+    if self.ollama_client:
+        for model_name in models_to_try:
+            try:
+                logger.info(f"🤖 [ENHANCED_GEN] Trying local model: {model_name}")
+                
+                # Ensure model is available
+                await self.ollama_client.ensure_model_available(model_name)
+                
+                # Generate
+                response = await self.ollama_client.generate(
+                    model_name=model_name,
+                    prompt=prompt,
+                    system_message=system_instruction,
+                    temperature=temperature
+                )
+                
+                if response.success and response.content:
+                    logger.info(f"✅ [ENHANCED_GEN] Success with {model_name}: content_length={len(response.content)}")
+                    return GenerationResult(
+                        content=response.content,
+                        model_used=model_name,
+                        success=True
+                    )
+                else:
+                    logger.warning(f"⚠️ [ENHANCED_GEN] {model_name} returned no content")
+                    
+            except Exception as e:
+                logger.warning(f"⚠️ [ENHANCED_GEN] Error with {model_name}: {e}")
+                continue
+    
+    # Try cloud models as fallback
+    cloud_providers = [
+        ("gemini", "gemini-2.0-flash-exp"),
+        ("groq", "llama-3.3-70b-versatile"),
+        ("openai", "gpt-4-turbo"),
+        ("anthropic", "claude-3-5-sonnet-20241022"),
+    ]
+    
+    for provider, model_name in cloud_providers:
+        try:
+            logger.info(f"☁️ [ENHANCED_GEN] Trying cloud model: {provider}:{model_name}")
+            content = await self._call_cloud_api_direct(
+                provider=provider,
+                model_name=model_name,
+                prompt=prompt,
+                system_message=system_instruction
+            )
+            
+            if content:
+                logger.info(f"✅ [ENHANCED_GEN] Success with cloud {provider}:{model_name}")
+                return GenerationResult(
+                    content=content,
+                    model_used=f"{provider}:{model_name}",
+                    success=True
+                )
+        except Exception as e:
+            logger.warning(f"⚠️ [ENHANCED_GEN] Cloud {provider} failed: {e}")
+            continue
+    
+    # All attempts failed
+    error_msg = "All model attempts failed"
+    logger.error(f"❌ [ENHANCED_GEN] {error_msg}")
+    return GenerationResult(
+        content="",
+        model_used="none",
+        success=False,
+        error=error_msg
+    )
+
+# Attach the method to the class
+EnhancedGenerationService.generate_with_fallback = _generate_with_fallback
+
+
 # Global service instance
 _enhanced_service: Optional[EnhancedGenerationService] = None
 

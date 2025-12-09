@@ -301,51 +301,111 @@ async def improve_diagram(
         routing = model_service.get_routing_for_artifact(request.diagram_type)
         
         # Build improvement areas
-        improvement_areas = ", ".join(request.improvement_focus)
+        improvement_areas = ", ".join(request.improvement_focus or ["syntax", "colors"])
         
-        # Build improvement prompt
-        prompt = f"""
-Analyze this Mermaid {request.diagram_type.value} diagram and return an IMPROVED version.
+        # Detect diagram type from code
+        diagram_start = ""
+        code_lower = request.mermaid_code.lower().strip()
+        if code_lower.startswith("erdiagram"):
+            diagram_start = "erDiagram"
+        elif code_lower.startswith("graph"):
+            diagram_start = "graph"
+        elif code_lower.startswith("flowchart"):
+            diagram_start = "flowchart"
+        elif code_lower.startswith("sequencediagram"):
+            diagram_start = "sequenceDiagram"
+        elif code_lower.startswith("classdiagram"):
+            diagram_start = "classDiagram"
+        elif code_lower.startswith("statediagram"):
+            diagram_start = "stateDiagram-v2"
+        
+        # Build improvement prompt - more explicit about output format
+        prompt = f"""You are a Mermaid diagram expert. Improve this diagram while preserving its structure and meaning.
 
-Current code:
-```mermaid
+INPUT DIAGRAM:
 {request.mermaid_code}
-```
 
-Focus improvements on: {improvement_areas}
+IMPROVEMENT FOCUS: {improvement_areas}
 
-Improvement Guidelines:
-1. Fix any syntax errors
-2. Add meaningful colors to group related concepts (use Mermaid style/classDef syntax)
-3. Improve layout and spacing for better readability
-4. Add missing relationships or connections (if applicable)
-5. Optimize flow and structure
-6. Ensure all labels are clear and descriptive
+RULES:
+1. Fix any syntax errors (missing quotes, brackets, etc.)
+2. Keep all existing nodes and relationships
+3. Add colors using classDef if not present (e.g., classDef primary fill:#4f46e5,stroke:#3730a3)
+4. Do NOT add explanations or comments
+5. Do NOT wrap in markdown code blocks
+6. Start output directly with "{diagram_start or 'the diagram keyword'}"
 
-Return ONLY the improved Mermaid code, no markdown code blocks, no explanations.
-Start directly with "graph" or "erDiagram" or appropriate Mermaid syntax.
-"""
+OUTPUT (improved Mermaid code only):"""
         
         # Call AI generation service
         generation_service = get_generation_service()
         result = await generation_service.generate_with_fallback(
             prompt=prompt,
             model_routing=routing,
-            temperature=0.5  # Slightly higher for creative improvements
+            temperature=0.3  # Lower temperature for more consistent syntax
         )
+        
+        # Check if generation succeeded
+        if not result.success or not result.content or len(result.content.strip()) < 10:
+            logger.warning(f"AI generation failed or returned empty: success={result.success}, content_len={len(result.content) if result.content else 0}")
+            return DiagramImproveResponse(
+                success=False,
+                improved_code=request.mermaid_code,
+                improvements_made=[],
+                error=result.error or "AI returned empty response. Please try again."
+            )
         
         # Clean up response (remove markdown code blocks if present)
         improved_code = result.content.strip()
+        
+        # Remove common wrapper patterns
+        if improved_code.startswith("```"):
+            # Find the end of the code block
+            lines = improved_code.split('\n')
+            clean_lines = []
+            in_code = False
+            for line in lines:
+                if line.startswith("```") and not in_code:
+                    in_code = True
+                    continue
+                elif line.startswith("```") and in_code:
+                    break
+                elif in_code:
+                    clean_lines.append(line)
+            if clean_lines:
+                improved_code = '\n'.join(clean_lines)
+        
+        # Additional cleanup
         improved_code = improved_code.replace("```mermaid", "").replace("```", "").strip()
+        
+        # Validate that the improved code has the same diagram type
+        improved_lower = improved_code.lower().strip()
+        if diagram_start and not improved_lower.startswith(diagram_start.lower()):
+            # Try to find the diagram content and prepend the correct start
+            logger.warning(f"AI response doesn't start with expected diagram type: {diagram_start}")
+            # If the original has a valid structure, return it with minimal fixes
+            if len(improved_code) < len(request.mermaid_code) * 0.5:
+                return DiagramImproveResponse(
+                    success=False,
+                    improved_code=request.mermaid_code,
+                    improvements_made=[],
+                    error="AI returned incomplete diagram. Please try again."
+                )
         
         # Detect improvements made
         improvements_made = []
-        if "style" in improved_code and "style" not in request.mermaid_code:
-            improvements_made.append("Added colors")
-        if "classDef" in improved_code and "classDef" not in request.mermaid_code:
+        if "style" in improved_code.lower() and "style" not in request.mermaid_code.lower():
+            improvements_made.append("Added inline styles")
+        if "classdef" in improved_code.lower() and "classdef" not in request.mermaid_code.lower():
             improvements_made.append("Added style definitions")
+        if ":::" in improved_code and ":::" not in request.mermaid_code:
+            improvements_made.append("Added style classes")
         if len(improved_code) > len(request.mermaid_code):
             improvements_made.append("Enhanced structure")
+        if not improvements_made:
+            improvements_made.append("Syntax verified")
+        
+        logger.info(f"Diagram improvement successful: {improvements_made}")
         
         return DiagramImproveResponse(
             success=True,

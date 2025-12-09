@@ -126,9 +126,9 @@ export default function ArtifactViewer({ artifact, onUpdate }: ArtifactViewerPro
         )}
 
         <div className="flex items-center gap-3">
-          {/* Version Selector */}
+          {/* Version Selector - use artifact.type as the version key since versions are stored by type */}
           <VersionSelector
-            artifactId={artifact.id}
+            artifactId={artifact.type}
             currentContent={artifact.content}
             onVersionRestore={(content, version) => {
               if (onUpdate) {
@@ -245,14 +245,14 @@ export default function ArtifactViewer({ artifact, onUpdate }: ArtifactViewerPro
           <span className="text-sm font-medium">Was this helpful?</span>
           <div className="flex gap-2">
             <button
-              onClick={() => handleFeedback('approval')}
+              onClick={() => handleFeedback('positive')}
               className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-500 rounded-lg hover:bg-green-500/30 transition-colors"
             >
               <ThumbsUp className="w-4 h-4" />
               <span className="text-sm">Good</span>
             </button>
             <button
-              onClick={() => handleFeedback('correction')}
+              onClick={() => handleFeedback('negative')}
               className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500/30 transition-colors"
             >
               <ThumbsDown className="w-4 h-4" />

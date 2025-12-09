@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Bell, Menu, X, Sparkles, Trash2, ChevronRight, Loader2, Layers } from 'lucide-react'
+import { Bell, Menu, X, Sparkles, Trash2, ChevronRight, ChevronLeft, Loader2, Layers } from 'lucide-react'
 import { useUIStore } from '../../stores/uiStore'
 import { useState, useRef, useEffect } from 'react'
 import { Template, listTemplates, applyTemplate } from '../../services/templateService'
@@ -7,7 +7,7 @@ import { Template, listTemplates, applyTemplate } from '../../services/templateS
 export default function Header() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { toggleSidebar, notifications, removeNotification, clearNotifications, addNotification } = useUIStore()
+  const { toggleSidebar, sidebarOpen, notifications, removeNotification, clearNotifications, addNotification } = useUIStore()
   const [showPanel, setShowPanel] = useState(false)
   const [activeTab, setActiveTab] = useState<'notifications' | 'templates'>('notifications')
   const panelRef = useRef<HTMLDivElement>(null)
@@ -86,8 +86,13 @@ export default function Header() {
           onClick={toggleSidebar}
           className="p-1.5 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all lg:hidden"
           aria-label="Toggle sidebar"
+          title={sidebarOpen ? 'Close menu' : 'Open menu'}
         >
-          <Menu className="w-4 h-4" />
+          {sidebarOpen ? (
+            <ChevronLeft className="w-4 h-4" />
+          ) : (
+            <ChevronRight className="w-4 h-4" />
+          )}
         </button>
         <h1 className="text-base font-bold text-foreground">{getPageTitle()}</h1>
       </div>

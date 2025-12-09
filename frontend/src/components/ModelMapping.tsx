@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useModelStore } from '../stores/modelStore'
+import { useUIStore } from '../stores/uiStore'
 import api from '../services/api'
 import { Settings, Save, RefreshCw, Download, Search } from 'lucide-react'
 
@@ -12,6 +13,7 @@ interface ModelRouting {
 
 export default function ModelMapping() {
   const { models, fetchModels } = useModelStore()
+  const { addNotification } = useUIStore()
   const [routings, setRoutings] = useState<Record<string, ModelRouting>>({})
   const [loading, setLoading] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -62,11 +64,11 @@ export default function ModelMapping() {
       }))
       
       await api.put('/api/models/routing', { routings: routingList })
-      alert('Model routing updated successfully!')
+      addNotification('success', 'Model routing updated successfully!')
       await loadRoutings() // Refresh to get updated data
-    } catch (error) {
+    } catch (error: any) {
       // Failed to save routings - show user error
-      alert('Failed to save model routing. Please check the console for details.')
+      addNotification('error', error?.response?.data?.detail || 'Failed to save model routing')
     } finally {
       setLoading(false)
     }
@@ -83,6 +85,7 @@ export default function ModelMapping() {
       })
       setHuggingfaceResults(response.data.results || [])
       console.log('🔎 [HUGGINGFACE] Search results:', response.data)
+      addNotification('info', `Found ${response.data.results?.length || 0} models for "${searchQuery}"`)
     } catch (error: any) {
       console.error('❌ [HUGGINGFACE] Search failed:', error)
       const status = error?.response?.status
@@ -94,9 +97,9 @@ export default function ModelMapping() {
 
       // Surface rate-limit and server errors so user understands why nothing changed
       if (status === 429) {
-        alert('HuggingFace search rate limit reached (10/min). Please wait a bit before searching again.')
+        addNotification('warning', 'HuggingFace search rate limit reached (10/min). Please wait a bit.')
       } else {
-        alert(`HuggingFace search error: ${detail}`)
+        addNotification('error', `HuggingFace search error: ${detail}`)
       }
     } finally {
       setSearching(false)
@@ -105,6 +108,8 @@ export default function ModelMapping() {
 
   const downloadModel = async (modelId: string) => {
     try {
+      addNotification('info', `Starting download for ${modelId}...`)
+      
       // Use a much longer timeout for long-running downloads (e.g. 10 minutes)
       const response = await api.post(
         `/api/huggingface/download/${modelId}`,
@@ -113,7 +118,7 @@ export default function ModelMapping() {
       )
       
       if (response.data.success) {
-        alert(`Download started for ${modelId}. This may take several minutes.`)
+        addNotification('info', `Download started for ${modelId}. This may take several minutes.`)
         
         // Poll for download status
         const checkStatus = async () => {
@@ -122,10 +127,10 @@ export default function ModelMapping() {
             const status = statusResponse.data
             
             if (status.status === 'completed') {
-              alert(`Model ${modelId} downloaded successfully!`)
+              addNotification('success', `Model ${modelId} downloaded successfully!`)
               fetchModels() // Refresh model list
             } else if (status.status === 'failed') {
-              alert(`Download failed: ${status.error || 'Unknown error'}`)
+              addNotification('error', `Download failed: ${status.error || 'Unknown error'}`)
             } else if (status.status === 'downloading') {
               // Check again in 5 seconds
               setTimeout(checkStatus, 5000)
@@ -138,7 +143,7 @@ export default function ModelMapping() {
         // Start checking status after 2 seconds
         setTimeout(checkStatus, 2000)
       } else {
-        alert(`Download failed: ${response.data.error || 'Unknown error'}`)
+        addNotification('error', `Download failed: ${response.data.error || 'Unknown error'}`)
       }
     } catch (error: any) {
       // Improve error message for timeouts vs real backend errors
@@ -146,10 +151,10 @@ export default function ModelMapping() {
       const errorMsg =
         error?.response?.data?.detail ||
         error?.response?.data?.error ||
-        (isTimeout ? 'Request timed out while starting download. The backend may still be working in the background; please check status after a moment.' : error?.message) ||
+        (isTimeout ? 'Request timed out. The backend may still be downloading in background.' : error?.message) ||
         'Failed to start download'
 
-      alert(`Download error: ${errorMsg}`)
+      addNotification('error', `Download error: ${errorMsg}`)
       console.error('Download error:', error)
     }
   }

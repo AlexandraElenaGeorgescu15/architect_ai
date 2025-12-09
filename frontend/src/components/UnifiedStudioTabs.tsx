@@ -35,6 +35,91 @@ const LoadingFallback = memo(function LoadingFallback() {
   )
 })
 
+// Library View with Search
+const LibraryView = memo(function LibraryView() {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [showSearch, setShowSearch] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+  const { artifacts } = useArtifactStore()
+  
+  // Focus search input when opened
+  useEffect(() => {
+    if (showSearch && searchInputRef.current) {
+      searchInputRef.current.focus()
+    }
+  }, [showSearch])
+  
+  // Close search on Escape
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showSearch) {
+        setShowSearch(false)
+        setSearchQuery('')
+      }
+      // Ctrl/Cmd + F to open search
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f' && !showSearch) {
+        e.preventDefault()
+        setShowSearch(true)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [showSearch])
+  
+  return (
+    <div className="h-full overflow-auto custom-scrollbar p-4 animate-fade-in-up">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <div className="flex justify-between items-center glass-panel p-6 rounded-2xl border-border bg-card shadow-elevated hover:shadow-floating transition-all duration-300">
+          <div>
+            <h2 className="text-3xl font-black text-foreground tracking-tight flex items-center gap-3">
+              <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Artifact Library</span>
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {artifacts.length} artifact{artifacts.length !== 1 ? 's' : ''} • Browse and manage your generated artifacts
+            </p>
+          </div>
+          <div className="flex gap-3">
+            {showSearch ? (
+              <div className="flex items-center gap-2">
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search artifacts..."
+                  className="px-4 py-2 border border-border rounded-xl bg-background text-foreground text-sm w-64 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                />
+                <button 
+                  onClick={() => {
+                    setShowSearch(false)
+                    setSearchQuery('')
+                  }}
+                  className="p-2 hover:bg-destructive/10 text-muted-foreground hover:text-destructive rounded-lg transition-colors"
+                  title="Close search"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <button 
+                onClick={() => setShowSearch(true)}
+                className="px-6 py-3 border border-border rounded-xl hover:bg-primary/10 hover:border-primary/30 flex items-center gap-2 text-sm glass-button transition-all duration-300 shadow-sm hover:shadow-md font-bold group"
+              >
+                <Search className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" /> Search
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="glass-panel rounded-2xl p-8 min-h-[500px] border-border bg-card shadow-elevated hover:shadow-floating transition-shadow duration-300">
+          <Suspense fallback={<LoadingFallback />}>
+            <ArtifactTabs searchQuery={searchQuery} />
+          </Suspense>
+        </div>
+      </div>
+    </div>
+  )
+})
+
 interface UnifiedStudioTabsProps {
   meetingNotes: string
   setMeetingNotes: (notes: string) => void
@@ -46,6 +131,7 @@ interface UnifiedStudioTabsProps {
   progress: any
   generate: (params: any) => Promise<void>
   clearProgress: () => void
+  cancelGeneration?: () => void
   isBuilding: boolean
   build: (params: any) => Promise<any>
   artifacts: any[]
@@ -471,6 +557,15 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                               </span>
                             </div>
                          )}
+                         {/* Cancel Button */}
+                         {props.cancelGeneration && (
+                           <button
+                             onClick={props.cancelGeneration}
+                             className="w-full mt-3 py-2 text-xs font-bold text-destructive bg-destructive/10 hover:bg-destructive/20 border border-destructive/30 rounded-lg transition-all duration-200 uppercase tracking-wider"
+                           >
+                             Cancel Generation
+                           </button>
+                         )}
                       </div>
                     )}
                   </div>
@@ -564,28 +659,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
 
         {/* LIBRARY VIEW */}
         {activeView === 'library' && (
-          <div className="h-full overflow-auto custom-scrollbar p-4 animate-fade-in-up">
-            <div className="max-w-7xl mx-auto space-y-6">
-              <div className="flex justify-between items-center glass-panel p-6 rounded-2xl border-border bg-card shadow-elevated hover:shadow-floating transition-all duration-300">
-                <div>
-                  <h2 className="text-3xl font-black text-foreground tracking-tight flex items-center gap-3">
-                    <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Artifact Library</span>
-                  </h2>
-                  <p className="text-sm text-muted-foreground mt-1">Browse and manage your generated artifacts</p>
-                </div>
-                <div className="flex gap-3">
-                  <button className="px-6 py-3 border border-border rounded-xl hover:bg-primary/10 hover:border-primary/30 flex items-center gap-2 text-sm glass-button transition-all duration-300 shadow-sm hover:shadow-md font-bold group">
-                     <Search className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" /> Search
-                  </button>
-                </div>
-              </div>
-              <div className="glass-panel rounded-2xl p-8 min-h-[500px] border-border bg-card shadow-elevated hover:shadow-floating transition-shadow duration-300">
-                 <Suspense fallback={<LoadingFallback />}>
-                   <ArtifactTabs />
-                 </Suspense>
-              </div>
-            </div>
-          </div>
+          <LibraryView />
         )}
 
         {/* VERSION CONTROL VIEW */}

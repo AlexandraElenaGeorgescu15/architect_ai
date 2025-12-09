@@ -94,13 +94,26 @@ export class FlowchartAdapter extends BaseDiagramAdapter {
     const direction = options?.direction || 'TD'
     let mermaid = `graph ${direction}\n`
 
+    // Create a map from node.id to a clean Mermaid ID
+    const idMap = new Map<string, string>()
+    
     // Add nodes with appropriate shapes
     for (const node of nodes) {
-      const cleanId = this.sanitizeId(node.id)
-      const cleanLabel = this.sanitizeLabel(node.data.label || 'Node')
-      const shape = node.data.shape || 'rectangle'
+      // Create a stable, clean ID from the label or node id
+      const label = node.data.label || 'Node'
+      const cleanLabel = this.sanitizeLabel(label)
+      // Use label as basis for ID if it's simple enough, otherwise use sanitized node.id
+      const baseId = label.match(/^[a-zA-Z][a-zA-Z0-9\s]*$/) 
+        ? label.replace(/\s+/g, '_')
+        : node.id
+      const cleanId = this.sanitizeId(baseId)
+      
+      // Store mapping for edge generation
+      idMap.set(node.id, cleanId)
+      
+      const shape = node.data.shape || (node.type === 'decision' ? 'diamond' : 'rectangle')
 
-      // Choose bracket style based on shape
+      // Choose bracket style based on shape or node type
       let nodeDeclaration: string
       switch (shape) {
         case 'circle':
@@ -126,11 +139,11 @@ export class FlowchartAdapter extends BaseDiagramAdapter {
 
     mermaid += '\n'
 
-    // Add edges
+    // Add edges using the ID map
     for (const edge of edges) {
-      const source = this.sanitizeId(edge.source)
-      const target = this.sanitizeId(edge.target)
-      const label = edge.label ? `|"${this.sanitizeLabel(edge.label)}"` : ''
+      const source = idMap.get(edge.source) || this.sanitizeId(edge.source)
+      const target = idMap.get(edge.target) || this.sanitizeId(edge.target)
+      const label = edge.label ? `|"${this.sanitizeLabel(edge.label)}"|` : ''
 
       mermaid += `  ${source} -->${label} ${target}\n`
     }

@@ -1,0 +1,40 @@
+[
+  {
+    "version": 1,
+    "artifact_id": "mermaid_flowchart",
+    "artifact_type": "mermaid_flowchart",
+    "content": "flowchart LR\n    start[Start] -->|User clicks \"Request Phone Swap\" button|> modal[Modal: Request Phone Swap]\n    modal -->|User selects phone to request and offers one in exchange|> form[Form: Phone to Request & Phone to Exchange]\n    form -->|User submits form|> backend[Backend API Endpoint (POST /api/phone-swaps)]\n    backend -->|Validate user's ownership of offered phone|> validation[Validation: User is owner of offered phone]\n    validation -->|Request is valid, create new swap request in database|> db[Database: Create new swap request table]\n    db -->|Return confirmation message to user|> confirm[Confirmation Message: Request submitted successfully]\n    confirm -->|Modal closes, display confirmation message|> end[End]\n    modal -->|User cancels request|> cancel[Cancel Request]\n    cancel -->|Modal closes|> end",
+    "metadata": {
+      "model_used": "llama3",
+      "provider": "cloud",
+      "validation_score": 100.0,
+      "is_valid": true,
+      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
+      "html_content": null,
+      "quality_prediction": {
+        "label": "medium",
+        "confidence": 0.7000000000000001,
+        "score": 0.7000000000000001,
+        "reasons": {
+          "notes_depth": 0.2,
+          "notes_structure": 0.05,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_cba3c694",
+      "attempts": [
+        {
+          "model": "llama3",
+          "provider": "ollama",
+          "content": "Here is a Mermaid flowchart that represents the Phone Swap Request Feature:\n\n```mermaid\nflowchart LR\n    start[Start] -->|User clicks \"Request Phone Swap\" button|> modal[Modal: Request Phone Swap]\n    modal -->|User selects phone to request and offers one in exchange|> form[Form: Phone to Request & Phone to Exchange]\n    form -->|User submits form|> backend[Backend API Endpoint (POST /api/phone-swaps)]\n    backend -->|Validate user's ownership of offered phone|> validation[Validation: User is owner of offered phone]\n    validation -->|Request is valid, create new swap request in database|> db[Database: Create new swap request table]\n    db -->|Return confirmation message to user|> confirm[Confirmation Message: Request submitted successfully]\n    confirm -->|Modal closes, display confirmation message|> end[End]\n\n    modal -->|User cancels request|> cancel[Cancel Request]\n    cancel -->|Modal closes|> end\n```\n\nLet me know if you'd like me to make any changes!",
+          "score": 100.0,
+          "is_valid": true,
+          "errors": [],
+          "retry": 0
+        }
+      ]
+    },
+    "created_at": "2025-12-09T21:25:04.099754",
+    "is_current": true
+  }
+]

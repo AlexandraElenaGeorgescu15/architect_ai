@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Artifact } from '../../types'
 import { useArtifactStore } from '../../stores/artifactStore'
 import ArtifactCard from './ArtifactCard'
@@ -17,22 +17,44 @@ const tabs: { value: TabType; label: string }[] = [
   { value: 'pm', label: 'PM' },
 ]
 
-export default function ArtifactTabs() {
+interface ArtifactTabsProps {
+  searchQuery?: string
+}
+
+export default function ArtifactTabs({ searchQuery = '' }: ArtifactTabsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('all')
   const { artifacts, currentArtifact, setCurrentArtifact } = useArtifactStore()
 
-  const filteredArtifacts = artifacts.filter((artifact) => {
-    if (activeTab === 'all') return true
-    if (activeTab === 'diagrams') return artifact.type.startsWith('mermaid_')
-    if (activeTab === 'html') return artifact.type.startsWith('html_')
-    if (activeTab === 'code') return artifact.type === 'code_prototype'
-    if (activeTab === 'prototypes') return ['visual_prototype', 'interactive_prototype', 'html_component'].includes(artifact.type)
-    if (activeTab === 'docs') return artifact.type === 'api_docs'
-    if (activeTab === 'pm') {
-      return ['jira', 'workflows', 'backlog', 'personas', 'estimations', 'feature_scoring'].includes(artifact.type)
+  const filteredArtifacts = useMemo(() => {
+    let filtered = artifacts
+    
+    // Apply tab filter
+    if (activeTab !== 'all') {
+      filtered = filtered.filter((artifact) => {
+        if (activeTab === 'diagrams') return artifact.type.startsWith('mermaid_')
+        if (activeTab === 'html') return artifact.type.startsWith('html_')
+        if (activeTab === 'code') return artifact.type === 'code_prototype'
+        if (activeTab === 'prototypes') return ['visual_prototype', 'interactive_prototype', 'html_component'].includes(artifact.type)
+        if (activeTab === 'docs') return artifact.type === 'api_docs'
+        if (activeTab === 'pm') {
+          return ['jira', 'workflows', 'backlog', 'personas', 'estimations', 'feature_scoring'].includes(artifact.type)
+        }
+        return true
+      })
     }
-    return true
-  })
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter((artifact) => 
+        artifact.type.toLowerCase().includes(query) ||
+        artifact.content.toLowerCase().includes(query) ||
+        (artifact.model_used && artifact.model_used.toLowerCase().includes(query))
+      )
+    }
+    
+    return filtered
+  }, [artifacts, activeTab, searchQuery])
 
   return (
     <div className="space-y-6 h-full flex flex-col" data-tour="artifacts-panel">

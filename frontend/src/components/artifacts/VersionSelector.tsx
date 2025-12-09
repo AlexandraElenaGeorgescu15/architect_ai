@@ -107,122 +107,86 @@ export default function VersionSelector({ artifactId, currentContent, onVersionR
             onClick={() => setIsOpen(false)}
           />
 
-          {/* Dropdown */}
-          <div className="absolute right-0 mt-2 w-96 bg-card border border-border rounded-xl shadow-2xl z-50 max-h-96 overflow-hidden flex flex-col">
+          {/* Dropdown - constrained sizing */}
+          <div 
+            className="absolute right-0 mt-2 bg-card border border-border rounded-xl shadow-2xl z-[100] overflow-hidden flex flex-col"
+            style={{
+              width: 'min(90vw, 340px)',
+              maxHeight: 'min(70vh, 400px)',
+            }}
+          >
             {/* Header */}
-            <div className="p-4 border-b border-border bg-secondary/20">
-              <h3 className="font-bold text-foreground flex items-center gap-2">
-                <History className="w-5 h-5" />
+            <div className="p-3 border-b border-border bg-secondary/20 flex-shrink-0">
+              <h3 className="font-bold text-foreground text-sm flex items-center gap-2">
+                <History className="w-4 h-4" />
                 Version History
               </h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                {versions.length} version{versions.length !== 1 ? 's' : ''} available
+              <p className="text-xs text-muted-foreground">
+                {versions.length} version{versions.length !== 1 ? 's' : ''}
               </p>
             </div>
 
             {/* Version List */}
-            <div className="overflow-y-auto custom-scrollbar flex-1">
+            <div className="overflow-y-auto custom-scrollbar flex-1 min-h-0">
               {isLoading ? (
-                <div className="p-8 text-center">
-                  <RefreshCw className="w-6 h-6 animate-spin text-primary mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Loading versions...</p>
+                <div className="p-6 text-center">
+                  <RefreshCw className="w-5 h-5 animate-spin text-primary mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">Loading...</p>
                 </div>
               ) : (
-                <div className="p-2">
+                <div className="p-2 space-y-1">
                   {versions.map((version) => (
                     <div
                       key={version.version}
-                      className={`p-3 rounded-lg mb-2 transition-colors cursor-pointer ${
+                      className={`p-2 rounded-lg transition-colors cursor-pointer ${
                         version.is_current
                           ? 'bg-primary/10 border border-primary/30'
                           : 'hover:bg-secondary/50 border border-transparent'
                       }`}
                       onClick={() => {
                         if (!version.is_current) {
-                          if (confirm(`Restore version ${version.version}? This will create a new version with this content.`)) {
+                          if (confirm(`Restore version ${version.version}?`)) {
                             handleRestore(version.version)
                             setIsOpen(false)
                           }
                         }
                       }}
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className={`w-6 h-6 rounded flex-shrink-0 flex items-center justify-center text-[10px] font-bold ${
                             version.is_current ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'
                           }`}>
-                            {version.is_current ? (
-                              <Check className="w-4 h-4" />
-                            ) : (
-                              <span className="text-xs font-bold">v{version.version}</span>
-                            )}
+                            {version.is_current ? <Check className="w-3 h-3" /> : `v${version.version}`}
                           </div>
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">
-                              Version {version.version}
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-foreground flex items-center gap-1">
+                              v{version.version}
                               {version.is_current && (
-                                <span className="ml-2 text-xs px-2 py-0.5 bg-primary/20 text-primary rounded">
-                                  Current
-                                </span>
+                                <span className="text-[9px] px-1 py-0.5 bg-primary/20 text-primary rounded">Current</span>
                               )}
                             </p>
-                            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
+                            <p className="text-[10px] text-muted-foreground">
                               {formatDate(version.created_at)}
                             </p>
                           </div>
                         </div>
-                      </div>
-
-                      {/* Metadata */}
-                      {version.metadata && (
-                        <div className="mt-2 space-y-1">
-                          {version.metadata.restored_from && (
-                            <p className="text-xs">
-                              <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-500 rounded">
-                                ↩ Restored from v{version.metadata.restored_from}
-                              </span>
-                            </p>
-                          )}
-                          {version.metadata.model_used && (
-                            <p className="text-xs text-muted-foreground">
-                              Model: <span className="text-foreground">{version.metadata.model_used.replace('ollama:', '').replace('gemini:', '')}</span>
-                            </p>
-                          )}
-                          {version.metadata.validation_score !== undefined && (
-                            <p className="text-xs text-muted-foreground">
-                              Score: <span className={`font-bold ${
-                                version.metadata.validation_score >= 80 ? 'text-green-500' :
-                                version.metadata.validation_score >= 60 ? 'text-yellow-500' :
-                                'text-red-500'
-                              }`}>{version.metadata.validation_score.toFixed(1)}%</span>
-                            </p>
-                          )}
-                          {version.metadata.update_type && (
-                            <p className="text-xs text-muted-foreground">
-                              Type: <span className="text-foreground">{version.metadata.update_type}</span>
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {!version.is_current && (
-                        <div className="mt-2 pt-2 border-t border-border/50">
+                        {!version.is_current && (
                           <button
-                            className="text-xs text-primary hover:underline flex items-center gap-1"
+                            className="text-[10px] text-primary hover:underline flex items-center gap-0.5 flex-shrink-0"
                             onClick={(e) => {
                               e.stopPropagation()
-                              if (confirm(`Restore version ${version.version}?`)) {
+                              if (confirm(`Restore v${version.version}?`)) {
                                 handleRestore(version.version)
                                 setIsOpen(false)
                               }
                             }}
                           >
-                            <RefreshCw className="w-3 h-3" />
-                            Restore this version
+                            <RefreshCw className="w-2.5 h-2.5" />
+                            Restore
                           </button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -230,9 +194,9 @@ export default function VersionSelector({ artifactId, currentContent, onVersionR
             </div>
 
             {/* Footer */}
-            <div className="p-3 border-t border-border bg-secondary/10">
-              <p className="text-xs text-muted-foreground text-center">
-                💡 Click any version to restore it
+            <div className="p-2 border-t border-border bg-secondary/10 flex-shrink-0">
+              <p className="text-[10px] text-muted-foreground text-center">
+                Click to restore
               </p>
             </div>
           </div>

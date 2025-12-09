@@ -99,15 +99,25 @@ export class SequenceAdapter extends BaseDiagramAdapter {
 
     let mermaid = 'sequenceDiagram\n'
 
+    // Create a map from internal node.id to the participant ID used in Mermaid
+    const idToParticipantMap = new Map<string, string>()
+
     // Add participants
     for (const node of nodes) {
-      const id = this.sanitizeId(node.id)
-      const label = this.sanitizeLabel(node.data.label || node.id)
+      const label = node.data.label || node.id
+      // Use label as participant ID if it's a valid identifier, otherwise sanitize
+      const participantId = label.match(/^[a-zA-Z][a-zA-Z0-9_]*$/)
+        ? label
+        : this.sanitizeId(label.replace(/\s+/g, '_'))
+      const cleanLabel = this.sanitizeLabel(label)
       
-      if (id === label) {
-        mermaid += `  participant ${id}\n`
+      // Store mapping from internal ID to participant ID
+      idToParticipantMap.set(node.id, participantId)
+      
+      if (participantId === cleanLabel) {
+        mermaid += `  participant ${participantId}\n`
       } else {
-        mermaid += `  participant ${id} as ${label}\n`
+        mermaid += `  participant ${participantId} as ${cleanLabel}\n`
       }
     }
 
@@ -120,10 +130,10 @@ export class SequenceAdapter extends BaseDiagramAdapter {
       return orderA - orderB
     })
 
-    // Add messages
+    // Add messages using the ID map for proper participant names
     for (const edge of sortedEdges) {
-      const from = this.sanitizeId(edge.source)
-      const to = this.sanitizeId(edge.target)
+      const from = idToParticipantMap.get(edge.source) || this.sanitizeId(edge.source)
+      const to = idToParticipantMap.get(edge.target) || this.sanitizeId(edge.target)
       const message = this.sanitizeLabel(edge.label || 'Message')
       const messageType = (edge as any).data?.messageType || 'sync'
 

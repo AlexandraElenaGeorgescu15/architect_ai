@@ -74,13 +74,22 @@ export class ArchitectureAdapter extends BaseDiagramAdapter {
       layers.get(layer)!.push(node)
     }
 
+    // Create a map from node.id to a clean Mermaid ID
+    const idMap = new Map<string, string>()
+    
     // Add nodes with subgraphs for layers
     for (const [layer, layerNodes] of layers.entries()) {
       if (layer !== 'default' && layerNodes.length > 1) {
         mermaid += `  subgraph ${layer}\n`
         for (const node of layerNodes) {
-          const cleanId = this.sanitizeId(node.id)
-          const cleanLabel = this.sanitizeLabel(node.data.label || 'Component')
+          const label = node.data.label || 'Component'
+          const baseId = label.match(/^[a-zA-Z][a-zA-Z0-9\s]*$/) 
+            ? label.replace(/\s+/g, '_')
+            : node.id
+          const cleanId = this.sanitizeId(baseId)
+          const cleanLabel = this.sanitizeLabel(label)
+          
+          idMap.set(node.id, cleanId)
           mermaid += `    ${cleanId}["${cleanLabel}"]\n`
           
           if (options?.includeStyles && node.data.color) {
@@ -91,8 +100,14 @@ export class ArchitectureAdapter extends BaseDiagramAdapter {
       } else {
         // No subgraph for single nodes
         for (const node of layerNodes) {
-          const cleanId = this.sanitizeId(node.id)
-          const cleanLabel = this.sanitizeLabel(node.data.label || 'Component')
+          const label = node.data.label || 'Component'
+          const baseId = label.match(/^[a-zA-Z][a-zA-Z0-9\s]*$/) 
+            ? label.replace(/\s+/g, '_')
+            : node.id
+          const cleanId = this.sanitizeId(baseId)
+          const cleanLabel = this.sanitizeLabel(label)
+          
+          idMap.set(node.id, cleanId)
           mermaid += `  ${cleanId}["${cleanLabel}"]\n`
           
           if (options?.includeStyles && node.data.color) {
@@ -104,11 +119,11 @@ export class ArchitectureAdapter extends BaseDiagramAdapter {
 
     mermaid += '\n'
 
-    // Add connections
+    // Add connections using the ID map
     for (const edge of edges) {
-      const source = this.sanitizeId(edge.source)
-      const target = this.sanitizeId(edge.target)
-      const label = edge.label ? `|"${this.sanitizeLabel(edge.label)}"` : ''
+      const source = idMap.get(edge.source) || this.sanitizeId(edge.source)
+      const target = idMap.get(edge.target) || this.sanitizeId(edge.target)
+      const label = edge.label ? `|"${this.sanitizeLabel(edge.label)}"|` : ''
 
       mermaid += `  ${source} -->${label} ${target}\n`
     }

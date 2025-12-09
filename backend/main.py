@@ -294,14 +294,6 @@ async def health_check() -> Dict[str, Any]:
     phases = system_status.get("phases", {})
     last_updated = system_status.get("last_updated")
     
-    # Log phase statuses for debugging
-    phase_summary = {
-        name: info.get("status", "unknown")
-        for name, info in phases.items()
-        if name in PHASE_DEFINITIONS
-    }
-    logger.info(f"🏥 [HEALTH] Health check: ready={ready}, overall_status={overall_status}, phases={phase_summary}")
-    
     # Ensure phases are properly formatted (only include defined phases)
     formatted_phases = {}
     for phase_name in PHASE_DEFINITIONS.keys():
@@ -334,9 +326,14 @@ async def health_check() -> Dict[str, Any]:
         }
     }
     
-    # Build phase status summary for logging
-    phase_status_list = [f"{k}:{v.get('status')}" for k, v in formatted_phases.items()]
-    logger.info(f"🏥 [HEALTH] Response: ready={ready}, overall_status={overall_status}, phases_count={len(formatted_phases)}, phase_statuses={phase_status_list}")
+    # Only log health checks at DEBUG level (not INFO) to reduce noise
+    # Only log at INFO level when there's a problem or system not ready
+    if not ready:
+        phase_summary = {name: info.get("status", "unknown") for name, info in formatted_phases.items()}
+        logger.info(f"🏥 [HEALTH] System not ready: overall_status={overall_status}, phases={phase_summary}")
+    else:
+        logger.debug(f"🏥 [HEALTH] OK: ready={ready}, overall_status={overall_status}")
+    
     return response
 
 # Metrics endpoint

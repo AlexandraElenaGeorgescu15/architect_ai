@@ -73,39 +73,45 @@ export default function VersionDiff({ artifactId, version1, version2, onClose }:
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-        <div className="bg-card border border-border rounded-2xl p-8 text-center">
-          <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading comparison...</p>
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center">
+        <div className="bg-card border border-border rounded-xl p-6 text-center">
+          <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-3"></div>
+          <p className="text-sm text-muted-foreground">Loading...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 overflow-hidden flex items-center justify-center p-4">
-      {/* Main container */}
-      <div className="bg-card border border-border rounded-2xl shadow-2xl max-w-7xl w-full h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="p-6 border-b border-border flex items-center justify-between bg-secondary/20">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <GitCompare className="w-6 h-6 text-primary" />
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] overflow-hidden flex items-center justify-center p-3">
+      {/* Main container - constrained sizing */}
+      <div 
+        className="bg-card border border-border rounded-xl shadow-2xl flex flex-col overflow-hidden"
+        style={{
+          width: 'min(95vw, 900px)',
+          height: 'min(90vh, 700px)',
+        }}
+      >
+        {/* Header - compact */}
+        <div className="p-3 border-b border-border flex items-center justify-between bg-secondary/20 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <GitCompare className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-foreground">Version Comparison</h2>
-              <p className="text-sm text-muted-foreground">
-                Comparing v{version1} with v{version2}
+              <h2 className="text-sm font-bold text-foreground">Version Comparison</h2>
+              <p className="text-xs text-muted-foreground">
+                v{version1} vs v{version2}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             {/* View Mode Toggle */}
-            <div className="flex items-center gap-2 bg-secondary/50 rounded-lg p-1">
+            <div className="flex items-center bg-secondary/50 rounded p-0.5">
               <button
                 onClick={() => setViewMode('split')}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
                   viewMode === 'split'
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-foreground'
@@ -115,7 +121,7 @@ export default function VersionDiff({ artifactId, version1, version2, onClose }:
               </button>
               <button
                 onClick={() => setViewMode('unified')}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
                   viewMode === 'unified'
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:text-foreground'
@@ -127,47 +133,44 @@ export default function VersionDiff({ artifactId, version1, version2, onClose }:
 
             <button
               onClick={onClose}
-              className="w-10 h-10 rounded-lg hover:bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              className="w-7 h-7 rounded hover:bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
-        {/* Stats Bar */}
-        <div className="px-6 py-3 border-b border-border bg-secondary/10 flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-            <span className="text-sm text-foreground">
-              <span className="font-bold text-green-500">{stats.additions}</span> additions
+        {/* Stats Bar - compact */}
+        <div className="px-3 py-2 border-b border-border bg-secondary/10 flex items-center gap-4 flex-shrink-0 text-xs">
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+            <span className="text-foreground">
+              <span className="font-bold text-green-500">{stats.additions}</span> added
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-red-500"></div>
-            <span className="text-sm text-foreground">
-              <span className="font-bold text-red-500">{stats.deletions}</span> deletions
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+            <span className="text-foreground">
+              <span className="font-bold text-red-500">{stats.deletions}</span> removed
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-gray-400"></div>
-            <span className="text-sm text-foreground">
-              <span className="font-bold">{stats.unchanged}</span> unchanged
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+            <span className="text-foreground">
+              <span className="font-bold">{stats.unchanged}</span> same
             </span>
           </div>
         </div>
 
         {/* Diff Content */}
-        <div className="flex-1 overflow-auto custom-scrollbar">
+        <div className="flex-1 overflow-auto custom-scrollbar min-h-0">
           {viewMode === 'split' ? (
             <div className="grid grid-cols-2 h-full">
               {/* Left: Version 1 */}
-              <div className="border-r border-border">
-                <div className="sticky top-0 bg-red-500/10 border-b border-border px-4 py-2 flex items-center gap-2 z-10">
-                  <ChevronLeft className="w-4 h-4 text-red-500" />
-                  <span className="text-sm font-bold text-red-500">Version {version1}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {v1Data && new Date(v1Data.created_at).toLocaleString()}
-                  </span>
+              <div className="border-r border-border overflow-auto">
+                <div className="sticky top-0 bg-red-500/10 border-b border-border px-2 py-1.5 flex items-center gap-1 z-10">
+                  <ChevronLeft className="w-3 h-3 text-red-500" />
+                  <span className="text-xs font-bold text-red-500">v{version1}</span>
                 </div>
                 <div className="font-mono text-sm">
                   {diff.map((change: Change, i: number) => {
@@ -191,13 +194,10 @@ export default function VersionDiff({ artifactId, version1, version2, onClose }:
               </div>
 
               {/* Right: Version 2 */}
-              <div>
-                <div className="sticky top-0 bg-green-500/10 border-b border-border px-4 py-2 flex items-center gap-2 z-10">
-                  <ChevronRight className="w-4 h-4 text-green-500" />
-                  <span className="text-sm font-bold text-green-500">Version {version2}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {v2Data && new Date(v2Data.created_at).toLocaleString()}
-                  </span>
+              <div className="overflow-auto">
+                <div className="sticky top-0 bg-green-500/10 border-b border-border px-2 py-1.5 flex items-center gap-1 z-10">
+                  <ChevronRight className="w-3 h-3 text-green-500" />
+                  <span className="text-xs font-bold text-green-500">v{version2}</span>
                 </div>
                 <div className="font-mono text-sm">
                   {diff.map((change: Change, i: number) => {

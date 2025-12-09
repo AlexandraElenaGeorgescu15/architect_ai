@@ -14,6 +14,9 @@ export default function RobotGame({ className = '' }: RobotGameProps) {
   // Use a ref for last restart time to avoid re-renders or dependency issues
   // Moved to top level to comply with React Rules of Hooks
   const lastRestartTime = useRef(0)
+  
+  // Store final score in ref so it persists across useEffect re-runs on game over
+  const finalScoreRef = useRef(0)
 
   // Load high score
   useEffect(() => {
@@ -396,9 +399,12 @@ export default function RobotGame({ className = '' }: RobotGameProps) {
                 robotY + padding < obsY + obs.height
             ) {
                 if (!gameOver) {
+                    // Store final score in ref before triggering re-render
+                    const finalScore = Math.floor(currentScore)
+                    finalScoreRef.current = finalScore
+                    
                     setGameOver(true)
                     // High score check
-                    const finalScore = Math.floor(currentScore)
                     const savedHigh = parseInt(localStorage.getItem('robotGameHighScore') || '0')
                     if (finalScore > savedHigh) {
                         localStorage.setItem('robotGameHighScore', finalScore.toString())
@@ -473,7 +479,8 @@ export default function RobotGame({ className = '' }: RobotGameProps) {
         
         ctx.font = '16px monospace'
         ctx.fillStyle = '#cbd5e1'
-        ctx.fillText(`Score: ${Math.floor(currentScore)}`, canvas.width/2, canvas.height/2 + 15)
+        // Use ref for final score since useEffect re-runs on gameOver change and resets local currentScore
+        ctx.fillText(`Score: ${finalScoreRef.current}`, canvas.width/2, canvas.height/2 + 15)
         
         ctx.fillStyle = '#fbbf24' // Amber
         ctx.font = 'bold 16px monospace'

@@ -1,0 +1,39 @@
+[
+  {
+    "version": 1,
+    "artifact_id": "mermaid_state",
+    "artifact_type": "mermaid_state",
+    "content": "stateDiagram\n[*] --> \"Main Phone List Page\"\n  Note \"User sees available phones\"\n  \"Request Phone Swap\" button -->\n\"Modal Pop-up\"\n[*] --> \"Phone to Request\" dropdown\n  Note \"Select a phone from the list\"\n\"Phone to Exchange\" dropdown -->\n  Note \"Only shows phones currently owned by the user\"\n\"Reason for Request (Optional)\" text area -->\n  Note \"Enter additional comments\"\n\"Actions: Submit Request and Cancel buttons\"\n[*] --> \"Submit Request\"\n  Note \"Validate form submission and store request in database\"\n[*] --> \"Cancel\"\n  Note \"Close modal pop-up and return to main phone list page\"\n\"Confirmation Message\"\n[*] --> \"Request submitted successfully\"\n  Note \"Show confirmation message after successful submission\"\n\"Pending Status\" -->\n  Note \"Default status for new requests\"",
+    "metadata": {
+      "model_used": "llama3",
+      "provider": "cloud",
+      "validation_score": 100.0,
+      "is_valid": true,
+      "meeting_notes": "",
+      "html_content": null,
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_a3c7a0da",
+      "attempts": [
+        {
+          "model": "llama3",
+          "provider": "ollama",
+          "content": "Based on the provided requirements and project context, I'm excited to generate a Mermaid State diagram representing the Phone Swap Request Feature.\n\nHere's the diagram:\n\n```mermaid\nstateDiagram\n[*] --> \"Main Phone List Page\"\n  Note \"User sees available phones\"\n  \"Request Phone Swap\" button -->\n\n\"Modal Pop-up\"\n[*] --> \"Phone to Request\" dropdown\n  Note \"Select a phone from the list\"\n\n\"Phone to Exchange\" dropdown -->\n  Note \"Only shows phones currently owned by the user\"\n\n\"Reason for Request (Optional)\" text area -->\n  Note \"Enter additional comments\"\n\n\"Actions: Submit Request and Cancel buttons\"\n[*] --> \"Submit Request\"\n  Note \"Validate form submission and store request in database\"\n[*] --> \"Cancel\"\n  Note \"Close modal pop-up and return to main phone list page\"\n\n\"Confirmation Message\"\n[*] --> \"Request submitted successfully\"\n  Note \"Show confirmation message after successful submission\"\n\n\"Pending Status\" -->\n  Note \"Default status for new requests\"\n```\n\nThis Mermaid State diagram illustrates the Phone Swap Request Feature, including:\n\n1. The Main Phone List Page with a \"Request Phone Swap\" button.\n2. The Modal Pop-up that appears when the user clicks the button.\n3. The form fields within the modal:\n\t* \"Phone to Request\" dropdown list\n\t* \"Phone to Exchange\" dropdown list showing only the user's owned phones\n\t* \"Reason for Request (Optional)\" text area\n\t* Actions: \"Submit Request\" and \"Cancel\" buttons\n4. The Confirmation Message displayed after successful submission.\n\nThis diagram should provide a clear visual representation of the feature, helping stakeholders and developers understand the flow and interactions involved in the Phone Swap Request Feature.",
+          "score": 100.0,
+          "is_valid": true,
+          "errors": [],
+          "retry": 0
+        }
+      ]
+    },
+    "created_at": "2025-12-09T19:07:42.706307",
+    "is_current": true
+  }
+]

@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import React, { createContext, useContext, useEffect, useState, useRef, ReactNode } from 'react'
 import websocketService, { WebSocketEventType, EventHandler } from '../services/websocketService'
+import { useUIStore } from '../stores/uiStore'
 
 interface WebSocketContextType {
   isConnected: boolean
@@ -26,12 +27,19 @@ export function WebSocketProvider({
 }: WebSocketProviderProps) {
   const [isConnected, setIsConnected] = useState(false)
   const [roomId, setRoomId] = useState<string | null>(defaultRoomId || null)
+  const { addNotification } = useUIStore()
+  const wasConnected = useRef(false)
+  const connectionNotifiedRef = useRef(false)
 
   useEffect(() => {
     // Connect on mount if defaultRoomId is provided
     if (defaultRoomId) {
       connect(defaultRoomId, token).catch(() => {
-        // WebSocket connection failed - handle silently
+        // WebSocket connection failed - notify user
+        if (!connectionNotifiedRef.current) {
+          addNotification('warning', 'Real-time updates unavailable - running in offline mode')
+          connectionNotifiedRef.current = true
+        }
       })
     }
 
@@ -47,9 +55,20 @@ export function WebSocketProvider({
       await websocketService.connect(newRoomId, newToken)
       setRoomId(newRoomId)
       setIsConnected(true)
+      
+      // Notify on reconnection (not initial connection)
+      if (wasConnected.current && !connectionNotifiedRef.current) {
+        addNotification('success', 'Reconnected to real-time updates')
+      }
+      wasConnected.current = true
+      connectionNotifiedRef.current = false
     } catch (error) {
-      // Failed to connect WebSocket - update state
+      // Failed to connect WebSocket - notify user
       setIsConnected(false)
+      if (wasConnected.current && !connectionNotifiedRef.current) {
+        addNotification('warning', 'Lost connection to real-time updates')
+        connectionNotifiedRef.current = true
+      }
     }
   }
 

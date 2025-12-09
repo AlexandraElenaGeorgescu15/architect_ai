@@ -43,7 +43,18 @@ class VersionService:
         # Load existing versions
         self._load_versions()
         
+        # Auto-migrate legacy timestamped artifacts on startup
+        self._auto_migrate_legacy()
+        
         logger.info("Version Service initialized")
+    
+    def _auto_migrate_legacy(self):
+        """Automatically migrate legacy timestamped artifacts on startup."""
+        preview = self.get_migration_preview()
+        if preview.get("needs_migration"):
+            logger.info(f"🔄 Auto-migrating {len(preview.get('legacy_groups', {}))} legacy artifact groups...")
+            result = self.migrate_legacy_versions()
+            logger.info(f"✅ Auto-migration complete: {result.get('migrated_versions', 0)} versions consolidated")
     
     def _load_versions(self):
         """Load version history from disk."""

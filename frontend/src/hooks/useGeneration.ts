@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useWebSocket } from './useWebSocket'
 import { useArtifactStore } from '../stores/artifactStore'
 import { useUIStore } from '../stores/uiStore'
@@ -23,11 +23,58 @@ interface GenerationProgress {
   qualityPrediction?: QualityPrediction
 }
 
+// Generation timeout in milliseconds (3 minutes)
+const GENERATION_TIMEOUT_MS = 180000
+// Inactivity timeout - if no progress updates for this long, consider it stuck
+const INACTIVITY_TIMEOUT_MS = 60000
+
 export function useGeneration() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [progress, setProgress] = useState<GenerationProgress | null>(null)
   const { addArtifact } = useArtifactStore()
   const { addNotification } = useUIStore()
+  
+  // Refs to track timeouts and last activity
+  const generationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const inactivityTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const lastActivityRef = useRef<number>(Date.now())
+  
+  // Clear all timeouts
+  const clearTimeouts = useCallback(() => {
+    if (generationTimeoutRef.current) {
+      clearTimeout(generationTimeoutRef.current)
+      generationTimeoutRef.current = null
+    }
+    if (inactivityTimeoutRef.current) {
+      clearTimeout(inactivityTimeoutRef.current)
+      inactivityTimeoutRef.current = null
+    }
+  }, [])
+  
+  // Reset inactivity timeout on any activity
+  const resetInactivityTimeout = useCallback(() => {
+    lastActivityRef.current = Date.now()
+    if (inactivityTimeoutRef.current) {
+      clearTimeout(inactivityTimeoutRef.current)
+    }
+    if (isGenerating) {
+      inactivityTimeoutRef.current = setTimeout(() => {
+        console.warn('⏰ [FRONTEND] Generation appears stuck - no updates for 60 seconds')
+        setIsGenerating(false)
+        setProgress(prev => prev ? {
+          ...prev,
+          status: 'failed',
+          error: 'Generation timed out - no response received. Please try again.'
+        } : null)
+        addNotification('error', 'Generation timed out. Please try again.')
+      }, INACTIVITY_TIMEOUT_MS)
+    }
+  }, [isGenerating, addNotification])
+  
+  // Clean up timeouts on unmount
+  useEffect(() => {
+    return () => clearTimeouts()
+  }, [clearTimeouts])
 
   // Listen for generation progress events
   useWebSocket('generation.progress', (data: unknown) => {
@@ -45,6 +92,8 @@ export function useGeneration() {
       message: event.message,
       has_quality_prediction: !!event.quality_prediction
     })
+    // Reset inactivity timeout on progress
+    resetInactivityTimeout()
     setProgress((prev) => ({
       ...(prev ?? { jobId: event.job_id, progress: 0, status: 'in_progress' }),
       jobId: event.job_id,
@@ -81,6 +130,8 @@ export function useGeneration() {
       has_content: !!event.artifact?.content,
       content_length: event.artifact?.content?.length || 0
     })
+    // Clear all timeouts on completion
+    clearTimeouts()
     setProgress((prev) => ({
       ...prev!,
       status: 'completed',
@@ -103,6 +154,8 @@ export function useGeneration() {
       job_id: event.job_id,
       error: event.error
     })
+    // Clear all timeouts on error
+    clearTimeouts()
     setProgress((prev) => ({
       ...prev!,
       status: 'failed',
@@ -123,6 +176,10 @@ export function useGeneration() {
         context_id: request.context_id,
         options: request.options
       })
+      
+      // Clear any existing timeouts
+      clearTimeouts()
+      
       setIsGenerating(true)
       setProgress({
         jobId: '',
@@ -130,6 +187,22 @@ export function useGeneration() {
         status: 'pending',
         message: 'Initializing generation...',
       })
+      
+      // Set up generation timeout (3 minutes max)
+      generationTimeoutRef.current = setTimeout(() => {
+        console.warn('⏰ [FRONTEND] Generation timeout reached (3 minutes)')
+        clearTimeouts()
+        setIsGenerating(false)
+        setProgress(prev => prev ? {
+          ...prev,
+          status: 'failed',
+          error: 'Generation timed out after 3 minutes. Please try again.'
+        } : null)
+        addNotification('error', 'Generation timed out. Please try again.')
+      }, GENERATION_TIMEOUT_MS)
+      
+      // Set up inactivity timeout (1 minute of no updates)
+      resetInactivityTimeout()
 
       try {
         console.log('📤 [FRONTEND] Sending generation request to API...')
@@ -140,6 +213,10 @@ export function useGeneration() {
           has_artifact: !!response.artifact,
           artifact_type: response.artifact?.type
         })
+        
+        // Reset inactivity timeout on response
+        resetInactivityTimeout()
+        
         setProgress((prev) => ({
           ...prev!,
           jobId: response.job_id,
@@ -149,6 +226,7 @@ export function useGeneration() {
         // If artifact is immediately available, add it
         if (response.artifact) {
           console.log('✅ [FRONTEND] Artifact immediately available, adding to store:', response.artifact.id)
+          clearTimeouts()
           addArtifact(response.artifact)
           setIsGenerating(false)
           addNotification('success', `Artifact "${response.artifact.type}" generated successfully!`)
@@ -162,25 +240,41 @@ export function useGeneration() {
         return response
       } catch (error) {
         console.error('❌ [FRONTEND] Generation request failed:', error)
+        clearTimeouts()
         setIsGenerating(false)
         const errorMessage = error instanceof Error ? error.message : 'Generation failed'
         addNotification('error', errorMessage)
         throw error
       }
     },
-    [addArtifact, addNotification]
+    [addArtifact, addNotification, clearTimeouts, resetInactivityTimeout]
   )
 
   const clearProgress = useCallback(() => {
+    clearTimeouts()
     setProgress(null)
     setIsGenerating(false)
-  }, [])
+  }, [clearTimeouts])
+  
+  // Force stop generation (manual cancel)
+  const cancelGeneration = useCallback(() => {
+    console.log('🛑 [FRONTEND] Cancelling generation manually')
+    clearTimeouts()
+    setIsGenerating(false)
+    setProgress(prev => prev ? {
+      ...prev,
+      status: 'cancelled',
+      error: 'Generation cancelled by user'
+    } : null)
+    addNotification('info', 'Generation cancelled')
+  }, [clearTimeouts, addNotification])
 
   return {
     isGenerating,
     progress,
     generate,
     clearProgress,
+    cancelGeneration,
   }
 }
 

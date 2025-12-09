@@ -115,10 +115,7 @@ Return ONLY the HTML code, no explanations or markdown code blocks.
         },
       ])
 
-      addNotification({
-        type: 'success',
-        message: 'Prototype updated successfully!',
-      })
+      addNotification('success', 'Prototype updated successfully!')
     } catch (error: any) {
       console.error('Failed to modify prototype:', error)
       setChatHistory((prev) => [
@@ -128,10 +125,7 @@ Return ONLY the HTML code, no explanations or markdown code blocks.
           content: `Sorry, I encountered an error: ${error.message}. Please try again.`,
         },
       ])
-      addNotification({
-        type: 'error',
-        message: 'Failed to modify prototype',
-      })
+      addNotification('error', 'Failed to modify prototype')
     } finally {
       setIsModifying(false)
     }
@@ -166,10 +160,7 @@ Return ONLY the HTML code, no explanations or markdown code blocks.
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
 
-    addNotification({
-      type: 'success',
-      message: 'Prototype downloaded!',
-    })
+    addNotification('success', 'Prototype downloaded!')
   }
 
   // Empty state

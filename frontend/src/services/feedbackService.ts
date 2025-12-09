@@ -1,7 +1,8 @@
 import api, { extractData } from './api'
 import { Artifact } from '../types'
 
-export type FeedbackType = 'correction' | 'improvement' | 'approval' | 'rejection'
+// Must match backend Literal["positive", "negative", "correction"]
+export type FeedbackType = 'positive' | 'negative' | 'correction'
 
 export interface FeedbackRequest {
   artifact_id: string

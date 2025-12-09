@@ -1,17 +1,111 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import mermaid from 'mermaid'
-import { AlertCircle, ZoomIn, ZoomOut, Maximize2, Download } from 'lucide-react'
+import { ZoomIn, ZoomOut, Maximize2, Download, Wand2, AlertTriangle, Loader2, Code, Eye } from 'lucide-react'
+import api from '../services/api'
 
 interface MermaidRendererProps {
   content: string
   className?: string
+  onContentUpdate?: (newContent: string) => void
+  artifactType?: string
 }
 
-export default function MermaidRenderer({ content, className = '' }: MermaidRendererProps) {
+interface ValidationResult {
+  isValid: boolean
+  errors: string[]
+  warnings: string[]
+}
+
+export default function MermaidRenderer({ content, className = '', onContentUpdate, artifactType = 'mermaid_erd' }: MermaidRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [error, setError] = useState<string | null>(null)
   const [zoom, setZoom] = useState(1)
   const [isInitialized, setIsInitialized] = useState(false)
+  const [isRepairing, setIsRepairing] = useState(false)
+  const [showCode, setShowCode] = useState(false)
+  const [validation, setValidation] = useState<ValidationResult | null>(null)
+
+  // Validate Mermaid content before rendering
+  const validateMermaidContent = useCallback((diagramContent: string): ValidationResult => {
+    const errors: string[] = []
+    const warnings: string[] = []
+    
+    if (!diagramContent || diagramContent.trim().length < 5) {
+      errors.push('Diagram content is too short or empty')
+      return { isValid: false, errors, warnings }
+    }
+    
+    // Check for diagram type declaration
+    const diagramTypes = [
+      'erDiagram', 'flowchart', 'graph', 'sequenceDiagram',
+      'classDiagram', 'stateDiagram', 'gantt', 'pie', 'journey',
+      'gitgraph', 'mindmap', 'timeline'
+    ]
+    const hasDiagramType = diagramTypes.some(dt => diagramContent.includes(dt))
+    if (!hasDiagramType) {
+      errors.push('Missing Mermaid diagram type declaration (erDiagram, flowchart, etc.)')
+    }
+    
+    // Check for balanced brackets
+    if (diagramContent.split('{').length !== diagramContent.split('}').length) {
+      errors.push('Unbalanced curly braces {}')
+    }
+    if (diagramContent.split('[').length !== diagramContent.split(']').length) {
+      errors.push('Unbalanced square brackets []')
+    }
+    if (diagramContent.split('(').length !== diagramContent.split(')').length) {
+      warnings.push('Possibly unbalanced parentheses ()')
+    }
+    
+    // Check for common syntax issues
+    if (diagramContent.includes('class ') && diagramContent.includes('erDiagram')) {
+      warnings.push('ERD diagram contains class diagram syntax - may need conversion')
+    }
+    
+    // Check for empty entity definitions
+    const emptyEntityPattern = /\w+\s*\{\s*\}/g
+    if (emptyEntityPattern.test(diagramContent)) {
+      warnings.push('Some entities have no attributes defined')
+    }
+    
+    return {
+      isValid: errors.length === 0,
+      errors,
+      warnings
+    }
+  }, [])
+  
+  // AI repair function
+  const handleAIRepair = useCallback(async () => {
+    if (isRepairing || !content) return
+    
+    setIsRepairing(true)
+    try {
+      console.log('🔧 [MermaidRenderer] Requesting AI repair for diagram')
+      const response = await api.post('/api/ai/improve-diagram', {
+        mermaid_code: content,
+        diagram_type: artifactType,
+        improvement_focus: ['syntax', 'layout', 'relationships']
+      })
+      
+      if (response.data.success && response.data.improved_code) {
+        console.log('✅ [MermaidRenderer] AI repair successful:', response.data.improvements_made)
+        if (onContentUpdate) {
+          onContentUpdate(response.data.improved_code)
+        }
+        // Reset error state to trigger re-render
+        setError(null)
+      } else {
+        console.error('❌ [MermaidRenderer] AI repair failed:', response.data.error)
+        setError(`AI repair failed: ${response.data.error || 'Unknown error'}`)
+      }
+    } catch (err: any) {
+      console.error('❌ [MermaidRenderer] AI repair request failed:', err)
+      setError(`AI repair failed: ${err.message || 'Network error'}`)
+    } finally {
+      setIsRepairing(false)
+    }
+  }, [content, artifactType, onContentUpdate, isRepairing])
 
   useEffect(() => {
     // Initialize Mermaid once
@@ -40,6 +134,7 @@ export default function MermaidRenderer({ content, className = '' }: MermaidRend
     const renderDiagram = async () => {
       try {
         setError(null)
+        setValidation(null)
         const container = containerRef.current
         if (!container) return
 
@@ -145,6 +240,15 @@ export default function MermaidRenderer({ content, className = '' }: MermaidRend
           })
         }
 
+        // Pre-validate the diagram content
+        const validationResult = validateMermaidContent(diagramContent)
+        setValidation(validationResult)
+        
+        // If there are critical errors, don't even try to render
+        if (validationResult.errors.length > 0 && !validationResult.isValid) {
+          console.warn('🔍 [MermaidRenderer] Validation failed, attempting render anyway:', validationResult.errors)
+        }
+
         // Generate unique ID for this diagram
         const id = `mermaid-${Math.random().toString(36).substr(2, 9)}`
 
@@ -167,14 +271,22 @@ export default function MermaidRenderer({ content, className = '' }: MermaidRend
           svgElement.style.transformOrigin = 'top center'
           svgElement.style.transition = 'transform 0.3s ease'
         }
+        
+        // Clear any previous error on successful render
+        setError(null)
       } catch (err: any) {
         console.error('Mermaid rendering error:', err)
-        setError(err.message || 'Failed to render diagram')
+        // Extract meaningful error message
+        let errorMessage = err.message || 'Failed to render diagram'
+        if (errorMessage.includes('Syntax error')) {
+          errorMessage = `Mermaid syntax error: ${errorMessage}`
+        }
+        setError(errorMessage)
       }
     }
 
     renderDiagram()
-  }, [content, zoom, isInitialized])
+  }, [content, zoom, isInitialized, validateMermaidContent])
 
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 2))
   const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.5))
@@ -196,19 +308,68 @@ export default function MermaidRenderer({ content, className = '' }: MermaidRend
     URL.revokeObjectURL(url)
   }
 
+  // If there's an error, show the raw content with AI repair option
   if (error) {
     return (
-      <div className={`flex items-center justify-center h-full ${className}`}>
-        <div className="text-center max-w-md p-6 bg-destructive/10 border border-destructive/30 rounded-lg">
-          <AlertCircle className="w-12 h-12 mx-auto mb-4 text-destructive" />
-          <h3 className="text-lg font-bold text-foreground mb-2">Rendering Error</h3>
-          <p className="text-sm text-muted-foreground mb-4">{error}</p>
-          <details className="text-xs text-left bg-background/50 p-3 rounded border border-border">
-            <summary className="cursor-pointer font-semibold mb-2">Show Diagram Code</summary>
-            <pre className="whitespace-pre-wrap break-all overflow-auto max-h-40">
-              {content}
-            </pre>
-          </details>
+      <div className={`h-full flex flex-col ${className}`}>
+        {/* Error Banner with AI Repair Button */}
+        <div className="bg-destructive/10 border-b border-destructive/30 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <h4 className="font-semibold text-destructive text-sm">Mermaid Syntax Error</h4>
+              <p className="text-xs text-destructive/80 mt-1 break-words">{error}</p>
+              {validation && validation.errors.length > 0 && (
+                <ul className="mt-2 text-xs text-destructive/70 list-disc list-inside">
+                  {validation.errors.map((err, i) => (
+                    <li key={i}>{err}</li>
+                  ))}
+                </ul>
+              )}
+              {validation && validation.warnings.length > 0 && (
+                <ul className="mt-2 text-xs text-yellow-600 dark:text-yellow-400 list-disc list-inside">
+                  {validation.warnings.map((warn, i) => (
+                    <li key={i}>{warn}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <button
+              onClick={handleAIRepair}
+              disabled={isRepairing}
+              className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-all duration-200 shadow-lg shadow-primary/20 hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+              title="Use AI to fix diagram syntax"
+            >
+              {isRepairing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span className="text-sm font-medium">Repairing...</span>
+                </>
+              ) : (
+                <>
+                  <Wand2 className="w-4 h-4" />
+                  <span className="text-sm font-medium">AI Repair</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+        
+        {/* Code Display */}
+        <div className="flex-1 overflow-auto p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-muted-foreground font-medium">Mermaid Code</span>
+            <button
+              onClick={() => setShowCode(!showCode)}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              {showCode ? <Eye className="w-3 h-3" /> : <Code className="w-3 h-3" />}
+              {showCode ? 'Preview' : 'Code'}
+            </button>
+          </div>
+          <pre className="whitespace-pre-wrap break-words text-sm font-mono text-foreground bg-muted/30 p-4 rounded-lg border border-border">
+            {content}
+          </pre>
         </div>
       </div>
     )
@@ -216,6 +377,30 @@ export default function MermaidRenderer({ content, className = '' }: MermaidRend
 
   return (
     <div className={`relative h-full flex flex-col ${className}`}>
+      {/* Validation Warnings Banner (shown when diagram renders but has warnings) */}
+      {validation && validation.warnings.length > 0 && !error && (
+        <div className="bg-yellow-500/10 border-b border-yellow-500/30 px-4 py-2 flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0" />
+          <span className="text-xs text-yellow-700 dark:text-yellow-300 flex-1">
+            {validation.warnings.length} warning{validation.warnings.length > 1 ? 's' : ''}: {validation.warnings[0]}
+            {validation.warnings.length > 1 && ` (+${validation.warnings.length - 1} more)`}
+          </span>
+          <button
+            onClick={handleAIRepair}
+            disabled={isRepairing}
+            className="flex items-center gap-1.5 px-2.5 py-1 bg-yellow-600/20 hover:bg-yellow-600/30 text-yellow-700 dark:text-yellow-300 rounded-md transition-colors text-xs font-medium"
+            title="Use AI to improve diagram"
+          >
+            {isRepairing ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Wand2 className="w-3 h-3" />
+            )}
+            Improve
+          </button>
+        </div>
+      )}
+      
       {/* Zoom Controls */}
       <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-card/90 backdrop-blur-sm border border-border rounded-lg shadow-lg p-2">
         <button
@@ -249,6 +434,19 @@ export default function MermaidRenderer({ content, className = '' }: MermaidRend
           title="Download SVG"
         >
           <Download className="w-4 h-4" />
+        </button>
+        <div className="w-px h-6 bg-border mx-1"></div>
+        <button
+          onClick={handleAIRepair}
+          disabled={isRepairing}
+          className="p-2 hover:bg-secondary rounded transition-colors text-primary"
+          title="AI Improve Diagram"
+        >
+          {isRepairing ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Wand2 className="w-4 h-4" />
+          )}
         </button>
       </div>
 

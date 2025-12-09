@@ -68,6 +68,59 @@ export abstract class BaseDiagramAdapter {
   }
 
   /**
+   * Clean and extract pure Mermaid code from content that may contain explanations
+   * Override in subclasses for diagram-specific cleaning
+   */
+  cleanMermaidCode(rawContent: string): string {
+    let content = rawContent.trim()
+    
+    // Try to extract from markdown code blocks first
+    const codeBlockMatch = content.match(/```(?:mermaid)?\s*\n([\s\S]*?)```/)
+    if (codeBlockMatch) {
+      content = codeBlockMatch[1].trim()
+    }
+    
+    // Find where diagram declaration starts
+    const diagramTypes = [
+      'erDiagram', 'flowchart', 'graph', 'sequenceDiagram',
+      'classDiagram', 'stateDiagram', 'gantt', 'pie', 'journey',
+      'gitgraph', 'mindmap', 'timeline', 'C4Context', 'C4Container'
+    ]
+    
+    for (const dt of diagramTypes) {
+      const idx = content.indexOf(dt)
+      if (idx !== -1) {
+        content = content.substring(idx)
+        break
+      }
+    }
+    
+    // Remove trailing explanatory text
+    const lines = content.split('\n')
+    const cleanLines: string[] = []
+    
+    for (const line of lines) {
+      const trimmed = line.trim()
+      
+      // Stop at explanatory text
+      if (
+        trimmed.startsWith('**') ||
+        trimmed.startsWith('This ') ||
+        trimmed.startsWith('The ') ||
+        trimmed.match(/^\d+\./) ||
+        trimmed.startsWith('Explanation') ||
+        trimmed.startsWith('Note:')
+      ) {
+        break
+      }
+      
+      cleanLines.push(line)
+    }
+    
+    return cleanLines.join('\n').trim()
+  }
+
+  /**
    * Sanitize label for Mermaid (remove special characters)
    */
   protected sanitizeLabel(label: string): string {

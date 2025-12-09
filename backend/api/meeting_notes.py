@@ -97,14 +97,19 @@ async def list_notes(
         )
     
     notes = []
-    for note_file in folder_path.glob("*.md"):
-        notes.append({
-            "id": note_file.stem,
-            "name": note_file.name,
-            "size": note_file.stat().st_size,
-            "created_at": datetime.fromtimestamp(note_file.stat().st_ctime).isoformat(),
-            "updated_at": datetime.fromtimestamp(note_file.stat().st_mtime).isoformat(),
-        })
+    # Include both .md and .txt files
+    for ext in ["*.md", "*.txt"]:
+        for note_file in folder_path.glob(ext):
+            notes.append({
+                "id": note_file.stem,
+                "name": note_file.name,
+                "size": note_file.stat().st_size,
+                "created_at": datetime.fromtimestamp(note_file.stat().st_ctime).isoformat(),
+                "updated_at": datetime.fromtimestamp(note_file.stat().st_mtime).isoformat(),
+            })
+    
+    # Sort by updated_at descending (newest first)
+    notes.sort(key=lambda x: x["updated_at"], reverse=True)
     
     return {"success": True, "notes": notes}
 

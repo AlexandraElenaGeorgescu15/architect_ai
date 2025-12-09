@@ -107,11 +107,26 @@ class TimingMiddleware(BaseHTTPMiddleware):
 class StructuredLoggingMiddleware(BaseHTTPMiddleware):
     """Add structured logging for requests with context propagation."""
     
+    # Paths to skip logging (health checks, metrics, static assets)
+    SKIP_LOGGING_PATHS = {
+        "/health",
+        "/api/health",
+        "/metrics",
+        "/favicon.ico",
+        "/api/docs",
+        "/api/redoc",
+        "/api/openapi.json",
+    }
+    
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Log request and response with structured data and context."""
         from backend.core.logger import request_id_var, user_id_var, operation_var
         
         request_id = getattr(request.state, "request_id", "unknown")
+        path = request.url.path
+        
+        # Skip logging for health checks and other noisy endpoints
+        skip_logging = path in self.SKIP_LOGGING_PATHS or path.startswith("/api/health")
         
         # Set context variables
         request_id_var.set(request_id)
@@ -122,35 +137,37 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
             user_id_var.set(str(user_id))
         
         # Set operation from path
-        operation = f"{request.method} {request.url.path}"
+        operation = f"{request.method} {path}"
         operation_var.set(operation)
         
-        # Log request
-        logger.info(
-            "Request started",
-            extra={
-                "request_id": request_id,
-                "method": request.method,
-                "path": request.url.path,
-                "query": str(request.query_params),
-                "client": request.client.host if request.client else None,
-                "user_agent": request.headers.get("user-agent"),
-            }
-        )
+        # Log request (skip for health checks)
+        if not skip_logging:
+            logger.info(
+                "Request started",
+                extra={
+                    "request_id": request_id,
+                    "method": request.method,
+                    "path": path,
+                    "query": str(request.query_params),
+                    "client": request.client.host if request.client else None,
+                    "user_agent": request.headers.get("user-agent"),
+                }
+            )
         
         try:
             response = await call_next(request)
             
-            # Log response
-            logger.info(
-                "Request completed",
-                extra={
-                    "request_id": request_id,
-                    "status_code": response.status_code,
-                    "method": request.method,
-                    "path": request.url.path,
-                }
-            )
+            # Log response (skip for health checks, unless there's an error)
+            if not skip_logging or response.status_code >= 400:
+                logger.info(
+                    "Request completed",
+                    extra={
+                        "request_id": request_id,
+                        "status_code": response.status_code,
+                        "method": request.method,
+                        "path": path,
+                    }
+                )
             
             return response
             
@@ -160,7 +177,7 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
                 extra={
                     "request_id": request_id,
                     "method": request.method,
-                    "path": request.url.path,
+                    "path": path,
                     "error": str(e),
                     "error_type": type(e).__name__,
                 },

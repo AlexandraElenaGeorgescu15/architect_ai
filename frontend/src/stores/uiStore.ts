@@ -25,7 +25,7 @@ interface UIStore {
 
 export const useUIStore = create<UIStore>((set, get) => ({
   darkMode: localStorage.getItem('darkMode') === 'true',
-  sidebarOpen: true,
+  sidebarOpen: localStorage.getItem('sidebarOpen') !== 'false', // Default to open
   notifications: [],
 
   toggleDarkMode: () => {
@@ -41,9 +41,16 @@ export const useUIStore = create<UIStore>((set, get) => ({
     document.documentElement.classList.toggle('dark', enabled)
   },
 
-  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+  toggleSidebar: () => {
+    const newValue = !get().sidebarOpen
+    set({ sidebarOpen: newValue })
+    localStorage.setItem('sidebarOpen', String(newValue))
+  },
 
-  setSidebarOpen: (open) => set({ sidebarOpen: open }),
+  setSidebarOpen: (open) => {
+    set({ sidebarOpen: open })
+    localStorage.setItem('sidebarOpen', String(open))
+  },
 
   addNotification: (type, message) => {
     const id = `${Date.now()}-${Math.random()}`

@@ -19,6 +19,57 @@ router = APIRouter(prefix="/api/versions", tags=["versions"])
 # NOTE: More specific routes MUST come before generic routes like /{artifact_id}
 
 
+@router.post("/create", response_model=Dict[str, Any])
+@limiter.limit("20/minute")
+async def create_version(
+    request: Request,
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """
+    Create a new version for an artifact.
+    Used by the Canvas editor to save edited diagrams as new versions.
+    
+    Request body:
+    {
+        "artifact_id": "mermaid_erd",
+        "artifact_type": "mermaid_erd", 
+        "content": "erDiagram...",
+        "metadata": { "source": "canvas_editor", ... }
+    }
+    """
+    try:
+        body = await request.json()
+        artifact_id = body.get("artifact_id")
+        artifact_type = body.get("artifact_type")
+        content = body.get("content")
+        metadata = body.get("metadata", {})
+        
+        if not artifact_id or not content:
+            from fastapi import HTTPException
+            raise HTTPException(
+                status_code=400,
+                detail="artifact_id and content are required"
+            )
+        
+        service = get_version_service()
+        version = service.create_version(
+            artifact_id=artifact_id,
+            artifact_type=artifact_type or artifact_id,
+            content=content,
+            metadata=metadata
+        )
+        
+        logger.info(f"✅ [VERSIONS] Created version {version['version']} for {artifact_id} from canvas editor")
+        
+        return version
+    except Exception as e:
+        logger.error(f"❌ [VERSIONS] Failed to create version: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+
 @router.get("/all", response_model=Dict[str, Any])
 @limiter.limit("30/minute")
 async def get_all_versions(

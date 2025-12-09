@@ -47,32 +47,34 @@ export default function ArtifactComparisonDrawer({ artifact, isOpen, onClose }: 
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex justify-end animate-fade-in">
-      <div className="w-full max-w-4xl h-full bg-card text-card-foreground border-l-2 border-border flex flex-col shadow-floating animate-fade-in-left">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-background/50">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
-              <GitBranch className="w-5 h-5 text-primary" />
+    <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex justify-end">
+      <div 
+        className="h-full bg-card text-card-foreground border-l border-border flex flex-col shadow-2xl"
+        style={{ width: 'min(95vw, 600px)' }}
+      >
+        {/* Header - compact */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background/50 flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10">
+              <GitBranch className="w-4 h-4 text-primary" />
             </div>
             <div>
-              <h3 className="font-bold text-foreground">Compare Versions</h3>
-              <p className="text-xs text-muted-foreground font-medium capitalize">
+              <h3 className="font-bold text-foreground text-sm">Compare Versions</h3>
+              <p className="text-xs text-muted-foreground capitalize">
                 {artifact.type.replace(/_/g, ' ')}
               </p>
             </div>
           </div>
           <button 
             onClick={onClose} 
-            className="p-2 hover:bg-destructive/10 hover:text-destructive rounded-xl transition-all duration-200 group" 
-            aria-label="Close comparison drawer"
+            className="p-1.5 hover:bg-destructive/10 hover:text-destructive rounded-lg transition-colors" 
           >
-            <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar bg-background/30">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar bg-background/30 min-h-0">
           {isLoading && (
             <div className="flex items-center justify-center py-10">
               <div className="flex items-center gap-3 text-primary">
@@ -84,14 +86,14 @@ export default function ArtifactComparisonDrawer({ artifact, isOpen, onClose }: 
 
           {!isLoading && (
             <>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 {[selected.first, selected.second].map((value, index) => (
-                  <div key={index} className="glass-panel bg-background/50 border-2 border-border rounded-xl p-5 space-y-3">
-                    <p className="text-sm font-bold text-foreground flex items-center gap-2">
-                      <span className="w-6 h-6 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-xs text-primary font-bold">
-                        {index === 0 ? '1' : '2'}
+                  <div key={index} className="bg-background/50 border border-border rounded-lg p-3 space-y-2">
+                    <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                      <span className="w-5 h-5 rounded bg-primary/10 flex items-center justify-center text-[10px] text-primary font-bold">
+                        {index + 1}
                       </span>
-                      {index === 0 ? 'First version' : 'Second version'}
+                      {index === 0 ? 'First' : 'Second'}
                     </p>
                     <select
                       value={value || ''}
@@ -101,12 +103,12 @@ export default function ArtifactComparisonDrawer({ artifact, isOpen, onClose }: 
                           [index === 0 ? 'first' : 'second']: Number(e.target.value),
                         }))
                       }
-                      className="w-full glass-input border-2 border-border rounded-xl px-4 py-3 bg-background text-foreground text-sm font-medium transition-all duration-300 focus:border-primary/50"
+                      className="w-full border border-border rounded-lg px-2 py-1.5 bg-background text-foreground text-xs transition-colors focus:border-primary/50"
                     >
-                      <option value="">Select version</option>
+                      <option value="">Select...</option>
                       {versions.map((version) => (
                         <option key={version.version} value={version.version}>
-                          v{version.version} · {new Date(version.created_at).toLocaleString()}
+                          v{version.version}
                         </option>
                       ))}
                     </select>
@@ -115,38 +117,35 @@ export default function ArtifactComparisonDrawer({ artifact, isOpen, onClose }: 
               </div>
 
               {comparison && (
-                <div className="space-y-4 animate-fade-in-up">
-                  <div className="glass-panel bg-primary/5 border-2 border-primary/20 rounded-xl p-4">
-                    <div className="flex flex-wrap gap-4 text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">Size Δ:</span>
-                        <span className="text-foreground font-bold">{comparison.differences.size_diff} chars</span>
+                <div className="space-y-3">
+                  <div className="bg-primary/5 border border-primary/20 rounded-lg p-2">
+                    <div className="flex flex-wrap gap-3 text-xs">
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">Size:</span>
+                        <span className="text-foreground font-bold">{comparison.differences.size_diff}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">Lines Δ:</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">Lines:</span>
                         <span className="text-foreground font-bold">{comparison.differences.lines_diff}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-muted-foreground">Similarity:</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-muted-foreground">Match:</span>
                         <span className="text-primary font-bold">
-                          {(comparison.differences.similarity * 100).toFixed(1)}%
+                          {(comparison.differences.similarity * 100).toFixed(0)}%
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-3">
                     {[selected.first, selected.second].map((versionNumber, index) => {
                       const version = versions.find((v) => v.version === versionNumber)
                       return (
-                        <div key={index} className="glass-panel border-2 border-border rounded-xl overflow-hidden">
-                          <div className="px-4 py-3 bg-background/50 border-b border-border flex items-center justify-between">
-                            <span className="text-sm font-bold text-foreground">v{versionNumber}</span>
-                            <span className="text-xs text-muted-foreground font-mono">
-                              {version ? new Date(version.created_at).toLocaleString() : ''}
-                            </span>
+                        <div key={index} className="border border-border rounded-lg overflow-hidden">
+                          <div className="px-2 py-1.5 bg-background/50 border-b border-border flex items-center justify-between">
+                            <span className="text-xs font-bold text-foreground">v{versionNumber}</span>
                           </div>
-                          <pre className="p-4 text-xs whitespace-pre-wrap max-h-80 overflow-y-auto bg-background/30 custom-scrollbar text-foreground font-mono leading-relaxed">
-                            {version?.content || 'No content'}
+                          <pre className="p-2 text-[10px] whitespace-pre-wrap max-h-40 overflow-y-auto bg-background/30 custom-scrollbar text-foreground font-mono leading-relaxed">
+                            {version?.content?.substring(0, 500) || 'No content'}{version?.content && version.content.length > 500 ? '...' : ''}
                           </pre>
                         </div>
                       )

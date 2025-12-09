@@ -12,7 +12,7 @@ function Studio() {
   const [selectedArtifactType, setSelectedArtifactType] = useState<ArtifactType>('mermaid_erd')
   const [contextId, setContextId] = useState<string | null>(null)
   
-  const { isGenerating, progress, generate, clearProgress } = useGeneration()
+  const { isGenerating, progress, generate, clearProgress, cancelGeneration } = useGeneration()
   const { isBuilding, build } = useContext()
   const { artifacts, getArtifactsByType, setArtifacts, setLoading } = useArtifactStore()
   const { addNotification } = useUIStore()
@@ -133,6 +133,7 @@ function Studio() {
         progress={progress}
         generate={generate}
         clearProgress={clearProgress}
+        cancelGeneration={cancelGeneration}
         isBuilding={isBuilding}
         build={build}
         artifacts={artifacts}

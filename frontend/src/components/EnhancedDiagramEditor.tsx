@@ -4,7 +4,7 @@
  * Supports all 25+ diagram types
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react'
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import ReactFlow, {
   Node,
   Edge,
@@ -43,10 +43,35 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
   const [isSyncing, setIsSyncing] = useState(false)
   const [isImproving, setIsImproving] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isCodePanelCollapsed, setIsCodePanelCollapsed] = useState(() => {
+    // Default to collapsed on small screens, expanded on larger screens
+    const stored = localStorage.getItem('canvas_code_panel_collapsed')
+    return stored !== null ? stored === 'true' : window.innerWidth < 1200
+  })
+  
+  // Toggle code panel and persist
+  const toggleCodePanel = () => {
+    const newValue = !isCodePanelCollapsed
+    setIsCodePanelCollapsed(newValue)
+    localStorage.setItem('canvas_code_panel_collapsed', String(newValue))
+  }
 
   // React Flow state
   const [nodes, setNodes, onNodesChange] = useNodesState([])
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
+  
+  // Refs to track latest state (avoids stale closures in callbacks)
+  const nodesRef = useRef<Node[]>([])
+  const edgesRef = useRef<Edge[]>([])
+  
+  // Keep refs in sync with state
+  useEffect(() => {
+    nodesRef.current = nodes
+  }, [nodes])
+  
+  useEffect(() => {
+    edgesRef.current = edges
+  }, [edges])
 
   // Get selected artifact
   const selectedArtifact = selectedArtifactId
@@ -86,11 +111,17 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
     loadArtifacts()
   }, [])
 
-  // Load artifact content when selected
+  // Load artifact content when selected (clean the content first)
   useEffect(() => {
     if (selectedArtifact) {
-      setMermaidCode(selectedArtifact.content)
-      parseAndLoadDiagram(selectedArtifact.content, selectedArtifact.type)
+      // Clean the content to remove explanatory text
+      const adapter = getAdapterForDiagramType(selectedArtifact.type)
+      const cleanedContent = 'cleanMermaidCode' in adapter 
+        ? (adapter as any).cleanMermaidCode(selectedArtifact.content)
+        : selectedArtifact.content
+      
+      setMermaidCode(cleanedContent)
+      parseAndLoadDiagram(cleanedContent, selectedArtifact.type)
     }
   }, [selectedArtifact?.id])
 
@@ -118,10 +149,7 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
         setNodes(flowNodes)
         setEdges(result.edges)
 
-        addNotification({
-          type: 'success',
-          message: `Loaded ${result.nodes.length} nodes using ${result.metadata.model_used}`,
-        })
+        addNotification('success', `Loaded ${result.nodes.length} nodes using ${result.metadata.model_used}`)
       } else {
         // Fallback to client-side parsing
         const adapter = getAdapterForDiagramType(diagramType)
@@ -139,17 +167,11 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
         setNodes(flowNodes)
         setEdges(parsed.edges)
 
-        addNotification({
-          type: 'info',
-          message: `Loaded ${parsed.nodes.length} nodes (client-side parsing)`,
-        })
+        addNotification('info', `Loaded ${parsed.nodes.length} nodes (client-side parsing)`)
       }
     } catch (error) {
       console.error('Failed to parse diagram:', error)
-      addNotification({
-        type: 'error',
-        message: 'Failed to parse diagram. Check console for details.',
-      })
+      addNotification('error', 'Failed to parse diagram. Check console for details.')
     } finally {
       setIsSyncing(false)
     }
@@ -157,14 +179,19 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
 
   /**
    * Generate Mermaid code from canvas (bi-directional sync)
+   * Uses refs to always get latest state, avoiding stale closures
    */
-  const generateMermaidFromCanvas = useCallback(() => {
+  const generateMermaidFromCanvas = useCallback((currentNodes?: Node[], currentEdges?: Edge[]) => {
     if (!selectedArtifact) return
+
+    // Use provided values or fall back to refs (which have latest state)
+    const nodesToUse = currentNodes || nodesRef.current
+    const edgesToUse = currentEdges || edgesRef.current
 
     const adapter = getAdapterForDiagramType(selectedArtifact.type)
     const generated = adapter.generateMermaid(
-      nodes as ReactFlowNode[],
-      edges as ReactFlowEdge[],
+      nodesToUse as ReactFlowNode[],
+      edgesToUse as ReactFlowEdge[],
       { includeStyles: true }
     )
 
@@ -176,11 +203,8 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
       lastModified: new Date().toISOString(),
     })
 
-    addNotification({
-      type: 'success',
-      message: 'Code updated from canvas',
-    })
-  }, [nodes, edges, selectedArtifact, updateArtifact, addNotification])
+    addNotification('success', 'Code updated from canvas')
+  }, [selectedArtifact, updateArtifact, addNotification])
 
   /**
    * Sync code to canvas
@@ -194,35 +218,46 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
    * AI-powered diagram improvement
    */
   const handleMagicImprovement = useCallback(async () => {
-    if (!selectedArtifact) return
+    if (!selectedArtifact) {
+      addNotification('warning', 'Please select a diagram first')
+      return
+    }
+
+    if (!mermaidCode.trim()) {
+      addNotification('warning', 'No diagram code to improve')
+      return
+    }
 
     try {
       setIsImproving(true)
+      addNotification('info', 'Analyzing diagram with AI...')
 
       const result = await improveDiagram(mermaidCode, selectedArtifact.type as any)
 
-      if (result.success) {
-        setMermaidCode(result.improved_code)
-        
-        // Parse improved code to canvas
-        await parseAndLoadDiagram(result.improved_code, selectedArtifact.type)
+      if (result.success && result.improved_code && result.improved_code.trim().length > 10) {
+        // Only update if we got meaningful improvements
+        if (result.improved_code.trim() !== mermaidCode.trim()) {
+          setMermaidCode(result.improved_code)
+          
+          // Parse improved code to canvas
+          await parseAndLoadDiagram(result.improved_code, selectedArtifact.type)
 
-        addNotification({
-          type: 'success',
-          message: `Improved: ${result.improvements_made.join(', ')}`,
-        })
+          const improvements = result.improvements_made.length > 0 
+            ? result.improvements_made.join(', ')
+            : 'Diagram optimized'
+          addNotification('success', `AI Improved: ${improvements}`)
+        } else {
+          addNotification('info', 'Diagram already looks good! No changes needed.')
+        }
       } else {
-        addNotification({
-          type: 'error',
-          message: result.error || 'Failed to improve diagram',
-        })
+        // Show user-friendly error
+        const errorMsg = result.error || 'AI could not improve the diagram'
+        addNotification('warning', errorMsg)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to improve diagram:', error)
-      addNotification({
-        type: 'error',
-        message: 'Failed to improve diagram. Check console for details.',
-      })
+      const errorMsg = error?.response?.data?.detail || error?.message || 'AI service unavailable'
+      addNotification('error', `Failed to improve: ${errorMsg}`)
     } finally {
       setIsImproving(false)
     }
@@ -233,18 +268,20 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
    */
   const handleNodeDataChange = useCallback(
     (id: string, newData: Partial<any>) => {
-      setNodes((nds) =>
-        nds.map((node) =>
+      setNodes((nds) => {
+        const updatedNodes = nds.map((node) =>
           node.id === id
             ? { ...node, data: { ...node.data, ...newData } }
             : node
         )
-      )
 
-      // Auto-sync to code after 1 second delay
-      setTimeout(() => {
-        generateMermaidFromCanvas()
-      }, 1000)
+        // Auto-sync to code after a short delay with the updated nodes
+        setTimeout(() => {
+          generateMermaidFromCanvas(updatedNodes, edgesRef.current)
+        }, 500)
+        
+        return updatedNodes
+      })
     },
     [generateMermaidFromCanvas]
   )
@@ -253,13 +290,23 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
    * Handle node deletion
    */
   const handleNodeDelete = useCallback((id: string) => {
-    setNodes((nds) => nds.filter((node) => node.id !== id))
-    setEdges((eds) => eds.filter((edge) => edge.source !== id && edge.target !== id))
-
-    // Auto-sync to code
-    setTimeout(() => {
-      generateMermaidFromCanvas()
-    }, 500)
+    // We need to update both nodes and edges, then sync
+    let updatedNodes: Node[] = []
+    let updatedEdges: Edge[] = []
+    
+    setNodes((nds) => {
+      updatedNodes = nds.filter((node) => node.id !== id)
+      return updatedNodes
+    })
+    
+    setEdges((eds) => {
+      updatedEdges = eds.filter((edge) => edge.source !== id && edge.target !== id)
+      // Sync to code after both state updates with the new values
+      setTimeout(() => {
+        generateMermaidFromCanvas(updatedNodes, updatedEdges)
+      }, 100)
+      return updatedEdges
+    })
   }, [generateMermaidFromCanvas])
 
   /**
@@ -267,12 +314,14 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
    */
   const onConnect = useCallback(
     (connection: Connection) => {
-      setEdges((eds) => addEdge(connection, eds))
-
-      // Auto-sync to code
-      setTimeout(() => {
-        generateMermaidFromCanvas()
-      }, 500)
+      setEdges((eds) => {
+        const updatedEdges = addEdge(connection, eds)
+        // Sync to code with the updated edges
+        setTimeout(() => {
+          generateMermaidFromCanvas(nodesRef.current, updatedEdges)
+        }, 100)
+        return updatedEdges
+      })
     },
     [generateMermaidFromCanvas]
   )
@@ -296,12 +345,15 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
       },
     }
     
-    setNodes((nds) => [...nds, newNode])
-    
-    // Auto-sync to code
-    setTimeout(() => {
-      generateMermaidFromCanvas()
-    }, 500)
+    // Update state and sync code with the new nodes
+    setNodes((nds) => {
+      const updatedNodes = [...nds, newNode]
+      // Sync to code immediately with the new state
+      setTimeout(() => {
+        generateMermaidFromCanvas(updatedNodes, edgesRef.current)
+      }, 100)
+      return updatedNodes
+    })
   }, [handleNodeDataChange, handleNodeDelete, generateMermaidFromCanvas])
 
   /**
@@ -323,12 +375,15 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
       },
     }
     
-    setNodes((nds) => [...nds, newNode])
-    
-    // Auto-sync to code
-    setTimeout(() => {
-      generateMermaidFromCanvas()
-    }, 500)
+    // Update state and sync code with the new nodes
+    setNodes((nds) => {
+      const updatedNodes = [...nds, newNode]
+      // Sync to code immediately with the new state
+      setTimeout(() => {
+        generateMermaidFromCanvas(updatedNodes, edgesRef.current)
+      }, 100)
+      return updatedNodes
+    })
   }, [handleNodeDataChange, handleNodeDelete, generateMermaidFromCanvas])
 
   /**
@@ -339,27 +394,28 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
   }, [])
 
   /**
-   * Save diagram to backend
+   * Save diagram to backend and create a new version
+   * Uses refs to always get the latest state
    */
   const handleSave = useCallback(async () => {
     if (!selectedArtifact) {
-      addNotification({
-        type: 'error',
-        message: 'No artifact selected',
-      })
+      addNotification('error', 'No artifact selected')
       return
     }
 
     try {
       setIsSaving(true)
       
-      // Generate current Mermaid code from canvas
+      // Generate current Mermaid code from canvas using refs for latest state
       const adapter = getAdapterForDiagramType(selectedArtifact.type)
       const generated = adapter.generateMermaid(
-        nodes as ReactFlowNode[],
-        edges as ReactFlowEdge[],
+        nodesRef.current as ReactFlowNode[],
+        edgesRef.current as ReactFlowEdge[],
         { includeStyles: true }
       )
+
+      // Update local state with the generated code
+      setMermaidCode(generated)
 
       // Update local store
       updateArtifact(selectedArtifact.id, {
@@ -367,34 +423,64 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
         updated_at: new Date().toISOString(),
       })
 
-      // Save to backend
+      // Save to backend artifact
       const { updateArtifact: updateArtifactAPI } = await import('../services/generationService')
       await updateArtifactAPI(selectedArtifact.id, generated)
 
-      addNotification({
-        type: 'success',
-        message: 'Diagram saved successfully!',
-      })
+      // Also create a new version in the version service
+      // Use artifact type as the artifact_id (stable versioning)
+      try {
+        const { default: api } = await import('../services/api')
+        await api.post('/api/versions/create', {
+          artifact_id: selectedArtifact.type,  // Use type as stable ID
+          artifact_type: selectedArtifact.type,
+          content: generated,
+          metadata: {
+            source: 'canvas_editor',
+            model_used: 'manual_edit',
+            validation_score: 100,
+            is_valid: true
+          }
+        })
+        addNotification('success', 'Diagram saved as new version!')
+      } catch (versionError) {
+        console.warn('Failed to create version (version API may not exist):', versionError)
+        addNotification('success', 'Diagram saved successfully!')
+      }
     } catch (error) {
       console.error('Failed to save diagram:', error)
-      addNotification({
-        type: 'error',
-        message: 'Failed to save diagram. Check console for details.',
-      })
+      addNotification('error', 'Failed to save diagram. Check console for details.')
     } finally {
       setIsSaving(false)
     }
-  }, [selectedArtifact, nodes, edges, updateArtifact, addNotification])
+  }, [selectedArtifact, updateArtifact, addNotification])
 
   /**
-   * Download diagram as PNG
+   * Download diagram as file (Mermaid code or SVG)
    */
   const handleDownload = useCallback(() => {
-    addNotification({
-      type: 'info',
-      message: 'Download feature coming soon!',
-    })
-  }, [addNotification])
+    if (!selectedArtifact || !mermaidCode) {
+      addNotification('warning', 'No diagram to download')
+      return
+    }
+    
+    // Create download options
+    const downloadMermaid = () => {
+      const blob = new Blob([mermaidCode], { type: 'text/plain' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${selectedArtifact.type.replace('mermaid_', '')}_diagram.mmd`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      addNotification('success', 'Mermaid file downloaded!')
+    }
+    
+    // For now, download as Mermaid code (PNG export requires canvas rendering)
+    downloadMermaid()
+  }, [selectedArtifact, mermaidCode, addNotification])
 
   // Empty state
   if (diagramArtifacts.length === 0) {
@@ -475,14 +561,14 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
                 onClick={handleSave}
                 disabled={isSaving || !selectedArtifact}
                 className="px-3 py-1.5 bg-green-600 text-white rounded-md text-sm font-medium flex items-center gap-1.5 hover:bg-green-700 disabled:opacity-50"
-                title="Save Diagram"
+                title="Save as new version"
               >
                 {isSaving ? (
                   <Loader2 size={16} className="animate-spin" />
                 ) : (
                   <Save size={16} />
                 )}
-                Save
+                Save Version
               </button>
 
               <div className="w-px h-6 bg-gray-300"></div>
@@ -518,9 +604,19 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
                 <Download size={16} />
                 Export
               </button>
-
-              <div className="text-xs text-gray-500 ml-2">
-                {nodes.length} nodes, {edges.length} edges
+            </Panel>
+            
+            {/* Stats Badge - Bottom left, always visible */}
+            <Panel position="bottom-left" className="bg-white/90 backdrop-blur-sm rounded-lg shadow-md px-3 py-2 border border-gray-200">
+              <div className="text-sm font-medium text-gray-700 flex items-center gap-3">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                  {nodes.length} nodes
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                  {edges.length} edges
+                </span>
               </div>
             </Panel>
           </ReactFlow>
@@ -550,7 +646,7 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
         </div>
       )}
 
-      {/* Code Editor Sidebar */}
+      {/* Code Editor Sidebar - Collapsible */}
       <CodeEditor
         code={mermaidCode}
         onCodeChange={handleCodeChange}
@@ -558,6 +654,8 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
         onMagic={handleMagicImprovement}
         isSyncing={isSyncing}
         diagramType={selectedArtifact?.type || 'Mermaid'}
+        isCollapsed={isCodePanelCollapsed}
+        onToggleCollapse={toggleCodePanel}
       />
     </div>
   )

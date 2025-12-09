@@ -7,25 +7,119 @@ import { BaseDiagramAdapter, DiagramParseResult, MermaidGenerateOptions } from '
 import { ReactFlowNode, ReactFlowEdge } from '../diagramService'
 
 export class ERDAdapter extends BaseDiagramAdapter {
+  /**
+   * Clean and extract pure Mermaid ERD code from content that may contain explanations
+   */
+  cleanMermaidCode(rawContent: string): string {
+    let content = rawContent.trim()
+    
+    // Try to extract from markdown code blocks first
+    const codeBlockMatch = content.match(/```(?:mermaid)?\s*\n([\s\S]*?)```/)
+    if (codeBlockMatch) {
+      content = codeBlockMatch[1].trim()
+    }
+    
+    // Find where erDiagram starts
+    const erdIndex = content.indexOf('erDiagram')
+    if (erdIndex === -1) return content
+    
+    content = content.substring(erdIndex)
+    
+    // Remove CLASS prefix from entity definitions (common LLM mistake)
+    // Convert: CLASS USER { ... } to: USER { ... }
+    content = content.replace(/\bCLASS\s+(\w+)\s*\{/gi, '$1 {')
+    content = content.replace(/\bclass\s+(\w+)\s*\{/gi, '$1 {')
+    
+    // Convert property format from "- field (description)" to "type field"
+    content = content.replace(/-\s*(\w+)\s*\(([^)]*primary key[^)]*)\)/gi, 'int $1 PK')
+    content = content.replace(/-\s*(\w+)\s*\(([^)]*foreign key[^)]*)\)/gi, 'int $1 FK')
+    content = content.replace(/-\s*(\w+)\s*\([^)]*\)/gi, 'string $1')
+    content = content.replace(/-\s*(\w+)\s*$/gm, 'string $1')
+    
+    // Remove trailing explanatory text
+    const lines = content.split('\n')
+    const cleanLines: string[] = []
+    let inEntity = false
+    let braceCount = 0
+    
+    for (const line of lines) {
+      const trimmed = line.trim()
+      
+      // Track brace nesting
+      braceCount += (line.match(/\{/g) || []).length
+      braceCount -= (line.match(/\}/g) || []).length
+      
+      // Stop at explanatory text (outside of entities)
+      if (braceCount === 0 && (
+        trimmed.startsWith('**') ||
+        trimmed.startsWith('This ERD') ||
+        trimmed.startsWith('The ') ||
+        trimmed.match(/^\d+\./) ||
+        trimmed.startsWith('Explanation') ||
+        trimmed.startsWith('Note:')
+      )) {
+        break
+      }
+      
+      // Include diagram content
+      if (trimmed.startsWith('erDiagram') || 
+          trimmed.match(/^\w+\s*\{/) ||
+          trimmed.match(/^\w+\s+\w+/) ||  // property line
+          trimmed === '}' ||
+          trimmed.match(/\w+\s*\|.*\|.*\w+/) ||  // relationship line
+          braceCount > 0 ||
+          trimmed === ''
+      ) {
+        cleanLines.push(line)
+      }
+    }
+    
+    return cleanLines.join('\n').trim()
+  }
+
   parseFromMermaid(mermaidCode: string): DiagramParseResult {
     const nodes: ReactFlowNode[] = []
     const edges: ReactFlowEdge[] = []
 
+    // Clean the code first
+    const cleanCode = this.cleanMermaidCode(mermaidCode)
+
     // Extract entities with properties
-    const entityRegex = /(\w+)\s*\{([^}]*)\}/gs
-    const entityMatches = mermaidCode.matchAll(entityRegex)
+    // Match: EntityName { ... } (handles both standard and converted CLASS syntax)
+    const entityRegex = /^[ \t]*(\w+)\s*\{([^}]*)\}/gms
+    const entityMatches = cleanCode.matchAll(entityRegex)
 
     const entityMap = new Map<string, { properties: string[] }>()
 
     for (const match of entityMatches) {
-      const entityName = match[1]
+      let entityName = match[1].trim()
+      
+      // Skip if it's a keyword like erDiagram
+      if (entityName.toLowerCase() === 'erdiagram') continue
+      
       const propertiesBlock = match[2]
 
-      // Extract properties (type propertyName)
+      // Extract properties (type propertyName or propertyName type)
       const properties: string[] = []
-      const propMatches = propertiesBlock.matchAll(/(\w+)\s+(\w+)/g)
-      for (const propMatch of propMatches) {
-        properties.push(`${propMatch[1]} ${propMatch[2]}`)
+      const propLines = propertiesBlock.split('\n')
+      
+      for (const propLine of propLines) {
+        const trimmed = propLine.trim()
+        if (!trimmed) continue
+        
+        // Handle various formats:
+        // "int id PK" or "string name" or "id int" or "- id (primary key)"
+        const standardMatch = trimmed.match(/^(\w+)\s+(\w+)(?:\s+(PK|FK))?$/)
+        if (standardMatch) {
+          const pk = standardMatch[3] ? ` ${standardMatch[3]}` : ''
+          properties.push(`${standardMatch[1]} ${standardMatch[2]}${pk}`)
+        } else {
+          // Fallback: just use the line as-is if it looks like a property
+          const simpleMatch = trimmed.match(/^[\w\s]+$/)
+          if (simpleMatch) {
+            properties.push(trimmed)
+          }
+        }
       }
 
       entityMap.set(entityName, { properties })
@@ -52,25 +146,27 @@ export class ERDAdapter extends BaseDiagramAdapter {
     }
 
     // Extract relationships
-    // Format: EntityA ||--o{ EntityB : "relationship"
-    const relationshipRegex = /(\w+)\s*\|([o-])\|(--)?\|([o-])\|\s*(\w+)\s*:\s*"?([^"\n]*)"?/g
-    const relationshipMatches = mermaidCode.matchAll(relationshipRegex)
-
+    // Mermaid ERD relationship format: Entity1 ||--o{ Entity2 : "label"
+    // Cardinality: || (exactly one), |o (zero or one), }| (one or more), }o (zero or more)
+    const relationshipRegex = /(\w+)\s*(\|\||\|o|\}o|\}\|)--(\|\||\|o|o\{|\{)?\s*(\w+)\s*:\s*"?([^"\n]*)"?/g
+    const altRelRegex = /(\w+)\s*\|\|--o\{\s*(\w+)\s*:\s*"?([^"\n]*)"?/g
+    const altRelRegex2 = /(\w+)\s*\|\|--\|\{\s*(\w+)\s*:\s*"?([^"\n]*)"?/g
+    
     let edgeIndex = 0
-    for (const match of relationshipMatches) {
+    
+    // Try standard format first
+    for (const match of cleanCode.matchAll(relationshipRegex)) {
       const from = match[1]
-      const fromCardinality = match[2]
-      const to = match[5]
-      const toCardinality = match[4]
-      const label = match[6]?.trim()
+      const fromCard = match[2]
+      const toCard = match[3] || ''
+      const to = match[4]
+      const label = match[5]?.trim()
 
-      // Determine relationship type based on cardinality
+      // Determine relationship type
       let relationType = 'one-to-one'
-      if (fromCardinality === 'o' && toCardinality === '{') {
+      if (toCard.includes('{') || toCard.includes('o{')) {
         relationType = 'one-to-many'
-      } else if (fromCardinality === '{' && toCardinality === '{') {
-        relationType = 'many-to-many'
-      } else if (fromCardinality === '{' && toCardinality === 'o') {
+      } else if (fromCard.includes('}')) {
         relationType = 'many-to-one'
       }
 
@@ -80,12 +176,47 @@ export class ERDAdapter extends BaseDiagramAdapter {
         target: to,
         label,
         type: 'relationship',
-        data: {
-          relationType,
-          fromCardinality,
-          toCardinality,
-        },
+        data: { relationType },
       } as any)
+    }
+    
+    // Try alternate format: ||--o{
+    for (const match of cleanCode.matchAll(altRelRegex)) {
+      const from = match[1]
+      const to = match[2]
+      const label = match[3]?.trim()
+      
+      // Check if we already have this edge
+      const exists = edges.some(e => e.source === from && e.target === to)
+      if (!exists) {
+        edges.push({
+          id: `rel_${edgeIndex++}`,
+          source: from,
+          target: to,
+          label,
+          type: 'relationship',
+          data: { relationType: 'one-to-many' },
+        } as any)
+      }
+    }
+    
+    // Try alternate format: ||--|{
+    for (const match of cleanCode.matchAll(altRelRegex2)) {
+      const from = match[1]
+      const to = match[2]
+      const label = match[3]?.trim()
+      
+      const exists = edges.some(e => e.source === from && e.target === to)
+      if (!exists) {
+        edges.push({
+          id: `rel_${edgeIndex++}`,
+          source: from,
+          target: to,
+          label,
+          type: 'relationship',
+          data: { relationType: 'one-to-many' },
+        } as any)
+      }
     }
 
     return { nodes, edges }
@@ -97,19 +228,35 @@ export class ERDAdapter extends BaseDiagramAdapter {
     options?: MermaidGenerateOptions
   ): string {
     if (nodes.length === 0) {
-      return 'erDiagram\n  User {\n    int id\n    string name\n  }'
+      return 'erDiagram\n  User {\n    int id PK\n    string name\n  }'
     }
 
     let mermaid = 'erDiagram\n'
 
+    // Create a map from internal node.id to the entity name used in Mermaid
+    const idToEntityMap = new Map<string, string>()
+
     // Add entities with properties
     for (const node of nodes) {
-      const entityName = this.sanitizeId(node.id)
+      // Use label as entity name if it looks like a valid identifier, otherwise use sanitized id
+      const label = node.data.label || node.id
+      const entityName = this.sanitizeId(label.replace(/\s+/g, '_'))
+      
+      // Store mapping from internal ID to entity name
+      idToEntityMap.set(node.id, entityName)
+      
       mermaid += `  ${entityName} {\n`
 
       const properties = node.data.properties as string[] || []
       for (const prop of properties) {
-        mermaid += `    ${prop}\n`
+        // Normalize property format to "type name [PK|FK]"
+        const normalizedProp = this.normalizeProperty(prop)
+        mermaid += `    ${normalizedProp}\n`
+      }
+
+      // If no properties, add a placeholder
+      if (properties.length === 0) {
+        mermaid += `    int id PK\n`
       }
 
       mermaid += '  }\n'
@@ -117,10 +264,11 @@ export class ERDAdapter extends BaseDiagramAdapter {
 
     mermaid += '\n'
 
-    // Add relationships
+    // Add relationships using the ID map to get proper entity names
     for (const edge of edges) {
-      const from = this.sanitizeId(edge.source)
-      const to = this.sanitizeId(edge.target)
+      // Look up entity names from the map, fall back to sanitized ID if not found
+      const from = idToEntityMap.get(edge.source) || this.sanitizeId(edge.source)
+      const to = idToEntityMap.get(edge.target) || this.sanitizeId(edge.target)
       const label = edge.label ? `"${this.sanitizeLabel(edge.label)}"` : '""'
 
       // Determine cardinality notation
@@ -172,6 +320,44 @@ export class ERDAdapter extends BaseDiagramAdapter {
 
   getDefaultEdgeType(): string {
     return 'relationship'
+  }
+
+  /**
+   * Normalize property format to "type name [PK|FK]"
+   */
+  private normalizeProperty(prop: string): string {
+    const trimmed = prop.trim()
+    
+    // Already in correct format: "type name" or "type name PK/FK"
+    if (trimmed.match(/^\w+\s+\w+(\s+(PK|FK))?$/)) {
+      return trimmed
+    }
+    
+    // Handle "name (PK)" or "name (primary key)" format
+    const pkMatch = trimmed.match(/^(\w+)\s*\((.*primary.*key.*|PK)\)$/i)
+    if (pkMatch) {
+      return `int ${pkMatch[1]} PK`
+    }
+    
+    // Handle "name (FK)" or "name (foreign key)" format
+    const fkMatch = trimmed.match(/^(\w+)\s*\((.*foreign.*key.*|FK)\)$/i)
+    if (fkMatch) {
+      return `int ${fkMatch[1]} FK`
+    }
+    
+    // Handle "name (type)" format
+    const typeMatch = trimmed.match(/^(\w+)\s*\((\w+)\)$/)
+    if (typeMatch) {
+      return `${typeMatch[2]} ${typeMatch[1]}`
+    }
+    
+    // Just a name - default to string type
+    if (trimmed.match(/^\w+$/)) {
+      return `string ${trimmed}`
+    }
+    
+    // Fallback: return as-is
+    return trimmed
   }
 
   /**

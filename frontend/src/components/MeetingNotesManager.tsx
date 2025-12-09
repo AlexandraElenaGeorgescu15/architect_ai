@@ -25,6 +25,16 @@ interface FolderSuggestion {
   alternatives: Array<{ folder: string; score: number }>
 }
 
+// Dynamic tips for Pro Tip section
+const PRO_TIPS = [
+  "Select a folder before uploading to organize notes automatically",
+  "Use AI Auto-Sort to let AI categorize your meeting notes",
+  "Create folders for different projects or topics",
+  "Move notes between folders using the move button",
+  "Search folders quickly using the search bar",
+  "Rename folders by clicking the menu icon",
+]
+
 export default function MeetingNotesManager() {
   const { addNotification } = useUIStore()
   const [folders, setFolders] = useState<Folder[]>([])
@@ -42,6 +52,34 @@ export default function MeetingNotesManager() {
   const [showNoteMenu, setShowNoteMenu] = useState<string | null>(null)
   const [renamingFolder, setRenamingFolder] = useState<{ id: string; name: string } | null>(null)
   const [newFolderNameEdit, setNewFolderNameEdit] = useState('')
+  
+  // AI Auto-Sort toggle (persisted in localStorage)
+  const [autoSortEnabled, setAutoSortEnabled] = useState<boolean>(() => {
+    const stored = localStorage.getItem('ai_auto_sort_enabled')
+    return stored !== null ? stored === 'true' : true // Default to enabled
+  })
+  
+  // Dynamic Pro Tip
+  const [currentTipIndex, setCurrentTipIndex] = useState(0)
+  
+  // Rotate pro tips every 10 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTipIndex((prev) => (prev + 1) % PRO_TIPS.length)
+    }, 10000)
+    return () => clearInterval(interval)
+  }, [])
+  
+  // Toggle AI Auto-Sort
+  const toggleAutoSort = () => {
+    const newValue = !autoSortEnabled
+    setAutoSortEnabled(newValue)
+    localStorage.setItem('ai_auto_sort_enabled', String(newValue))
+    addNotification(
+      newValue ? 'success' : 'info',
+      newValue ? 'AI Auto-Sort enabled' : 'AI Auto-Sort disabled'
+    )
+  }
 
   const totalNotes = useMemo(
     () => folders.reduce((sum, folder) => sum + folder.notes_count, 0),
@@ -141,9 +179,18 @@ export default function MeetingNotesManager() {
   const loadNotes = async (folderId: string) => {
     try {
       const response = await api.get(`/api/meeting-notes/folders/${folderId}/notes`)
-      setNotes(response.data.notes || [])
-    } catch (error) {
-      // Failed to load notes - handle in UI
+      const loadedNotes = response.data.notes || []
+      setNotes(loadedNotes)
+      if (loadedNotes.length === 0) {
+        // Silently handle empty folder - no notification needed
+      }
+    } catch (error: any) {
+      console.error('Failed to load notes:', error)
+      setNotes([])
+      // Only show error if it's not a 404 (folder doesn't exist yet)
+      if (error.response?.status !== 404) {
+        addNotification('error', 'Failed to load notes from folder')
+      }
     }
   }
 
@@ -169,52 +216,84 @@ export default function MeetingNotesManager() {
     if (!file) return
 
     setUploading(true)
+    setSuggestion(null) // Clear any previous suggestion
+    
     try {
-      // First, get AI suggestion
-      const content = await file.text()
-      setSuggesting(true)
-      const suggestResponse = await api.post('/api/meeting-notes/suggest-folder', {
-        content: content.substring(0, 1000) // First 1000 chars for suggestion
-      })
-      const suggestionData = normalizeSuggestion(suggestResponse.data)
-      setSuggestion(suggestionData)
-      setSuggesting(false)
-
-      // Upload with suggested folder (if user doesn't override)
       const formData = new FormData()
       formData.append('file', file)
-      if (suggestionData.suggested_folder && !suggestion) {
-        // Find folder by name if it's a name, not an ID
-        const folder = folders.find(f => f.name === suggestionData.suggested_folder || f.id === suggestionData.suggested_folder)
-        if (folder) {
-          formData.append('folder_id', folder.id)
-        }
-      } else if (selectedFolder) {
+      
+      let targetFolderId: string | null = selectedFolder
+      
+      // CASE 1: User has a folder selected - always use it
+      if (selectedFolder) {
         formData.append('folder_id', selectedFolder)
       }
+      // CASE 2: No folder selected - check AI Auto-Sort setting
+      else {
+        // Get AI suggestion for folder
+        setSuggesting(true)
+        const content = await file.text()
+        const suggestResponse = await api.post('/api/meeting-notes/suggest-folder', {
+          content: content.substring(0, 1000)
+        })
+        const suggestionData = normalizeSuggestion(suggestResponse.data)
+        setSuggesting(false)
+        
+        if (autoSortEnabled && suggestionData.suggested_folder) {
+          // AUTO-SORT ENABLED: Automatically use AI suggestion
+          // Find or create the suggested folder
+          let suggestedFolderObj = folders.find(
+            f => f.name.toLowerCase() === suggestionData.suggested_folder.toLowerCase() || 
+                 f.id === suggestionData.suggested_folder
+          )
+          
+          if (suggestedFolderObj) {
+            targetFolderId = suggestedFolderObj.id
+            formData.append('folder_id', suggestedFolderObj.id)
+            addNotification('info', `AI Auto-Sort: Using folder "${suggestedFolderObj.name}"`)
+          } else {
+            // Folder doesn't exist - create it first
+            try {
+              await api.post('/api/meeting-notes/folders', { name: suggestionData.suggested_folder })
+              await loadFolders()
+              // Re-find the folder after creation
+              const newFolders = (await api.get('/api/meeting-notes/folders')).data.folders || []
+              suggestedFolderObj = newFolders.find(
+                (f: Folder) => f.name.toLowerCase() === suggestionData.suggested_folder.toLowerCase()
+              )
+              if (suggestedFolderObj) {
+                targetFolderId = suggestedFolderObj.id
+                formData.append('folder_id', suggestedFolderObj.id)
+                addNotification('info', `AI Auto-Sort: Created and using folder "${suggestionData.suggested_folder}"`)
+              }
+            } catch (e) {
+              // Failed to create folder, upload without folder_id
+              addNotification('warning', `Could not create folder "${suggestionData.suggested_folder}", using general`)
+            }
+          }
+        } else if (!autoSortEnabled && suggestionData.suggested_folder) {
+          // AUTO-SORT DISABLED: Show suggestion modal for user to decide
+          setSuggestion(suggestionData)
+          // Don't set folder_id - backend will use 'general'
+        }
+      }
 
+      // Upload the file
       const uploadResponse = await api.post('/api/meeting-notes/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       })
 
-      if (uploadResponse.data.suggested_folder) {
-        // Show suggestion and let user confirm
-        setSuggestion({
-          suggested_folder: uploadResponse.data.suggested_folder,
-          confidence: suggestionData.confidence,
-          alternatives: suggestionData.alternatives
-        })
-      } else {
-        // Upload successful, refresh
-        await loadFolders()
-        if (uploadResponse.data.note?.folder_id && uploadResponse.data.note.folder_id === selectedFolder) {
-          await loadNotes(selectedFolder!)
-        }
-        setSuggestion(null)
-        addNotification('success', 'File uploaded successfully')
+      // Upload successful, refresh data
+      await loadFolders()
+      
+      const uploadedFolderId = uploadResponse.data.note?.folder_id || targetFolderId
+      if (uploadedFolderId) {
+        setSelectedFolder(uploadedFolderId)
+        await loadNotes(uploadedFolderId)
       }
+      
+      addNotification('success', `File "${file.name}" uploaded successfully`)
     } catch (error: any) {
-      // Failed to upload file - show user error
       addNotification('error', error.response?.data?.detail || 'Failed to upload file')
     } finally {
       setUploading(false)
@@ -336,24 +415,44 @@ export default function MeetingNotesManager() {
           </div>
         </div>
         
-        <div className="flex gap-6 items-center">
-          <div className="flex items-center gap-3 bg-background/30 px-4 py-2 rounded-xl border border-border/50">
-             <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
-                <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+        <div className="flex gap-4 items-center">
+          {/* AI Auto-Sort Toggle - Now clickable! */}
+          <button
+            onClick={toggleAutoSort}
+            className={`flex items-center gap-3 px-4 py-2 rounded-xl border transition-all duration-300 cursor-pointer hover:scale-[1.02] ${
+              autoSortEnabled 
+                ? 'bg-primary/10 border-primary/30 hover:bg-primary/20' 
+                : 'bg-background/30 border-border/50 hover:bg-background/50'
+            }`}
+            title={autoSortEnabled 
+              ? 'ON: Files auto-sorted to AI-suggested folders. Click to disable.' 
+              : 'OFF: You choose the folder manually. Click to enable AI sorting.'}
+          >
+             <div className={`w-8 h-8 rounded-full flex items-center justify-center border transition-all ${
+               autoSortEnabled 
+                 ? 'bg-primary/20 border-primary/30' 
+                 : 'bg-muted/20 border-border/30'
+             }`}>
+                <Sparkles className={`w-4 h-4 ${autoSortEnabled ? 'text-primary animate-pulse' : 'text-muted-foreground'}`} />
              </div>
-             <div>
+             <div className="text-left">
                 <p className="text-xs font-bold text-foreground">AI Auto-Sort</p>
-                <p className="text-[10px] text-muted-foreground">Active on upload</p>
+                <p className={`text-[10px] ${autoSortEnabled ? 'text-primary' : 'text-muted-foreground'}`}>
+                  {autoSortEnabled ? '✓ Auto-files to AI folder' : 'Manual folder selection'}
+                </p>
              </div>
-          </div>
+          </button>
           
-          <div className="flex items-center gap-3 bg-background/30 px-4 py-2 rounded-xl border border-border/50">
-             <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center border border-accent/20">
+          {/* Pro Tip - Now with rotating tips! */}
+          <div className="flex items-center gap-3 bg-background/30 px-4 py-2 rounded-xl border border-border/50 max-w-[280px]">
+             <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center border border-accent/20 flex-shrink-0">
                 <Info className="w-4 h-4 text-accent" />
              </div>
-             <div>
+             <div className="min-w-0">
                 <p className="text-xs font-bold text-foreground">Pro Tip</p>
-                <p className="text-[10px] text-muted-foreground">Select folder for context</p>
+                <p className="text-[10px] text-muted-foreground line-clamp-2" title={PRO_TIPS[currentTipIndex]}>
+                  {PRO_TIPS[currentTipIndex]}
+                </p>
              </div>
           </div>
         </div>
