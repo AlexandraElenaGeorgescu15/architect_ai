@@ -116,6 +116,26 @@
   body {
     @apply bg-background text-foreground selection:bg-primary/30 selection:text-primary-foreground font-sans antialiased transition-colors duration-500;
   }
+  /* Hide Mermaid's built-in error overlays (version banners) */
+  .mermaid .error,
+  .mermaid .error-icon,
+  .mermaid .error-text,
+  .mermaid .error .messageText,
+  .error,
+  .error-icon,
+  .error-text,
+  .error .messageText {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+  }
+  /* Hide Mermaid built-in error banners */
+  .mermaid .error,
+  .mermaid .error-icon,
+  .mermaid .error-text,
+  .mermaid .error .messageText {
+    display: none !important;
+  }
   
   /* Smooth scrolling */
   html {

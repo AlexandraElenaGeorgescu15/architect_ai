@@ -24,6 +24,23 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
   const [isRepairing, setIsRepairing] = useState(false)
   const [showCode, setShowCode] = useState(false)
   const [validation, setValidation] = useState<ValidationResult | null>(null)
+  const lastErrorContentRef = useRef<string | null>(null)
+  const containerRefSnapshot = useRef<HTMLDivElement | null>(null)
+
+  const formatMermaidError = (): string => {
+    // Force a friendly, generic message to avoid leaking raw Mermaid errors
+    return 'Mermaid syntax error. Please fix the diagram or click AI Repair.'
+  }
+
+  const clearMermaidErrorArtifacts = () => {
+    try {
+      document.querySelectorAll('.error, .error-text, .error-icon, .messageText').forEach((el) => {
+        el.remove()
+      })
+    } catch {
+      // ignore
+    }
+  }
 
   // Validate Mermaid content before rendering
   const validateMermaidContent = useCallback((diagramContent: string): ValidationResult => {
@@ -95,13 +112,14 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         }
         // Reset error state to trigger re-render
         setError(null)
+        lastErrorContentRef.current = null
       } else {
         console.error('❌ [MermaidRenderer] AI repair failed:', response.data.error)
-        setError(`AI repair failed: ${response.data.error || 'Unknown error'}`)
+        setError('AI Repair could not fix this diagram. Please adjust the code manually.')
       }
     } catch (err: any) {
       console.error('❌ [MermaidRenderer] AI repair request failed:', err)
-      setError(`AI repair failed: ${err.message || 'Network error'}`)
+      setError('AI Repair could not fix this diagram. Please adjust the code manually.')
     } finally {
       setIsRepairing(false)
     }
@@ -110,6 +128,13 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
   useEffect(() => {
     // Initialize Mermaid once
     if (!isInitialized) {
+      // Suppress Mermaid’s internal parse error output
+      try {
+        ;(mermaid as any).parseError = () => {}
+      } catch (e) {
+        // ignore
+      }
+
       mermaid.initialize({
         startOnLoad: false,
         theme: 'default',
@@ -133,6 +158,7 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
 
     const renderDiagram = async () => {
       try {
+        containerRefSnapshot.current = containerRef.current
         setError(null)
         setValidation(null)
         const container = containerRef.current
@@ -140,6 +166,7 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
 
         // Clear previous content
         container.innerHTML = ''
+        clearMermaidErrorArtifacts()
 
         // Extract Mermaid diagram from content (remove any surrounding text)
         let diagramContent = content.trim()
@@ -258,6 +285,17 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         tempDiv.className = 'mermaid'
         tempDiv.textContent = diagramContent
 
+        // Pre-validate via mermaid.parse to avoid internal error DOM output
+        try {
+          clearMermaidErrorArtifacts()
+          mermaid.parse(diagramContent)
+        } catch (_) {
+          clearMermaidErrorArtifacts()
+          setError(formatMermaidError())
+          lastErrorContentRef.current = content
+          return
+        }
+
         // Render the diagram
         const { svg } = await mermaid.render(id, diagramContent)
         
@@ -276,12 +314,12 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         setError(null)
       } catch (err: any) {
         console.error('Mermaid rendering error:', err)
-        // Extract meaningful error message
-        let errorMessage = err.message || 'Failed to render diagram'
-        if (errorMessage.includes('Syntax error')) {
-          errorMessage = `Mermaid syntax error: ${errorMessage}`
+        clearMermaidErrorArtifacts()
+        if (containerRefSnapshot.current) {
+          containerRefSnapshot.current.innerHTML = ''
         }
-        setError(errorMessage)
+        setError(formatMermaidError())
+        lastErrorContentRef.current = content
       }
     }
 
@@ -318,7 +356,7 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
             <AlertTriangle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
             <div className="flex-1 min-w-0">
               <h4 className="font-semibold text-destructive text-sm">Mermaid Syntax Error</h4>
-              <p className="text-xs text-destructive/80 mt-1 break-words">{error}</p>
+            <p className="text-xs text-destructive/80 mt-1 break-words">{error}</p>
               {validation && validation.errors.length > 0 && (
                 <ul className="mt-2 text-xs text-destructive/70 list-disc list-inside">
                   {validation.errors.map((err, i) => (

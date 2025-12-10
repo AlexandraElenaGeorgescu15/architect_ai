@@ -1,5 +1,5 @@
 import React, { useEffect, Suspense } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { WebSocketProvider } from './contexts/WebSocketContext'
 import Layout from './components/layout/Layout'
 import OnboardingTour from './components/OnboardingTour'
@@ -59,6 +59,8 @@ function App() {
   const token = localStorage.getItem('access_token') || undefined
   // Use a default room ID (could be user-specific in production)
   const defaultRoomId = 'main'
+  // Remember last visited path so refresh on "/" returns user to their page
+  const lastVisitedPath = localStorage.getItem('last_path') || '/studio'
   const { status: systemStatus, isReady: backendReady, isChecking, error: systemError, retry } = useSystemStatus()
   const { isFullyLoaded, loadingProgress, loadingMessage } = useAppLoading()
 
@@ -73,6 +75,7 @@ function App() {
               v7_relativeSplatPath: true
             }}
           >
+            <PersistLastPath />
             <Routes>
               <Route
                 path="*"
@@ -85,6 +88,7 @@ function App() {
                     }>
                       <Routes>
                         <Route path="/" element={<Navigate to="/studio" replace />} />
+                        <Route path="/last" element={<Navigate to={lastVisitedPath} replace />} />
                         <Route path="/studio" element={<Studio />} />
                         <Route path="/intelligence" element={<Intelligence />} />
                         <Route path="/canvas" element={<Canvas />} />
@@ -124,3 +128,11 @@ function App() {
 }
 
 export default App
+
+function PersistLastPath() {
+  const location = useLocation()
+  useEffect(() => {
+    localStorage.setItem('last_path', location.pathname + location.search + location.hash)
+  }, [location])
+  return null
+}
