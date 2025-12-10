@@ -53,7 +53,11 @@ export default function PatternMiningResults({ data, isLoading }: PatternMiningR
           <div className="text-xs text-muted-foreground uppercase tracking-wider">Pattern Types</div>
         </div>
         <div className="p-4 bg-accent/5 rounded-lg border border-accent/20">
-          <div className="text-2xl font-bold text-foreground">{summary.confidence_avg?.toFixed(1) || 'N/A'}</div>
+          <div className="text-2xl font-bold text-foreground">
+            {typeof summary.confidence_avg === 'number' && !isNaN(summary.confidence_avg) 
+              ? summary.confidence_avg.toFixed(1) 
+              : 'N/A'}
+          </div>
           <div className="text-xs text-muted-foreground uppercase tracking-wider">Avg Confidence</div>
         </div>
       </div>
@@ -92,12 +96,16 @@ export default function PatternMiningResults({ data, isLoading }: PatternMiningR
                         )}
                       </div>
                       <div className="flex items-center gap-1">
-                        {pattern.confidence >= 0.8 ? (
+                        {typeof pattern.confidence === 'number' && pattern.confidence >= 0.8 ? (
                           <CheckCircle2 className="w-4 h-4 text-green-500" />
                         ) : (
                           <AlertCircle className="w-4 h-4 text-yellow-500" />
                         )}
-                        <span className="text-xs text-muted-foreground">{(pattern.confidence * 100).toFixed(0)}%</span>
+                        <span className="text-xs text-muted-foreground">
+                          {typeof pattern.confidence === 'number' && !isNaN(pattern.confidence)
+                            ? `${(pattern.confidence * 100).toFixed(0)}%`
+                            : 'N/A'}
+                        </span>
                       </div>
                     </div>
                   </div>

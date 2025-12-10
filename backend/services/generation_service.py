@@ -123,7 +123,8 @@ class GenerationService:
                     include_rag=True,
                     include_kg=True,
                     include_patterns=True,
-                    include_ml_features=False  # Skip ML features for speed
+                    include_ml_features=False,  # Skip ML features for speed
+                    force_refresh=True  # Always get fresh context for generation
                 )
                 logger.info(f"✅ [GEN_SERVICE] Context built successfully: "
                            f"has_rag={bool(context.get('rag'))}, "
@@ -214,17 +215,17 @@ class GenerationService:
             if result.get("success"):
                 artifact_content = result["content"]
                 
-                # Clean Mermaid diagrams to extract only the diagram code
-                if artifact_type.value.startswith("mermaid_") and artifact_content:
+                # Clean ALL artifacts to extract only the relevant content
+                if artifact_content:
                     try:
-                        from backend.services.validation_service import ValidationService
-                        validator = ValidationService()
-                        cleaned_content = validator._extract_mermaid_diagram(artifact_content)
-                        if cleaned_content != artifact_content:
-                            logger.info(f"🧹 [GEN_SERVICE] Cleaned Mermaid diagram: removed {len(artifact_content) - len(cleaned_content)} chars of extra text (job_id={job_id})")
-                            artifact_content = cleaned_content
+                        from backend.services.artifact_cleaner import get_cleaner
+                        cleaner = get_cleaner()
+                        original_length = len(artifact_content)
+                        artifact_content = cleaner.clean_artifact(artifact_content, artifact_type.value)
+                        if len(artifact_content) < original_length:
+                            logger.info(f"🧹 [GEN_SERVICE] Cleaned {artifact_type.value}: removed {original_length - len(artifact_content)} chars of noise (job_id={job_id})")
                     except Exception as e:
-                        logger.warning(f"⚠️ [GEN_SERVICE] Failed to clean Mermaid diagram: {e} (job_id={job_id})")
+                        logger.warning(f"⚠️ [GEN_SERVICE] Failed to clean artifact: {e} (job_id={job_id})")
                 
                 validation_score = result.get("validation_score", 0.0)
                 model_used = result.get("model_used", "unknown")
@@ -345,12 +346,13 @@ class GenerationService:
             logger.info(f"✅ [GEN_SERVICE] Job status updated successfully: job_id={job_id}")
             
             # Save to VersionService for persistent storage
-            # Use artifact_id from result if available (from enhanced_generation), otherwise use job_id
-            artifact_id_for_version = result.get("artifact_id") or job_id
+            # Use artifact_type as the STABLE identifier for versioning
+            # This ensures all artifacts of the same type share a version history (v1, v2, v3, etc.)
+            # Instead of each generation being a separate artifact with v1 only
+            artifact_id_for_version = artifact_type.value  # STABLE ID: e.g., "mermaid_erd"
             try:
                 from backend.services.version_service import get_version_service
                 version_service = get_version_service()
-                # Use artifact_id from enhanced_generation if available, otherwise use job_id
                 version_service.create_version(
                     artifact_id=artifact_id_for_version,
                     artifact_type=artifact_type.value,

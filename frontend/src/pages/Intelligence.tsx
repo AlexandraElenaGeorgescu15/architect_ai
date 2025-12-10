@@ -67,46 +67,67 @@ export default function Intelligence() {
     try {
       const response = await fetch('/api/universal-context/rebuild', { method: 'POST' })
       if (response.ok) {
-        addNotification({
-          id: Date.now().toString(),
-          type: 'success',
-          message: 'Universal Context rebuild started. This will take a few moments...'
-        })
+        const rebuildData = await response.json()
+        addNotification('success', 'Universal Context rebuild started. This will take a few moments...')
+        
+        // Track the build ID if provided
+        const buildId = rebuildData.build_id
+        let pollCount = 0
+        const maxPolls = 20 // 60 seconds max (3s interval)
+        
         // Poll for completion and refresh all data
         const pollInterval = setInterval(async () => {
-          const status = await fetch('/api/universal-context/status')
-          if (status.ok) {
-            const data = await status.json()
-            setUniversalContextStatus(data)
-            
-            // Also refresh KG and PM data to sync everything
-            await Promise.all([
-              loadKnowledgeGraph(),
-              loadPatternMining()
-            ])
-            
-            clearInterval(pollInterval)
-            setIsLoadingUniversalContext(false)
-            addNotification({
-              id: Date.now().toString(),
-              type: 'success',
-              message: 'Universal Context rebuilt successfully!'
-            })
+          pollCount++
+          
+          try {
+            const status = await fetch('/api/universal-context/status')
+            if (status.ok) {
+              const data = await status.json()
+              setUniversalContextStatus(data)
+              
+              // Check if rebuild is complete (check build_id or built_at timestamp)
+              const isComplete = data.is_ready || 
+                (buildId && data.build_id === buildId) ||
+                (data.built_at && new Date(data.built_at).getTime() > Date.now() - 60000)
+              
+              if (isComplete) {
+                clearInterval(pollInterval)
+                
+                // Refresh KG and PM data to sync everything
+                await Promise.all([
+                  loadKnowledgeGraph(),
+                  loadPatternMining()
+                ])
+                
+                setIsLoadingUniversalContext(false)
+                addNotification('success', `Universal Context rebuilt successfully! ${data.total_files || 0} files indexed.`)
+              } else if (pollCount >= maxPolls) {
+                clearInterval(pollInterval)
+                setIsLoadingUniversalContext(false)
+                addNotification('info', 'Universal Context rebuild is taking longer than expected. Please refresh to check status.')
+              }
+            }
+          } catch (pollError) {
+            console.error('Error polling Universal Context status:', pollError)
+            // Don't stop polling on single error, just log it
           }
         }, 3000)
         
-        // Stop polling after 30 seconds
+        // Safety cleanup after max time
         setTimeout(() => {
           clearInterval(pollInterval)
-          setIsLoadingUniversalContext(false)
-        }, 30000)
+          if (pollCount < maxPolls) {
+            setIsLoadingUniversalContext(false)
+          }
+        }, 65000)
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        addNotification('error', errorData.detail || 'Failed to start Universal Context rebuild')
+        setIsLoadingUniversalContext(false)
       }
     } catch (error) {
-      addNotification({
-        id: Date.now().toString(),
-        type: 'error',
-        message: 'Failed to rebuild Universal Context'
-      })
+      console.error('Universal Context rebuild error:', error)
+      addNotification('error', 'Failed to rebuild Universal Context. Check console for details.')
       setIsLoadingUniversalContext(false)
     }
   }
@@ -119,10 +140,64 @@ export default function Intelligence() {
       if (response.ok) {
         const data = await response.json()
         setKgData(data)
+      } else {
+        console.warn('Knowledge Graph not available:', response.status)
       }
     } catch (error) {
-      // Failed to load KG
+      console.error('Failed to load Knowledge Graph:', error)
+      // Silent failure - KG section will show empty state
     } finally {
+      setIsLoadingKG(false)
+    }
+  }
+  
+  const rebuildKnowledgeGraph = async () => {
+    setIsLoadingKG(true)
+    try {
+      // First clear the cache
+      const clearResponse = await fetch('/api/project-target/clear-cache', { method: 'POST' })
+      if (clearResponse.ok) {
+        const clearData = await clearResponse.json()
+        console.log('Cache cleared:', clearData)
+      }
+      
+      // Then rebuild via Universal Context (which rebuilds KG and PM)
+      addNotification('info', 'Rebuilding Knowledge Graph and Pattern Mining...')
+      const rebuildResponse = await fetch('/api/universal-context/rebuild', { method: 'POST' })
+      if (rebuildResponse.ok) {
+        // Poll for completion
+        let attempts = 0
+        const maxAttempts = 20
+        const pollInterval = setInterval(async () => {
+          attempts++
+          try {
+            const statusResponse = await fetch('/api/universal-context/status')
+            if (statusResponse.ok) {
+              const status = await statusResponse.json()
+              if (status.is_ready || attempts >= maxAttempts) {
+                clearInterval(pollInterval)
+                // Reload KG and PM data
+                await Promise.all([loadKnowledgeGraph(), loadPatternMining()])
+                addNotification('success', 'Knowledge Graph and Pattern Mining rebuilt successfully!')
+                setIsLoadingKG(false)
+              }
+            }
+          } catch (pollError) {
+            console.error('Polling error:', pollError)
+          }
+        }, 2000)
+        
+        // Safety cleanup
+        setTimeout(() => {
+          clearInterval(pollInterval)
+          setIsLoadingKG(false)
+        }, 45000)
+      } else {
+        throw new Error('Failed to start rebuild')
+      }
+    } catch (error) {
+      console.error('Failed to rebuild Knowledge Graph:', error)
+      addNotification('error', 'Failed to rebuild Knowledge Graph')
       setIsLoadingKG(false)
     }
   }
@@ -151,7 +226,8 @@ export default function Intelligence() {
       const stats = await getAllStats()
       setSyntheticStats(stats)
     } catch (error) {
-      // Failed to load synthetic stats
+      console.error('Failed to load synthetic stats:', error)
+      // Silent failure - training section will show default state
     }
   }
   
@@ -205,7 +281,8 @@ export default function Intelligence() {
       setModels(modelsData)
       setJobs(jobsData)
     } catch (error) {
-      // Failed to load data
+      console.error('Failed to load models/training data:', error)
+      addNotification('error', 'Failed to load some data. Please refresh the page.')
     } finally {
       setIsLoading(false)
     }
@@ -226,16 +303,29 @@ export default function Intelligence() {
   const handleTriggerTraining = async () => {
     const statsForType = syntheticStats?.[selectedArtifactType]
     const count = statsForType?.total_examples ?? 0
-    if (count < 10) {
+    
+    // Minimum threshold for training (aligned with backend)
+    const MIN_EXAMPLES = 10
+    const RECOMMENDED_EXAMPLES = 50
+    
+    if (count < MIN_EXAMPLES) {
       addNotification(
         'warning',
-        `Only ${count} training examples (real + synthetic) for ${selectedArtifactType}. Need at least 10 for meaningful training (or adjust thresholds).`
+        `Only ${count} training examples for ${selectedArtifactType}. Need at least ${MIN_EXAMPLES} for training.`
       )
       return
     }
+    
+    // Show warning if below recommended but allow training
+    if (count < RECOMMENDED_EXAMPLES) {
+      addNotification(
+        'info',
+        `Note: ${count} examples is below the recommended ${RECOMMENDED_EXAMPLES}. Training may produce lower quality results.`
+      )
+    }
 
     try {
-      await startTraining({ artifact_type: selectedArtifactType, force: false })
+      await startTraining({ artifact_type: selectedArtifactType, force: count < RECOMMENDED_EXAMPLES })
       await refreshJobs()
       addNotification('success', `Training started for ${selectedArtifactType} with ${count} examples (real + synthetic)`)
     } catch (error) {
@@ -415,13 +505,25 @@ export default function Intelligence() {
               <p className="text-xs text-foreground uppercase tracking-wider">Project Structure & Relationships</p>
             </div>
           </div>
-          <button
-            onClick={loadKnowledgeGraph}
-            className="p-2 border border-border rounded-lg hover:bg-primary/10 transition-colors"
-            disabled={isLoadingKG}
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoadingKG ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={rebuildKnowledgeGraph}
+              className="px-3 py-2 text-xs font-medium border border-border rounded-lg hover:bg-primary/10 hover:border-primary/30 transition-colors flex items-center gap-1.5"
+              disabled={isLoadingKG}
+              title="Clear cache and rebuild from scratch"
+            >
+              <Database className="w-3.5 h-3.5" />
+              Rebuild
+            </button>
+            <button
+              onClick={loadKnowledgeGraph}
+              className="p-2 border border-border rounded-lg hover:bg-primary/10 transition-colors"
+              disabled={isLoadingKG}
+              title="Refresh data"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoadingKG ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
         <KnowledgeGraphViewer data={kgData} isLoading={isLoadingKG} />
       </div>
@@ -438,13 +540,25 @@ export default function Intelligence() {
               <p className="text-xs text-foreground uppercase tracking-wider">Design Patterns Detected</p>
             </div>
           </div>
-          <button
-            onClick={loadPatternMining}
-            className="p-2 border border-border rounded-lg hover:bg-accent/10 transition-colors"
-            disabled={isLoadingPM}
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoadingPM ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={rebuildKnowledgeGraph}
+              className="px-3 py-2 text-xs font-medium border border-border rounded-lg hover:bg-accent/10 hover:border-accent/30 transition-colors flex items-center gap-1.5"
+              disabled={isLoadingPM || isLoadingKG}
+              title="Clear cache and rebuild from scratch"
+            >
+              <Database className="w-3.5 h-3.5" />
+              Rebuild
+            </button>
+            <button
+              onClick={loadPatternMining}
+              className="p-2 border border-border rounded-lg hover:bg-accent/10 transition-colors"
+              disabled={isLoadingPM}
+              title="Refresh data"
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoadingPM ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
         <PatternMiningResults data={pmData} isLoading={isLoadingPM} />
       </div>

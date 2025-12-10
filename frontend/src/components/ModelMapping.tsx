@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useModelStore } from '../stores/modelStore'
 import { useUIStore } from '../stores/uiStore'
 import api from '../services/api'
-import { Settings, Save, RefreshCw, Download, Search } from 'lucide-react'
+import { downloadHuggingFaceModel, getDownloadStatus } from '../services/huggingfaceService'
+import { Settings, Save, RefreshCw, Download, Search, Loader2 } from 'lucide-react'
 
 interface ModelRouting {
   artifact_type: string
@@ -16,9 +17,11 @@ export default function ModelMapping() {
   const { addNotification } = useUIStore()
   const [routings, setRoutings] = useState<Record<string, ModelRouting>>({})
   const [loading, setLoading] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [routingFilter, setRoutingFilter] = useState('')  // Filter for routing table
+  const [huggingfaceQuery, setHuggingfaceQuery] = useState('')  // Search query for HuggingFace
   const [huggingfaceResults, setHuggingfaceResults] = useState<any[]>([])
   const [searching, setSearching] = useState(false)
+  const [downloadingModels, setDownloadingModels] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     loadRoutings()
@@ -48,7 +51,8 @@ export default function ModelMapping() {
       })
       setRoutings(routingDict)
     } catch (error) {
-      // Failed to load routings - handle in UI
+      console.error('Failed to load model routing:', error)
+      // Don't show notification on initial load - silent degradation
     }
   }
 
@@ -75,17 +79,17 @@ export default function ModelMapping() {
   }
 
   const searchHuggingface = async () => {
-    if (!searchQuery.trim()) return
+    if (!huggingfaceQuery.trim()) return
     
-    console.log('🔎 [HUGGINGFACE] Searching models for query:', searchQuery)
+    console.log('🔎 [HUGGINGFACE] Searching models for query:', huggingfaceQuery)
     setSearching(true)
     try {
       const response = await api.get('/api/huggingface/search', {
-        params: { query: searchQuery, limit: 10 }
+        params: { query: huggingfaceQuery, limit: 10 }
       })
       setHuggingfaceResults(response.data.results || [])
       console.log('🔎 [HUGGINGFACE] Search results:', response.data)
-      addNotification('info', `Found ${response.data.results?.length || 0} models for "${searchQuery}"`)
+      addNotification('info', `Found ${response.data.results?.length || 0} models for "${huggingfaceQuery}"`)
     } catch (error: any) {
       console.error('❌ [HUGGINGFACE] Search failed:', error)
       const status = error?.response?.status
@@ -106,44 +110,88 @@ export default function ModelMapping() {
     }
   }
 
-  const downloadModel = async (modelId: string) => {
+  const downloadModel = useCallback(async (modelId: string) => {
+    // Prevent duplicate downloads
+    if (downloadingModels.has(modelId)) {
+      addNotification('info', `Download already in progress for ${modelId}`)
+      return
+    }
+    
     try {
+      // Mark as downloading
+      setDownloadingModels(prev => new Set(prev).add(modelId))
       addNotification('info', `Starting download for ${modelId}...`)
       
-      // Use a much longer timeout for long-running downloads (e.g. 10 minutes)
-      const response = await api.post(
-        `/api/huggingface/download/${modelId}`,
-        { convert_to_ollama: true },
-        { timeout: 10 * 60 * 1000 }
-      )
+      // Use the service function which handles URL encoding
+      const result = await downloadHuggingFaceModel(modelId, true)
       
-      if (response.data.success) {
+      if (result.success) {
         addNotification('info', `Download started for ${modelId}. This may take several minutes.`)
         
-        // Poll for download status
+        // Poll for download status with progress updates
+        // Timeout after 30 minutes (360 polls at 5 second intervals)
+        let pollCount = 0
+        const maxPolls = 360
+        
         const checkStatus = async () => {
+          pollCount++
+          
+          // Timeout protection
+          if (pollCount > maxPolls) {
+            addNotification('warning', `Download for ${modelId} is taking longer than expected. Check the Intelligence page later.`)
+            setDownloadingModels(prev => {
+              const next = new Set(prev)
+              next.delete(modelId)
+              return next
+            })
+            return
+          }
+          
           try {
-            const statusResponse = await api.get(`/api/huggingface/download/${modelId}/status`)
-            const status = statusResponse.data
+            const status = await getDownloadStatus(modelId)
             
             if (status.status === 'completed') {
               addNotification('success', `Model ${modelId} downloaded successfully!`)
+              setDownloadingModels(prev => {
+                const next = new Set(prev)
+                next.delete(modelId)
+                return next
+              })
               fetchModels() // Refresh model list
             } else if (status.status === 'failed') {
               addNotification('error', `Download failed: ${status.error || 'Unknown error'}`)
+              setDownloadingModels(prev => {
+                const next = new Set(prev)
+                next.delete(modelId)
+                return next
+              })
             } else if (status.status === 'downloading') {
+              // Show progress if available
+              if (status.progress > 0) {
+                console.log(`📥 [HF_DOWNLOAD] ${modelId}: ${Math.round(status.progress * 100)}%`)
+              }
               // Check again in 5 seconds
               setTimeout(checkStatus, 5000)
+            } else {
+              // Unknown status or not_started, check again
+              setTimeout(checkStatus, 3000)
             }
           } catch (error) {
             console.error('Error checking download status:', error)
+            // Don't stop polling on temporary errors, but count them
+            setTimeout(checkStatus, 5000)
           }
         }
         
         // Start checking status after 2 seconds
         setTimeout(checkStatus, 2000)
       } else {
-        addNotification('error', `Download failed: ${response.data.error || 'Unknown error'}`)
+        addNotification('error', `Download failed: ${result.error || 'Unknown error'}`)
+        setDownloadingModels(prev => {
+          const next = new Set(prev)
+          next.delete(modelId)
+          return next
+        })
       }
     } catch (error: any) {
       // Improve error message for timeouts vs real backend errors
@@ -156,8 +204,13 @@ export default function ModelMapping() {
 
       addNotification('error', `Download error: ${errorMsg}`)
       console.error('Download error:', error)
+      setDownloadingModels(prev => {
+        const next = new Set(prev)
+        next.delete(modelId)
+        return next
+      })
     }
-  }
+  }, [downloadingModels, addNotification, fetchModels])
 
   const updateRouting = (artifactType: string, field: keyof ModelRouting, value: any) => {
     setRoutings(prev => ({
@@ -170,7 +223,7 @@ export default function ModelMapping() {
   }
 
   const filteredRoutings = Object.entries(routings).filter(([type]) =>
-    type.toLowerCase().includes(searchQuery.toLowerCase())
+    type.toLowerCase().includes(routingFilter.toLowerCase())
   )
 
   const ollamaModels = models.filter(m => m.provider === 'ollama')
@@ -213,8 +266,8 @@ export default function ModelMapping() {
         <div className="flex gap-2 mb-4">
           <input
             type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={huggingfaceQuery}
+            onChange={(e) => setHuggingfaceQuery(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && searchHuggingface()}
             placeholder="Search for models (e.g., codellama, mistral)..."
             className="flex-1 px-4 py-2 border border-border rounded-md bg-background text-foreground"
@@ -243,10 +296,20 @@ export default function ModelMapping() {
                 </div>
                 <button
                   onClick={() => downloadModel(model.id)}
-                  className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/90 flex items-center gap-1"
+                  disabled={downloadingModels.has(model.id)}
+                  className="px-3 py-1 bg-primary text-primary-foreground rounded text-sm hover:bg-primary/90 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Download className="w-4 h-4" />
-                  Download
+                  {downloadingModels.has(model.id) ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Downloading...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      Download
+                    </>
+                  )}
                 </button>
               </div>
             ))}
@@ -278,19 +341,36 @@ export default function ModelMapping() {
                       onChange={(e) => updateRouting(artifactType, 'primary_model', e.target.value)}
                       className="w-full px-3 py-1 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all hover:border-primary/50"
                     >
-                      <optgroup label="Ollama Models">
-                        {ollamaModels.map(model => (
-                          <option key={model.id} value={model.id}>
-                            {model.name} ({model.provider})
-                          </option>
-                        ))}
+                      <option value="">-- Select a model --</option>
+                      {/* Show current model if not in the list (unavailable but configured) */}
+                      {routing.primary_model && 
+                       !ollamaModels.some(m => m.id === routing.primary_model) && 
+                       !cloudModels.some(m => m.id === routing.primary_model) && (
+                        <option value={routing.primary_model} className="text-yellow-600">
+                          ⚠️ {routing.primary_model} (configured but unavailable)
+                        </option>
+                      )}
+                      <optgroup label="Ollama Models (Local)">
+                        {ollamaModels.length === 0 ? (
+                          <option disabled>No Ollama models found - install models first</option>
+                        ) : (
+                          ollamaModels.map(model => (
+                            <option key={model.id} value={model.id}>
+                              {model.name} ({model.provider})
+                            </option>
+                          ))
+                        )}
                       </optgroup>
-                      <optgroup label="Cloud Models">
-                        {cloudModels.map(model => (
-                          <option key={model.id} value={model.id}>
-                            {model.name} ({model.provider})
-                          </option>
-                        ))}
+                      <optgroup label="Cloud Models (API)">
+                        {cloudModels.length === 0 ? (
+                          <option disabled>No cloud models - configure API keys</option>
+                        ) : (
+                          cloudModels.map(model => (
+                            <option key={model.id} value={model.id}>
+                              {model.name} ({model.provider})
+                            </option>
+                          ))
+                        )}
                       </optgroup>
                     </select>
                   </td>
@@ -307,12 +387,13 @@ export default function ModelMapping() {
                           }}
                           className="w-full px-2 py-1 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all hover:border-primary/50"
                         >
-                          <optgroup label="Ollama">
+                          <option value="">-- Select fallback --</option>
+                          <optgroup label="Ollama (Local)">
                             {ollamaModels.map(m => (
                               <option key={m.id} value={m.id}>{m.name}</option>
                             ))}
                           </optgroup>
-                          <optgroup label="Cloud">
+                          <optgroup label="Cloud (API)">
                             {cloudModels.map(m => (
                               <option key={m.id} value={m.id}>{m.name}</option>
                             ))}

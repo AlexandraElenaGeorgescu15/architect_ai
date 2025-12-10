@@ -29,6 +29,83 @@ except ImportError:
     logger.warning("httpx not available. Ollama integration disabled.")
 
 
+def normalize_model_id(model_id: str, default_provider: str = "ollama") -> tuple[str, str]:
+    """
+    Normalize model ID to a consistent format.
+    
+    Handles various formats:
+    - "llama3" -> ("ollama", "llama3")
+    - "ollama:llama3" -> ("ollama", "llama3")
+    - "ollama:llama3:latest" -> ("ollama", "llama3:latest")
+    - "gemini:gemini-2.0-flash-exp" -> ("gemini", "gemini-2.0-flash-exp")
+    
+    Args:
+        model_id: Model identifier in any format
+        default_provider: Default provider if not specified (default: "ollama")
+    
+    Returns:
+        Tuple of (provider, model_name)
+    """
+    if not model_id:
+        return (default_provider, "llama3")
+    
+    model_id = model_id.strip()
+    
+    # Check for provider prefix
+    known_providers = ["ollama", "gemini", "openai", "anthropic", "groq", "huggingface"]
+    
+    for provider in known_providers:
+        if model_id.startswith(f"{provider}:"):
+            # Extract model name after provider prefix
+            model_name = model_id[len(provider) + 1:]
+            return (provider, model_name)
+    
+    # No provider prefix - check if it looks like a cloud model
+    cloud_model_patterns = {
+        "gemini": ["gemini-"],
+        "openai": ["gpt-", "davinci", "curie", "babbage", "ada"],
+        "anthropic": ["claude-"],
+        "groq": ["llama-3.3", "llama-3.1", "mixtral"],
+    }
+    
+    for provider, patterns in cloud_model_patterns.items():
+        for pattern in patterns:
+            if model_id.lower().startswith(pattern.lower()):
+                return (provider, model_id)
+    
+    # Default to specified provider (usually ollama)
+    return (default_provider, model_id)
+
+
+def get_canonical_model_id(model_id: str, default_provider: str = "ollama") -> str:
+    """
+    Get canonical model ID in 'provider:model_name' format.
+    
+    Args:
+        model_id: Model identifier in any format
+        default_provider: Default provider if not specified
+    
+    Returns:
+        Canonical model ID string
+    """
+    provider, model_name = normalize_model_id(model_id, default_provider)
+    return f"{provider}:{model_name}"
+
+
+def get_ollama_model_name(model_id: str) -> str:
+    """
+    Extract just the model name for Ollama API calls (without provider prefix).
+    
+    Args:
+        model_id: Model identifier in any format
+    
+    Returns:
+        Model name without provider prefix
+    """
+    provider, model_name = normalize_model_id(model_id, "ollama")
+    return model_name
+
+
 class ModelService:
     """
     Model management service for tracking and routing models.
@@ -589,8 +666,8 @@ class ModelService:
                 if (model_artifact_type == artifact_type_str or 
                     artifact_type_str in model_id.lower() or
                     artifact_type_str in model_info.name.lower()):
-                    # Extract model name (remove "ollama:" prefix)
-                    model_name = model_id.split(":", 1)[1] if ":" in model_id else model_id
+                    # Use normalization to extract model name
+                    model_name = get_ollama_model_name(model_id)
                     if model_name not in models:
                         models.append(model_name)
                         logger.info(f"✅ Found fine-tuned model for {artifact_type_str}: {model_name}")
@@ -600,41 +677,21 @@ class ModelService:
         if routing and routing.enabled:
             logger.info(f"📋 [MODEL_SERVICE] Found routing for {artifact_type_str}: primary={routing.primary_model}, fallbacks={routing.fallback_models}")
             
-            # Add primary model (extract Ollama model name)
+            # Add primary model using normalization
             primary = routing.primary_model
-            # Handle different formats: "ollama:model", "model (ollama)", or just "model"
-            if primary.startswith("ollama:"):
-                model_name = primary.split(":", 1)[1]
-            elif " (ollama)" in primary:
-                # Handle display format like "model (ollama)"
-                model_name = primary.replace(" (ollama)", "").strip()
-            elif ":" in primary and not primary.startswith("ollama:"):
-                # Handle format like "deepseek-coder:6.7b-instruct-q4_K_M" (no provider prefix)
-                model_name = primary
-            else:
-                # Assume Ollama if no prefix (backward compatibility)
-                model_name = primary
+            provider, model_name = normalize_model_id(primary, "ollama")
             
-            if model_name and model_name not in models:
+            # Only add Ollama models to local models list
+            if provider == "ollama" and model_name and model_name not in models:
                 models.append(model_name)
                 logger.info(f"✅ [MODEL_SERVICE] Added primary model: {model_name}")
             
             # Add fallback models (only Ollama)
             for fallback in routing.fallback_models:
-                # Handle different formats: "ollama:model", "model (ollama)", or just "model"
-                if fallback.startswith("ollama:"):
-                    model_name = fallback.split(":", 1)[1]
-                elif " (ollama)" in fallback:
-                    # Handle display format like "model (ollama)"
-                    model_name = fallback.replace(" (ollama)", "").strip()
-                elif ":" in fallback and not fallback.startswith("ollama:"):
-                    # Handle format like "deepseek-coder:6.7b-instruct-q4_K_M" (no provider prefix)
-                    model_name = fallback
-                else:
-                    # Assume Ollama if no prefix (backward compatibility)
-                    model_name = fallback
+                provider, model_name = normalize_model_id(fallback, "ollama")
                 
-                if model_name and model_name not in models:
+                # Only add Ollama models to local models list
+                if provider == "ollama" and model_name and model_name not in models:
                     models.append(model_name)
                     logger.debug(f"✅ [MODEL_SERVICE] Added fallback model: {model_name}")
         else:
@@ -666,7 +723,7 @@ class ModelService:
             # Get all available Ollama models
             for model_id, model_info in self.models.items():
                 if model_info.provider == "ollama" and model_info.status == "available":
-                    model_name = model_id.split(":", 1)[1] if ":" in model_id else model_id
+                    model_name = get_ollama_model_name(model_id)
                     if model_name not in models:
                         models.append(model_name)
             

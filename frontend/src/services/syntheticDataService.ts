@@ -2,7 +2,7 @@
  * Synthetic Data Service - Frontend client for synthetic dataset generation
  */
 
-import axios from 'axios'
+import api from './api'
 
 const API_BASE = '/api/synthetic-data'
 
@@ -55,7 +55,7 @@ export interface SyntheticStats {
 export async function generateSyntheticData(
   request: SyntheticGenerationRequest
 ): Promise<SyntheticGenerationResponse> {
-  const response = await axios.post<SyntheticGenerationResponse>(
+  const response = await api.post<SyntheticGenerationResponse>(
     `${API_BASE}/generate`,
     request
   )
@@ -66,7 +66,7 @@ export async function generateSyntheticData(
  * List available generation backends
  */
 export async function listBackends(): Promise<BackendInfo[]> {
-  const response = await axios.get<BackendInfo[]>(`${API_BASE}/backends`)
+  const response = await api.get<BackendInfo[]>(`${API_BASE}/backends`)
   return response.data
 }
 
@@ -74,7 +74,7 @@ export async function listBackends(): Promise<BackendInfo[]> {
  * Get synthetic vs real stats for an artifact type
  */
 export async function getStats(artifactType: string): Promise<SyntheticStats> {
-  const response = await axios.get<SyntheticStats>(
+  const response = await api.get<SyntheticStats>(
     `${API_BASE}/stats/${artifactType}`
   )
   return response.data
@@ -84,7 +84,7 @@ export async function getStats(artifactType: string): Promise<SyntheticStats> {
  * Get stats for all artifact types
  */
 export async function getAllStats(): Promise<Record<string, SyntheticStats>> {
-  const response = await axios.get<Record<string, SyntheticStats>>(
+  const response = await api.get<Record<string, SyntheticStats>>(
     `${API_BASE}/stats`
   )
   return response.data
@@ -99,7 +99,7 @@ export async function clearSynthetic(artifactType: string): Promise<{
   removed_count: number
   remaining_count: number
 }> {
-  const response = await axios.delete(`${API_BASE}/clear/${artifactType}`)
+  const response = await api.delete(`${API_BASE}/clear/${artifactType}`)
   return response.data
 }
 

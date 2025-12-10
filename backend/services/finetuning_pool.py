@@ -386,3 +386,99 @@ def get_pool() -> FinetuningPool:
         _pool = FinetuningPool()
     return _pool
 
+
+def get_finetuning_status() -> Dict[str, Any]:
+    """
+    Get the current finetuning system status.
+    
+    Useful for startup diagnostics and health checks.
+    
+    Returns:
+        Dictionary with finetuning system status including:
+        - available: Whether finetuning components are available
+        - dataset_builder_ready: Whether dataset builder is initialized
+        - finetuning_manager_ready: Whether finetuning manager is initialized
+        - pool_stats: Stats about current training data pool
+        - missing_components: List of missing components (if any)
+    """
+    status = {
+        "available": FINETUNING_AVAILABLE,
+        "dataset_builder_ready": False,
+        "finetuning_manager_ready": False,
+        "pool_stats": None,
+        "missing_components": [],
+        "recommendations": []
+    }
+    
+    # Check what's missing if finetuning isn't available
+    if not FINETUNING_AVAILABLE:
+        status["missing_components"] = [
+            "components.finetuning_dataset_builder",
+            "components.ollama_finetuning"
+        ]
+        status["recommendations"].append(
+            "Finetuning is optional. To enable, ensure finetuning components exist in components/ directory."
+        )
+    
+    # Get pool instance and check components
+    try:
+        pool = get_pool()
+        status["dataset_builder_ready"] = pool.dataset_builder is not None
+        status["finetuning_manager_ready"] = pool.finetuning_manager is not None
+        
+        # Get pool stats
+        status["pool_stats"] = pool.get_pool_stats()
+        
+        # Add recommendations
+        if status["pool_stats"]:
+            total = status["pool_stats"].get("total_examples", 0)
+            ready = status["pool_stats"].get("ready_for_finetuning", 0)
+            
+            if total > 0 and ready == 0:
+                status["recommendations"].append(
+                    f"You have {total} examples but none ready for finetuning (need 50+ per artifact type)."
+                )
+            elif ready > 0:
+                status["recommendations"].append(
+                    f"{ready} artifact type(s) ready for finetuning with 50+ examples each."
+                )
+    except Exception as e:
+        logger.error(f"Error getting finetuning status: {e}")
+        status["error"] = str(e)
+    
+    return status
+
+
+def log_finetuning_status_on_startup():
+    """
+    Log finetuning system status at startup.
+    
+    Call this during application initialization to report finetuning readiness.
+    """
+    status = get_finetuning_status()
+    
+    if status["available"]:
+        logger.info("✅ Finetuning system is available")
+        if status["dataset_builder_ready"]:
+            logger.info("   📊 Dataset builder: Ready")
+        else:
+            logger.warning("   📊 Dataset builder: Not initialized")
+        
+        if status["finetuning_manager_ready"]:
+            logger.info("   🔧 Finetuning manager: Ready")
+        else:
+            logger.warning("   🔧 Finetuning manager: Not initialized")
+    else:
+        logger.info("ℹ️ Finetuning system is not available (optional feature)")
+        logger.info("   This is normal - finetuning components are optional")
+        logger.info("   High-quality examples will still be collected for future use")
+    
+    # Log pool stats
+    if status["pool_stats"]:
+        total = status["pool_stats"].get("total_examples", 0)
+        ready = status["pool_stats"].get("ready_for_finetuning", 0)
+        logger.info(f"   📁 Training pool: {total} examples, {ready} types ready for finetuning")
+    
+    # Log recommendations
+    for rec in status.get("recommendations", []):
+        logger.info(f"   💡 {rec}")

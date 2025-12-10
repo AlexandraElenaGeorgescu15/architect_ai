@@ -289,9 +289,14 @@ async def clear_synthetic_examples(request: Request, artifact_type: str):
         
         removed_count = len(examples) - len(real_examples)
         
-        # Update pool (this would need a new method in finetuning_pool)
-        # For now, log the intent
-        logger.info(f"Would remove {removed_count} synthetic examples for {artifact_type}")
+        # Actually update the pool by replacing with filtered examples
+        if artifact_type in pool.pools:
+            pool.pools[artifact_type] = real_examples
+            # Persist changes to disk
+            pool._save_pool(artifact_type)
+            logger.info(f"Removed {removed_count} synthetic examples for {artifact_type}, {len(real_examples)} real examples remain")
+        else:
+            logger.warning(f"Artifact type {artifact_type} not found in pool")
         
         return {
             "success": True,

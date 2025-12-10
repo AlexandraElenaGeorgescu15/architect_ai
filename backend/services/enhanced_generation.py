@@ -117,7 +117,8 @@ class EnhancedGenerationService:
                         include_rag=True,
                         include_kg=True,
                         include_patterns=True,
-                        artifact_type=artifact_type.value  # Pass artifact type for targeted RAG
+                        artifact_type=artifact_type.value,  # Pass artifact type for targeted RAG
+                        force_refresh=True  # Always get fresh context for generation
                     )
                     logger.info(f"✅ [ENHANCED_GEN] New context built successfully")
                 else:
@@ -129,7 +130,8 @@ class EnhancedGenerationService:
                     include_rag=True,
                     include_kg=True,
                     include_patterns=True,
-                    artifact_type=artifact_type.value  # Pass artifact type for targeted RAG
+                    artifact_type=artifact_type.value,  # Pass artifact type for targeted RAG
+                    force_refresh=True  # Always get fresh context for generation
                 )
                 logger.info(f"✅ [ENHANCED_GEN] Context built successfully")
         
@@ -986,6 +988,9 @@ class GenerationResult:
         self.error = error
 
 
+# Import normalization utility
+from backend.services.model_service import normalize_model_id, get_ollama_model_name
+
 # Add generate_with_fallback method to EnhancedGenerationService
 async def _generate_with_fallback(
     self,
@@ -993,7 +998,9 @@ async def _generate_with_fallback(
     system_instruction: str = "",
     model_routing: Optional[Any] = None,
     response_format: str = "text",
-    temperature: float = 0.3
+    temperature: float = 0.3,
+    max_local_attempts: int = 2,  # Reduce from default for faster response
+    timeout_seconds: int = 60  # Timeout for single attempt
 ) -> GenerationResult:
     """
     Generate content with model fallback support.
@@ -1005,6 +1012,8 @@ async def _generate_with_fallback(
         model_routing: Optional routing configuration
         response_format: Expected response format ("text" or "json")
         temperature: Generation temperature
+        max_local_attempts: Maximum local model attempts before cloud fallback (default: 2)
+        timeout_seconds: Timeout for a single generation attempt
     
     Returns:
         GenerationResult with content and model_used
@@ -1012,24 +1021,29 @@ async def _generate_with_fallback(
     logger.info(f"🔄 [ENHANCED_GEN] generate_with_fallback called: prompt_length={len(prompt)}, "
                f"response_format={response_format}, temperature={temperature}")
     
-    # Get models to try
+    # Get models to try (using normalization utility for consistent handling)
     models_to_try = []
+    cloud_models_to_try = []  # For cloud fallback
     
     # If routing is provided, use it
     if model_routing:
         if hasattr(model_routing, 'primary_model'):
             primary = model_routing.primary_model
-            if primary.startswith("ollama:"):
-                models_to_try.append(primary.split(":", 1)[1])
+            provider, model_name = normalize_model_id(primary, "ollama")
+            if provider == "ollama":
+                models_to_try.append(model_name)
             else:
-                models_to_try.append(primary)
+                cloud_models_to_try.append((provider, model_name))
         
         if hasattr(model_routing, 'fallback_models'):
             for fallback in model_routing.fallback_models:
-                if fallback.startswith("ollama:"):
-                    models_to_try.append(fallback.split(":", 1)[1])
-                elif not ":" in fallback:  # Local model without prefix
-                    models_to_try.append(fallback)
+                provider, model_name = normalize_model_id(fallback, "ollama")
+                if provider == "ollama":
+                    if model_name not in models_to_try:
+                        models_to_try.append(model_name)
+                else:
+                    if (provider, model_name) not in cloud_models_to_try:
+                        cloud_models_to_try.append((provider, model_name))
     
     # Default models if none from routing
     if not models_to_try:
@@ -1037,22 +1051,36 @@ async def _generate_with_fallback(
     
     logger.info(f"📋 [ENHANCED_GEN] Models to try: {models_to_try[:5]}")
     
-    # Try local models first
+    # Try local models first (with limited attempts for faster response)
+    local_attempts = 0
     if self.ollama_client:
         for model_name in models_to_try:
+            if local_attempts >= max_local_attempts:
+                logger.info(f"⏭️ [ENHANCED_GEN] Reached max local attempts ({max_local_attempts}), moving to cloud")
+                break
+            
+            local_attempts += 1
             try:
-                logger.info(f"🤖 [ENHANCED_GEN] Trying local model: {model_name}")
+                logger.info(f"🤖 [ENHANCED_GEN] Trying local model: {model_name} (attempt {local_attempts}/{max_local_attempts})")
                 
                 # Ensure model is available
                 await self.ollama_client.ensure_model_available(model_name)
                 
-                # Generate
-                response = await self.ollama_client.generate(
-                    model_name=model_name,
-                    prompt=prompt,
-                    system_message=system_instruction,
-                    temperature=temperature
-                )
+                # Generate with timeout
+                try:
+                    import asyncio
+                    response = await asyncio.wait_for(
+                        self.ollama_client.generate(
+                            model_name=model_name,
+                            prompt=prompt,
+                            system_message=system_instruction,
+                            temperature=temperature
+                        ),
+                        timeout=timeout_seconds
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning(f"⏱️ [ENHANCED_GEN] Timeout after {timeout_seconds}s with {model_name}")
+                    continue
                 
                 if response.success and response.content:
                     logger.info(f"✅ [ENHANCED_GEN] Success with {model_name}: content_length={len(response.content)}")
@@ -1069,14 +1097,21 @@ async def _generate_with_fallback(
                 continue
     
     # Try cloud models as fallback
-    cloud_providers = [
+    # Prioritize cloud models from routing, then default providers
+    default_cloud_providers = [
         ("gemini", "gemini-2.0-flash-exp"),
         ("groq", "llama-3.3-70b-versatile"),
         ("openai", "gpt-4-turbo"),
         ("anthropic", "claude-3-5-sonnet-20241022"),
     ]
     
-    for provider, model_name in cloud_providers:
+    # Combine routing cloud models (first) with defaults (skip duplicates)
+    all_cloud_providers = cloud_models_to_try.copy()
+    for provider, model_name in default_cloud_providers:
+        if (provider, model_name) not in all_cloud_providers:
+            all_cloud_providers.append((provider, model_name))
+    
+    for provider, model_name in all_cloud_providers:
         try:
             logger.info(f"☁️ [ENHANCED_GEN] Trying cloud model: {provider}:{model_name}")
             content = await self._call_cloud_api_direct(

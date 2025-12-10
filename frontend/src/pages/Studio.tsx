@@ -120,8 +120,8 @@ function Studio() {
   ], [])
 
   return (
-    <div className="h-full flex flex-col animate-fade-in-up min-h-0">
-      <div className="flex-1 min-h-0 px-4 py-3">
+    <div className="w-full animate-fade-in-up">
+      <div className="px-4 py-3">
         <UnifiedStudioTabs
         meetingNotes={meetingNotes}
         setMeetingNotes={setMeetingNotes}

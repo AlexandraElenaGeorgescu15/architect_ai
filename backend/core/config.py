@@ -12,9 +12,14 @@ class Settings(BaseSettings):
     
     # Application
     app_name: str = "Architect.AI API"
-    app_version: str = "1.0.0"
+    app_version: str = "3.5.2"
     debug: bool = False
     base_path: Path = Path(__file__).parent.parent.parent  # Base path for the application (project root)
+    
+    # Target repository path - the USER's project to analyze (NOT Architect.AI itself)
+    # Set this to the path of the project you want to analyze
+    # If not set, will try to detect user project directories automatically
+    target_repo_path: Optional[str] = None
     
     # Database
     database_url: str = f"sqlite:///{Path(__file__).parent.parent.parent / 'data' / 'architect_ai.db'}"

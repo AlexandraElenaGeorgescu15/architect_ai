@@ -1,5 +1,31 @@
 import { WebSocketEvent } from '../types'
 
+// Get WebSocket URL from environment or derive from current location
+const getWebSocketBaseUrl = (): string => {
+  // Check for explicit WS URL in environment
+  const envWsUrl = import.meta.env.VITE_WS_URL
+  if (envWsUrl) {
+    return envWsUrl
+  }
+  
+  // Check for API URL and convert to WebSocket
+  const apiUrl = import.meta.env.VITE_API_URL
+  if (apiUrl) {
+    const url = new URL(apiUrl, window.location.origin)
+    return `${url.protocol === 'https:' ? 'wss:' : 'ws:'}//${url.host}`
+  }
+  
+  // In development, default to localhost:8000
+  // In production, use current host
+  if (import.meta.env.DEV) {
+    return 'ws://localhost:8000'
+  }
+  
+  // Production: use current origin with appropriate protocol
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${window.location.host}`
+}
+
 export type WebSocketEventType =
   | 'generation.progress'
   | 'generation.chunk'
@@ -19,6 +45,8 @@ class WebSocketService {
   private reconnectDelay = 1000
   private eventHandlers: Map<WebSocketEventType, Set<EventHandler>> = new Map()
   private isConnecting = false
+  private hasEverConnected = false
+  private shouldReconnect = true
 
   /**
    * Connect to WebSocket server.
@@ -33,7 +61,8 @@ class WebSocketService {
       this.isConnecting = true
       this.roomId = roomId
 
-      const wsUrl = new URL(`ws://localhost:8000/ws/${roomId}`)
+      const wsBaseUrl = getWebSocketBaseUrl()
+      const wsUrl = new URL(`${wsBaseUrl}/ws/${roomId}`)
       if (token) {
         wsUrl.searchParams.set('token', token)
       }
@@ -45,6 +74,7 @@ class WebSocketService {
           // WebSocket connected successfully
           this.isConnecting = false
           this.reconnectAttempts = 0
+          this.hasEverConnected = true
           resolve()
         }
 
@@ -68,8 +98,12 @@ class WebSocketService {
           this.isConnecting = false
           this.ws = null
 
-          // Attempt to reconnect
-          if (this.reconnectAttempts < this.maxReconnectAttempts && this.roomId) {
+          // Only attempt to reconnect if:
+          // 1. We've successfully connected before (not just initial connection failure)
+          // 2. We haven't exceeded max reconnection attempts
+          // 3. We still have a roomId
+          // 4. Reconnection is enabled
+          if (this.hasEverConnected && this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts && this.roomId) {
             this.reconnectAttempts++
             setTimeout(() => {
               this.connect(this.roomId!, token).catch(() => {
@@ -89,6 +123,7 @@ class WebSocketService {
    * Disconnect from WebSocket server.
    */
   disconnect(): void {
+    this.shouldReconnect = false
     if (this.ws) {
       this.ws.close()
       this.ws = null

@@ -21,6 +21,15 @@ export interface HuggingFaceDownloadResponse {
   message: string
   model_id: string
   convert_to_ollama?: boolean
+  error?: string
+}
+
+export interface DownloadStatusResponse {
+  success: boolean
+  status: 'not_started' | 'downloading' | 'completed' | 'failed'
+  model_id: string
+  progress: number
+  error?: string
 }
 
 export interface DownloadedModel {
@@ -29,6 +38,19 @@ export interface DownloadedModel {
   downloaded_at: string
   path?: string
   converted_to_ollama?: boolean
+}
+
+/**
+ * URL-encode a HuggingFace model ID for use in API paths.
+ * Model IDs contain slashes (e.g., "codellama/CodeLlama-7b-Instruct-hf")
+ * which need to be properly encoded for URL paths.
+ */
+function encodeModelId(modelId: string): string {
+  // encodeURIComponent encodes slashes, but the backend uses {model_id:path}
+  // which expects the raw path. We need to be careful here.
+  // Actually, the backend uses FastAPI's path converter which handles slashes,
+  // so we should NOT encode the slashes - just encode other special chars.
+  return modelId.split('/').map(part => encodeURIComponent(part)).join('/')
 }
 
 /**
@@ -50,14 +72,30 @@ export async function searchHuggingFaceModels(
 
 /**
  * Download a model from HuggingFace and optionally convert to Ollama.
+ * This starts a background download - use getDownloadStatus to track progress.
  */
 export async function downloadHuggingFaceModel(
   modelId: string,
   convertToOllama: boolean = true
 ): Promise<HuggingFaceDownloadResponse> {
+  const encodedModelId = encodeModelId(modelId)
   const response = await api.post<HuggingFaceDownloadResponse>(
-    `/api/huggingface/download/${modelId}`,
-    { convert_to_ollama: convertToOllama }
+    `/api/huggingface/download/${encodedModelId}`,
+    { convert_to_ollama: convertToOllama },
+    { timeout: 30000 } // 30 second timeout for initial request (download runs in background)
+  )
+  return extractData(response)
+}
+
+/**
+ * Get the download status for a model.
+ */
+export async function getDownloadStatus(
+  modelId: string
+): Promise<DownloadStatusResponse> {
+  const encodedModelId = encodeModelId(modelId)
+  const response = await api.get<DownloadStatusResponse>(
+    `/api/huggingface/download/${encodedModelId}/status`
   )
   return extractData(response)
 }
@@ -81,7 +119,8 @@ export async function getHuggingFaceModelInfo(modelId: string): Promise<{
   success: boolean
   model: HuggingFaceModel
 }> {
-  const response = await api.get(`/api/huggingface/info/${modelId}`)
+  const encodedModelId = encodeModelId(modelId)
+  const response = await api.get(`/api/huggingface/info/${encodedModelId}`)
   return extractData(response)
 }
 

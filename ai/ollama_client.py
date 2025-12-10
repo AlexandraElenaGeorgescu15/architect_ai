@@ -256,6 +256,7 @@ class OllamaClient:
         model_name: str,
         prompt: str,
         system: Optional[str] = None,
+        system_message: Optional[str] = None,  # Alias for system (compatibility)
         temperature: float = 0.0,
         max_tokens: Optional[int] = None,
         **kwargs
@@ -269,6 +270,7 @@ class OllamaClient:
             model_name: Name of the model to use
             prompt: The prompt to generate from
             system: System prompt (optional)
+            system_message: Alias for system (for compatibility with enhanced_generation)
             temperature: Sampling temperature (0.0 = deterministic)
             max_tokens: Maximum tokens to generate (optional)
             **kwargs: Additional generation parameters
@@ -276,6 +278,10 @@ class OllamaClient:
         Returns:
             GenerationResponse with content and metadata
         """
+        # Handle system_message alias
+        if system_message and not system:
+            system = system_message
+        
         start_time = time.time()
         
         # Ensure model is loaded

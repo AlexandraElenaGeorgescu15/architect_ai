@@ -8,6 +8,7 @@ from starlette.requests import Request
 from typing import Optional, List, Dict
 import json
 import logging
+import asyncio
 from datetime import datetime
 
 from backend.models.dto import (
@@ -211,12 +212,46 @@ async def generate_artifact(
             loop.close()
             logger.debug(f"🧹 [GENERATION] Background task cleanup completed")
     
+    # Wait a short time for the artifact to be ready (improves UX)
+    # This gives immediate results for fast generations while still allowing background for slow ones
     background_tasks.add_task(generate_task)
     
-    # Return immediately with job_id
+    # Wait up to 30 seconds for the job to complete (most generations finish within this time)
+    max_wait = 30
+    for i in range(max_wait * 2):  # Check every 0.5 seconds
+        await asyncio.sleep(0.5)
+        
+        # Check if job completed
+        service = get_service()
+        if job_id and job_id in service.active_jobs:
+            job_status = service.active_jobs[job_id]
+            if job_status.get("status") == GenerationStatus.COMPLETED.value:
+                # Artifact is ready! Return it directly
+                artifact = job_status.get("artifact")
+                if artifact:
+                    logger.info(f"✅ [GENERATION] Artifact ready within {(i+1)/2}s, returning directly: job_id={job_id}")
+                    return GenerationResponse(
+                        job_id=job_id,
+                        status=GenerationStatus.COMPLETED,
+                        artifact_id=artifact.get("id") or artifact.get("artifact_id"),
+                        artifact=artifact
+                    )
+            elif job_status.get("status") == GenerationStatus.FAILED.value:
+                # Generation failed
+                error = job_status.get("error", "Generation failed")
+                logger.error(f"❌ [GENERATION] Generation failed: job_id={job_id}, error={error}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=error
+                )
+    
+    # If we reach here, generation is still in progress after 30 seconds
+    # Return the job_id so frontend can wait for WebSocket events
+    logger.info(f"⏳ [GENERATION] Generation still in progress after {max_wait}s, returning job_id: {job_id}")
     response = GenerationResponse(
         job_id=job_id or "pending",
-        status=GenerationStatus.IN_PROGRESS
+        status=GenerationStatus.IN_PROGRESS,
+        message="Generation in progress. The artifact will be delivered via WebSocket when ready."
     )
     logger.info(f"📤 [GENERATION] Returning response: job_id={response.job_id}, status={response.status}")
     return response
@@ -501,11 +536,11 @@ async def update_artifact(
         version_service.create_version(
             artifact_id=artifact_id,
             artifact_type=updated.get("artifact_type", "unknown"),
-            content=request.get("content"),
+            content=body.get("content"),
             metadata={
                 "updated_by": current_user.username,
                 "update_type": "manual_edit",
-                **(request.get("metadata") or {})
+                **(body.get("metadata") or {})
             }
         )
     except Exception as e:
@@ -699,6 +734,184 @@ async def list_artifacts(
     
     logger.info(f"📋 [GENERATION] Returning {len(latest_artifacts)} artifacts (latest version per type, from {len(artifacts)} total)")
     return latest_artifacts
+
+
+@router.post("/artifacts/{artifact_id}/regenerate", response_model=GenerationResponse)
+@limiter.limit("5/minute")
+async def regenerate_artifact(
+    request: Request,
+    artifact_id: str,
+    body: dict = None,
+    background_tasks: BackgroundTasks = None,
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """
+    Regenerate an artifact with the same or updated parameters.
+    
+    Path parameters:
+    - artifact_id: Artifact identifier (can be artifact_type like 'mermaid_erd')
+    
+    Request body (optional):
+    {
+        "options": {
+            "max_retries": 3,
+            "temperature": 0.7
+        }
+    }
+    """
+    logger.info(f"🔄 [REGENERATE] Regenerating artifact: {artifact_id}")
+    
+    service = get_service()
+    
+    # Try to find original artifact in active_jobs or version_service
+    original_meeting_notes = None
+    original_artifact_type = None
+    
+    # Check active jobs first
+    if artifact_id in service.active_jobs:
+        job = service.active_jobs[artifact_id]
+        original_meeting_notes = job.get("meeting_notes", "")
+        original_artifact_type = job.get("artifact_type")
+        logger.info(f"🔍 [REGENERATE] Found artifact in active_jobs")
+    
+    # Check version service
+    if not original_meeting_notes:
+        try:
+            from backend.services.version_service import get_version_service
+            version_service = get_version_service()
+            
+            # artifact_id might be the artifact_type (stable ID)
+            if artifact_id in version_service.versions:
+                versions = version_service.versions[artifact_id]
+                if versions:
+                    current_version = versions[-1]  # Get latest
+                    original_artifact_type = current_version.get("artifact_type", artifact_id)
+                    original_meeting_notes = current_version.get("metadata", {}).get("meeting_notes", "")
+                    logger.info(f"🔍 [REGENERATE] Found artifact in version_service: type={original_artifact_type}")
+        except Exception as e:
+            logger.warning(f"Could not check version service: {e}")
+    
+    # If still no meeting notes, try to infer artifact type from ID
+    if not original_artifact_type:
+        # The artifact_id might BE the artifact_type
+        try:
+            original_artifact_type = ArtifactType(artifact_id)
+            logger.info(f"🔍 [REGENERATE] Using artifact_id as artifact_type: {original_artifact_type}")
+        except ValueError:
+            # Try to extract type from ID pattern like "mermaid_erd_20231209_123456"
+            for art_type in ArtifactType:
+                if artifact_id.startswith(art_type.value):
+                    original_artifact_type = art_type
+                    logger.info(f"🔍 [REGENERATE] Inferred artifact_type from ID: {original_artifact_type}")
+                    break
+    
+    if not original_artifact_type:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Cannot determine artifact type for {artifact_id}. Provide artifact_type in request body."
+        )
+    
+    # Use meeting notes from request body if provided, otherwise use original
+    if body:
+        body_json = body if isinstance(body, dict) else {}
+    else:
+        try:
+            body_json = await request.json()
+        except:
+            body_json = {}
+    
+    meeting_notes = body_json.get("meeting_notes", original_meeting_notes or "Regenerate previous artifact")
+    options = body_json.get("options", {})
+    
+    # Ensure minimum meeting notes
+    if len(meeting_notes.strip()) < 10:
+        meeting_notes = f"Regenerate {original_artifact_type.value if hasattr(original_artifact_type, 'value') else original_artifact_type} artifact with improved quality."
+    
+    # Create generation request
+    gen_request = GenerationRequest(
+        artifact_type=original_artifact_type if isinstance(original_artifact_type, ArtifactType) else ArtifactType(original_artifact_type),
+        meeting_notes=meeting_notes,
+        options=GenerationOptions(**options) if options else GenerationOptions()
+    )
+    
+    logger.info(f"🚀 [REGENERATE] Starting regeneration: artifact_type={gen_request.artifact_type.value}, "
+                f"meeting_notes_length={len(meeting_notes)}")
+    
+    # Generate in background (same logic as generate_artifact)
+    job_id = None
+    
+    def regenerate_task():
+        nonlocal job_id
+        result = None
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            logger.info(f"🔄 [REGENERATE] Background task started for {gen_request.artifact_type.value}")
+            
+            async def generate_with_progress():
+                nonlocal job_id
+                final_result = None
+                
+                async for update in service.generate_artifact(
+                    artifact_type=gen_request.artifact_type,
+                    meeting_notes=meeting_notes,
+                    context_id=None,
+                    options=gen_request.options.dict() if gen_request.options else None,
+                    stream=False
+                ):
+                    if not job_id and update.get("job_id"):
+                        job_id = update.get("job_id")
+                        logger.info(f"📋 [REGENERATE] Job ID assigned: {job_id}")
+                    
+                    if update.get("type") == "progress":
+                        try:
+                            from backend.core.websocket import websocket_manager
+                            await websocket_manager.emit_generation_progress(
+                                job_id=job_id or f"regen_{artifact_id}",
+                                progress=update.get("progress", 0.0),
+                                message=f"Regenerating: {update.get('message', '')}",
+                                quality_prediction=update.get("quality_prediction")
+                            )
+                        except Exception as e:
+                            logger.warning(f"Failed to emit progress: {e}")
+                    
+                    final_result = update
+                
+                return final_result
+            
+            result = loop.run_until_complete(generate_with_progress())
+            job_id = result.get("job_id") if result else job_id
+            logger.info(f"✅ [REGENERATE] Background task completed: job_id={job_id}")
+            
+            # Emit WebSocket event
+            if job_id and result and result.get("artifact"):
+                from backend.core.websocket import websocket_manager
+                artifact = result.get("artifact", {})
+                loop.run_until_complete(
+                    websocket_manager.emit_generation_complete(
+                        job_id=job_id,
+                        artifact_id=str(artifact.get("id", job_id)),
+                        validation_score=float(artifact.get("validation", {}).get("score", 0)),
+                        is_valid=bool(artifact.get("validation", {}).get("is_valid", False)),
+                        artifact=artifact
+                    )
+                )
+                logger.info(f"✅ [REGENERATE] WebSocket event emitted for job {job_id}")
+        except Exception as e:
+            logger.error(f"❌ [REGENERATE] Background regeneration task failed: {e}", exc_info=True)
+        finally:
+            loop.close()
+    
+    background_tasks.add_task(regenerate_task)
+    
+    # Return immediately with job_id
+    response = GenerationResponse(
+        job_id=job_id or f"regen_{artifact_id}",
+        status=GenerationStatus.IN_PROGRESS
+    )
+    logger.info(f"📤 [REGENERATE] Returning response: job_id={response.job_id}, status={response.status}")
+    return response
 
 
 @router.get("/artifacts/{artifact_id}", response_model=dict, summary="Get artifact by ID")

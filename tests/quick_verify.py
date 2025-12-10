@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Quick verification that imports work after reorganization"""
+"""Quick verification that imports work for Architect.AI v3.5.2"""
 import sys
 import os
 
 # Enable UTF-8 output on Windows
 if sys.platform == 'win32':
     import io
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+    try:
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+    except (AttributeError, OSError):
+        pass
 
 print("\n" + "="*60)
-print("QUICK IMPORT VERIFICATION")
+print("QUICK IMPORT VERIFICATION - Architect.AI v3.5.2")
 print("="*60 + "\n")
 
 # Disable ChromaDB telemetry
@@ -30,13 +33,12 @@ try:
     tests_passed += 1
 except Exception as e:
     print(f"  ❌ FAILED: {e}")
-tests_total += 1
 
-# Test 2: Components import
-print("\n[2/6] Testing components...")
+# Test 2: Backend services import
+print("\n[2/6] Testing backend services...")
 try:
-    from components.knowledge_graph import KnowledgeGraphBuilder
-    from components.pattern_mining import PatternMiner
+    from backend.services.knowledge_graph import KnowledgeGraphBuilder
+    from backend.services.pattern_mining import PatternMiner
     print("  ✅ SUCCESS")
     tests_passed += 1
 except Exception as e:
@@ -71,17 +73,18 @@ try:
 except Exception as e:
     print(f"  ❌ FAILED: {e}")
 
-# Test 6: App module
-print("\n[6/6] Testing app module...")
+# Test 6: Backend FastAPI app
+print("\n[6/6] Testing backend FastAPI app...")
 try:
-    # Just check if the file exists
     from pathlib import Path
-    app_path = Path("app/app_v2.py")
+    app_path = Path("backend/main.py")
     if app_path.exists():
+        # Try to import the FastAPI app
+        from backend.main import app
         print("  ✅ SUCCESS")
         tests_passed += 1
     else:
-        print("  ❌ FAILED: app_v2.py not found")
+        print("  ❌ FAILED: backend/main.py not found")
 except Exception as e:
     print(f"  ❌ FAILED: {e}")
 
@@ -91,7 +94,7 @@ print(f"RESULTS: {tests_passed}/{tests_total} tests passed")
 print("="*60)
 
 if tests_passed == tests_total:
-    print("\n✅ ALL IMPORTS WORKING - Reorganization successful!")
+    print("\n✅ ALL IMPORTS WORKING - Verification successful!")
     sys.exit(0)
 else:
     print(f"\n⚠️  {tests_total - tests_passed} test(s) failed")

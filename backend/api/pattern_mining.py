@@ -9,12 +9,106 @@ from datetime import datetime
 from backend.models.dto import PatternMiningRequest, PatternMiningResponse, PatternReportDTO
 from backend.services.pattern_mining import get_miner
 from backend.core.middleware import limiter
+from backend.core.config import settings
 import logging
 import uuid
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/analysis/patterns", tags=["pattern-mining"])
+
+
+def _get_target_directory(provided_path: Optional[str] = None) -> Path:
+    """
+    Get the target directory for analysis.
+    Priority: provided_path > settings.target_repo_path > user project directories
+    
+    IMPORTANT: This should NEVER return the Architect.AI tool directory.
+    """
+    from backend.utils.tool_detector import get_user_project_directories, detect_tool_directory
+    
+    # If path is provided and exists, use it
+    if provided_path:
+        provided = Path(provided_path)
+        if provided.exists():
+            logger.info(f"Using provided directory: {provided}")
+            return provided
+    
+    # Use configured target repo path if set
+    if settings.target_repo_path:
+        target = Path(settings.target_repo_path)
+        if target.exists():
+            logger.info(f"Using configured target_repo_path: {target}")
+            return target
+    
+    # Get user project directories (siblings of tool)
+    user_dirs = get_user_project_directories()
+    tool_dir = detect_tool_directory()
+    
+    logger.info(f"🔍 [TARGET_DIR] Tool directory: {tool_dir}")
+    logger.info(f"🔍 [TARGET_DIR] Found {len(user_dirs)} sibling directories")
+    
+    if user_dirs:
+        # Score directories to find the most likely "main" project
+        scored_dirs = []
+        for d in user_dirs:
+            if d == tool_dir or not d.exists():
+                continue
+            
+            score = 0
+            name_lower = d.name.lower()
+            
+            # Deprioritize utility/shared directories
+            if name_lower in ['agents', 'components', 'utils', 'shared', 'common', 'lib', 'libs']:
+                score -= 100
+            
+            # Prioritize directories with project markers
+            if (d / 'package.json').exists():
+                score += 50  # Node.js/Angular/React project
+            if (d / 'angular.json').exists():
+                score += 60  # Angular project (higher priority)
+            if (d / 'pom.xml').exists() or (d / 'build.gradle').exists():
+                score += 50  # Java project
+            if (d / 'Cargo.toml').exists():
+                score += 50  # Rust project
+            if (d / 'go.mod').exists():
+                score += 50  # Go project
+            if (d / 'requirements.txt').exists() or (d / 'setup.py').exists():
+                score += 40  # Python project
+            if (d / '.csproj').exists() or any(d.glob('*.csproj')):
+                score += 50  # .NET project
+            if any(d.glob('*.sln')):
+                score += 55  # .NET solution
+            if (d / 'src').is_dir():
+                score += 30  # Has src directory
+            if (d / 'frontend').is_dir():
+                score += 20  # Has frontend
+            if (d / 'backend').is_dir():
+                score += 20  # Has backend
+            
+            # Prioritize directories with "project" or "final" in name
+            if 'project' in name_lower or 'final' in name_lower:
+                score += 25
+            
+            scored_dirs.append((d, score))
+            logger.debug(f"🔍 [TARGET_DIR] Scored {d.name}: {score}")
+        
+        if scored_dirs:
+            # Sort by score descending and pick the best
+            scored_dirs.sort(key=lambda x: x[1], reverse=True)
+            best_dir, best_score = scored_dirs[0]
+            logger.info(f"✅ [TARGET_DIR] Selected user project: {best_dir} (score: {best_score})")
+            return best_dir
+    
+    # Fallback to parent of tool (the "mother project")
+    if tool_dir:
+        parent = tool_dir.parent
+        logger.warning(f"⚠️ [TARGET_DIR] Falling back to tool parent directory: {parent}")
+        return parent
+    
+    # Last resort - this should NOT happen
+    logger.error("❌ [TARGET_DIR] Could not determine target directory - falling back to cwd (THIS MAY BE WRONG)")
+    return Path.cwd()
 
 # In-memory job storage (replace with database in production)
 _jobs: Dict[str, Dict[str, Any]] = {}
@@ -122,8 +216,11 @@ async def start_pattern_mining(
     """
     job_id = f"pattern_mining_{uuid.uuid4().hex[:8]}"
     
+    # Get target directory - use user project, not the tool itself
+    directory = _get_target_directory(body.repo_id if body.repo_id else None)
+    logger.info(f"🔍 [PATTERN] Mining patterns from: {directory}")
+    
     # Estimate duration (rough: 1 second per file)
-    directory = Path(body.repo_id) if Path(body.repo_id).exists() else Path(".")
     files = list(directory.rglob("*.py")) if directory.exists() else []
     estimated_seconds = len(files) // 10  # Rough estimate
     
@@ -131,7 +228,7 @@ async def start_pattern_mining(
     _jobs[job_id] = {
         "job_id": job_id,
         "status": "queued",
-        "repo_id": body.repo_id,
+        "repo_id": str(directory),  # Store actual directory being analyzed
         "detectors": body.detectors,
         "created_at": datetime.now().isoformat()
     }
@@ -141,7 +238,6 @@ async def start_pattern_mining(
         try:
             _jobs[job_id]["status"] = "running"
             miner = get_miner()
-            directory = Path(body.repo_id) if Path(body.repo_id).exists() else Path(".")
             result = miner.analyze_directory(directory, recursive=True, detectors=body.detectors)
             miner.cache_results()
             

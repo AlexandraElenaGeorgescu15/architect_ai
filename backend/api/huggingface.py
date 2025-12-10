@@ -2,8 +2,9 @@
 HuggingFace API endpoints for model search and download.
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks, Request
+from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks, Request, Body
 from typing import List, Optional, Dict, Any
+from pydantic import BaseModel
 import logging
 
 from backend.services.huggingface_service import get_service
@@ -14,6 +15,11 @@ from backend.core.middleware import limiter
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/huggingface", tags=["HuggingFace"])
+
+
+class DownloadRequest(BaseModel):
+    """Request body for model download."""
+    convert_to_ollama: bool = True
 
 
 @router.get("/search", summary="Search models on HuggingFace")
@@ -46,8 +52,9 @@ async def search_models(
 async def download_model(
     request: Request,
     model_id: str,
-    convert_to_ollama: bool = True,
-    background_tasks: BackgroundTasks = BackgroundTasks(),
+    background_tasks: BackgroundTasks,
+    body: Optional[DownloadRequest] = Body(default=None),
+    convert_to_ollama_query: Optional[bool] = None,
     current_user: UserPublic = Depends(get_current_user)
 ):
     """
@@ -57,11 +64,22 @@ async def download_model(
     
     Args:
         model_id: HuggingFace model ID (e.g., "codellama/CodeLlama-7b-Instruct-hf")
-        convert_to_ollama: Whether to convert to Ollama format after download
+        convert_to_ollama: Whether to convert to Ollama format after download (body or query param)
     
     Returns:
         Download status
     """
+    # Support both body and query param for convert_to_ollama
+    # Priority: body > query param > default (True)
+    if body is not None and body.convert_to_ollama is not None:
+        convert_to_ollama = body.convert_to_ollama
+    elif convert_to_ollama_query is not None:
+        convert_to_ollama = convert_to_ollama_query
+    else:
+        convert_to_ollama = True
+    
+    logger.info(f"📥 [HF_DOWNLOAD] Download request for {model_id}, convert_to_ollama={convert_to_ollama}")
+    
     service = get_service()
     
     # Check if already downloaded

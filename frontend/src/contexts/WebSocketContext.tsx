@@ -30,29 +30,15 @@ export function WebSocketProvider({
   const { addNotification } = useUIStore()
   const wasConnected = useRef(false)
   const connectionNotifiedRef = useRef(false)
-
-  useEffect(() => {
-    // Connect on mount if defaultRoomId is provided
-    if (defaultRoomId) {
-      connect(defaultRoomId, token).catch(() => {
-        // WebSocket connection failed - notify user
-        if (!connectionNotifiedRef.current) {
-          addNotification('warning', 'Real-time updates unavailable - running in offline mode')
-          connectionNotifiedRef.current = true
-        }
-      })
-    }
-
-    // Cleanup on unmount
-    return () => {
-      websocketService.disconnect()
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Only run on mount
+  const initialConnectionFailedRef = useRef(false)
+  const warnedLostConnectionRef = useRef(false) // only warn once per session after a successful connect
+  const mountedRef = useRef(true)
 
   const connect = async (newRoomId: string, newToken?: string) => {
     try {
       await websocketService.connect(newRoomId, newToken)
+      if (!mountedRef.current) return
+      
       setRoomId(newRoomId)
       setIsConnected(true)
       
@@ -61,16 +47,46 @@ export function WebSocketProvider({
         addNotification('success', 'Reconnected to real-time updates')
       }
       wasConnected.current = true
+      // Reset warning throttle only after a successful reconnect
       connectionNotifiedRef.current = false
     } catch (error) {
-      // Failed to connect WebSocket - notify user
+      if (!mountedRef.current) return
+      
+      // Failed to connect WebSocket
       setIsConnected(false)
-      if (wasConnected.current && !connectionNotifiedRef.current) {
+      // Only notify if user was previously connected (not on initial connection failure)
+      if (
+        wasConnected.current &&
+        !connectionNotifiedRef.current &&
+        !initialConnectionFailedRef.current &&
+        !warnedLostConnectionRef.current
+      ) {
         addNotification('warning', 'Lost connection to real-time updates')
-        connectionNotifiedRef.current = true
+        connectionNotifiedRef.current = true // throttle within reconnect attempts
+        warnedLostConnectionRef.current = true // throttle across the whole session
       }
     }
   }
+
+  useEffect(() => {
+    mountedRef.current = true
+    
+    // Connect on mount if defaultRoomId is provided
+    if (defaultRoomId) {
+      connect(defaultRoomId, token).catch(() => {
+        // WebSocket connection failed on initial connection - silently continue in offline mode
+        // Don't notify user unless they were previously connected
+        initialConnectionFailedRef.current = true
+      })
+    }
+
+    // Cleanup on unmount
+    return () => {
+      mountedRef.current = false
+      websocketService.disconnect()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only run on mount
 
   const disconnect = () => {
     websocketService.disconnect()
@@ -90,14 +106,8 @@ export function WebSocketProvider({
     websocketService.emit(event, data)
   }
 
-  // Update connection status
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsConnected(websocketService.isConnected())
-    }, 1000)
-
-    return () => clearInterval(interval)
-  }, [])
+  // Disabled connection status polling to prevent performance issues
+  // Connection status is updated only on connect/disconnect events
 
   return (
     <WebSocketContext.Provider

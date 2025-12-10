@@ -2,12 +2,7 @@
 
 ## Overview
 
-Architect.AI is a production-grade AI-powered software architecture assistant built with:
-- **Backend:** FastAPI (Python 3.10+)
-- **Frontend:** React 18 + TypeScript + Tailwind CSS
-- **Database:** SQLite with SQLAlchemy ORM
-- **Vector Store:** ChromaDB for RAG
-- **AI Models:** Ollama (local), Gemini, GPT-4, Groq, Claude (cloud)
+Architect.AI is a production-grade AI-powered software architecture assistant built with FastAPI (backend) and React + TypeScript (frontend).
 
 ## Architecture Diagram
 
@@ -66,115 +61,15 @@ Architect.AI is a production-grade AI-powered software architecture assistant bu
 └──────────────┘  └──────────────┘  └──────────────┘
 ```
 
-## Backend Architecture
-
-### Directory Structure
-
-```
-backend/
-├── api/                    # API route handlers (32 files)
-│   ├── auth.py             # Authentication endpoints
-│   ├── context.py          # Context building
-│   ├── generation.py       # Artifact generation
-│   ├── analysis.py         # Code analysis
-│   ├── feedback.py         # Feedback collection
-│   ├── models.py           # Model management
-│   ├── training.py         # Training jobs
-│   ├── websocket.py        # WebSocket endpoints
-│   └── ...
-├── core/                   # Core utilities
-│   ├── config.py           # Pydantic settings
-│   ├── database.py         # SQLAlchemy setup
-│   ├── auth.py             # JWT/API key auth
-│   ├── middleware.py       # Logging, rate limiting
-│   ├── cache.py            # Caching utilities
-│   └── metrics.py          # Prometheus metrics
-├── services/               # Business logic (30 files)
-│   ├── context_builder.py  # 5-layer context assembly
-│   ├── generation_service.py
-│   ├── knowledge_graph.py  # AST parsing + NetworkX
-│   ├── pattern_mining.py   # Code analysis
-│   ├── rag_retriever.py    # Hybrid search
-│   ├── model_service.py    # Model management
-│   ├── training_service.py # Fine-tuning
-│   └── ...
-├── models/                 # Data models
-│   ├── dto.py              # Pydantic DTOs
-│   ├── db_models.py        # SQLAlchemy models
-│   └── schemas.py          # API schemas
-├── utils/                  # Utility functions
-│   └── tool_detector.py    # Self-contamination prevention
-└── main.py                 # FastAPI app entry point
-```
-
-### Service Boundaries
-
-#### 1. Context Builder Service
-- **Responsibility:** Assemble context from RAG, Knowledge Graph, Pattern Mining
-- **Input:** Meeting notes, repository ID
-- **Output:** Context ID, RAG snippets, KG data, patterns
-- **Dependencies:** RAG system, Knowledge Graph, Pattern Miner
-
-#### 2. Generation Service
-- **Responsibility:** Generate artifacts using LLM with validation
-- **Input:** Context ID, artifact type, options
-- **Output:** Generated artifact with validation score
-- **Dependencies:** Model Router, Validation Pipeline
-
-#### 3. Model Service
-- **Responsibility:** Model registry, routing, status tracking
-- **Input:** Model queries, routing updates
-- **Output:** Model information, availability status
-- **Dependencies:** Ollama client, cloud API clients
-
-#### 4. Training Service
-- **Responsibility:** Fine-tuning job management
-- **Input:** Training dataset, configuration
-- **Output:** Trained model, job status
-- **Dependencies:** PEFT, HuggingFace Transformers
-
-## Frontend Architecture
-
-### Directory Structure
-
-```
-frontend/src/
-├── pages/                  # Main pages
-│   ├── Studio.tsx          # Artifact generation
-│   ├── Intelligence.tsx    # Models & training
-│   └── Canvas.tsx          # Diagram editor
-├── components/             # Reusable components
-│   ├── layout/             # Layout components
-│   ├── artifacts/          # Artifact display
-│   ├── canvas/             # Diagram editor
-│   └── ...
-├── services/               # API clients
-│   ├── api.ts              # Base Axios client
-│   ├── generationService.ts
-│   ├── modelService.ts
-│   └── ...
-├── stores/                 # Zustand state
-│   ├── artifactStore.ts
-│   ├── modelStore.ts
-│   └── ...
-├── hooks/                  # Custom hooks
-│   ├── useGeneration.ts
-│   ├── useWebSocket.ts
-│   └── ...
-└── App.tsx                 # Root component
-```
-
 ## Technology Stack
 
 ### Backend
 - **Framework:** FastAPI (async Python)
-- **Database:** SQLite + SQLAlchemy
-- **Vector DB:** ChromaDB
+- **Database:** SQLite with SQLAlchemy ORM
+- **Vector Store:** ChromaDB
 - **Knowledge Graph:** NetworkX
 - **Authentication:** JWT + API Keys
 - **WebSocket:** FastAPI WebSocket
-- **Validation:** Pydantic
-- **Logging:** Structured JSON logging
 
 ### Frontend
 - **Framework:** React 18 + TypeScript
@@ -191,95 +86,45 @@ frontend/src/
 - **Embeddings:** Sentence Transformers
 - **Fine-tuning:** LoRA/QLoRA with PEFT
 
-## Data Flow
+## Key Components
 
-### Generation Flow
+### 1. Context Builder
+Assembles comprehensive context for artifact generation:
+- RAG retrieval (vector + BM25 hybrid search)
+- Knowledge Graph (AST parsing, component relationships)
+- Pattern Mining (design patterns, code smells, security issues)
+- Meeting notes integration
+
+### 2. Generation Service
+Generates artifacts using multi-model routing:
+- 50+ artifact types (ERD, architecture, code, docs, PM)
+- Automatic validation and quality scoring
+- Version tracking and comparison
+- Streaming progress via WebSocket
+
+### 3. Model Management
+Handles AI model selection and training:
+- Smart routing based on artifact type
+- Fine-tuned model prioritization
+- Automatic fallback to cloud models
+- Training job management
+
+### 4. RAG System
+Retrieval-Augmented Generation:
+- Incremental indexing with file watching
+- Hybrid search (vector similarity + BM25)
+- Self-contamination prevention
+- Chunk optimization
+
+## Data Flow
 
 1. **User uploads meeting notes** → React frontend
 2. **Frontend calls** `POST /api/context/build`
-3. **Context Builder** assembles 5-layer context:
-   - RAG retrieval (vector + BM25)
-   - Knowledge Graph construction
-   - Pattern Mining analysis
-   - Meeting notes integration
+3. **Context Builder** assembles 5-layer context
 4. **Frontend calls** `POST /api/generation/artifacts`
-5. **Generation Service**:
-   - Routes to appropriate model
-   - Generates artifact
-   - Validates output
-   - Streams progress via WebSocket
-6. **Frontend receives** artifact via WebSocket
+5. **Generation Service** routes to appropriate model
+6. **Progress streamed** via WebSocket
 7. **User provides feedback** → Training pipeline
-
-### Training Flow
-
-1. **Feedback collected** → Examples tracked per artifact type
-2. **50 examples reached** → Auto-trigger training
-3. **Training Service**:
-   - Builds training dataset
-   - Runs LoRA fine-tuning
-   - Converts to Ollama format
-   - Updates model routing
-4. **Progress streamed** via WebSocket
-5. **New model available** → Routing updated
-
-## Key Design Patterns
-
-### 1. Service-Oriented Architecture
-- Clear service boundaries
-- Loose coupling
-- Easy to test and maintain
-
-### 2. Event-Driven Communication
-- WebSocket for real-time updates
-- Async/await for I/O operations
-- Background tasks for long operations
-
-### 3. Caching Strategy
-- In-memory cache for RAG results
-- Database cache for model registry
-- File cache for Knowledge Graph/Pattern Mining
-
-### 4. Plugin Architecture
-- Artifact types as plugins
-- Model providers as plugins
-- Validators as plugins
-
-## Security Considerations
-
-1. **Self-Contamination Prevention**
-   - Tool detector excludes Architect.AI code from RAG
-   - Verified in all ingestion paths
-
-2. **Input Validation**
-   - Pydantic schemas for all inputs
-   - Path traversal prevention
-
-3. **Authentication**
-   - JWT tokens for API access
-   - API keys for service calls
-   - Optional auth for development
-
-4. **Rate Limiting**
-   - Per-endpoint rate limits
-   - Configurable via middleware
-
-## Performance Optimizations
-
-1. **Caching**
-   - RAG results cached
-   - Knowledge Graph cached to disk
-   - Pattern Mining cached to disk
-
-2. **Async Processing**
-   - Async I/O for all external calls
-   - WebSocket streaming for progress
-   - Background tasks for heavy operations
-
-3. **Lazy Loading**
-   - Models loaded on demand
-   - Services initialized lazily
-   - Frontend code splitting
 
 ## Version History
 
@@ -289,8 +134,3 @@ frontend/src/
 - **v2.0.0** - Streamlit web interface (archived)
 - **v1.0.0** - Initial CLI release
 
-## References
-
-- **API Documentation:** `/api/docs` (Swagger UI)
-- **Context Files:** `context/` directory
-- **Changelog:** `CHANGELOG.md`

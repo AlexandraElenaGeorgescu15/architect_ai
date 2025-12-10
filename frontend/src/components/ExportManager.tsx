@@ -13,14 +13,19 @@ interface ExportOption {
   mimeType: string
 }
 
-const exportOptions: ExportOption[] = [
-  { format: 'markdown', label: 'Markdown', icon: FileText, description: 'Export as Markdown document', mimeType: 'text/markdown' },
-  { format: 'svg', label: 'SVG', icon: Image, description: 'Export as SVG image (for diagrams)', mimeType: 'image/svg+xml' },
-  { format: 'png', label: 'PNG', icon: Image, description: 'Export as PNG image (for diagrams)', mimeType: 'image/png' },
-  { format: 'pdf', label: 'PDF', icon: FileText, description: 'Export as PDF document', mimeType: 'application/pdf' },
-  { format: 'code', label: 'Code File', icon: FileCode, description: 'Export as code file', mimeType: 'text/plain' },
-  { format: 'confluence', label: 'Confluence', icon: FileJson, description: 'Send to Confluence space/page', mimeType: 'application/json' },
-  { format: 'jira', label: 'Jira', icon: FileJson, description: 'Create Jira ticket with artifact content', mimeType: 'application/json' },
+interface ExtendedExportOption extends ExportOption {
+  enabled: boolean
+  comingSoon?: boolean
+}
+
+const exportOptions: ExtendedExportOption[] = [
+  { format: 'markdown', label: 'Markdown', icon: FileText, description: 'Export as Markdown document', mimeType: 'text/markdown', enabled: true },
+  { format: 'svg', label: 'SVG', icon: Image, description: 'Export as SVG image (for diagrams)', mimeType: 'image/svg+xml', enabled: true },
+  { format: 'png', label: 'PNG', icon: Image, description: 'Export as PNG image (Coming Soon)', mimeType: 'image/png', enabled: false, comingSoon: true },
+  { format: 'pdf', label: 'PDF', icon: FileText, description: 'Export as PDF document (Coming Soon)', mimeType: 'application/pdf', enabled: false, comingSoon: true },
+  { format: 'code', label: 'Code File', icon: FileCode, description: 'Export as code file', mimeType: 'text/plain', enabled: true },
+  { format: 'confluence', label: 'Confluence', icon: FileJson, description: 'Confluence integration (Coming Soon)', mimeType: 'application/json', enabled: false, comingSoon: true },
+  { format: 'jira', label: 'Jira', icon: FileJson, description: 'Jira integration (Coming Soon)', mimeType: 'application/json', enabled: false, comingSoon: true },
 ]
 
 export default function ExportManager() {
@@ -138,6 +143,13 @@ export default function ExportManager() {
   }
 
   const canExportFormat = (format: ExportFormat, artifactType: string): boolean => {
+    // First check if the format is enabled at all
+    const option = exportOptions.find(o => o.format === format)
+    if (option && !option.enabled) {
+      return false
+    }
+    
+    // Then check artifact type compatibility
     if (format === 'svg' || format === 'png') {
       return artifactType.startsWith('mermaid_') || artifactType.startsWith('html_')
     }
@@ -194,12 +206,13 @@ export default function ExportManager() {
                   {exportOptions.map((option) => {
                     const Icon = option.icon
                     const canExport = canExportFormat(option.format, selectedArtifactData.type)
+                    const isComingSoon = option.comingSoon
                     return (
                       <button
                         key={option.format}
                         onClick={() => canExport && setSelectedFormat(option.format)}
                         disabled={!canExport}
-                        className={`p-4 rounded-lg border transition-all duration-200 text-left ${
+                        className={`p-4 rounded-lg border transition-all duration-200 text-left relative ${
                           selectedFormat === option.format
                             ? 'border-primary bg-primary/10 text-primary'
                             : canExport
@@ -207,10 +220,15 @@ export default function ExportManager() {
                             : 'border-border opacity-50 cursor-not-allowed'
                         }`}
                       >
+                        {isComingSoon && (
+                          <span className="absolute -top-2 -right-2 px-2 py-0.5 bg-amber-500 text-white text-[10px] font-bold rounded-full shadow-sm">
+                            Soon
+                          </span>
+                        )}
                         <div className="flex items-center gap-3">
-                          <Icon className="w-5 h-5" />
+                          <Icon className={`w-5 h-5 ${isComingSoon ? 'opacity-50' : ''}`} />
                           <div className="flex-1">
-                            <p className="font-medium text-sm">{option.label}</p>
+                            <p className={`font-medium text-sm ${isComingSoon ? 'opacity-70' : ''}`}>{option.label}</p>
                             <p className="text-xs text-muted-foreground mt-1">{option.description}</p>
                           </div>
                         </div>

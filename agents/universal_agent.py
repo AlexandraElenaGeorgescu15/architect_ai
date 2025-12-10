@@ -295,31 +295,34 @@ class UniversalArchitectAgent:
             global_keys = {'groq': None, 'openai': None, 'gemini': None}
         
         # Track if we've already logged connection status (prevent spam on reruns)
-        import streamlit as st
-        logged_key = '_agent_conn_logged'
-        already_logged = False
+        # Streamlit session state (optional - graceful degradation when not available)
+        _session_state = {}
         try:
-            already_logged = st.session_state.get(logged_key, False)
-        except (AttributeError, KeyError, RuntimeError):
-            # Streamlit not available or session state not initialized
-            pass
+            import streamlit as st
+            _session_state = st.session_state
+        except (ImportError, RuntimeError):
+            pass  # Streamlit not available - use empty dict
+        
+        logged_key = '_agent_conn_logged'
+        already_logged = _session_state.get(logged_key, False) if _session_state else False
         
         def _set_active_provider(label: str):
             try:
-                st.session_state['active_provider_actual'] = label
+                if _session_state:
+                    _session_state['active_provider_actual'] = label
             except Exception:
                 pass
 
         # Reset any previous warning prior to initialization
         try:
-            if 'provider_override_warning' in st.session_state:
-                del st.session_state['provider_override_warning']
+            if _session_state and 'provider_override_warning' in _session_state:
+                del _session_state['provider_override_warning']
         except Exception:
             pass
 
         # Check for Ollama provider FIRST (default local provider)
         try:
-            provider = st.session_state.get('provider', 'Ollama (Local)')
+            provider = _session_state.get('provider', 'Ollama (Local)') if _session_state else 'Ollama (Local)'
             if provider == "Ollama (Local)":
                 # Initialize Ollama client
                 from ai.ollama_client import OllamaClient

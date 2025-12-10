@@ -39,7 +39,7 @@ def check_dependencies():
     """Check critical dependencies"""
     print("\n[2/8] Checking dependencies...")
     critical_deps = [
-        'streamlit',
+        'fastapi',
         'chromadb',
         'sentence_transformers',
         'httpx',
@@ -230,7 +230,10 @@ def main():
     if passed == total:
         print("\n✅ ALL CHECKS PASSED - Ready to start!")
         print("\nStart the application with:")
-        print("  streamlit run app/app_v2.py")
+        print("  python launch.py")
+        print("\nThis will start:")
+        print("  - Backend API:  http://localhost:8000")
+        print("  - Frontend App: http://localhost:3000")
         return 0
     elif passed >= total - 2:
         print(f"\n⚠️  {total - passed} warnings - Application may work with limited functionality")

@@ -124,41 +124,61 @@ class ProjectAwareChatService:
         prompt = self._build_prompt(message, conversation_history, project_context)
         
         # Generate response (try Ollama first, then cloud)
+        # Try multiple local models for better success rate
+        local_models_to_try = ["llama3", "llama3.2", "mistral", "codellama"]
+        
         if self.ollama_client and OLLAMA_AVAILABLE:
-            try:
-                # Try local model first
-                await self.ollama_client.ensure_model_available("llama3")
-                
-                # Try Ollama generation (non-streaming for now)
-                response = await self.ollama_client.generate(
-                    model_name="llama3",
-                    prompt=prompt,
-                    system_message=system_message,
-                    temperature=0.7
-                )
-                
-                if response.success and response.content:
-                    if stream:
-                        # Stream character by character for effect
-                        content = response.content
-                        for i in range(0, len(content), 5):  # 5 chars at a time
+            for model_name in local_models_to_try:
+                try:
+                    # Check if model is available
+                    await self.ollama_client.ensure_model_available(model_name)
+                    
+                    # Try Ollama generation with timeout
+                    response = await asyncio.wait_for(
+                        self.ollama_client.generate(
+                            model_name=model_name,
+                            prompt=prompt,
+                            system_message=system_message,
+                            temperature=0.7
+                        ),
+                        timeout=60.0  # 60 second timeout
+                    )
+                    
+                    if response.success and response.content and len(response.content.strip()) > 20:
+                        logger.info(f"Chat successful with {model_name}")
+                        if stream:
+                            # Stream character by character for effect
+                            content = response.content
+                            chunk_size = max(10, len(content) // 50)  # Dynamic chunk size
+                            for i in range(0, len(content), chunk_size):
+                                yield {
+                                    "type": "chunk",
+                                    "content": content[i:i+chunk_size],
+                                    "model": model_name,
+                                    "provider": "ollama"
+                                }
+                                await asyncio.sleep(0.02)  # Faster streaming
+                            # Send complete signal
                             yield {
-                                "type": "chunk",
-                                "content": content[i:i+5],
-                                "model": "llama3",
+                                "type": "complete",
+                                "content": content,
+                                "model": model_name,
                                 "provider": "ollama"
                             }
-                            await asyncio.sleep(0.05)  # Small delay for streaming effect
-                    else:
-                        yield {
-                            "type": "complete",
-                            "content": response.content,
-                            "model": "llama3",
-                            "provider": "ollama"
-                        }
+                        else:
+                            yield {
+                                "type": "complete",
+                                "content": response.content,
+                                "model": model_name,
+                                "provider": "ollama"
+                            }
                         return
-            except Exception as e:
-                logger.warning(f"Ollama generation failed: {e}, trying cloud...")
+                    else:
+                        logger.warning(f"Model {model_name} returned empty/short response, trying next...")
+                except asyncio.TimeoutError:
+                    logger.warning(f"Timeout with {model_name}, trying next...")
+                except Exception as e:
+                    logger.warning(f"Model {model_name} failed: {e}, trying next...")
         
         # Fallback to cloud (Gemini preferred for chat)
         try:
@@ -339,13 +359,50 @@ Use this context to provide accurate, project-specific answers."""
         prompt: str,
         stream: bool = False
     ) -> AsyncGenerator[Dict[str, Any], None]:
-        """Call cloud API for chat (prefer Gemini for chat)."""
-        # Prefer Gemini for chat (better for conversational AI)
+        """Call cloud API for chat with multiple provider fallbacks."""
+        import httpx
+        
+        # Try Groq first (fastest for chat)
+        if settings.groq_api_key:
+            try:
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    response = await client.post(
+                        "https://api.groq.com/openai/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {settings.groq_api_key}",
+                            "Content-Type": "application/json"
+                        },
+                        json={
+                            "model": "llama-3.3-70b-versatile",
+                            "messages": [
+                                {"role": "system", "content": system_message},
+                                {"role": "user", "content": prompt}
+                            ],
+                            "temperature": 0.7,
+                            "max_tokens": 4096
+                        }
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+                    
+                    if "choices" in data and len(data["choices"]) > 0:
+                        content = data["choices"][0]["message"]["content"]
+                        logger.info(f"Groq chat successful, response length: {len(content)}")
+                        yield {
+                            "type": "complete",
+                            "content": content,
+                            "model": "llama-3.3-70b-versatile",
+                            "provider": "groq"
+                        }
+                        return
+            except Exception as e:
+                logger.warning(f"Groq chat failed: {e}, trying Gemini...")
+        
+        # Try Gemini (good for conversational AI)
         if settings.google_api_key or settings.gemini_api_key:
             try:
-                import httpx
                 api_key = settings.google_api_key or settings.gemini_api_key
-                model_name = "gemini-1.5-pro"
+                model_name = "gemini-2.0-flash-exp"  # Use faster model
                 
                 async with httpx.AsyncClient(timeout=60.0) as client:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
@@ -359,7 +416,7 @@ Use this context to provide accurate, project-specific answers."""
                             "temperature": 0.7,
                             "topK": 40,
                             "topP": 0.95,
-                            "maxOutputTokens": 2048
+                            "maxOutputTokens": 4096
                         },
                         "systemInstruction": {
                             "parts": [{"text": system_message}]
@@ -372,7 +429,7 @@ Use this context to provide accurate, project-specific answers."""
                     data = response.json()
                     if "candidates" in data and len(data["candidates"]) > 0:
                         content = data["candidates"][0]["content"]["parts"][0]["text"]
-                        
+                        logger.info(f"Gemini chat successful, response length: {len(content)}")
                         yield {
                             "type": "complete",
                             "content": content,
@@ -381,14 +438,50 @@ Use this context to provide accurate, project-specific answers."""
                         }
                         return
             except Exception as e:
-                logger.warning(f"Gemini chat failed: {e}, trying other providers...")
+                logger.warning(f"Gemini chat failed: {e}, trying OpenAI...")
         
-        # Fallback to other cloud providers
-        # (Similar implementation for OpenAI, Anthropic, etc.)
+        # Try OpenAI
+        if settings.openai_api_key:
+            try:
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    response = await client.post(
+                        "https://api.openai.com/v1/chat/completions",
+                        headers={
+                            "Authorization": f"Bearer {settings.openai_api_key}",
+                            "Content-Type": "application/json"
+                        },
+                        json={
+                            "model": "gpt-4-turbo-preview",
+                            "messages": [
+                                {"role": "system", "content": system_message},
+                                {"role": "user", "content": prompt}
+                            ],
+                            "temperature": 0.7,
+                            "max_tokens": 4096
+                        }
+                    )
+                    response.raise_for_status()
+                    data = response.json()
+                    
+                    if "choices" in data and len(data["choices"]) > 0:
+                        content = data["choices"][0]["message"]["content"]
+                        logger.info(f"OpenAI chat successful, response length: {len(content)}")
+                        yield {
+                            "type": "complete",
+                            "content": content,
+                            "model": "gpt-4-turbo-preview",
+                            "provider": "openai"
+                        }
+                        return
+            except Exception as e:
+                logger.warning(f"OpenAI chat failed: {e}")
+        
+        # No providers available
+        logger.error("All chat providers failed or no API keys configured")
         yield {
             "type": "error",
-            "content": "No cloud models available. Please configure API keys.",
-            "error": "No cloud models configured"
+            "content": "I apologize, but no AI models are currently available. Please check your API key configuration or try again later.",
+            "error": "No cloud models configured or all providers failed"
         }
 
 

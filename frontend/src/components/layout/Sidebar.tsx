@@ -78,15 +78,17 @@ export default function Sidebar() {
           fixed lg:relative inset-y-0 left-0 z-50
           h-full glass-panel rounded-r-2xl lg:rounded-2xl flex flex-col border-r border-border shadow-2xl bg-card
           transition-all duration-200 ease-out
-          ${sidebarOpen ? 'w-72 translate-x-0' : 'w-0 -translate-x-full'}
+          ${sidebarOpen ? 'w-72 translate-x-0' : 'w-0 -translate-x-full lg:w-0'}
+          ${!sidebarOpen ? 'overflow-hidden' : ''}
         `}
       >
-        <div className="w-72 h-full flex flex-col overflow-hidden">
+        <div className={`w-72 h-full flex flex-col overflow-hidden ${!sidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           {/* Close button */}
           <button
             onClick={toggleSidebar}
-            className="absolute right-2 top-4 z-50 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary/10 transition-colors"
+            className="absolute right-2 top-4 z-[60] w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary/10 transition-colors bg-card/80 backdrop-blur-sm"
             title="Close menu"
+            type="button"
           >
             <ChevronLeft className="w-5 h-5 text-muted-foreground" />
           </button>

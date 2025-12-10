@@ -42,36 +42,36 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   // Collapsed state - show just a thin bar with expand button
   if (isCollapsed) {
     return (
-      <div className="flex flex-col h-full bg-white border-l border-gray-200 shadow-xl w-10 flex-shrink-0 transition-all duration-300">
+      <div className="flex flex-col h-full bg-white dark:bg-card border-l border-gray-200 dark:border-border shadow-xl w-10 flex-shrink-0 transition-all duration-300">
         <button
           onClick={onToggleCollapse}
-          className="flex-1 flex flex-col items-center justify-center gap-2 hover:bg-gray-50 transition-colors group"
+          className="flex-1 flex flex-col items-center justify-center gap-2 hover:bg-gray-50 dark:hover:bg-secondary transition-colors group"
           title="Expand code editor"
         >
-          <ChevronLeft size={18} className="text-gray-400 group-hover:text-indigo-600" />
-          <div className="writing-vertical text-xs font-medium text-gray-500 group-hover:text-indigo-600 rotate-180" style={{ writingMode: 'vertical-rl' }}>
+          <ChevronLeft size={18} className="text-gray-400 dark:text-muted-foreground group-hover:text-indigo-600 dark:group-hover:text-primary" />
+          <div className="writing-vertical text-xs font-medium text-gray-500 dark:text-muted-foreground group-hover:text-indigo-600 dark:group-hover:text-primary rotate-180" style={{ writingMode: 'vertical-rl' }}>
             Code Editor
           </div>
-          <Code size={16} className="text-gray-400 group-hover:text-indigo-600" />
+          <Code size={16} className="text-gray-400 dark:text-muted-foreground group-hover:text-indigo-600 dark:group-hover:text-primary" />
         </button>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-full bg-white border-l border-gray-200 shadow-xl w-full md:w-96 flex-shrink-0 transition-all duration-300">
-      <div className="p-3 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+    <div className="flex flex-col h-full bg-white dark:bg-card border-l border-gray-200 dark:border-border shadow-xl w-80 lg:w-96 flex-shrink-0 transition-all duration-300 max-h-full overflow-hidden">
+      <div className="p-3 border-b border-gray-100 dark:border-border flex items-center justify-between bg-gray-50 dark:bg-secondary/30 flex-shrink-0">
         <div className="flex items-center gap-2">
           {/* Collapse button */}
           <button
             onClick={onToggleCollapse}
-            className="p-1.5 hover:bg-gray-200 rounded-md transition-colors"
+            className="p-1.5 hover:bg-gray-200 dark:hover:bg-secondary rounded-md transition-colors"
             title="Collapse code editor"
           >
-            <ChevronRight size={16} className="text-gray-500" />
+            <ChevronRight size={16} className="text-gray-500 dark:text-muted-foreground" />
           </button>
-          <h2 className="font-semibold text-gray-700 flex items-center gap-2 text-sm">
-            <span className="text-indigo-600 font-mono text-xs">&lt;/&gt;</span> {diagramType.replace('mermaid_', '').replace(/_/g, ' ')}
+          <h2 className="font-semibold text-gray-700 dark:text-foreground flex items-center gap-2 text-sm">
+            <span className="text-indigo-600 dark:text-primary font-mono text-xs">&lt;/&gt;</span> {diagramType.replace('mermaid_', '').replace(/_/g, ' ')}
           </h2>
         </div>
         <div className="flex gap-1.5">
@@ -99,18 +99,18 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 relative bg-white overflow-hidden">
+      <div className="flex-1 relative bg-white dark:bg-card overflow-hidden min-h-0">
         <textarea
           value={localCode}
           onChange={handleChange}
-          className="w-full h-full p-3 font-mono text-xs resize-none focus:outline-none text-gray-800 bg-white leading-relaxed"
+          className="w-full h-full p-3 font-mono text-xs resize-none focus:outline-none text-gray-800 dark:text-foreground bg-white dark:bg-card leading-relaxed overflow-auto"
           placeholder="graph TD&#10;  A[Start] --> B[End]"
           spellCheck={false}
         />
       </div>
 
-      <div className="p-2 bg-gray-50 border-t border-gray-200 text-[10px] text-gray-500 flex gap-2 items-start">
-        <AlertCircle size={12} className="mt-0.5 flex-shrink-0 text-indigo-400" />
+      <div className="p-2 bg-gray-50 dark:bg-secondary/30 border-t border-gray-200 dark:border-border text-[10px] text-gray-500 dark:text-muted-foreground flex gap-2 items-start flex-shrink-0">
+        <AlertCircle size={12} className="mt-0.5 flex-shrink-0 text-indigo-400 dark:text-primary" />
         <p>
           Edit code and click <b>Render</b>. Canvas changes sync automatically.
         </p>

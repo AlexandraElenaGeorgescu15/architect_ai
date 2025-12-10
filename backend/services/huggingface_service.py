@@ -243,7 +243,7 @@ class HuggingFaceService:
                                     repo_id=model_id,
                                     filename=largest_gguf,
                                     cache_dir=str(model_dir),
-                                    resume_download=True
+                                    force_download=False  # Allow resume (resume_download is deprecated)
                                 )
                                 logger.info(f"✅ [HF_DOWNLOAD] Downloaded GGUF file: {largest_gguf}")
                                 self.active_downloads[model_id]["progress"] = 0.8
@@ -291,33 +291,60 @@ class HuggingFaceService:
                         logger.error(f"Failed to download config.json for {model_id}: {config_error}")
                         raise ValueError(f"Model {model_id} not found or inaccessible: {config_error}")
             
+            # Get the actual download directory (hf_hub_download may use cache subdirectories)
+            actual_download_path = Path(downloaded_path) if downloaded_path else None
+            actual_model_dir = actual_download_path.parent if actual_download_path else model_dir
+            
             # Register downloaded model
             logger.info(f"📝 [HF_DOWNLOAD] Registering downloaded model {model_id}...")
+            logger.info(f"📁 [HF_DOWNLOAD] Downloaded to: {actual_download_path}")
             self.downloaded_models[model_id] = {
                 "id": model_id,
                 "path": str(model_dir),
-                "downloaded_at": str(Path(downloaded_path).parent),
+                "actual_file_path": str(actual_download_path) if actual_download_path else None,
+                "downloaded_at": str(actual_model_dir),
                 "convert_to_ollama": convert_to_ollama
             }
             self._save_registry()
             self.active_downloads[model_id]["progress"] = 0.9
             
-            # Register in model_registry for UI visibility
+            # Register in ModelService for UI visibility
             try:
-                from components.model_registry import model_registry
-                model_registry.register_downloaded_model(
-                    base_model=model_id.replace("/", "-"),
-                    model_path=str(model_dir)
-                )
-                logger.info(f"✅ [HF_DOWNLOAD] Model registered in UI registry: {model_id}")
+                from backend.services.model_service import get_service as get_model_service
+                from backend.models.dto import ModelInfoDTO
+                model_service = get_model_service()
+                
+                # Create model ID in standard format
+                clean_model_id = f"huggingface:{model_id.replace('/', '-')}"
+                
+                # Register the downloaded model
+                if clean_model_id not in model_service.models:
+                    model_service.models[clean_model_id] = ModelInfoDTO(
+                        id=clean_model_id,
+                        name=f"{model_id} (HuggingFace)",
+                        provider="huggingface",
+                        status="downloaded",
+                        is_trained=False,
+                        metadata={
+                            "huggingface_id": model_id,
+                            "path": str(model_dir),
+                            "source": "huggingface"
+                        }
+                    )
+                    model_service._save_registry()
+                    logger.info(f"✅ [HF_DOWNLOAD] Model registered in ModelService: {clean_model_id}")
             except Exception as e:
-                logger.warning(f"⚠️ [HF_DOWNLOAD] Failed to register in UI registry: {e}")
+                logger.warning(f"⚠️ [HF_DOWNLOAD] Failed to register in ModelService: {e}")
             
             # Convert to Ollama format if requested
             if convert_to_ollama:
                 logger.info(f"🔄 [HF_DOWNLOAD] Converting {model_id} to Ollama format...")
                 self.active_downloads[model_id]["progress"] = 0.95
-                conversion_result = await self._convert_to_ollama(model_id, model_dir)
+                # Pass the actual file path if it's a GGUF, otherwise pass the directory
+                gguf_file_path = None
+                if actual_download_path and str(actual_download_path).endswith('.gguf'):
+                    gguf_file_path = actual_download_path
+                conversion_result = await self._convert_to_ollama(model_id, model_dir, gguf_file_path=gguf_file_path)
                 if conversion_result.get("success"):
                     return {
                         "success": True,
@@ -368,16 +395,24 @@ class HuggingFaceService:
         self,
         model_id: str,
         model_dir: Path,
-        progress_callback: Optional[Callable[[float, str], Awaitable[None]]] = None
+        progress_callback: Optional[Callable[[float, str], Awaitable[None]]] = None,
+        gguf_file_path: Optional[Path] = None
     ) -> Dict[str, Any]:
         """
         Convert a HuggingFace model to Ollama format.
+
+        Args:
+            model_id: HuggingFace model ID
+            model_dir: Directory where model was downloaded
+            progress_callback: Optional async callback for progress updates
+            gguf_file_path: Optional direct path to GGUF file (if known)
 
         Returns:
             Dict with success status, ollama_name, and message
         """
         try:
             logger.info(f"Converting {model_id} to Ollama format...")
+            logger.debug(f"model_dir: {model_dir}, gguf_file_path: {gguf_file_path}")
             
             if progress_callback:
                 try:
@@ -434,84 +469,102 @@ class HuggingFaceService:
                 except Exception:
                     pass
             
-            # Try to find GGUF files in the downloaded model
-            gguf_files = list(model_dir.rglob("*.gguf"))
-            if gguf_files:
-                # Found GGUF file - use ollama import (preferred method)
-                gguf_path = gguf_files[0]
-                logger.info(f"Found GGUF file: {gguf_path}")
+            # Use provided GGUF path if available, otherwise search for it
+            gguf_path = None
+            if gguf_file_path and gguf_file_path.exists():
+                gguf_path = gguf_file_path
+                logger.info(f"Using provided GGUF file path: {gguf_path}")
+            else:
+                # Try to find GGUF files in the downloaded model (search recursively)
+                gguf_files = list(model_dir.rglob("*.gguf"))
+                if gguf_files:
+                    gguf_path = gguf_files[0]
+                    logger.info(f"Found GGUF file via search: {gguf_path}")
+            
+            if gguf_path:
+                # Found GGUF file - use Modelfile approach (most reliable for GGUF)
+                logger.info(f"Using GGUF file: {gguf_path}")
                 
                 if progress_callback:
                     try:
-                        await progress_callback(0.4, f"Importing GGUF file to Ollama as '{ollama_name}'...")
+                        await progress_callback(0.4, f"Creating Ollama model '{ollama_name}' from GGUF...")
                     except Exception:
                         pass
                 
-                # Use ollama import (better than create for GGUF files)
-                # Format: ollama import <model_name> <path_to_gguf>
-                result = await _run_subprocess(
-                    f"ollama import {ollama_name} {str(gguf_path)}"
-                )
-                stdout = result.stdout or ""
-                stderr = result.stderr or ""
-                
-                if result.returncode == 0:
-                    logger.info(f"Successfully imported {model_id} to Ollama as {ollama_name}")
-                    # Register in ModelService
-                    await self._register_in_model_service(ollama_name, model_id)
-                    
-                    if progress_callback:
-                        try:
-                            await progress_callback(1.0, f"Model '{ollama_name}' successfully imported to Ollama")
-                        except Exception:
-                            pass
-                    
-                    return {
-                        "success": True,
-                        "message": f"Successfully imported {model_id} to Ollama as {ollama_name}",
-                        "ollama_name": ollama_name,
-                        "method": "import"
-                    }
-                else:
-                    # Try alternative: create with Modelfile
-                    logger.info("Import failed, trying Modelfile approach...")
-                    if progress_callback:
-                        try:
-                            await progress_callback(0.5, "Trying Modelfile approach...")
-                        except Exception:
-                            pass
-                    
-                    modelfile_path = model_dir / f"{ollama_name}.Modelfile"
-                    modelfile_content = f"""FROM {gguf_path}
+                # Create a Modelfile for the GGUF (most reliable method)
+                # Use forward slashes for the path in Modelfile (works on all platforms)
+                gguf_path_str = str(gguf_path).replace("\\", "/")
+                modelfile_path = model_dir / f"{ollama_name}.Modelfile"
+                modelfile_content = f"""FROM "{gguf_path_str}"
 TEMPLATE \"\"\"{{{{ .Prompt }}}}\"\"\"
 PARAMETER temperature 0.7
 PARAMETER top_p 0.9
 PARAMETER top_k 40
 """
-                    modelfile_path.write_text(modelfile_content, encoding='utf-8')
+                modelfile_path.write_text(modelfile_content, encoding='utf-8')
+                logger.info(f"Created Modelfile at: {modelfile_path}")
+                
+                # Use ollama create with Modelfile (works reliably with GGUF)
+                # Quote the path for Windows compatibility
+                modelfile_path_str = str(modelfile_path).replace("\\", "/")
+                result = await _run_subprocess(
+                    f'ollama create {ollama_name} -f "{modelfile_path_str}"'
+                )
+                stdout = result.stdout or ""
+                stderr = result.stderr or ""
+                
+                if result.returncode == 0:
+                    logger.info(f"Successfully created {ollama_name} in Ollama from GGUF")
+                    # Register in ModelService
+                    await self._register_in_model_service(ollama_name, model_id)
+                    
+                    if progress_callback:
+                        try:
+                            await progress_callback(1.0, f"Model '{ollama_name}' successfully created in Ollama")
+                        except Exception:
+                            pass
+                    
+                    return {
+                        "success": True,
+                        "message": f"Successfully created {model_id} in Ollama as {ollama_name}",
+                        "ollama_name": ollama_name,
+                        "method": "modelfile"
+                    }
+                else:
+                    # Log the error details for debugging
+                    logger.error(f"Ollama create failed. stdout: {stdout}, stderr: {stderr}")
+                    
+                    # Try direct import as fallback (older Ollama versions)
+                    logger.info("Modelfile approach failed, trying direct import...")
+                    if progress_callback:
+                        try:
+                            await progress_callback(0.5, "Trying direct import...")
+                        except Exception:
+                            pass
                     
                     result = await _run_subprocess(
-                        f"ollama create {ollama_name} -f {str(modelfile_path)}"
+                        f'ollama import {ollama_name} "{gguf_path_str}"'
                     )
                     stdout = result.stdout or ""
                     stderr = result.stderr or ""
                     
                     if result.returncode == 0:
-                        logger.info(f"Successfully created {ollama_name} in Ollama using Modelfile")
+                        logger.info(f"Successfully imported {ollama_name} to Ollama")
                         await self._register_in_model_service(ollama_name, model_id)
                         return {
                             "success": True,
-                            "message": f"Successfully created {ollama_name} in Ollama",
+                            "message": f"Successfully imported {ollama_name} in Ollama",
                             "ollama_name": ollama_name,
-                            "method": "modelfile"
+                            "method": "import"
                         }
                     else:
-                        error_msg = f"Failed to import to Ollama: {stderr}"
+                        error_msg = f"Failed to create Ollama model: {stderr or stdout or 'Unknown error'}"
                         logger.error(error_msg)
                         return {
                             "success": False,
                             "error": error_msg,
-                            "ollama_name": ollama_name
+                            "ollama_name": ollama_name,
+                            "suggestion": "Try running the command manually: ollama create " + ollama_name + " -f <modelfile_path>"
                         }
             else:
                 # No GGUF file found - try ollama pull if model exists on Ollama Hub
@@ -538,7 +591,8 @@ PARAMETER top_k 40
                             except Exception:
                                 pass
                         
-                        result = await _run_subprocess(f"ollama pull {name}")
+                        # Use timeout for pull as it can take a long time
+                        result = await _run_subprocess(f'ollama pull "{name}"', timeout=600)
                         stdout = result.stdout or ""
                         stderr = result.stderr or ""
                         
@@ -551,6 +605,11 @@ PARAMETER top_k 40
                                 "ollama_name": name,
                                 "method": "pull"
                             }
+                        else:
+                            logger.debug(f"Could not pull {name}: {stderr or stdout}")
+                    except subprocess.TimeoutExpired:
+                        logger.warning(f"Timeout pulling {name} from Ollama Hub")
+                        continue
                     except Exception as e:
                         logger.debug(f"Could not pull {name}: {e}")
                         continue

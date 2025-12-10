@@ -257,9 +257,22 @@ export function useGeneration() {
   }, [clearTimeouts])
   
   // Force stop generation (manual cancel)
-  const cancelGeneration = useCallback(() => {
+  const cancelGeneration = useCallback(async () => {
     console.log('🛑 [FRONTEND] Cancelling generation manually')
     clearTimeouts()
+    
+    // If we have a job ID, cancel it on the backend too
+    if (progress?.jobId) {
+      try {
+        const { default: api } = await import('../services/api')
+        await api.post(`/api/generation/jobs/${progress.jobId}/cancel`)
+        console.log('🛑 [FRONTEND] Backend job cancelled successfully')
+      } catch (error) {
+        console.warn('⚠️ [FRONTEND] Failed to cancel backend job:', error)
+        // Continue with local cancellation even if backend fails
+      }
+    }
+    
     setIsGenerating(false)
     setProgress(prev => prev ? {
       ...prev,
@@ -267,7 +280,7 @@ export function useGeneration() {
       error: 'Generation cancelled by user'
     } : null)
     addNotification('info', 'Generation cancelled')
-  }, [clearTimeouts, addNotification])
+  }, [clearTimeouts, addNotification, progress?.jobId])
 
   return {
     isGenerating,

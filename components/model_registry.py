@@ -18,13 +18,15 @@ class RegisteredModel:
     """A registered model (downloaded or fine-tuned)"""
     model_id: str
     model_name: str  # Display name
-    base_model: str  # e.g., "codellama-7b"
-    status: str  # "downloaded", "trained", "training", "failed"
-    model_path: str
-    created_at: str
+    base_model: Optional[str] = None  # e.g., "codellama-7b" - optional for cloud models
+    status: str = "available"  # "downloaded", "trained", "training", "failed", "available"
+    model_path: Optional[str] = None  # Optional for cloud/ollama models
+    created_at: Optional[str] = None  # Optional - will be set on creation
     trained_at: Optional[str] = None
     training_config: Optional[Dict] = None
     metrics: Optional[Dict] = None  # Loss, accuracy, etc.
+    provider: Optional[str] = None  # "ollama", "gemini", "openai", etc.
+    metadata: Optional[Dict] = None  # Additional metadata from ModelInfoDTO format
 
 
 class ModelRegistry:
@@ -45,7 +47,7 @@ class ModelRegistry:
         self._load_registry()
     
     def _load_registry(self):
-        """Load registry from disk"""
+        """Load registry from disk - handles both RegisteredModel and ModelInfoDTO formats"""
         if self.registry_path.exists():
             try:
                 with open(self.registry_path, 'r', encoding='utf-8') as f:
@@ -53,17 +55,56 @@ class ModelRegistry:
                     self.models = {}
                     for model_id, model_data in data.items():
                         try:
-                            # Handle both 'id' and 'model_id' keys for backward compatibility
-                            if 'id' in model_data and 'model_id' not in model_data:
-                                model_data['model_id'] = model_data.pop('id')
-                            # Handle both 'name' and 'model_name' keys for backward compatibility
-                            if 'name' in model_data and 'model_name' not in model_data:
-                                model_data['model_name'] = model_data.pop('name')
-                            # Remove fields that don't exist in RegisteredModel
-                            valid_fields = {'model_id', 'model_name', 'base_model', 'status', 'model_path', 
-                                          'created_at', 'trained_at', 'training_config', 'metrics'}
-                            model_data = {k: v for k, v in model_data.items() if k in valid_fields}
-                            self.models[model_id] = RegisteredModel(**model_data)
+                            # Detect format and convert accordingly
+                            # ModelInfoDTO format has: id, name, provider, status, is_trained, metadata
+                            # RegisteredModel format has: model_id, model_name, base_model, status, model_path, created_at
+                            
+                            converted_data = {}
+                            
+                            # Handle model_id / id
+                            if 'model_id' in model_data:
+                                converted_data['model_id'] = model_data['model_id']
+                            elif 'id' in model_data:
+                                converted_data['model_id'] = model_data['id']
+                            else:
+                                converted_data['model_id'] = model_id
+                            
+                            # Handle model_name / name
+                            if 'model_name' in model_data:
+                                converted_data['model_name'] = model_data['model_name']
+                            elif 'name' in model_data:
+                                converted_data['model_name'] = model_data['name']
+                            else:
+                                converted_data['model_name'] = model_id
+                            
+                            # Handle base_model (optional)
+                            converted_data['base_model'] = model_data.get('base_model')
+                            
+                            # Handle status
+                            converted_data['status'] = model_data.get('status', 'available')
+                            
+                            # Handle model_path (optional for cloud models)
+                            converted_data['model_path'] = model_data.get('model_path')
+                            
+                            # Handle created_at (optional)
+                            converted_data['created_at'] = model_data.get('created_at')
+                            
+                            # Handle trained_at (optional)
+                            converted_data['trained_at'] = model_data.get('trained_at')
+                            
+                            # Handle training_config (optional)
+                            converted_data['training_config'] = model_data.get('training_config')
+                            
+                            # Handle metrics (optional)
+                            converted_data['metrics'] = model_data.get('metrics')
+                            
+                            # Handle provider (from ModelInfoDTO format)
+                            converted_data['provider'] = model_data.get('provider')
+                            
+                            # Handle metadata (from ModelInfoDTO format)
+                            converted_data['metadata'] = model_data.get('metadata')
+                            
+                            self.models[model_id] = RegisteredModel(**converted_data)
                         except Exception as e:
                             logger.warning(f"Failed to load model {model_id}: {e}, skipping")
                             continue

@@ -55,7 +55,6 @@ class ContextBuilder:
         logger.info("Context Builder initialized with Universal Context Powerhouse")
     
     @timed("context_build", tags={"operation": "build_context"})
-    @cached(ttl=3600, key_prefix="context:")
     async def build_context(
         self,
         meeting_notes: str,
@@ -66,7 +65,8 @@ class ContextBuilder:
         include_ml_features: bool = False,
         max_rag_chunks: int = 18,
         kg_depth: int = 2,
-        artifact_type: Optional[str] = None
+        artifact_type: Optional[str] = None,
+        force_refresh: bool = False
     ) -> Dict[str, Any]:
         """
         Build comprehensive context from multiple sources.
@@ -80,6 +80,8 @@ class ContextBuilder:
             include_ml_features: Whether to include ML features (slower)
             max_rag_chunks: Maximum number of RAG chunks to retrieve
             kg_depth: Knowledge Graph traversal depth
+            artifact_type: Optional artifact type for targeted retrieval
+            force_refresh: If True, bypass cache and always retrieve fresh context
         
         Returns:
             Dictionary with assembled context
@@ -118,19 +120,29 @@ class ContextBuilder:
         
         logger.info(f"✅ Universal Context loaded: {universal_ctx.get('total_files', 0)} files, {len(universal_ctx.get('key_entities', []))} key entities")
         
-        # Check cache first
-        cache_key = self._get_cache_key(meeting_notes, repo_id, include_rag, include_kg, include_patterns)
-        cached_context = self.rag_cache.get_context(meeting_notes)
-        
-        if cached_context and not include_ml_features:
-            logger.info("Using cached targeted context (with universal baseline)")
-            return {
-                **context,
-                "sources": {
-                    "rag": {"cached": True, "context": cached_context}
-                },
-                "from_cache": True
-            }
+        # Check cache first (unless force_refresh is True)
+        if not force_refresh:
+            cache_key = self._get_cache_key(meeting_notes, repo_id, include_rag, include_kg, include_patterns)
+            cached_context = self.rag_cache.get_context(meeting_notes)
+            
+            if cached_context and not include_ml_features:
+                logger.info("Using cached targeted context (with universal baseline)")
+                # Parse cached context to extract RAG data properly
+                return {
+                    **context,
+                    "sources": {
+                        "rag": {
+                            "cached": True, 
+                            "context": cached_context,
+                            "num_snippets": cached_context.count("--- Snippet") if cached_context else 0
+                        }
+                    },
+                    "assembled_context": cached_context,  # Include assembled context from cache
+                    "from_cache": True,
+                    "rag": cached_context  # Also include at top level for compatibility
+                }
+        else:
+            logger.info("🔄 Force refresh requested - bypassing cache")
         
         # 🎯 STEP 2: Build targeted context on top of universal baseline
         logger.info("🎯 Building targeted context for this specific query")

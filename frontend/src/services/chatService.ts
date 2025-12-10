@@ -1,6 +1,8 @@
-import axios from 'axios'
+import api from './api'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+// Use empty string to make requests relative to the current origin
+// This allows Vite's proxy to intercept /api/* requests in development
+const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
@@ -21,23 +23,19 @@ export interface ChatResponse {
 }
 
 export async function sendChatMessage(request: ChatRequest): Promise<ChatResponse> {
-  const response = await axios.post<ChatResponse>(
-    `${API_BASE_URL}/api/chat/message`,
-    request,
-    {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }
-  )
+  const response = await api.post<ChatResponse>('/api/chat/message', request)
   return response.data
 }
 
 export async function* streamChatMessage(request: ChatRequest): AsyncGenerator<string, void, unknown> {
+  // Get auth token for streaming request
+  const token = localStorage.getItem('access_token')
+  
   const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     },
     body: JSON.stringify(request),
   })

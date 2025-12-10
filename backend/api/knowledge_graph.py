@@ -8,11 +8,105 @@ from typing import Optional
 from backend.models.dto import GraphDTO, GraphNodeDTO, GraphEdgeDTO
 from backend.services.knowledge_graph import get_builder
 from backend.core.middleware import limiter
+from backend.core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/knowledge-graph", tags=["knowledge-graph"])
+
+
+def _get_target_directory(provided_path: Optional[str] = None) -> Path:
+    """
+    Get the target directory for analysis.
+    Priority: provided_path > settings.target_repo_path > user project directories
+    
+    IMPORTANT: This should NEVER return the Architect.AI tool directory.
+    """
+    from backend.utils.tool_detector import get_user_project_directories, detect_tool_directory
+    
+    # If path is provided and exists, use it
+    if provided_path:
+        provided = Path(provided_path)
+        if provided.exists():
+            logger.info(f"Using provided directory: {provided}")
+            return provided
+    
+    # Use configured target repo path if set
+    if settings.target_repo_path:
+        target = Path(settings.target_repo_path)
+        if target.exists():
+            logger.info(f"Using configured target_repo_path: {target}")
+            return target
+    
+    # Get user project directories (siblings of tool)
+    user_dirs = get_user_project_directories()
+    tool_dir = detect_tool_directory()
+    
+    logger.info(f"🔍 [TARGET_DIR] Tool directory: {tool_dir}")
+    logger.info(f"🔍 [TARGET_DIR] Found {len(user_dirs)} sibling directories")
+    
+    if user_dirs:
+        # Score directories to find the most likely "main" project
+        scored_dirs = []
+        for d in user_dirs:
+            if d == tool_dir or not d.exists():
+                continue
+            
+            score = 0
+            name_lower = d.name.lower()
+            
+            # Deprioritize utility/shared directories
+            if name_lower in ['agents', 'components', 'utils', 'shared', 'common', 'lib', 'libs']:
+                score -= 100
+            
+            # Prioritize directories with project markers
+            if (d / 'package.json').exists():
+                score += 50  # Node.js/Angular/React project
+            if (d / 'angular.json').exists():
+                score += 60  # Angular project (higher priority)
+            if (d / 'pom.xml').exists() or (d / 'build.gradle').exists():
+                score += 50  # Java project
+            if (d / 'Cargo.toml').exists():
+                score += 50  # Rust project
+            if (d / 'go.mod').exists():
+                score += 50  # Go project
+            if (d / 'requirements.txt').exists() or (d / 'setup.py').exists():
+                score += 40  # Python project
+            if (d / '.csproj').exists() or any(d.glob('*.csproj')):
+                score += 50  # .NET project
+            if any(d.glob('*.sln')):
+                score += 55  # .NET solution
+            if (d / 'src').is_dir():
+                score += 30  # Has src directory
+            if (d / 'frontend').is_dir():
+                score += 20  # Has frontend
+            if (d / 'backend').is_dir():
+                score += 20  # Has backend
+            
+            # Prioritize directories with "project" or "final" in name
+            if 'project' in name_lower or 'final' in name_lower:
+                score += 25
+            
+            scored_dirs.append((d, score))
+            logger.debug(f"🔍 [TARGET_DIR] Scored {d.name}: {score}")
+        
+        if scored_dirs:
+            # Sort by score descending and pick the best
+            scored_dirs.sort(key=lambda x: x[1], reverse=True)
+            best_dir, best_score = scored_dirs[0]
+            logger.info(f"✅ [TARGET_DIR] Selected user project: {best_dir} (score: {best_score})")
+            return best_dir
+    
+    # Fallback to parent of tool (the "mother project")
+    if tool_dir:
+        parent = tool_dir.parent
+        logger.warning(f"⚠️ [TARGET_DIR] Falling back to tool parent directory: {parent}")
+        return parent
+    
+    # Last resort - this should NOT happen
+    logger.error("❌ [TARGET_DIR] Could not determine target directory - falling back to cwd (THIS MAY BE WRONG)")
+    return Path.cwd()
 
 
 @router.post("/build", response_model=dict)
@@ -27,14 +121,16 @@ async def build_graph(
     
     Request body:
     {
-        "directory": "/path/to/directory",
+        "directory": "/path/to/directory",  (optional - defaults to user project)
         "recursive": true,
         "use_cache": true
     }
     """
-    directory = Path(body.get("directory", "."))
+    directory = _get_target_directory(body.get("directory"))
     recursive = body.get("recursive", True)
-    use_cache = request.get("use_cache", True)
+    use_cache = body.get("use_cache", True)
+    
+    logger.info(f"🔍 [KG] Building knowledge graph from: {directory}")
     
     if not directory.exists():
         raise HTTPException(

@@ -133,7 +133,18 @@ async def get_feedback_stats(
     service = get_service()
     stats = service.get_training_stats()
     
-    return stats
+    # Normalize response for frontend compatibility
+    # Frontend expects 'by_artifact_type' field
+    response = {
+        "total_feedback": stats.get("total_feedback_events", 0),
+        "avg_score": stats.get("average_validation_score", 0.0),
+        "by_type": {},  # Placeholder for feedback type counts
+        "by_artifact_type": stats.get("feedback_by_artifact_type", {}),
+        # Include original stats for backward compatibility
+        **stats
+    }
+    
+    return response
 
 
 @router.get("/training-ready", response_model=Dict[str, Any])

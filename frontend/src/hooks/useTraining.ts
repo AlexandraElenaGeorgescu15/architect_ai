@@ -73,17 +73,16 @@ export function useTraining() {
       })
 
       try {
-        const response = await triggerTraining(request)
+        const job = await triggerTraining(request)
         setProgress((prev) => ({
           ...prev!,
-          jobId: response.job_id,
+          jobId: job.id,
         }))
 
-        // Fetch full job details
-        const job = await getTrainingJob(response.job_id)
+        // Add job to store (we already have full job details from trigger)
         addJob(job)
 
-        return response.job_id
+        return job.id
       } catch (error) {
         setIsTraining(false)
         const errorMessage = error instanceof Error ? error.message : 'Training trigger failed'

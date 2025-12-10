@@ -193,7 +193,7 @@ def test_file_integrity():
         "utils/entity_extractor.py",
         "agents/universal_agent.py",
         "validation/output_validator.py",
-        "app/app_v2.py",
+        "backend/main.py",
         "config/api_key_manager.py",
     ]
     

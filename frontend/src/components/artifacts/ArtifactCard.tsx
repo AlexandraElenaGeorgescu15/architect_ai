@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { Artifact } from '../../types'
-import { FileCode, ExternalLink, ThumbsUp, ThumbsDown, History, X, Clock, Check, RefreshCw } from 'lucide-react'
+import { FileCode, ExternalLink, ThumbsUp, ThumbsDown, History, X, Clock, Check, RefreshCw, Loader2 } from 'lucide-react'
 import { useArtifactStore } from '../../stores/artifactStore'
 import { useUIStore } from '../../stores/uiStore'
 import { submitFeedback } from '../../services/feedbackService'
+import { regenerateArtifact } from '../../services/generationService'
 import api from '../../services/api'
 
 interface Version {
@@ -29,6 +30,7 @@ export default function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
   const [versions, setVersions] = useState<Version[]>([])
   const [isLoadingVersions, setIsLoadingVersions] = useState(false)
   const [isRestoring, setIsRestoring] = useState(false)
+  const [isRegenerating, setIsRegenerating] = useState(false)
 
   const handleClick = () => {
     setCurrentArtifact(artifact)
@@ -60,6 +62,28 @@ export default function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
     }
   }
 
+  const handleRegenerate = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsRegenerating(true)
+    
+    try {
+      addNotification('info', `Regenerating ${artifact.type.replace(/_/g, ' ')}...`)
+      
+      const response = await regenerateArtifact(artifact.type, {
+        temperature: 0.8 // Slightly higher for variation
+      })
+      
+      if (response.job_id) {
+        addNotification('success', 'Regeneration started! Check the Studio for progress.')
+      }
+    } catch (error: any) {
+      console.error('Regenerate error:', error)
+      addNotification('error', error?.response?.data?.detail || 'Failed to regenerate artifact')
+    } finally {
+      setIsRegenerating(false)
+    }
+  }
+
   const handleVersionHistory = async (e: React.MouseEvent) => {
     e.stopPropagation()
     setShowVersionHistory(true)
@@ -69,20 +93,14 @@ export default function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
   const loadVersions = async () => {
     setIsLoadingVersions(true)
     try {
-      // Try both artifact.id and artifact.type as version keys
-      // (versions are typically stored by type for stability)
-      let response
-      try {
-        response = await api.get(`/api/versions/${artifact.type}`)
-      } catch {
-        // Fall back to artifact.id if type-based lookup fails
-        response = await api.get(`/api/versions/${artifact.id}`)
-      }
-      
+      // Use the correct endpoint for type-based version lookup
+      // Backend has /api/versions/by-type/{artifact_type} for type-based queries
+      const response = await api.get(`/api/versions/by-type/${artifact.type}`)
       const sortedVersions = [...response.data].sort((a: Version, b: Version) => b.version - a.version)
       setVersions(sortedVersions)
     } catch (error) {
-      // No versions yet or error loading
+      // No versions yet or error loading - show empty state
+      console.debug('No versions found for artifact type:', artifact.type)
       setVersions([])
     } finally {
       setIsLoadingVersions(false)
@@ -195,13 +213,27 @@ export default function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
             <span className="hidden sm:inline">Improve</span>
           </button>
         </div>
-        <button
-          onClick={handleVersionHistory}
-          className="flex items-center gap-1 px-2 py-1.5 text-xs rounded-md hover:bg-primary/20 hover:text-primary transition-colors"
-          title="View version history"
-        >
-          <History className="w-3.5 h-3.5" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={handleRegenerate}
+            disabled={isRegenerating}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded-md hover:bg-primary/20 hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Regenerate artifact"
+          >
+            {isRegenerating ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="w-3.5 h-3.5" />
+            )}
+          </button>
+          <button
+            onClick={handleVersionHistory}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded-md hover:bg-primary/20 hover:text-primary transition-colors"
+            title="View version history"
+          >
+            <History className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {isMermaid && (

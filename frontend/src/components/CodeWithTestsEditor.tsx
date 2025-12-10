@@ -111,15 +111,9 @@ export default function CodeWithTestsEditor() {
       await navigator.clipboard.writeText(code)
       setCopiedTab(tab)
       setTimeout(() => setCopiedTab(null), 2000)
-      addNotification({
-        type: 'success',
-        message: `${tab === 'implementation' ? 'Implementation' : 'Tests'} copied to clipboard!`,
-      })
+      addNotification('success', `${tab === 'implementation' ? 'Implementation' : 'Tests'} copied to clipboard!`)
     } catch (error) {
-      addNotification({
-        type: 'error',
-        message: 'Failed to copy to clipboard',
-      })
+      addNotification('error', 'Failed to copy to clipboard')
     }
   }
 
@@ -143,10 +137,7 @@ export default function CodeWithTestsEditor() {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
 
-    addNotification({
-      type: 'success',
-      message: `Downloaded ${filename}`,
-    })
+    addNotification('success', `Downloaded ${filename}`)
   }
 
   // Empty state

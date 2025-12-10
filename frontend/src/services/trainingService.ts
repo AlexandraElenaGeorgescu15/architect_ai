@@ -50,11 +50,12 @@ export async function getTrainingJob(jobId: string): Promise<TrainingJob> {
 
 /**
  * Trigger a training job.
+ * Returns the full TrainingJob object from the backend.
  */
 export async function triggerTraining(
   request?: TrainingTriggerRequest
-): Promise<{ success: boolean; job_id: string; message: string }> {
-  const response = await api.post<{ success: boolean; job_id: string; message: string }>(
+): Promise<TrainingJob> {
+  const response = await api.post<TrainingJob>(
     '/api/training/trigger',
     request || {}
   )

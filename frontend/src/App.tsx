@@ -5,6 +5,7 @@ import Layout from './components/layout/Layout'
 import OnboardingTour from './components/OnboardingTour'
 import CelebrationEffect from './components/CelebrationEffect'
 import SystemLoadingOverlay from './components/SystemLoadingOverlay'
+import ToastNotifications from './components/ToastNotifications'
 import { useSystemStatus } from './hooks/useSystemStatus'
 import { useAppLoading } from './hooks/useAppLoading'
 
@@ -98,8 +99,12 @@ function App() {
             <OnboardingTour />
             {/* Celebration effect for successful generations */}
             <CelebrationEffect />
+            {/* Toast notifications */}
+            <ToastNotifications />
           </Router>
         ) : null}
+        {/* Toast notifications are always visible even during loading */}
+        <ToastNotifications />
         <SystemLoadingOverlay 
           status={{
             ...systemStatus,

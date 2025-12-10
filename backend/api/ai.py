@@ -7,6 +7,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
 import logging
+import re
+import json
 
 from backend.core.auth import get_current_user
 from backend.models.dto import UserPublic, ArtifactType
@@ -14,6 +16,175 @@ from backend.services.model_service import get_service as get_model_service
 from backend.services.enhanced_generation import get_enhanced_service as get_generation_service
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================================
+# Helper Functions
+# ============================================================================
+
+def extract_json_from_response(response: str) -> Optional[Dict[str, Any]]:
+    """
+    Extract JSON from LLM response that may contain markdown, explanations, or wrapper text.
+    
+    Handles various LLM output formats:
+    - Clean JSON response
+    - JSON wrapped in markdown code blocks
+    - JSON with leading/trailing explanation text
+    - Nested JSON with arrays and objects
+    
+    Args:
+        response: Raw LLM response text
+        
+    Returns:
+        Parsed JSON dict or None if extraction fails
+    """
+    if not response:
+        return None
+    
+    response = response.strip()
+    
+    # Method 1: Try to parse as-is (clean JSON response)
+    try:
+        return json.loads(response)
+    except json.JSONDecodeError:
+        pass
+    
+    # Method 2: Extract from markdown code block (```json ... ``` or ``` ... ```)
+    # Use non-greedy match and handle multiple code blocks
+    json_block_patterns = [
+        r'```json\s*\n(.*?)\n```',  # Explicit json block
+        r'```\s*\n(\{.*?\})\n```',   # Generic code block with JSON object
+        r'```(.*?)```',              # Any code block
+    ]
+    
+    for pattern in json_block_patterns:
+        matches = re.findall(pattern, response, re.DOTALL | re.IGNORECASE)
+        for match in matches:
+            try:
+                cleaned = match.strip()
+                if cleaned.startswith('{') or cleaned.startswith('['):
+                    return json.loads(cleaned)
+            except json.JSONDecodeError:
+                continue
+    
+    # Method 3: Find JSON object using balanced brace matching
+    # This handles nested objects and arrays properly
+    def find_balanced_json(text: str, start_char: str = '{', end_char: str = '}') -> Optional[str]:
+        """Find a balanced JSON object or array in text."""
+        start_idx = text.find(start_char)
+        if start_idx == -1:
+            return None
+        
+        count = 0
+        in_string = False
+        escape_next = False
+        
+        for i, char in enumerate(text[start_idx:], start_idx):
+            if escape_next:
+                escape_next = False
+                continue
+            
+            if char == '\\':
+                escape_next = True
+                continue
+            
+            if char == '"' and not escape_next:
+                in_string = not in_string
+                continue
+            
+            if in_string:
+                continue
+            
+            if char == start_char:
+                count += 1
+            elif char == end_char:
+                count -= 1
+                if count == 0:
+                    return text[start_idx:i+1]
+        
+        return None
+    
+    # Try to find a balanced JSON object
+    json_str = find_balanced_json(response)
+    if json_str:
+        try:
+            parsed = json.loads(json_str)
+            # Verify it has expected structure for diagram parsing
+            if isinstance(parsed, dict):
+                return parsed
+        except json.JSONDecodeError:
+            pass
+    
+    # Method 4: Look for specific patterns like {"nodes": ..., "edges": ...}
+    # Find the position of "nodes" and work backwards to find the opening brace
+    nodes_idx = response.find('"nodes"')
+    if nodes_idx != -1:
+        # Search backwards for the opening brace
+        for i in range(nodes_idx - 1, -1, -1):
+            if response[i] == '{':
+                json_str = find_balanced_json(response[i:])
+                if json_str:
+                    try:
+                        return json.loads(json_str)
+                    except json.JSONDecodeError:
+                        pass
+                break
+    
+    return None
+
+
+def extract_mermaid_diagram(content: str) -> str:
+    """
+    Extract Mermaid diagram code from markdown code blocks or plain text.
+    Removes any surrounding text and returns only the diagram code.
+    
+    Uses the shared extraction logic from ValidationService for consistency.
+    """
+    try:
+        from backend.services.validation_service import get_service as get_validation_service
+        validator = get_validation_service()
+        return validator._extract_mermaid_diagram(content)
+    except ImportError:
+        # Fallback if validation service not available
+        pass
+    
+    # Fallback: Basic extraction
+    # Try to extract from markdown code blocks first
+    mermaid_pattern = r'```(?:mermaid)?\s*\n(.*?)```'
+    matches = re.findall(mermaid_pattern, content, re.DOTALL | re.IGNORECASE)
+    if matches:
+        return matches[0].strip()
+    
+    # Check for diagram type declarations
+    diagram_types = [
+        "erDiagram", "flowchart", "graph", "sequenceDiagram",
+        "classDiagram", "stateDiagram", "gantt", "pie", "journey",
+        "gitgraph", "mindmap", "timeline", "C4Context", "C4Container",
+        "C4Component", "C4Deployment"
+    ]
+    
+    for dt in diagram_types:
+        if dt.lower() in content.lower():
+            idx = content.lower().find(dt.lower())
+            if idx != -1:
+                diagram = content[idx:].strip()
+                lines = diagram.split('\n')
+                diagram_lines = []
+                for line in lines:
+                    line_stripped = line.strip()
+                    if (line_stripped.startswith('**Explanation') or 
+                        line_stripped.startswith('**Note') or
+                        line_stripped.startswith('Explanation') or
+                        line_stripped.startswith('This diagram') or
+                        line_stripped.startswith('The diagram')):
+                        break
+                    if line_stripped and not line_stripped.startswith('**') and not line_stripped.startswith('#'):
+                        diagram_lines.append(line)
+                
+                if diagram_lines:
+                    return '\n'.join(diagram_lines).strip()
+    
+    return content
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 
@@ -250,19 +421,54 @@ Return ONLY valid JSON with this exact structure:
             temperature=0.3  # Lower temperature for more consistent parsing
         )
         
-        # Parse response
-        import json
-        parsed_data = json.loads(result.content)
+        # Parse response using robust JSON extraction
+        parsed_data = extract_json_from_response(result.content)
+        
+        if parsed_data is None:
+            # Try one more time with a more explicit prompt
+            retry_prompt = f"""
+{prompt}
+
+IMPORTANT: Return ONLY a valid JSON object. No explanations, no markdown, no code blocks.
+Start your response with {{ and end with }}.
+"""
+            logger.warning("First parse attempt failed, retrying with explicit JSON prompt")
+            retry_result = await generation_service.generate_with_fallback(
+                prompt=retry_prompt,
+                system_instruction=system_instruction + "\n\nYou MUST respond with ONLY valid JSON. No other text.",
+                model_routing=routing,
+                response_format="json",
+                temperature=0.1  # Even lower temperature for strict JSON
+            )
+            parsed_data = extract_json_from_response(retry_result.content)
+            
+            if parsed_data is None:
+                logger.error(f"Failed to extract JSON from AI response after retry. Response: {retry_result.content[:500]}...")
+                return DiagramParseResponse(
+                    success=False,
+                    nodes=[],
+                    edges=[],
+                    error="AI returned response that could not be parsed as JSON. Please try again."
+                )
+        
+        # Ensure nodes and edges are lists
+        nodes = parsed_data.get("nodes", [])
+        edges = parsed_data.get("edges", [])
+        
+        if not isinstance(nodes, list):
+            nodes = []
+        if not isinstance(edges, list):
+            edges = []
         
         return DiagramParseResponse(
             success=True,
-            nodes=[ReactFlowNode(**node) for node in parsed_data.get("nodes", [])],
-            edges=[ReactFlowEdge(**edge) for edge in parsed_data.get("edges", [])],
+            nodes=[ReactFlowNode(**node) for node in nodes if isinstance(node, dict)],
+            edges=[ReactFlowEdge(**edge) for edge in edges if isinstance(edge, dict)],
             metadata={
                 "model_used": result.model_used,
                 "diagram_type": request.diagram_type.value,
-                "node_count": len(parsed_data.get("nodes", [])),
-                "edge_count": len(parsed_data.get("edges", []))
+                "node_count": len(nodes),
+                "edge_count": len(edges)
             }
         )
         
@@ -355,35 +561,36 @@ OUTPUT (improved Mermaid code only):"""
                 error=result.error or "AI returned empty response. Please try again."
             )
         
-        # Clean up response (remove markdown code blocks if present)
-        improved_code = result.content.strip()
+        # Use the robust extraction helper to get clean diagram code
+        improved_code = extract_mermaid_diagram(result.content)
         
-        # Remove common wrapper patterns
-        if improved_code.startswith("```"):
-            # Find the end of the code block
-            lines = improved_code.split('\n')
-            clean_lines = []
-            in_code = False
-            for line in lines:
-                if line.startswith("```") and not in_code:
-                    in_code = True
-                    continue
-                elif line.startswith("```") and in_code:
-                    break
-                elif in_code:
-                    clean_lines.append(line)
-            if clean_lines:
-                improved_code = '\n'.join(clean_lines)
-        
-        # Additional cleanup
-        improved_code = improved_code.replace("```mermaid", "").replace("```", "").strip()
+        # Validate that we got something meaningful
+        if not improved_code or len(improved_code.strip()) < 10:
+            logger.warning("AI response extraction resulted in empty or short content")
+            return DiagramImproveResponse(
+                success=False,
+                improved_code=request.mermaid_code,
+                improvements_made=[],
+                error="AI returned incomplete diagram. Please try again."
+            )
         
         # Validate that the improved code has the same diagram type
         improved_lower = improved_code.lower().strip()
         if diagram_start and not improved_lower.startswith(diagram_start.lower()):
-            # Try to find the diagram content and prepend the correct start
+            # Try to find the diagram type in the response
             logger.warning(f"AI response doesn't start with expected diagram type: {diagram_start}")
-            # If the original has a valid structure, return it with minimal fixes
+            
+            # Try to prepend the diagram type if it's missing
+            for dt in ["erDiagram", "flowchart", "graph", "sequenceDiagram", 
+                       "classDiagram", "stateDiagram", "gantt", "pie", "journey",
+                       "gitgraph", "mindmap", "timeline"]:
+                if dt.lower() in improved_lower:
+                    # Found the diagram type somewhere, extract from there
+                    idx = improved_lower.find(dt.lower())
+                    improved_code = improved_code[idx:].strip()
+                    break
+            
+            # If still doesn't start correctly and is significantly shorter, fail
             if len(improved_code) < len(request.mermaid_code) * 0.5:
                 return DiagramImproveResponse(
                     success=False,

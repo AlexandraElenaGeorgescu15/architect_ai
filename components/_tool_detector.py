@@ -21,10 +21,10 @@ def detect_tool_directory() -> Optional[Path]:
     
     # Verify this is the tool by checking for sentinel files
     sentinel_files = [
-        "app/app_v2.py",
+        "backend/main.py",
         "launch.py",
         "rag/ingest.py",
-        "components/knowledge_graph.py"
+        "frontend/package.json"
     ]
     
     matches = sum(1 for sentinel in sentinel_files if (current / sentinel).exists())

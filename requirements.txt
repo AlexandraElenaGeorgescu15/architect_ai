@@ -1,57 +1,10 @@
 # ============================================================================
-# Architect.AI - Production Dependencies
+# Architect.AI v3.5.2 - Production Dependencies
 # ============================================================================
 
-# Core Web Framework
-streamlit>=1.38.0
-
-# AI/LLM Providers
-google-generativeai>=0.3.2
-openai==2.7.2  # Fixed: Compatible with httpx 0.28+
-anthropic>=0.18.0
-groq==0.33.0  # Fixed: Compatible with httpx 0.28+
-huggingface-hub>=0.19.4
-
-# Local Model Support
-transformers>=4.36.0
-accelerate>=1.0.0
-peft>=0.7.0
-bitsandbytes>=0.41.0
-datasets>=2.14.0
-
-# HTTP & Async
-httpx==0.28.1  # Fixed: Latest stable version
-aiofiles>=23.2.1
-
-# RAG & Vector Search
-chromadb>=0.5.4
-sentence-transformers>=3.0.1
-rank-bm25>=0.2.2
-tiktoken>=0.7.0
-
-# Database & ORM
-sqlalchemy>=2.0.0
-
-# Utilities
-python-dotenv>=1.0.0
-PyYAML>=6.0.2
-GitPython>=3.1.43
-pandas>=2.2.2
-watchdog>=4.0.0
-psutil>=5.9.0
-cryptography>=41.0.0
-
-# Monitoring & Metrics
-prometheus-client>=0.19.0
-
-# Code Quality & Security
-pylint>=3.0.3
-bandit>=1.7.6
-
-# Production Features (Optional - for scaling)
-# redis>=5.0.1
-# celery>=5.3.4
-# FastAPI & ASGI Server
+# =============================================================================
+# Core Web Framework (FastAPI)
+# =============================================================================
 fastapi>=0.109.0
 uvicorn[standard]>=0.27.0
 pydantic>=2.5.0
@@ -62,45 +15,98 @@ python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
 python-multipart>=0.0.6
 
-# Rate Limiting
+# Rate Limiting & Middleware
 slowapi>=0.1.9
-
-# Request ID Tracking
 python-json-logger>=2.0.7
 
-# RAG System
-watchdog>=3.0.0
-rank-bm25>=0.2.2
+# =============================================================================
+# AI/LLM Providers
+# =============================================================================
+google-generativeai>=0.3.2
+openai>=1.0.0
+anthropic>=0.18.0
+groq>=0.4.0
+huggingface-hub>=0.19.4
+
+# Local Model Support & Fine-tuning
+transformers>=4.36.0
+accelerate>=1.0.0
+peft>=0.7.0
+bitsandbytes>=0.41.0
+datasets>=2.14.0
+
+# =============================================================================
+# RAG & Vector Search
+# =============================================================================
 chromadb>=0.4.22
 sentence-transformers>=2.2.2
+rank-bm25>=0.2.2
+tiktoken>=0.7.0
 
+# =============================================================================
 # Knowledge Graph
+# =============================================================================
 networkx>=3.2.0
 
-# ML Feature Engineering (optional - graceful degradation if not available)
+# =============================================================================
+# Database & ORM
+# =============================================================================
+sqlalchemy>=2.0.0
+alembic>=1.13.0
+
+# =============================================================================
+# HTTP & Async
+# =============================================================================
+httpx>=0.25.0
+aiofiles>=23.2.1
+
+# =============================================================================
+# Utilities
+# =============================================================================
+python-dotenv>=1.0.0
+pyyaml>=6.0.0
+GitPython>=3.1.43
+pandas>=2.2.2
+watchdog>=3.0.0
+psutil>=5.9.0
+cryptography>=41.0.0
+
+# =============================================================================
+# WebSocket
+# =============================================================================
+python-socketio>=5.10.0
+
+# =============================================================================
+# ML & Data Science
+# =============================================================================
 scikit-learn>=1.3.0
 numpy>=1.24.0
 
-# Database
-sqlalchemy>=2.0.0
-alembic>=1.13.0  # For database migrations
+# =============================================================================
+# Monitoring & Metrics
+# =============================================================================
+prometheus-client>=0.19.0
 
+# =============================================================================
+# Code Quality & Security Analysis
+# =============================================================================
+pylint>=3.0.3
+bandit>=1.7.6
+
+# =============================================================================
 # Testing
+# =============================================================================
 pytest>=7.4.0
 pytest-asyncio>=0.21.0
-httpx>=0.25.0  # For TestClient
 
-# Caching (optional - graceful degradation if not available)
-redis>=5.0.0  # For distributed caching
+# =============================================================================
+# Optional: Production Features (uncomment as needed)
+# =============================================================================
+# redis>=5.0.0              # Distributed caching
+# celery>=5.3.4             # Async job processing
+# circuitbreaker>=1.4.0     # Circuit breaker pattern
 
-# Configuration
-pyyaml>=6.0.0  # For YAML configuration files
-
-# WebSocket
-python-socketio>=5.10.0
-python-multipart>=0.0.6
-
-# Optional: Production features
-# redis>=5.0.1  # Uncomment for Redis caching
-# celery>=5.3.4  # Uncomment for async job processing
-# circuitbreaker>=1.4.0
+# =============================================================================
+# Legacy/Optional: Streamlit (only needed for archived code)
+# =============================================================================
+# streamlit>=1.38.0         # Archived - not used in main app

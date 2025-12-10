@@ -181,21 +181,38 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
           </div>
         </div>
 
-        <div className="mt-8 space-y-3">
-          {phases.map(([key, phase]) => (
-            <div
-              key={key}
-              className="flex items-start justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 transition-all hover:bg-muted/50"
-            >
-              <div className="flex-1">
-                <p className="text-sm font-semibold text-foreground">{phase.title ?? formatPhaseTitle(key)}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{phase.message ?? 'Pending...'}</p>
-              </div>
-              <span className={`text-xs font-semibold uppercase px-2 py-1 rounded-full ${getStatusBadgeClass(phase.status)}`}>
-                {statusLabel[phase.status] ?? phase.status}
-              </span>
+        {/* Phases Grid - Scrollable with inactive items first */}
+        <div className="mt-8">
+          <div className="max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {phases
+                .sort(([_, a], [__, b]) => {
+                  // Sort: pending/running first, then complete/skipped, then errors
+                  const statusOrder: Record<string, number> = {
+                    pending: 0,
+                    running: 1,
+                    error: 2,
+                    complete: 3,
+                    skipped: 4,
+                  }
+                  return (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99)
+                })
+                .map(([key, phase]) => (
+                  <div
+                    key={key}
+                    className="flex items-start justify-between rounded-xl border border-border bg-muted/30 px-4 py-3 transition-all hover:bg-muted/50"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{phase.title ?? formatPhaseTitle(key)}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{phase.message ?? 'Pending...'}</p>
+                    </div>
+                    <span className={`text-xs font-semibold uppercase px-2 py-1 rounded-full flex-shrink-0 ml-2 ${getStatusBadgeClass(phase.status)}`}>
+                      {statusLabel[phase.status] ?? phase.status}
+                    </span>
+                  </div>
+                ))}
             </div>
-          ))}
+          </div>
         </div>
 
         <div className="mt-6 flex items-center justify-between pt-6 border-t border-border">

@@ -59,8 +59,8 @@ const EditableNode = ({ id, data, isConnectable, selected }: NodeProps<NodeData>
   return (
     <div
       className={`
-        relative group bg-white rounded-lg shadow-md border-2 transition-all min-w-[150px]
-        ${selected ? 'border-blue-500 ring-2 ring-blue-200' : 'border-transparent'}
+        relative group bg-card rounded-lg shadow-md border-2 transition-all min-w-[150px]
+        ${selected ? 'border-blue-500 ring-2 ring-blue-200 dark:ring-blue-500/30' : 'border-transparent'}
       `}
       style={{
         borderColor: selected ? undefined : data.color || '#6366f1',
@@ -71,28 +71,28 @@ const EditableNode = ({ id, data, isConnectable, selected }: NodeProps<NodeData>
         type="target"
         position={Position.Top}
         isConnectable={isConnectable}
-        className="w-3 h-3 bg-gray-400 hover:bg-blue-500 transition-colors"
+        className="w-3 h-3 bg-muted-foreground hover:bg-blue-500 transition-colors"
       />
 
       {/* Toolbar (visible on hover/selected) */}
       <div
         className={`
-        absolute -top-9 right-0 bg-white rounded-full shadow-lg p-1 flex gap-1
-        transition-opacity duration-200 border border-gray-100 z-10
+        absolute -top-9 right-0 bg-card rounded-full shadow-lg p-1 flex gap-1
+        transition-opacity duration-200 border border-border z-10
         ${selected || showColors ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto'}
       `}
       >
         <button
           onClick={() => setShowColors(!showColors)}
-          className="p-1.5 hover:bg-gray-100 rounded-full text-gray-600 transition-colors"
+          className="p-1.5 hover:bg-muted rounded-full text-muted-foreground transition-colors"
           title="Change Color"
         >
           <Palette size={14} />
         </button>
-        <div className="w-px bg-gray-200 my-1"></div>
+        <div className="w-px bg-border my-1"></div>
         <button
           onClick={onDeleteClick}
-          className="p-1.5 hover:bg-red-50 text-gray-600 hover:text-red-500 rounded-full transition-colors"
+          className="p-1.5 hover:bg-red-50 dark:hover:bg-red-500/20 text-muted-foreground hover:text-red-500 rounded-full transition-colors"
           title="Delete Node"
         >
           <Trash2 size={14} />
@@ -101,18 +101,18 @@ const EditableNode = ({ id, data, isConnectable, selected }: NodeProps<NodeData>
 
       {/* Color Picker Popup */}
       {showColors && (
-        <div className="absolute -top-24 left-1/2 -translate-x-1/2 bg-white p-2 rounded-xl shadow-xl border border-gray-200 grid grid-cols-5 gap-1.5 z-50 w-40">
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 bg-card p-2 rounded-xl shadow-xl border border-border grid grid-cols-5 gap-1.5 z-50 w-40">
           {COLORS.map((c) => (
             <button
               key={c}
-              className="w-5 h-5 rounded-full hover:scale-110 transition-transform ring-1 ring-gray-200"
+              className="w-5 h-5 rounded-full hover:scale-110 transition-transform ring-1 ring-border"
               style={{ backgroundColor: c }}
               onClick={() => onColorSelect(c)}
             />
           ))}
           <button
             onClick={() => setShowColors(false)}
-            className="col-span-5 text-xs text-gray-500 hover:text-red-500 mt-1 flex items-center justify-center gap-1"
+            className="col-span-5 text-xs text-muted-foreground hover:text-red-500 mt-1 flex items-center justify-center gap-1"
           >
             <X size={10} /> Close
           </button>
@@ -125,7 +125,8 @@ const EditableNode = ({ id, data, isConnectable, selected }: NodeProps<NodeData>
         style={{ backgroundColor: `${data.color || '#6366f1'}15` }}
       >
         <input
-          className="w-full bg-transparent text-center font-medium text-gray-800 focus:outline-none focus:border-b border-gray-300 placeholder-gray-400"
+          className="w-full bg-transparent text-center font-medium focus:outline-none focus:border-b border-border placeholder-gray-400"
+          style={{ color: '#1f2937' }}
           value={data.label}
           onChange={onLabelChange}
           placeholder="Node Label"
@@ -137,7 +138,7 @@ const EditableNode = ({ id, data, isConnectable, selected }: NodeProps<NodeData>
         type="source"
         position={Position.Bottom}
         isConnectable={isConnectable}
-        className="w-3 h-3 bg-gray-400 hover:bg-blue-500 transition-colors"
+        className="w-3 h-3 bg-muted-foreground hover:bg-blue-500 transition-colors"
       />
     </div>
   )

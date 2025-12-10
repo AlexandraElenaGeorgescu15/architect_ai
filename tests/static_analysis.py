@@ -243,7 +243,7 @@ def check_critical_functions():
         ("utils/entity_extractor.py", "extract_entities_from_file"),
         ("utils/entity_extractor.py", "generate_csharp_dto"),
         ("utils/entity_extractor.py", "generate_typescript_interface"),
-        ("app/app_v2.py", "strip_markdown_artifacts"),
+        ("backend/main.py", "startup_event"),
         ("agents/universal_agent.py", "generate_erd_only"),
         ("agents/universal_agent.py", "generate_code_prototype"),
         ("agents/universal_agent.py", "generate_visual_prototype"),

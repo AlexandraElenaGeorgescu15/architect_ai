@@ -10,11 +10,62 @@ from backend.services.rag_ingester import get_ingester
 from backend.services.rag_retriever import get_retriever
 from backend.services.rag_cache import get_cache
 from backend.core.middleware import limiter
+from backend.core.config import settings
 import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/rag", tags=["rag"])
+
+
+def _get_target_directory(provided_path: Optional[str] = None) -> Path:
+    """
+    Get the target directory for RAG indexing.
+    IMPORTANT: This should NEVER return the Architect.AI tool directory.
+    """
+    from backend.utils.tool_detector import get_user_project_directories, detect_tool_directory
+    
+    if provided_path:
+        provided = Path(provided_path)
+        if provided.exists():
+            return provided
+    
+    if settings.target_repo_path:
+        target = Path(settings.target_repo_path)
+        if target.exists():
+            return target
+    
+    user_dirs = get_user_project_directories()
+    tool_dir = detect_tool_directory()
+    
+    if user_dirs:
+        # Score directories (same logic as other APIs)
+        scored_dirs = []
+        for d in user_dirs:
+            if d == tool_dir or not d.exists():
+                continue
+            score = 0
+            name_lower = d.name.lower()
+            if name_lower in ['agents', 'components', 'utils', 'shared', 'common', 'lib', 'libs']:
+                score -= 100
+            if (d / 'package.json').exists():
+                score += 50
+            if (d / 'angular.json').exists():
+                score += 60
+            if (d / 'src').is_dir():
+                score += 30
+            if 'project' in name_lower or 'final' in name_lower:
+                score += 25
+            scored_dirs.append((d, score))
+        
+        if scored_dirs:
+            scored_dirs.sort(key=lambda x: x[1], reverse=True)
+            return scored_dirs[0][0]
+    
+    if tool_dir:
+        return tool_dir.parent
+    
+    return Path.cwd()
 
 
 @router.post("/index", response_model=dict)
@@ -29,12 +80,13 @@ async def index_directory(
     
     Request body:
     {
-        "directory": "/path/to/directory",
+        "directory": "/path/to/directory",  (optional - defaults to user project)
         "recursive": true
     }
     """
-    directory = Path(body.get("directory", "."))
+    directory = _get_target_directory(body.get("directory"))
     recursive = body.get("recursive", True)
+    logger.info(f"🔍 [RAG] Indexing directory: {directory}")
     
     if not directory.exists():
         raise HTTPException(

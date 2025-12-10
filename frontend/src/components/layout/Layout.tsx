@@ -10,13 +10,13 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   return (
-    <div className="flex h-screen max-h-screen text-foreground bg-background bg-gradient-mesh overflow-hidden">
+    <div className="flex h-screen text-foreground bg-background bg-gradient-mesh overflow-x-hidden">
       {/* Sidebar */}
       <div className="h-full flex-shrink-0">
         <Sidebar />
       </div>
       
-      <div className="flex flex-col flex-1 min-w-0 min-h-0">
+      <div className="flex flex-col flex-1 min-w-0 min-h-0 h-full">
         <Header />
         <MainContent>{children}</MainContent>
       </div>

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, memo } from 'react'
+import { createPortal } from 'react-dom'
 import { MessageSquare, X, Send, Bot, Minimize2, Maximize2 } from 'lucide-react'
 import { sendChatMessage, streamChatMessage } from '../services/chatService'
 
@@ -44,6 +45,7 @@ const ChatMessage = memo(function ChatMessage({ message }: { message: Message })
 })
 
 function FloatingChat() {
+  const [portalEl, setPortalEl] = useState<HTMLElement | null>(null)
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(true)
   const [messages, setMessages] = useState<Message[]>([
@@ -57,6 +59,27 @@ function FloatingChat() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Mount a portal so chat always sits above page content
+  useEffect(() => {
+    const el = document.createElement('div')
+    el.id = 'floating-chat-portal'
+    el.style.position = 'fixed'
+    el.style.top = '0'
+    el.style.left = '0'
+    el.style.width = '0'
+    el.style.height = '0'
+    el.style.pointerEvents = 'none'
+    el.style.zIndex = '9999'
+    el.style.overflow = 'visible'
+    document.body.appendChild(el)
+    setPortalEl(el)
+    return () => {
+      if (document.body.contains(el)) {
+        document.body.removeChild(el)
+      }
+    }
+  }, [])
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -144,14 +167,15 @@ function FloatingChat() {
     }
   }, [handleSend])
 
-  if (!isOpen) {
+  // If portal not ready yet, render inline fallback
+  if (!portalEl) {
     return (
       <button
         onClick={() => {
           setIsOpen(true)
           setIsMinimized(false)
         }}
-        className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-full shadow-[0_8px_32px_rgba(37,99,235,0.4)] hover:shadow-[0_16px_48px_rgba(37,99,235,0.6)] flex items-center justify-center transition-all duration-500 hover:scale-110 hover:rotate-12 group border border-primary/20 animate-pulse"
+        className="fixed bottom-6 right-6 z-[2100] w-16 h-16 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-full shadow-[0_8px_32px_rgba(37,99,235,0.4)] hover:shadow-[0_16px_48px_rgba(37,99,235,0.6)] flex items-center justify-center transition-all duration-500 hover:scale-110 hover:rotate-12 group border border-primary/20 animate-pulse"
         aria-label="Open chat"
       >
         <MessageSquare className="w-7 h-7 group-hover:scale-125 transition-transform duration-300" />
@@ -160,9 +184,23 @@ function FloatingChat() {
     )
   }
 
-  return (
+  const launcher = (
+    <button
+      onClick={() => {
+        setIsOpen(true)
+        setIsMinimized(false)
+      }}
+      className="pointer-events-auto fixed bottom-6 right-6 z-[2100] w-16 h-16 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-full shadow-[0_8px_32px_rgba(37,99,235,0.4)] hover:shadow-[0_16px_48px_rgba(37,99,235,0.6)] flex items-center justify-center transition-all duration-500 hover:scale-110 hover:rotate-12 group border border-primary/20 animate-pulse"
+      aria-label="Open chat"
+    >
+      <MessageSquare className="w-7 h-7 group-hover:scale-125 transition-transform duration-300" />
+      <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-background animate-pulse shadow-[0_0_12px_rgba(34,197,94,0.8)]" />
+    </button>
+  )
+
+  const chatWindow = (
     <div
-      className={`fixed bottom-6 right-6 z-50 transition-all duration-500 ease-out ${
+      className={`pointer-events-auto fixed bottom-6 right-6 z-[2100] transition-all duration-500 ease-out ${
         isMinimized
           ? 'w-80 h-16'
           : 'w-[420px] h-[650px]'
@@ -260,6 +298,11 @@ function FloatingChat() {
         )}
       </div>
     </div>
+  )
+
+  return createPortal(
+    isOpen ? chatWindow : launcher,
+    portalEl
   )
 }
 

@@ -13,14 +13,10 @@ export interface FeedbackRequest {
 }
 
 export interface FeedbackResponse {
-  success: boolean
-  feedback_id: string
+  recorded: boolean
+  examples_collected: number
+  training_triggered: boolean
   message: string
-  training_stats?: {
-    total_examples: number
-    ready_for_training: boolean
-    examples_needed: number
-  }
 }
 
 export interface FeedbackHistoryItem {

@@ -628,27 +628,13 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                           </button>
                         </div>
                       </>
-                    ) : props.selectedArtifactType.includes('html') ? (
-                      <div className="h-full flex items-center justify-center p-8">
-                        <div className="text-center max-w-md">
-                          <FileCode className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                          <h3 className="text-lg font-semibold text-foreground mb-2">HTML Artifact</h3>
-                          <p className="text-sm text-muted-foreground mb-4">
-                            View the generated HTML in the <strong>Library</strong> tab
-                          </p>
-                        </div>
-                      </div>
                     ) : props.selectedArtifactType === 'code_prototype' ? (
                       <Suspense fallback={<LoadingFallback />}>
                         <CodeWithTestsEditor />
                       </Suspense>
-                    ) : props.selectedArtifactType === 'dev_visual_prototype' || props.selectedArtifactType === 'html_prototype' ? (
-                      <Suspense fallback={<LoadingFallback />}>
-                        <InteractivePrototypeEditor />
-                      </Suspense>
                     ) : (
                       <Suspense fallback={<LoadingFallback />}>
-                        <ArtifactTabs />
+                        <InteractivePrototypeEditor artifactType={props.selectedArtifactType} />
                       </Suspense>
                     )}
                  </div>

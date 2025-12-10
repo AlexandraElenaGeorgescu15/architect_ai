@@ -191,7 +191,14 @@ class HTMLDiagramGenerator:
             ArtifactType.MERMAID_MINDMAP: "mindmap",
             ArtifactType.MERMAID_GIT_GRAPH: "git_graph",
             ArtifactType.MERMAID_TIMELINE: "timeline",
-            ArtifactType.MERMAID_C4: "c4",
+            ArtifactType.MERMAID_SYSTEM_OVERVIEW: "system_overview",
+            ArtifactType.MERMAID_API_SEQUENCE: "api_sequence",
+            ArtifactType.MERMAID_UML: "uml",
+            # C4 Diagrams - individual types
+            ArtifactType.MERMAID_C4_CONTEXT: "c4_context",
+            ArtifactType.MERMAID_C4_CONTAINER: "c4_container",
+            ArtifactType.MERMAID_C4_COMPONENT: "c4_component",
+            ArtifactType.MERMAID_C4_DEPLOYMENT: "c4_deployment",
         }
         
         diagram_type = diagram_type_map.get(mermaid_artifact_type, "flowchart")
