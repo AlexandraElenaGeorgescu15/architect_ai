@@ -63,7 +63,10 @@ export const useArtifactStore = create<ArtifactStore>((set, get) => ({
   clearError: () => set({ error: null }),
 
   getArtifactsByType: (type) => {
-    return get().artifacts.filter((a) => a.type === type)
+    return get()
+      .artifacts
+      .filter((a) => a.type === type)
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
   },
 
   getArtifactById: (id) => {

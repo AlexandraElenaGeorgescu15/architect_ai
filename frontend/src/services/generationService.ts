@@ -84,7 +84,10 @@ export interface GenerationResponse {
   message?: string
 }
 
-export interface BulkGenerationItem extends GenerationRequest {}
+export interface BulkGenerationItem extends GenerationRequest {
+  // For bulk generation we also allow selecting a meeting-notes folder
+  folder_id?: string
+}
 
 export interface BulkGenerationResult {
   job_id: string

@@ -252,10 +252,44 @@ class EnhancedGenerationService:
                     )
                     
                     score = validation_result.score
-                    is_valid = validation_result.is_valid and score >= opts["validation_threshold"]
+                    # Use raw content as default; may be refined later after a successful validation pass
+                    cleaned_content = response.content
+                    # Additional render-viability checks for diagrams/HTML
+                    render_viable = True
+                    is_runnable = True
+                    if artifact_type.value.startswith("mermaid_"):
+                        candidate = cleaned_content
+                        mermaid_markers = [
+                            "graph", "flowchart", "sequenceDiagram", "classDiagram", "stateDiagram",
+                            "erDiagram", "gantt", "journey", "pie", "gitGraph", "mindmap", "timeline"
+                        ]
+                        if not any(marker in candidate for marker in mermaid_markers):
+                            render_viable = False
+                        
+                        # Check if diagram is actually runnable (can be rendered)
+                        try:
+                            from backend.services.validation_service import ValidationService
+                            validator = ValidationService()
+                            cleaned = validator._extract_mermaid_diagram(candidate)
+                            # Check for basic runnability: has diagram type, balanced brackets
+                            mermaid_errors = validator._validate_mermaid(cleaned)
+                            if mermaid_errors:
+                                is_runnable = False
+                                logger.warning(f"⚠️ [ENHANCED_GEN] Diagram not runnable: {mermaid_errors}")
+                                # Penalize score if not runnable
+                                score = max(0.0, score - 30.0)
+                        except Exception as e:
+                            logger.warning(f"⚠️ [ENHANCED_GEN] Could not check runnability: {e}")
+                    
+                    if artifact_type.value.startswith("html_"):
+                        candidate = cleaned_content
+                        if "<" not in candidate or ">" not in candidate:
+                            render_viable = False
+                    
+                    is_valid = validation_result.is_valid and score >= opts["validation_threshold"] and render_viable and is_runnable
                     logger.info(f"📊 [ENHANCED_GEN] Validation result for {model_name}: score={score:.1f}, "
                                f"is_valid={is_valid}, threshold={opts['validation_threshold']}, "
-                               f"errors={len(validation_result.errors)}")
+                               f"is_runnable={is_runnable}, errors={len(validation_result.errors)}")
                     
                     attempt = {
                         "model": model_name,
@@ -339,7 +373,8 @@ class EnhancedGenerationService:
                                     mermaid_artifact_type=artifact_type,
                                     meeting_notes=meeting_notes,
                                     rag_context=assembled_context,
-                                    use_ai=True
+                                    # Avoid AI-assisted layout unless explicitly requested to cut latency
+                                    use_ai=False
                                 )
                                 logger.info(f"✅ Auto-generated HTML version for {artifact_type.value}")
                             except Exception as e:
@@ -518,7 +553,8 @@ class EnhancedGenerationService:
                                     mermaid_artifact_type=artifact_type,
                                     meeting_notes=meeting_notes,
                                     rag_context=assembled_context,
-                                    use_ai=True
+                                    # Keep AI layout off by default for stability/latency
+                                    use_ai=False
                                 )
                                 logger.info(f"✅ Auto-generated HTML version for {artifact_type.value} (cloud)")
                             except Exception as e:

@@ -8,6 +8,7 @@ import { FlowchartAdapter } from './flowchartAdapter'
 import { ERDAdapter } from './erdAdapter'
 import { SequenceAdapter } from './sequenceAdapter'
 import { ArchitectureAdapter } from './architectureAdapter'
+import { ClassAdapter } from './classAdapter'
 
 /**
  * Diagram adapter factory
@@ -34,9 +35,11 @@ export function getAdapterForDiagramType(diagramType: string): BaseDiagramAdapte
     case 'system_overview':
       return new ArchitectureAdapter()
 
+    case 'class':
+    case 'uml':
+      return new ClassAdapter()
+
     // Add more as implemented...
-    // case 'class':
-    //   return new ClassAdapter()
     // case 'state':
     //   return new StateAdapter()
 
@@ -54,5 +57,6 @@ export {
   ERDAdapter,
   SequenceAdapter,
   ArchitectureAdapter,
+  ClassAdapter,
 }
 

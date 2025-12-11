@@ -216,8 +216,9 @@ async def generate_artifact(
     # This gives immediate results for fast generations while still allowing background for slow ones
     background_tasks.add_task(generate_task)
     
-    # Wait up to 30 seconds for the job to complete (most generations finish within this time)
-    max_wait = 30
+    # Wait up to 60 seconds for the job to complete (most generations finish within this time)
+    # Longer wait avoids premature "pending" responses that feel like timeouts in the UI.
+    max_wait = 60
     for i in range(max_wait * 2):  # Check every 0.5 seconds
         await asyncio.sleep(0.5)
         
@@ -237,12 +238,21 @@ async def generate_artifact(
                         artifact=artifact
                     )
             elif job_status.get("status") == GenerationStatus.FAILED.value:
-                # Generation failed
+                # Generation failed - try to get more details
                 error = job_status.get("error", "Generation failed")
-                logger.error(f"❌ [GENERATION] Generation failed: job_id={job_id}, error={error}")
+                error_type = job_status.get("error_type", "unknown")
+                suggestion = job_status.get("suggestion", "")
+                
+                logger.error(f"❌ [GENERATION] Generation failed: job_id={job_id}, error={error}, type={error_type}")
+                
+                # Return more helpful error message
+                error_detail = error
+                if suggestion:
+                    error_detail = f"{error}\n\nSuggestion: {suggestion}"
+                
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=error
+                    detail=error_detail
                 )
     
     # If we reach here, generation is still in progress after 30 seconds
@@ -398,15 +408,39 @@ async def bulk_generate(
     responses: list[BulkGenerationResult] = []
 
     for item in request.items:
-        if not item.meeting_notes and not item.context_id:
+        if not item.meeting_notes and not item.context_id and not item.folder_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Each item must include meeting_notes or context_id",
+                detail="Each item must include meeting_notes, folder_id, or context_id",
+            )
+
+        # Load notes from folder if provided and meeting_notes missing
+        meeting_notes = item.meeting_notes or ""
+        if item.folder_id and not meeting_notes:
+            from backend.services.meeting_notes_service import get_service as get_notes_service
+            notes_service = get_notes_service()
+            if not hasattr(notes_service, "get_notes_by_folder"):
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Meeting notes service is not properly initialized",
+                )
+            folder_notes = notes_service.get_notes_by_folder(item.folder_id)
+            if not folder_notes:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"No notes found in folder: {item.folder_id}",
+                )
+            meeting_notes = "\n\n".join([note.get("content", "") for note in folder_notes])
+
+        if not meeting_notes and not item.context_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Each item must include meeting_notes or context_id after folder resolution",
             )
 
         result = await service.generate_artifact_sync(
             artifact_type=item.artifact_type,
-            meeting_notes=item.meeting_notes or "",
+            meeting_notes=meeting_notes,
             context_id=item.context_id,
             options=item.options.dict() if item.options else None,
         )

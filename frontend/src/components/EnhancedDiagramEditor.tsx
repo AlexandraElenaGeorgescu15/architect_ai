@@ -121,54 +121,82 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
         : selectedArtifact.content
       
       setMermaidCode(cleanedContent)
-      parseAndLoadDiagram(cleanedContent, selectedArtifact.type)
+      // Use rule-based parsing first (fast, no AI)
+      parseAndLoadDiagram(cleanedContent, selectedArtifact.type, false)
     }
   }, [selectedArtifact?.id])
 
   /**
-   * Parse Mermaid code and load into canvas (AI-powered or fallback)
+   * Parse Mermaid code and load into canvas (rule-based first, AI only if needed)
    */
-  const parseAndLoadDiagram = async (code: string, diagramType: string) => {
+  const parseAndLoadDiagram = async (code: string, diagramType: string, useAI: boolean = false) => {
     try {
       setIsSyncing(true)
 
-      // Try AI parsing first
-      const result = await parseDiagram(code, diagramType as any)
-
-      if (result.success && result.nodes.length > 0) {
-        // Convert to React Flow format with callbacks
-        const flowNodes = result.nodes.map((node) => ({
-          ...node,
-          data: {
-            ...node.data,
-            onChange: handleNodeDataChange,
-            onDelete: handleNodeDelete,
-          },
-        }))
-
-        setNodes(flowNodes)
-        setEdges(result.edges)
-
-        addNotification('success', `Loaded ${result.nodes.length} nodes using ${result.metadata.model_used}`)
-      } else {
-        // Fallback to client-side parsing
+      // ALWAYS try rule-based parsing first (fast, no AI needed)
+      try {
         const adapter = getAdapterForDiagramType(diagramType)
-        const parsed = adapter.parseFromMermaid(code)
+        
+        // Clean the code first if adapter has cleanMermaidCode method
+        let cleanedCode = code
+        if ('cleanMermaidCode' in adapter && typeof (adapter as any).cleanMermaidCode === 'function') {
+          cleanedCode = (adapter as any).cleanMermaidCode(code)
+        }
+        
+        const parsed = adapter.parseFromMermaid(cleanedCode)
 
-        const flowNodes = parsed.nodes.map((node) => ({
-          ...node,
-          data: {
-            ...node.data,
-            onChange: handleNodeDataChange,
-            onDelete: handleNodeDelete,
-          },
-        }))
+        if (parsed.nodes.length > 0) {
+          // Convert to React Flow format with callbacks
+          const flowNodes = parsed.nodes.map((node) => ({
+            ...node,
+            data: {
+              ...node.data,
+              onChange: handleNodeDataChange,
+              onDelete: handleNodeDelete,
+            },
+          }))
 
-        setNodes(flowNodes)
-        setEdges(parsed.edges)
+          setNodes(flowNodes)
+          setEdges(parsed.edges)
 
-        addNotification('info', `Loaded ${parsed.nodes.length} nodes (client-side parsing)`)
+          addNotification('success', `Loaded ${parsed.nodes.length} nodes (rule-based parsing)`)
+          return // Success with rule-based parsing
+        } else {
+          console.warn('Rule-based parsing returned 0 nodes, trying AI fallback')
+        }
+      } catch (ruleError) {
+        console.warn('Rule-based parsing failed, trying AI fallback:', ruleError)
       }
+
+      // Only use AI parsing if rule-based failed AND useAI is true (e.g., for repair/improve)
+      if (useAI) {
+        try {
+          const result = await parseDiagram(code, diagramType as any)
+
+          if (result.success && result.nodes.length > 0) {
+            // Convert to React Flow format with callbacks
+            const flowNodes = result.nodes.map((node) => ({
+              ...node,
+              data: {
+                ...node.data,
+                onChange: handleNodeDataChange,
+                onDelete: handleNodeDelete,
+              },
+            }))
+
+            setNodes(flowNodes)
+            setEdges(result.edges)
+
+            addNotification('success', `Loaded ${result.nodes.length} nodes using AI parsing`)
+            return
+          }
+        } catch (aiError) {
+          console.error('AI parsing also failed:', aiError)
+        }
+      }
+
+      // If both failed, show error
+      addNotification('error', 'Failed to parse diagram. Please check the Mermaid syntax.')
     } catch (error) {
       console.error('Failed to parse diagram:', error)
       addNotification('error', 'Failed to parse diagram. Check console for details.')
@@ -207,11 +235,11 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
   }, [selectedArtifact, updateArtifact, addNotification])
 
   /**
-   * Sync code to canvas
+   * Sync code to canvas (rule-based parsing, no AI)
    */
   const handleSync = useCallback(() => {
     if (!selectedArtifact) return
-    parseAndLoadDiagram(mermaidCode, selectedArtifact.type)
+    parseAndLoadDiagram(mermaidCode, selectedArtifact.type, false)
   }, [mermaidCode, selectedArtifact])
 
   /**
@@ -239,8 +267,8 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
         if (result.improved_code.trim() !== mermaidCode.trim()) {
           setMermaidCode(result.improved_code)
           
-          // Parse improved code to canvas
-          await parseAndLoadDiagram(result.improved_code, selectedArtifact.type)
+          // Parse improved code to canvas (use rule-based first, AI only if needed)
+          await parseAndLoadDiagram(result.improved_code, selectedArtifact.type, false)
 
           const improvements = result.improvements_made.length > 0 
             ? result.improvements_made.join(', ')
@@ -265,15 +293,28 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
 
   /**
    * Handle node data changes (e.g., label, color)
+   * Prevents unnecessary re-renders that cause properties to disappear
    */
   const handleNodeDataChange = useCallback(
     (id: string, newData: Partial<any>) => {
       setNodes((nds) => {
         const updatedNodes = nds.map((node) =>
           node.id === id
-            ? { ...node, data: { ...node.data, ...newData } }
+            ? { 
+                ...node, 
+                data: { 
+                  ...node.data, 
+                  ...newData,
+                  // Preserve callbacks
+                  onChange: handleNodeDataChange,
+                  onDelete: handleNodeDelete,
+                } 
+              }
             : node
         )
+
+        // Update refs immediately to prevent stale state
+        nodesRef.current = updatedNodes
 
         // Auto-sync to code after a short delay with the updated nodes
         setTimeout(() => {
@@ -283,7 +324,7 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
         return updatedNodes
       })
     },
-    [generateMermaidFromCanvas]
+    [generateMermaidFromCanvas, handleNodeDelete]
   )
 
   /**

@@ -32,6 +32,7 @@ export function WebSocketProvider({
   const connectionNotifiedRef = useRef(false)
   const initialConnectionFailedRef = useRef(false)
   const warnedLostConnectionRef = useRef(false) // only warn once per session after a successful connect
+  const lastWarnAtRef = useRef<number>(0) // throttle repeated warnings (ms)
   const mountedRef = useRef(true)
 
   const connect = async (newRoomId: string, newToken?: string) => {
@@ -61,7 +62,12 @@ export function WebSocketProvider({
         !initialConnectionFailedRef.current &&
         !warnedLostConnectionRef.current
       ) {
-        addNotification('warning', 'Lost connection to real-time updates')
+        const now = Date.now()
+        // Warn at most once every 2 minutes to avoid toast spam during flapping
+        if (now - lastWarnAtRef.current > 120_000) {
+          addNotification('warning', 'Lost connection to real-time updates')
+          lastWarnAtRef.current = now
+        }
         connectionNotifiedRef.current = true // throttle within reconnect attempts
         warnedLostConnectionRef.current = true // throttle across the whole session
       }

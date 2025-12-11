@@ -11,15 +11,18 @@ export class FlowchartAdapter extends BaseDiagramAdapter {
     const nodes: ReactFlowNode[] = []
     const edges: ReactFlowEdge[] = []
 
-    // Extract direction (TD, LR, etc.)
-    const directionMatch = mermaidCode.match(/graph\s+(TD|LR|RL|BT)/i)
+    // Clean the code first
+    const cleanCode = this.cleanMermaidCode(mermaidCode)
+
+    // Extract direction (TD, LR, etc.) - handle both "graph" and "flowchart"
+    const directionMatch = cleanCode.match(/(?:graph|flowchart)\s+(TD|LR|RL|BT)/i)
     const direction = directionMatch ? directionMatch[1] : 'TD'
 
     // Extract nodes with various shapes
-    const nodeMatches = mermaidCode.matchAll(/(\w+)\[([^\]]+)\]/g) // Rectangle [Label]
-    const circleMatches = mermaidCode.matchAll(/(\w+)\(\(([^)]+)\)\)/g) // Circle ((Label))
-    const roundedMatches = mermaidCode.matchAll(/(\w+)\(([^)]+)\)/g) // Rounded (Label)
-    const diamondMatches = mermaidCode.matchAll(/(\w+)\{([^}]+)\}/g) // Diamond {Label}
+    const nodeMatches = cleanCode.matchAll(/(\w+)\[([^\]]+)\]/g) // Rectangle [Label]
+    const circleMatches = cleanCode.matchAll(/(\w+)\(\(([^)]+)\)\)/g) // Circle ((Label))
+    const roundedMatches = cleanCode.matchAll(/(\w+)\(([^)]+)\)/g) // Rounded (Label)
+    const diamondMatches = cleanCode.matchAll(/(\w+)\{([^}]+)\}/g) // Diamond {Label}
 
     const nodeMap = new Map<string, { label: string; shape: string }>()
 
@@ -59,8 +62,8 @@ export class FlowchartAdapter extends BaseDiagramAdapter {
       index++
     }
 
-    // Extract edges
-    const edgeMatches = mermaidCode.matchAll(/(\w+)\s*--([->|]?)(?:\|([^|]*)\|)?([->|]?)\s*(\w+)/g)
+    // Extract edges - handle various arrow styles
+    const edgeMatches = cleanCode.matchAll(/(\w+)\s*--([->|]?)(?:\|([^|]*)\|)?([->|]?)\s*(\w+)/g)
     let edgeIndex = 0
 
     for (const match of edgeMatches) {
@@ -154,8 +157,9 @@ export class FlowchartAdapter extends BaseDiagramAdapter {
   validate(mermaidCode: string): { valid: boolean; errors: string[] } {
     const errors: string[] = []
 
-    if (!mermaidCode.includes('graph')) {
-      errors.push('Missing "graph" declaration')
+    // Accept both "graph" and "flowchart"
+    if (!mermaidCode.includes('graph') && !mermaidCode.includes('flowchart')) {
+      errors.push('Missing "graph" or "flowchart" declaration')
     }
 
     // Check for unclosed brackets

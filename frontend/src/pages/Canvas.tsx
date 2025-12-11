@@ -1,28 +1,57 @@
 import { useState, useEffect, useRef } from 'react'
+import { useLocation, useSearchParams } from 'react-router-dom'
 import { useArtifactStore } from '../stores/artifactStore'
 import { FileCode, Sparkles, ChevronDown } from 'lucide-react'
 import EnhancedDiagramEditor from '../components/EnhancedDiagramEditor'
 
 export default function Canvas() {
   const { artifacts } = useArtifactStore()
+  const location = useLocation()
+  const [searchParams] = useSearchParams()
   const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null)
+  const [targetType, setTargetType] = useState<string | null>(null)
   const [showSelector, setShowSelector] = useState(false)
   const selectorRef = useRef<HTMLDivElement>(null)
   
   // Only show Mermaid diagrams (exclude HTML)
-  const diagramArtifacts = artifacts.filter(a => 
-    a.type.startsWith('mermaid_')
-  )
+  const diagramArtifacts = artifacts
+    .filter(a => a.type.startsWith('mermaid_'))
+    .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
 
   const selectedArtifact = selectedArtifactId 
     ? artifacts.find(a => a.id === selectedArtifactId)
-    : diagramArtifacts[0] || null
+    : (targetType
+        ? diagramArtifacts.find(a => a.type === targetType) || diagramArtifacts[0] || null
+        : diagramArtifacts[0] || null)
+
+  // Initialize selection from navigation state or query param
+  useEffect(() => {
+    const state = (location.state as { artifactId?: string; artifactType?: string } | null) || {}
+    const queryArtifactId = searchParams.get('artifactId')
+    const queryArtifactType = searchParams.get('artifactType')
+    const initialId = state.artifactId || queryArtifactId
+    const initialType = state.artifactType || queryArtifactType
+    if (initialId) {
+      setSelectedArtifactId(initialId)
+    }
+    if (initialType) {
+      setTargetType(initialType)
+    }
+  }, [location.state, searchParams])
 
   useEffect(() => {
+    // If we have a target type but the id isn't found yet, pick latest of that type when it arrives
+    if (!selectedArtifactId && targetType) {
+      const latestOfType = diagramArtifacts.find(a => a.type === targetType)
+      if (latestOfType) {
+        setSelectedArtifactId(latestOfType.id)
+        return
+      }
+    }
     if (diagramArtifacts.length > 0 && !selectedArtifactId) {
       setSelectedArtifactId(diagramArtifacts[0].id)
     }
-  }, [diagramArtifacts.length, selectedArtifactId])
+  }, [diagramArtifacts, selectedArtifactId, targetType])
 
   // Close dropdown when clicking outside
   useEffect(() => {

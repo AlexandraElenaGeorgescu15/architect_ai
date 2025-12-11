@@ -51,6 +51,10 @@ export default function VersionDiff({ artifactId, version1, version2, onClose }:
     return diffLines(v1Data.content, v2Data.content)
   }, [v1Data, v2Data])
 
+  const addedClass = 'bg-green-50 text-green-700 border-l-2 border-green-500 dark:bg-green-950/40 dark:text-green-200'
+  const removedClass = 'bg-red-50 text-red-700 border-l-2 border-red-500 dark:bg-red-950/40 dark:text-red-200'
+  const unchangedClass = 'text-muted-foreground'
+
   const stats = useMemo(() => {
     if (!diff.length) return { additions: 0, deletions: 0, unchanged: 0 }
     
@@ -179,7 +183,7 @@ export default function VersionDiff({ artifactId, version1, version2, onClose }:
                       <div
                         key={i}
                         className={`px-4 py-0.5 ${
-                          change.removed ? 'bg-red-500/20 text-red-400' : 'text-muted-foreground'
+                          change.removed ? removedClass : unchangedClass
                         }`}
                       >
                         {change.value.split('\n').map((line, j) => (
@@ -206,7 +210,7 @@ export default function VersionDiff({ artifactId, version1, version2, onClose }:
                       <div
                         key={i}
                         className={`px-4 py-0.5 ${
-                          change.added ? 'bg-green-500/20 text-green-400' : 'text-muted-foreground'
+                          change.added ? addedClass : unchangedClass
                         }`}
                       >
                         {change.value.split('\n').map((line, j) => (
@@ -228,10 +232,10 @@ export default function VersionDiff({ artifactId, version1, version2, onClose }:
                   key={i}
                   className={`px-2 py-0.5 rounded ${
                     change.added
-                      ? 'bg-green-500/20 text-green-400'
+                      ? addedClass
                       : change.removed
-                      ? 'bg-red-500/20 text-red-400'
-                      : 'text-muted-foreground'
+                      ? removedClass
+                      : unchangedClass
                   }`}
                 >
                   {change.value.split('\n').map((line, j) => (

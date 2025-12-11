@@ -292,7 +292,8 @@ class GenerationService:
                         mermaid_artifact_type=artifact_type,
                         meeting_notes=meeting_notes,
                         rag_context=assembled_context,
-                        use_ai=True
+                        # Disable AI-assisted layout by default to reduce latency; relies on cleaned Mermaid instead.
+                        use_ai=False
                     )
                     # Store HTML version (would be saved to outputs in production)
                     logger.info(f"✅ [GEN_SERVICE] HTML version generated successfully: "

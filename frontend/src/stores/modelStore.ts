@@ -69,7 +69,7 @@ export const useModelStore = create<ModelStore>((set, get) => ({
   fetchModels: async () => {
     try {
       set({ isLoading: true, error: null })
-      const { api } = await import('../services/api')
+      const api = (await import('../services/api')).default
       const response = await api.get('/api/models/')
       set({ models: response.data, isLoading: false })
     } catch (error: any) {

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense, memo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { ArtifactType } from '../services/generationService'
 import { useSystemStatus } from '../hooks/useSystemStatus'
 import { 
@@ -7,7 +8,7 @@ import {
 } from 'lucide-react'
 import MeetingNotesManager from './MeetingNotesManager'
 import BulkGenerationDialog from './BulkGenerationDialog'
-import { bulkGenerate } from '../services/generationService'
+import { bulkGenerate, updateArtifact as updateArtifactApi } from '../services/generationService'
 import { useArtifactStore } from '../stores/artifactStore'
 import { useUIStore } from '../stores/uiStore'
 import { useKeyboardShortcuts, COMMON_SHORTCUTS } from '../hooks/useKeyboardShortcuts'
@@ -197,6 +198,7 @@ const ArtifactTypeButton = memo(function ArtifactTypeButton({
 
 function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
   const [activeView, setActiveView] = useState('context')
+  const navigate = useNavigate()
   
   // Memoize tabs configuration
   const tabs = useMemo(() => [
@@ -219,7 +221,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
       : qualityPrediction.label === 'medium'
         ? 'bg-accent/10 text-accent border border-accent/30'
         : 'bg-destructive/10 text-destructive border border-destructive/30'
-  const { addArtifact } = useArtifactStore()
+  const { addArtifact, updateArtifact } = useArtifactStore()
   const { addNotification } = useUIStore()
   const [isBulkDialogOpen, setBulkDialogOpen] = useState(false)
   const [isBulkGenerating, setIsBulkGenerating] = useState(false)
@@ -326,17 +328,24 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
   }, [])
 
   const handleBulkGenerate = useCallback(async (selectedArtifacts: ArtifactType[]) => {
-    if (!props.meetingNotes || props.meetingNotes.length < 10) {
-      addNotification('error', 'Please provide meeting notes before bulk generation.')
+    const trimmedNotes = props.meetingNotes.trim()
+    const useNotes = trimmedNotes.length >= 10 ? trimmedNotes : undefined
+    const hasFolder = !!selectedFolderId
+    const hasContext = !!props.contextId
+
+    if (!useNotes && !hasFolder && !hasContext) {
+      addNotification('error', 'Please provide meeting notes (>=10 chars), select a folder, or reuse a built context before bulk generation.')
       return
     }
+
     setIsBulkGenerating(true)
     try {
       const response = await bulkGenerate(
         selectedArtifacts.map((artifact_type) => ({
           artifact_type,
-          meeting_notes: props.meetingNotes,
-          context_id: props.contextId || undefined,
+          meeting_notes: useNotes,
+          context_id: hasContext ? props.contextId || undefined : undefined,
+          folder_id: !useNotes && hasFolder ? selectedFolderId || undefined : undefined,
         }))
       )
       response.forEach((item) => {
@@ -351,7 +360,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
     } finally {
       setIsBulkGenerating(false)
     }
-  }, [addArtifact, addNotification, props.contextId, props.meetingNotes])
+  }, [addArtifact, addNotification, props.contextId, props.meetingNotes, selectedFolderId])
 
   const keyboardShortcuts = useMemo(
     () => [
@@ -593,10 +602,30 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                           <Suspense fallback={<LoadingFallback />}>
                             {(() => {
                               const latestArtifact = props.getArtifactsByType(props.selectedArtifactType)?.[0]
+
+                              const handleDiagramContentUpdate = async (newContent: string) => {
+                                const artifact = latestArtifact || props.progress?.artifact
+                                if (!artifact) return
+
+                                // Update local store (prefer update to avoid duplicates)
+                                updateArtifact(artifact.id, {
+                                  content: newContent,
+                                  updated_at: new Date().toISOString(),
+                                })
+
+                                try {
+                                  await updateArtifactApi(artifact.id, newContent)
+                                  addNotification('success', 'Diagram updated with AI repair')
+                                } catch (err: any) {
+                                  console.error('Failed to persist AI repair:', err)
+                                  addNotification('warning', 'Diagram updated locally, but saving failed.')
+                                }
+                              }
+
                               if (latestArtifact?.content) {
-                                return <MermaidRenderer content={latestArtifact.content} />
+                                return <MermaidRenderer content={latestArtifact.content} onContentUpdate={handleDiagramContentUpdate} />
                               } else if (props.progress?.artifact?.content) {
-                                return <MermaidRenderer content={props.progress.artifact.content} />
+                                return <MermaidRenderer content={props.progress.artifact.content} onContentUpdate={handleDiagramContentUpdate} />
                               } else {
                                 return (
                                   <div className="h-full flex items-center justify-center p-8">
@@ -620,7 +649,10 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                             For interactive editing with drag-and-drop, use <strong>Canvas</strong>
                           </span>
                           <button
-                            onClick={() => window.location.href = '/canvas'}
+                            onClick={() => {
+                              const latestArtifact = props.getArtifactsByType(props.selectedArtifactType)?.[0]
+                              navigate('/canvas', { state: { artifactId: latestArtifact?.id, artifactType: props.selectedArtifactType } })
+                            }}
                             className="text-xs px-3 py-1.5 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors flex items-center gap-1.5 font-medium"
                           >
                             <Edit3 className="w-3 h-3" />

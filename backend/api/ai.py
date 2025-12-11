@@ -490,6 +490,61 @@ Start your response with {{ and end with }}.
         )
 
 
+@router.post("/repair-diagram", response_model=DiagramImproveResponse)
+async def repair_diagram(
+    request: DiagramImproveRequest,
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """
+    Rule-based diagram repair (fast, no AI).
+    Only uses AI if rule-based repair fails.
+    """
+    try:
+        logger.info(f"Repairing {request.diagram_type} diagram (rule-based first)")
+        
+        # Try rule-based repair first (fast, no AI)
+        try:
+            from components.universal_diagram_fixer import UniversalDiagramFixer
+            fixer = UniversalDiagramFixer()
+            fixed_code, fixes_applied = fixer.fix_diagram(request.mermaid_code, max_passes=3)
+            
+            if fixed_code and fixed_code.strip():
+                # Even if same as input, return it (might have been cleaned)
+                if fixed_code != request.mermaid_code or fixes_applied:
+                    logger.info(f"Rule-based repair successful: {len(fixes_applied)} fixes applied")
+                    return DiagramImproveResponse(
+                        success=True,
+                        improved_code=fixed_code,
+                        improvements_made=[f"Rule-based: {f}" for f in fixes_applied[:5]] if fixes_applied else ["Cleaned and validated diagram"],
+                        error=None
+                    )
+                else:
+                    # No changes but code is valid - return as success
+                    logger.info("Rule-based repair: no changes needed, diagram is valid")
+                    return DiagramImproveResponse(
+                        success=True,
+                        improved_code=fixed_code,
+                        improvements_made=["Diagram is already valid"],
+                        error=None
+                    )
+        except ImportError as e:
+            logger.warning(f"Rule-based repair not available (ImportError): {e}, falling back to AI")
+        except Exception as e:
+            logger.warning(f"Rule-based repair failed: {e}, falling back to AI", exc_info=True)
+        
+        # Fallback to AI repair if rule-based failed
+        return await improve_diagram(request, current_user)
+        
+    except Exception as e:
+        logger.error(f"Repair failed: {e}", exc_info=True)
+        return DiagramImproveResponse(
+            success=False,
+            improved_code=request.mermaid_code,
+            improvements_made=[],
+            error=f"Repair failed: {str(e)}"
+        )
+
+
 @router.post("/improve-diagram", response_model=DiagramImproveResponse)
 async def improve_diagram(
     request: DiagramImproveRequest,
@@ -500,7 +555,7 @@ async def improve_diagram(
     Fixes syntax, adds colors, improves layout, and suggests enhancements.
     """
     try:
-        logger.info(f"Improving {request.diagram_type} diagram")
+        logger.info(f"Improving {request.diagram_type} diagram (AI-powered)")
         
         # Get model routing
         model_service = get_model_service()

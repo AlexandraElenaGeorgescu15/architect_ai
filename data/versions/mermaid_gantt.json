@@ -1,0 +1,40 @@
+[
+  {
+    "version": 1,
+    "artifact_id": "mermaid_gantt",
+    "artifact_type": "mermaid_gantt",
+    "content": "gantt\n  title Phone Swap Request Feature\n  dateFormat YYYY-MM-DD\n\n  section UX Team (October 14, 2025 - October 17, 2025)\n  Create wireframe of modal and form 2025-10-15T00:00:00    2025-10-17T23:59:59\n\n  section Backend Team (October 14, 2025 - October 21, 2025)\n  Develop new API endpoint and database schema 2025-10-14T00:00:00    2025-10-21T23:59:59\n\n  section Frontend Team (October 14, 2025 - October 21, 2025)\n  Build \"Request Phone Swap\" button and basic modal structure 2025-10-17T00:00:00    2025-10-21T23:59:59\n  Begin implementation once wireframes are approved\n\n  section Product Manager (October 14, 2025 - October 21, 2025)\n  Create formal Jira ticket with defined user story and acceptance criteria 2025-10-14T00:00:00    2025-10-21T23:59:59",
+    "metadata": {
+      "model_used": "llama3",
+      "provider": "cloud",
+      "validation_score": 100.0,
+      "is_valid": true,
+      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
+      "html_content": "\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Gantt Visualization</title>\n    <style>\n        body {\n            font-family: 'Segoe UI', sans-serif;\n            margin: 0;\n            padding: 0;\n            background: linear-gradient(135deg, #111827, #1f2937);\n            color: #e5e7eb;\n        }\n        .container {\n            max-width: 1200px;\n            margin: 0 auto;\n            padding: 32px;\n        }\n        .card {\n            background: rgba(30, 41, 59, 0.9);\n            border-radius: 16px;\n            padding: 32px;\n            box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.6);\n        }\n        h1 {\n            margin-top: 0;\n            font-size: 32px;\n            letter-spacing: 0.02em;\n        }\n        .grid {\n            display: grid;\n            gap: 16px;\n            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));\n            margin-top: 24px;\n        }\n        .panel {\n            background: rgba(15, 23, 42, 0.65);\n            border-radius: 12px;\n            padding: 20px;\n        }\n        .badge {\n            display: inline-block;\n            padding: 6px 12px;\n            border-radius: 999px;\n            background: rgba(59, 130, 246, 0.15);\n            color: #93c5fd;\n            font-size: 12px;\n            letter-spacing: 0.06em;\n        }\n        .preview {\n            background: rgba(15, 23, 42, 0.8);\n            padding: 16px;\n            border-radius: 12px;\n            overflow-x: auto;\n            white-space: pre-wrap;\n            color: #f9fafb;\n            font-size: 13px;\n        }\n    </style>\n</head>\n<body>\n    <div class=\"container\">\n        <div class=\"card\">\n            <span class=\"badge\">Fallback Visualization</span>\n            <h1>Gantt</h1>\n            <p>This static layout summarises the latest diagram content while the live HTML renderer is unavailable.</p>\n            <pre class=\"preview\">gantt\n  title Phone Swap Request Feature\n  dateFormat YYYY-MM-DD\n\n  section UX Team (October 14, 2025 - October 17, 2025)\n  Create wireframe of modal and form 2025-10-15T00:00:00    2025-10-17T23:59:59\n\n  section Backend Team (October 14, 2025 - October 21, 2025)\n  Develop new API endpoint and database schema 2025-10-14T00:00:00    2025-10-21T23:59:59\n\n  section Frontend Team (October 14, 2025 - O\u2026</pre>\n            <div class=\"grid\">\n                <div class=\"panel\">\n                    <h3>What's Next?</h3>\n                    <p>Regenerate the HTML visualization once your AI provider is reachable. The dataset builder will still incorporate this diagram text.</p>\n                </div>\n                <div class=\"panel\">\n                    <h3>Tip</h3>\n                    <p>Use the interactive editor to tweak the Mermaid definition, then choose \u201cGenerate HTML\u201d to request a fresh LLM-rendered experience.</p>\n                </div>\n                <div class=\"panel\"><h3>Meeting Context</h3><p>Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan for the new phone swap request feature.\n</p></div>\n            </div>\n        </div>\n    </div>\n</body>\n</html>\n",
+      "quality_prediction": {
+        "label": "high",
+        "confidence": 0.9,
+        "score": 0.9,
+        "reasons": {
+          "notes_depth": 0.2,
+          "notes_structure": 0.05,
+          "context_rag": 0.1
+        }
+      },
+      "job_id": "gen_73caa0e6",
+      "attempts": [
+        {
+          "model": "llama3",
+          "provider": "ollama",
+          "content": "Here is the Gantt chart in Mermaid syntax:\n\n```mermaid\ngantt\n  title Phone Swap Request Feature\n  dateFormat YYYY-MM-DD\n\n  section UX Team (October 14, 2025 - October 17, 2025)\n  Create wireframe of modal and form 2025-10-15T00:00:00    2025-10-17T23:59:59\n\n  section Backend Team (October 14, 2025 - October 21, 2025)\n  Develop new API endpoint and database schema 2025-10-14T00:00:00    2025-10-21T23:59:59\n\n  section Frontend Team (October 14, 2025 - October 21, 2025)\n  Build \"Request Phone Swap\" button and basic modal structure 2025-10-17T00:00:00    2025-10-21T23:59:59\n  Begin implementation once wireframes are approved\n\n  section Product Manager (October 14, 2025 - October 21, 2025)\n  Create formal Jira ticket with defined user story and acceptance criteria 2025-10-14T00:00:00    2025-10-21T23:59:59\n```\n\nNote:\n\n* The Gantt chart is divided into sections representing the different teams involved in the project (UX, Backend, Frontend, Product Manager).\n* Each task is represented as a rectangle with start and end dates. The rectangles are aligned to represent dependencies between tasks.\n* The horizontal axis represents time, with October 14, 2025, at the left edge of the chart and October 21, 2025, at the right edge.\n* The vertical axis represents the different teams involved in the project.\n\nThis Gantt chart illustrates the timeline for implementing the phone swap request feature, including the tasks assigned to each team and their dependencies.",
+          "score": 100.0,
+          "is_valid": true,
+          "errors": [],
+          "retry": 0
+        }
+      ]
+    },
+    "created_at": "2025-12-10T21:44:27.664832",
+    "is_current": true
+  }
+]

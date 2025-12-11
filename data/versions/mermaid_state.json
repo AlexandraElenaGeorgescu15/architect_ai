@@ -34,6 +34,18 @@
       ]
     },
     "created_at": "2025-12-09T19:07:42.706307",
+    "is_current": false
+  },
+  {
+    "version": 2,
+    "artifact_id": "mermaid_state",
+    "artifact_type": "unknown",
+    "content": "stateDiagram\n    [*] --> \"Main Phone List Page\"\n    Note \"User sees available phones\"\n    \"Request Phone Swap\" button -->\n    \"Modal Pop-up\"\n    [*] --> \"Phone to Request\" dropdown\n    Note \"Select a phone from the list\"\n    \"Phone to Exchange\" dropdown -->\n    Note \"Only shows phones currently owned by the user\"\n    \"Reason for Request (Optional)\" text area -->\n    Note \"Enter additional comments\"\n    \"Actions: Submit Request and Cancel buttons\"\n    [*] --> \"Submit Request\"\n    Note \"Validate form submission and store request in database\"\n    [*] --> \"Cancel\"\n    Note \"Close modal pop-up and return to main phone list page\"\n    \"Confirmation Message\"\n    [*] --> \"Request submitted successfully\"\n    Note \"Show confirmation message after successful submission\"\n    \"Pending Status\" -->\n    Note \"Default status for new requests\"",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit"
+    },
+    "created_at": "2025-12-10T22:50:31.908023",
     "is_current": true
   }
 ]
