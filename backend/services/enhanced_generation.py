@@ -647,26 +647,38 @@ class EnhancedGenerationService:
         """Get comprehensive system message for artifact type."""
         base_message = "You are an expert architect and developer assistant. Your goal is to generate high-quality, accurate, and relevant architectural artifacts."
         
+        # CRITICAL: Explicit instruction to avoid explanatory text
+        mermaid_output_rules = """
+
+CRITICAL OUTPUT RULES:
+- Output ONLY the Mermaid diagram code
+- Start directly with the diagram type keyword (erDiagram, flowchart, classDiagram, etc.)
+- Do NOT include explanations, notes, or comments
+- Do NOT wrap in markdown code blocks
+- Do NOT say "Here is", "Let me know", or similar phrases
+- Do NOT include numbered lists or bullet points
+- Just the raw Mermaid code, nothing else"""
+        
         messages = {
             # Mermaid Diagrams
-            ArtifactType.MERMAID_ERD: f"{base_message} Generate a clean, correct Entity-Relationship Diagram in Mermaid syntax. Include all entities, relationships, and cardinalities. Ensure syntax is valid and the diagram clearly represents the data model.",
-            ArtifactType.MERMAID_ARCHITECTURE: f"{base_message} Generate a comprehensive System Architecture Diagram in Mermaid syntax. Show components, their relationships, data flow, and system boundaries. Use proper Mermaid syntax for architecture diagrams.",
-            ArtifactType.MERMAID_SEQUENCE: f"{base_message} Generate a detailed Sequence Diagram in Mermaid syntax. Show all actors, objects, and message flows with proper lifelines and activation boxes.",
-            ArtifactType.MERMAID_CLASS: f"{base_message} Generate a Class Diagram in Mermaid syntax. Include classes, attributes, methods, and relationships (inheritance, composition, association).",
-            ArtifactType.MERMAID_STATE: f"{base_message} Generate a State Diagram in Mermaid syntax. Show all states, transitions, and state entry/exit actions.",
-            ArtifactType.MERMAID_FLOWCHART: f"{base_message} Generate a Flowchart in Mermaid syntax. Use proper shapes for decisions, processes, and start/end points.",
-            ArtifactType.MERMAID_DATA_FLOW: f"{base_message} Generate a Data Flow Diagram in Mermaid syntax. Show processes, data stores, external entities, and data flows.",
-            ArtifactType.MERMAID_USER_FLOW: f"{base_message} Generate a User Flow Diagram in Mermaid syntax. Show user actions, decision points, and flow paths.",
-            ArtifactType.MERMAID_COMPONENT: f"{base_message} Generate a Component Diagram in Mermaid syntax. Show components, interfaces, and dependencies.",
-            ArtifactType.MERMAID_GANTT: f"{base_message} Generate a Gantt Chart in Mermaid syntax. Include tasks, durations, and dependencies.",
-            ArtifactType.MERMAID_PIE: f"{base_message} Generate a Pie Chart in Mermaid syntax with proper data visualization.",
-            ArtifactType.MERMAID_JOURNEY: f"{base_message} Generate a User Journey Map in Mermaid syntax showing user experience stages.",
-            ArtifactType.MERMAID_MINDMAP: f"{base_message} Generate a Mindmap in Mermaid syntax with hierarchical structure.",
-            ArtifactType.MERMAID_GIT_GRAPH: f"{base_message} Generate a Git Graph in Mermaid syntax showing branch structure.",
-            ArtifactType.MERMAID_TIMELINE: f"{base_message} Generate a Timeline in Mermaid syntax with chronological events.",
-            ArtifactType.MERMAID_SYSTEM_OVERVIEW: f"{base_message} Generate a System Overview Diagram in Mermaid syntax showing high-level system architecture.",
-            ArtifactType.MERMAID_API_SEQUENCE: f"{base_message} Generate an API Sequence Diagram in Mermaid syntax showing API calls and responses.",
-            ArtifactType.MERMAID_UML: f"{base_message} Generate a UML Diagram in Mermaid syntax following UML standards.",
+            ArtifactType.MERMAID_ERD: f"{base_message} Generate a clean, correct Entity-Relationship Diagram in Mermaid syntax. Include all entities, relationships, and cardinalities. Ensure syntax is valid and the diagram clearly represents the data model.{mermaid_output_rules}",
+            ArtifactType.MERMAID_ARCHITECTURE: f"{base_message} Generate a comprehensive System Architecture Diagram in Mermaid syntax. Show components, their relationships, data flow, and system boundaries. Use proper Mermaid syntax for architecture diagrams.{mermaid_output_rules}",
+            ArtifactType.MERMAID_SEQUENCE: f"{base_message} Generate a detailed Sequence Diagram in Mermaid syntax. Show all actors, objects, and message flows with proper lifelines and activation boxes.{mermaid_output_rules}",
+            ArtifactType.MERMAID_CLASS: f"{base_message} Generate a Class Diagram in Mermaid syntax. Include classes, attributes, methods, and relationships (inheritance, composition, association). Use valid relationship syntax: <|-- for inheritance, *-- for composition, o-- for aggregation, --> for association.{mermaid_output_rules}",
+            ArtifactType.MERMAID_STATE: f"{base_message} Generate a State Diagram in Mermaid syntax. Show all states, transitions, and state entry/exit actions.{mermaid_output_rules}",
+            ArtifactType.MERMAID_FLOWCHART: f"{base_message} Generate a Flowchart in Mermaid syntax. Use proper shapes for decisions, processes, and start/end points. Use valid arrow syntax: --> for arrows, -->|label| for labeled arrows (NOT -->|label|>).{mermaid_output_rules}",
+            ArtifactType.MERMAID_DATA_FLOW: f"{base_message} Generate a Data Flow Diagram in Mermaid syntax. Show processes, data stores, external entities, and data flows.{mermaid_output_rules}",
+            ArtifactType.MERMAID_USER_FLOW: f"{base_message} Generate a User Flow Diagram in Mermaid syntax. Show user actions, decision points, and flow paths.{mermaid_output_rules}",
+            ArtifactType.MERMAID_COMPONENT: f"{base_message} Generate a Component Diagram in Mermaid syntax. Show components, interfaces, and dependencies.{mermaid_output_rules}",
+            ArtifactType.MERMAID_GANTT: f"{base_message} Generate a Gantt Chart in Mermaid syntax. Include tasks, durations, and dependencies.{mermaid_output_rules}",
+            ArtifactType.MERMAID_PIE: f"{base_message} Generate a Pie Chart in Mermaid syntax with proper data visualization.{mermaid_output_rules}",
+            ArtifactType.MERMAID_JOURNEY: f"{base_message} Generate a User Journey Map in Mermaid syntax showing user experience stages.{mermaid_output_rules}",
+            ArtifactType.MERMAID_MINDMAP: f"{base_message} Generate a Mindmap in Mermaid syntax with hierarchical structure.{mermaid_output_rules}",
+            ArtifactType.MERMAID_GIT_GRAPH: f"{base_message} Generate a Git Graph in Mermaid syntax showing branch structure.{mermaid_output_rules}",
+            ArtifactType.MERMAID_TIMELINE: f"{base_message} Generate a Timeline in Mermaid syntax with chronological events.{mermaid_output_rules}",
+            ArtifactType.MERMAID_SYSTEM_OVERVIEW: f"{base_message} Generate a System Overview Diagram in Mermaid syntax showing high-level system architecture.{mermaid_output_rules}",
+            ArtifactType.MERMAID_API_SEQUENCE: f"{base_message} Generate an API Sequence Diagram in Mermaid syntax showing API calls and responses.{mermaid_output_rules}",
+            ArtifactType.MERMAID_UML: f"{base_message} Generate a UML Diagram in Mermaid syntax following UML standards.{mermaid_output_rules}",
             # C4 Diagrams
             ArtifactType.MERMAID_C4_CONTEXT: f"{base_message} Generate a C4 Context Diagram in Mermaid syntax showing system boundaries and external actors.",
             ArtifactType.MERMAID_C4_CONTAINER: f"{base_message} Generate a C4 Container Diagram in Mermaid syntax showing containers and their relationships.",

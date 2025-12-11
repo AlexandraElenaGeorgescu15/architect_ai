@@ -314,6 +314,20 @@
       "is_valid": true
     },
     "created_at": "2025-12-11T12:21:45.573420",
+    "is_current": false
+  },
+  {
+    "version": 21,
+    "artifact_id": "mermaid_erd",
+    "artifact_type": "mermaid_erd",
+    "content": "erDiagram\n    USER {\n        int id PK\n        string email\n    }\n    PHONE {\n        int id PK\n        string name\n        string description\n        int user_id FK\n    }\n    SWAP_REQUEST {\n        int id PK\n        int user_id FK\n        int requested_phone_id FK\n        int offered_phone_id FK\n        string status\n        string comment\n    }\n    AVAIL_PHONE {\n        int id PK\n        string name\n        string description\n        string ffff\n    }\n    COMMENT {\n        int id PK\n        string text\n        int swap_request_id FK\n    }\n    USER ||--o{ PHONE : \"owns\"\n    PHONE ||--o{ SWAP_REQUEST : \"offered_in_exchange\"\n    PHONE ||--o{ AVAIL_PHONE : \"requested_phone\"\n    SWAP_REQUEST ||--o{ COMMENT : \"reason_for_request\"",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_erd",
+      "source": "ai_repair"
+    },
+    "created_at": "2025-12-11T14:20:52.916074",
     "is_current": true
   }
 ]

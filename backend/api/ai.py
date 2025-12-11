@@ -544,7 +544,8 @@ async def repair_diagram(
 ):
     """
     Rule-based diagram repair (fast, no AI).
-    Only uses AI if rule-based repair fails.
+    AGGRESSIVELY cleans AI explanatory text and fixes syntax.
+    Only uses AI if rule-based repair fails to produce valid output.
     """
     try:
         logger.info(f"Repairing {request.diagram_type} diagram (rule-based first)")
@@ -553,11 +554,22 @@ async def repair_diagram(
         try:
             from components.universal_diagram_fixer import UniversalDiagramFixer
             fixer = UniversalDiagramFixer()
-            fixed_code, fixes_applied = fixer.fix_diagram(request.mermaid_code, max_passes=3)
+            
+            # Run with MORE passes (5) for aggressive cleaning
+            fixed_code, fixes_applied = fixer.fix_diagram(request.mermaid_code, max_passes=5)
             
             if fixed_code and fixed_code.strip():
-                # Even if same as input, return it (might have been cleaned)
-                if fixed_code != request.mermaid_code or fixes_applied:
+                # Verify the fixed code starts with a valid diagram type
+                diagram_types = [
+                    'erdiagram', 'flowchart', 'graph', 'sequencediagram',
+                    'classdiagram', 'statediagram', 'gantt', 'pie', 'journey',
+                    'gitgraph', 'mindmap', 'timeline', 'c4context', 'c4container',
+                    'c4component', 'c4deployment'
+                ]
+                first_line = fixed_code.strip().split('\n')[0].lower()
+                is_valid_start = any(first_line.startswith(dt) for dt in diagram_types)
+                
+                if is_valid_start:
                     logger.info(f"Rule-based repair successful: {len(fixes_applied)} fixes applied")
                     return DiagramImproveResponse(
                         success=True,
@@ -566,21 +578,30 @@ async def repair_diagram(
                         error=None
                     )
                 else:
-                    # No changes but code is valid - return as success
-                    logger.info("Rule-based repair: no changes needed, diagram is valid")
-                    return DiagramImproveResponse(
-                        success=True,
-                        improved_code=fixed_code,
-                        improvements_made=["Diagram is already valid"],
-                        error=None
-                    )
+                    logger.warning(f"Rule-based repair produced invalid diagram start: {first_line[:50]}")
+                    # Fall through to AI repair
         except ImportError as e:
             logger.warning(f"Rule-based repair not available (ImportError): {e}, falling back to AI")
         except Exception as e:
             logger.warning(f"Rule-based repair failed: {e}, falling back to AI", exc_info=True)
         
-        # Fallback to AI repair if rule-based failed
-        return await improve_diagram(request, current_user)
+        # Fallback to AI repair if rule-based failed or produced invalid output
+        ai_result = await improve_diagram(request, current_user)
+        
+        # ALWAYS run the fixer on AI output too, to clean any explanatory text
+        if ai_result.success and ai_result.improved_code:
+            try:
+                from components.universal_diagram_fixer import UniversalDiagramFixer
+                fixer = UniversalDiagramFixer()
+                final_code, final_fixes = fixer.fix_diagram(ai_result.improved_code, max_passes=3)
+                if final_code and final_code.strip():
+                    ai_result.improved_code = final_code
+                    if final_fixes:
+                        ai_result.improvements_made.extend([f"Post-AI cleanup: {f}" for f in final_fixes[:3]])
+            except Exception as e:
+                logger.warning(f"Post-AI cleanup failed: {e}")
+        
+        return ai_result
         
     except Exception as e:
         logger.error(f"Repair failed: {e}", exc_info=True)
@@ -701,6 +722,16 @@ OUTPUT (improved Mermaid code only):"""
                     error="AI returned incomplete diagram. Please try again."
                 )
         
+        # ALWAYS run the diagram fixer on AI output to strip explanatory text
+        try:
+            from components.universal_diagram_fixer import UniversalDiagramFixer
+            fixer = UniversalDiagramFixer()
+            improved_code, fixer_fixes = fixer.fix_diagram(improved_code, max_passes=3)
+            if fixer_fixes:
+                logger.info(f"Post-AI fixer applied {len(fixer_fixes)} fixes")
+        except Exception as e:
+            logger.warning(f"Post-AI fixer failed: {e}")
+        
         # Detect improvements made
         improvements_made = []
         if "style" in improved_code.lower() and "style" not in request.mermaid_code.lower():
@@ -712,7 +743,7 @@ OUTPUT (improved Mermaid code only):"""
         if len(improved_code) > len(request.mermaid_code):
             improvements_made.append("Enhanced structure")
         if not improvements_made:
-            improvements_made.append("Syntax verified")
+            improvements_made.append("Syntax verified and cleaned")
         
         logger.info(f"Diagram improvement successful: {improvements_made}")
         

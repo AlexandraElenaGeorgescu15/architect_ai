@@ -360,7 +360,15 @@ class UniversalDiagramFixer:
                 self.errors_fixed.append("Added missing flowchart TD header")
             
             # Fix common syntax issues
-            # Issue 1: Missing quotes in labels with spaces
+            # Issue 1: Fix INVALID arrow syntax -->|label|> should be -->|label|
+            # This is a CRITICAL fix - the |> at the end is invalid Mermaid syntax
+            if '|>' in line:
+                original_line = line
+                line = re.sub(r'\|>', '', line)  # Remove all |> occurrences
+                if line != original_line:
+                    self.errors_fixed.append("Fixed invalid arrow syntax (removed trailing |>)")
+            
+            # Issue 2: Missing quotes in labels with spaces
             if '[' in line and ']' in line:
                 match = re.search(r'\[([^\]]+)\]', line)
                 if match:
@@ -369,13 +377,13 @@ class UniversalDiagramFixer:
                         line = line.replace(f'[{label}]', f'["{label}"]')
                         self.errors_fixed.append("Added quotes to labels with spaces")
             
-            # Issue 2: Fix arrow syntax
+            # Issue 3: Fix arrow syntax
             line = re.sub(r'--+>', '-->', line)  # Multiple dashes to standard arrow
             line = re.sub(r'==+>', '==>', line)  # Bold arrows
             
-            # Issue 3: Remove explanatory text lines (comprehensive patterns)
+            # Issue 4: Remove explanatory text lines (comprehensive patterns)
             explanatory_line_patterns = [
-                r'^[A-Z][a-z].*:',  # "Start:", "Here is", etc.
+                r'^[A-Z][a-z].*:$',  # "Start:", "Here is:", etc. (ending with colon)
                 r'^This diagram.*',  # "This diagram shows..."
                 r'^The following.*',  # "The following..."
                 r'^Below is.*',  # "Below is..."
@@ -387,21 +395,35 @@ class UniversalDiagramFixer:
                 r'^Fixed.*',  # "Fixed..."
                 r'^Updated.*',  # "Updated..."
                 r'^\d+\.\s+[A-Z]',  # "1. The generated...", "2. Otherwise..."
+                r'^Let me know.*',  # "Let me know if..."
+                r'^Hope this helps.*',  # "Hope this helps!"
+                r'^Feel free.*',  # "Feel free to..."
+                r'^I\'ve made.*',  # "I've made the following..."
+                r'^Here\'s.*',  # "Here's the..."
+                r'^Here are.*',  # "Here are the..."
+                r'^Here is.*',  # "Here is the..."
             ]
             is_explanatory = any(re.match(pattern, line, re.IGNORECASE) for pattern in explanatory_line_patterns)
             if is_explanatory:
-                self.errors_fixed.append(f"Removed explanatory text: {line}")
+                self.errors_fixed.append(f"Removed explanatory text: {line[:50]}...")
                 continue
             
-            # Issue 4: Fix node IDs (remove special characters)
-            if '-->' in line or '---' in line or '[' in line:
+            # Issue 5: Fix node IDs (remove special characters)
+            if '-->' in line or '---' in line or '-.>' in line or '[' in line:
                 if not line.startswith('    '):
                     line = '    ' + line
                 fixed_lines.append(line)
-            elif line and not line.startswith(('flowchart', 'graph')):
-                if not line.startswith('    '):
+            elif line and not line.startswith(('flowchart', 'graph', 'classDef', 'class ')):
+                # Include classDef and class statements without indentation check
+                if line.startswith('classDef') or line.startswith('class '):
+                    if not line.startswith('    '):
+                        line = '    ' + line
+                    fixed_lines.append(line)
+                elif not line.startswith('    '):
                     line = '    ' + line
-                fixed_lines.append(line)
+                    fixed_lines.append(line)
+                else:
+                    fixed_lines.append(line)
         
         if len(fixed_lines) <= 1:
             self.errors_fixed.append("Flowchart appears empty - added sample node")
@@ -459,6 +481,17 @@ class UniversalDiagramFixer:
         lines = content.strip().split('\n')
         fixed_lines = []
         
+        # Collect defined class names for validation
+        defined_classes = set()
+        
+        # First pass: collect class definitions
+        for line in lines:
+            line_stripped = line.strip()
+            # Match "class ClassName" or "class ClassName {"
+            class_match = re.match(r'^class\s+(\w+)', line_stripped)
+            if class_match:
+                defined_classes.add(class_match.group(1))
+        
         # Ensure header
         if not lines[0].strip().lower().startswith('classdiagram'):
             fixed_lines.append('classDiagram')
@@ -473,11 +506,44 @@ class UniversalDiagramFixer:
             if not line or line.startswith('```') or line.lower().startswith('classdiagram'):
                 continue
             
+            # Fix invalid relationship syntax
+            original_line = line
+            
+            # Fix mixed inheritance/composition: <|--* should be <|-- or *--
+            line = re.sub(r'<\|--\*', '<|--', line)
+            line = re.sub(r'\*--<\|', '<|--', line)
+            
+            # Fix triple arrows: *---> should be *-->
+            line = re.sub(r'\*---+>', '*-->', line)
+            line = re.sub(r'o---+>', 'o-->', line)
+            line = re.sub(r'---+>', '-->', line)
+            
+            # Fix reversed triple arrows
+            line = re.sub(r'<---+\*', '<--*', line)
+            line = re.sub(r'<---+o', '<--o', line)
+            line = re.sub(r'<---+', '<--', line)
+            
+            # Fix invalid dependency arrows: ..-> should be ..>
+            line = re.sub(r'\.\.+->+', '..>', line)
+            line = re.sub(r'<-+\.\.+', '<..', line)
+            
+            # Fix missing spaces around relationships
+            # But be careful not to break valid syntax
+            
+            if original_line != line:
+                self.errors_fixed.append(f"Fixed invalid class relationship syntax: {original_line} -> {line}")
+            
             # Class definitions
-            if line.startswith('class ') or '{' in line:
+            if line.startswith('class ') or ('{' in line and '}' not in line):
                 fixed_lines.append('    ' + line)
-            # Relationships
-            elif any(rel in line for rel in ['<|--', '*--', 'o--', '-->', '<..', '..>']):
+            # Class body content (inside braces)
+            elif line.startswith('-') or line.startswith('+') or line.startswith('#') or line.startswith('}'):
+                fixed_lines.append('    ' + line)
+            # Relationships - check if both classes exist, but still include invalid ones (they might render)
+            elif any(rel in line for rel in ['<|--', '*--', 'o--', '-->', '<..', '..>', '--', '<|', '|>']):
+                fixed_lines.append('    ' + line)
+            # classDef statements
+            elif line.startswith('classDef'):
                 fixed_lines.append('    ' + line)
             else:
                 fixed_lines.append('    ' + line)
@@ -548,8 +614,78 @@ class UniversalDiagramFixer:
     
     def _general_cleanup(self, content: str) -> str:
         """Apply general cleanup to all diagram types"""
+        import re
         lines = content.split('\n')
         cleaned_lines = []
+        
+        # COMPREHENSIVE patterns for AI explanatory text that should be removed
+        # These patterns match at line start
+        explanatory_patterns = [
+            # Common AI conversation phrases
+            r'^Let me know.*',
+            r'^Hope this helps.*',
+            r'^Feel free.*',
+            r'^I\'ve made.*',
+            r'^I\'ve updated.*',
+            r'^I\'ve improved.*',
+            r'^I\'ve fixed.*',
+            r'^I\'ve added.*',
+            r'^I\'ve corrected.*',
+            r'^Here\'s the.*',
+            r'^Here are the.*',
+            r'^Here is the.*',
+            r'^Here you go.*',
+            r'^This should.*',
+            r'^This diagram.*',
+            r'^This shows.*',
+            r'^The diagram.*',
+            r'^The above.*',
+            r'^Above is.*',
+            r'^Below is.*',
+            r'^Please let me know.*',
+            r'^If you need.*',
+            r'^If you have.*',
+            r'^If you\'d like.*',
+            r'^As requested.*',
+            r'^As you can see.*',
+            # Markdown formatting
+            r'^---+$',  # Markdown horizontal rule
+            r'^#+\s+.*',  # Markdown headers
+            r'^\*\*.*\*\*:?$',  # Bold text lines
+            # Numbered explanations
+            r'^\d+\.\s+[A-Z].*',  # "1. The diagram..."
+            # Explanation markers
+            r'^Explanation:.*',
+            r'^Note:.*',
+            r'^Notes?:.*',
+            r'^Key (changes|improvements|features|points):.*',
+            r'^Changes (made|include):.*',
+            r'^Improvements (made|include):.*',
+            r'^Summary:.*',
+            r'^Output:.*',
+            r'^Result:.*',
+        ]
+        
+        # Also detect where diagram content ENDS (for truncation)
+        # These patterns indicate end of diagram, start of explanation
+        end_of_diagram_patterns = [
+            r'^Let me know',
+            r'^Hope this',
+            r'^Feel free',
+            r'^I\'ve (made|updated|improved|fixed|added)',
+            r'^This (diagram|should|shows)',
+            r'^The (diagram|above)',
+            r'^Explanation:',
+            r'^\*\*Explanation',
+            r'^\*\*Note',
+            r'^\*\*Key',
+            r'^---',
+            r'^Key improvements',
+            r'^Changes made',
+            r'^Improvements:',
+        ]
+        
+        diagram_ended = False
         
         for line in lines:
             # Remove trailing whitespace
@@ -559,11 +695,58 @@ class UniversalDiagramFixer:
             if not cleaned_lines and not line.strip():
                 continue
             
+            line_stripped = line.strip()
+            
+            # Check if we've hit end-of-diagram marker
+            if not diagram_ended:
+                for pattern in end_of_diagram_patterns:
+                    if re.match(pattern, line_stripped, re.IGNORECASE):
+                        diagram_ended = True
+                        self.errors_fixed.append(f"Truncated at explanatory text: {line_stripped[:30]}...")
+                        break
+            
+            if diagram_ended:
+                continue  # Skip all lines after diagram ends
+            
+            # Check if line is explanatory AI text
+            is_explanatory = any(re.match(pattern, line_stripped, re.IGNORECASE) for pattern in explanatory_patterns)
+            if is_explanatory:
+                self.errors_fixed.append(f"Removed AI text: {line_stripped[:40]}...")
+                continue
+            
             cleaned_lines.append(line)
         
         # Remove trailing empty lines
         while cleaned_lines and not cleaned_lines[-1].strip():
             cleaned_lines.pop()
+        
+        # Final pass: remove trailing AI text even if it's multi-line
+        if cleaned_lines:
+            # Check last few lines for AI text
+            lines_to_check = min(5, len(cleaned_lines))
+            for _ in range(lines_to_check):
+                if not cleaned_lines:
+                    break
+                last_line = cleaned_lines[-1].strip()
+                should_remove = False
+                
+                for pattern in explanatory_patterns:
+                    if re.match(pattern, last_line, re.IGNORECASE):
+                        should_remove = True
+                        break
+                
+                # Also check for lines that look like explanations (sentence-like)
+                if not should_remove and last_line:
+                    # Lines ending with ! or ? that aren't part of diagram
+                    if last_line.endswith('!') or last_line.endswith('?'):
+                        if not any(kw in last_line for kw in ['-->',  '---', '|||', '{', '}']):
+                            should_remove = True
+                
+                if should_remove:
+                    cleaned_lines.pop()
+                    self.errors_fixed.append(f"Removed trailing AI text")
+                else:
+                    break  # Stop if we find a valid diagram line
         
         return '\n'.join(cleaned_lines)
 

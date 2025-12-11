@@ -21,6 +21,7 @@ class ArtifactCleaner:
         """
         Extract clean Mermaid diagram code from content.
         Removes markdown code blocks, explanations, and other noise.
+        AGGRESSIVELY strips AI explanatory text.
         """
         if not content:
             return content
@@ -54,33 +55,38 @@ class ArtifactCleaner:
                 # Extract from diagram type onwards
                 diagram = content[idx:].strip()
                 
+                # COMPREHENSIVE list of explanatory text markers
+                end_markers = [
+                    'explanation:', 'note:', 'this diagram', 'the above',
+                    '**explanation', '**note', '## explanation', '## note',
+                    'here\'s what', 'this shows', 'the diagram above',
+                    'let me know', 'hope this', 'feel free', 'if you need',
+                    'if you have', 'i\'ve made', 'i\'ve updated', 'i\'ve improved',
+                    'i\'ve fixed', 'i\'ve added', 'here is the', 'here\'s the',
+                    'as requested', 'key improvements', 'changes made',
+                    'improvements:', 'summary:', 'output:', 'result:',
+                ]
+                
                 # Remove trailing explanations
                 lines = diagram.split('\n')
                 clean_lines = []
-                in_diagram = True
                 
                 for line in lines:
-                    stripped = line.strip()
+                    stripped = line.strip().lower()
                     
                     # Stop at explanatory text markers
-                    if any(marker in stripped.lower() for marker in [
-                        'explanation:', 'note:', 'this diagram', 'the above',
-                        '**explanation', '**note', '## explanation', '## note',
-                        'here\'s what', 'this shows', 'the diagram above'
-                    ]):
+                    if any(marker in stripped for marker in end_markers):
                         break
                     
                     # Stop at markdown headers that indicate end of diagram
-                    if stripped.startswith('##') or stripped.startswith('**') and ':' in stripped:
+                    if line.strip().startswith('##') or (line.strip().startswith('**') and ':' in line):
                         if len(clean_lines) > 3:  # Only if we have some content
                             break
                     
-                    # Skip empty lines at the end
-                    if not stripped and not in_diagram:
-                        continue
-                    
-                    if stripped:
-                        in_diagram = True
+                    # Stop at numbered explanations (1. The diagram..., 2. This shows...)
+                    if re.match(r'^\d+\.\s+[A-Z]', line.strip()):
+                        if len(clean_lines) > 3:
+                            break
                     
                     clean_lines.append(line)
                 
@@ -99,7 +105,40 @@ class ArtifactCleaner:
         # Step 4: Remove any remaining markdown artifacts
         content = re.sub(r'\*\*[^*]+\*\*\s*:', '', content)  # Remove bold markers with colons
         content = re.sub(r'^#+\s+.*$', '', content, flags=re.MULTILINE)  # Remove headers
-        content = content.strip()
+        
+        # Step 5: AGGRESSIVE cleanup of trailing AI text
+        # Remove lines that look like AI explanations at the end
+        lines = content.split('\n')
+        while lines:
+            last_line = lines[-1].strip().lower()
+            should_remove = False
+            
+            # Check for AI conversation patterns
+            ai_patterns = [
+                'let me know', 'hope this', 'feel free', 'if you',
+                'i\'ve', 'here\'s', 'this should', 'please', 
+                'note:', 'explanation:', 'summary:'
+            ]
+            for pattern in ai_patterns:
+                if last_line.startswith(pattern):
+                    should_remove = True
+                    break
+            
+            # Lines ending with ! or ? that aren't diagram content
+            if not should_remove and (last_line.endswith('!') or last_line.endswith('?')):
+                if not any(kw in last_line for kw in ['-->', '---', '|||', '{', '}']):
+                    should_remove = True
+            
+            # Empty lines at end
+            if not should_remove and not last_line:
+                should_remove = True
+            
+            if should_remove:
+                lines.pop()
+            else:
+                break
+        
+        content = '\n'.join(lines).strip()
         
         if len(content) < original_length:
             logger.info(f"🧹 [CLEANER] Cleaned Mermaid: removed {original_length - len(content)} chars")

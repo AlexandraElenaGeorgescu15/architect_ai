@@ -226,6 +226,20 @@ class GenerationService:
                             logger.info(f"🧹 [GEN_SERVICE] Cleaned {artifact_type.value}: removed {original_length - len(artifact_content)} chars of noise (job_id={job_id})")
                     except Exception as e:
                         logger.warning(f"⚠️ [GEN_SERVICE] Failed to clean artifact: {e} (job_id={job_id})")
+                    
+                    # For Mermaid diagrams, ALSO run the universal diagram fixer
+                    # to handle syntax issues and aggressive AI text cleanup
+                    if artifact_type.value.startswith("mermaid_"):
+                        try:
+                            from components.universal_diagram_fixer import fix_any_diagram
+                            pre_fix_length = len(artifact_content)
+                            artifact_content, fixes_applied = fix_any_diagram(artifact_content, max_passes=5)
+                            if fixes_applied:
+                                logger.info(f"🔧 [GEN_SERVICE] Mermaid fixer applied {len(fixes_applied)} fixes to {artifact_type.value} (job_id={job_id}): {fixes_applied[:3]}")
+                            if len(artifact_content) < pre_fix_length:
+                                logger.info(f"🔧 [GEN_SERVICE] Mermaid fixer removed {pre_fix_length - len(artifact_content)} chars from {artifact_type.value} (job_id={job_id})")
+                        except Exception as e:
+                            logger.warning(f"⚠️ [GEN_SERVICE] Mermaid fixer failed: {e} (job_id={job_id})")
                 
                 validation_score = result.get("validation_score", 0.0)
                 model_used = result.get("model_used", "unknown")
