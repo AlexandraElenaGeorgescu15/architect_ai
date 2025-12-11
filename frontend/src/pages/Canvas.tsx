@@ -25,18 +25,31 @@ export default function Canvas() {
         : diagramArtifacts[0] || null)
 
   // Initialize selection from navigation state or query param
+  // Supports multiple parameter styles: artifactId/artifactType OR diagramId/content
   useEffect(() => {
-    const state = (location.state as { artifactId?: string; artifactType?: string } | null) || {}
-    const queryArtifactId = searchParams.get('artifactId')
+    const state = (location.state as { 
+      artifactId?: string; 
+      artifactType?: string;
+      diagramId?: string;  // Alternative key from ArtifactCard
+      content?: string;    // Optional content for immediate display
+    } | null) || {}
+    const queryArtifactId = searchParams.get('artifactId') || searchParams.get('diagram')
     const queryArtifactType = searchParams.get('artifactType')
-    const initialId = state.artifactId || queryArtifactId
-    const initialType = state.artifactType || queryArtifactType
+    
+    // Support both 'artifactId' and 'diagramId' keys
+    const initialId = state.artifactId || state.diagramId || queryArtifactId
+    // Support both 'artifactType' and using 'diagramId' as type (since we use artifact type as ID)
+    const initialType = state.artifactType || state.diagramId || queryArtifactType
+    
     if (initialId) {
       setSelectedArtifactId(initialId)
     }
     if (initialType) {
       setTargetType(initialType)
     }
+    
+    // Log for debugging
+    console.debug('[Canvas] Navigation state:', { initialId, initialType, state })
   }, [location.state, searchParams])
 
   useEffect(() => {

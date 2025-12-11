@@ -68,7 +68,7 @@ const LibraryView = memo(function LibraryView() {
   }, [showSearch])
   
   return (
-    <div className="h-full overflow-auto custom-scrollbar p-4 animate-fade-in-up">
+    <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar p-4 animate-fade-in-up">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex justify-between items-center glass-panel p-6 rounded-2xl border-border bg-card shadow-elevated hover:shadow-floating transition-all duration-300">
           <div>
@@ -393,9 +393,9 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
   useKeyboardShortcuts(keyboardShortcuts)
 
   return (
-    <div className="h-full flex flex-col gap-2">
+    <div className="h-full flex flex-col gap-2 overflow-hidden">
       {/* Compact Tab Navigation */}
-      <div className="flex-shrink-0">
+      <div className="flex-shrink-0 overflow-x-auto">
         <div className="glass-panel rounded-xl p-1.5 flex items-center justify-between bg-card border-border">
           <div className="flex items-center gap-1 flex-wrap">
             {tabs.map((tab) => (
@@ -413,11 +413,11 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
       </div>
 
       {/* Content Area - Maximum Space */}
-      <div className="flex-1 min-h-0 overflow-auto">
+      <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
         
         {/* CONTEXT VIEW */}
         {activeView === 'context' && (
-          <div className="h-full overflow-auto custom-scrollbar p-1 animate-fade-in-up">
+          <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar p-1 animate-fade-in-up">
             <div className="flex justify-center items-start pb-6">
               {/* Meeting Notes Card - Full Width, Centered */}
               <div className="w-full max-w-4xl glass-panel rounded-2xl p-0 flex flex-col shadow-elevated hover:shadow-floating transition-all duration-300 interactive-card bg-card border-border">
@@ -447,10 +447,10 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
 
         {/* STUDIO VIEW */}
         {activeView === 'studio' && (
-          <div className="h-full p-1 animate-fade-in-up overflow-auto custom-scrollbar">
-            <div className="grid grid-cols-12 gap-4 min-h-full">
+          <div className="h-full p-1 animate-fade-in-up overflow-y-auto overflow-x-hidden custom-scrollbar">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-full">
               {/* Left Column: Inputs */}
-              <div className="col-span-4 flex flex-col gap-4 overflow-auto custom-scrollbar">
+              <div className="lg:col-span-4 flex flex-col gap-4 overflow-y-auto overflow-x-hidden custom-scrollbar">
                 {/* Generation Controls */}
                 <div className="glass-panel rounded-2xl p-6 flex-shrink-0 border-border shadow-elevated hover:shadow-floating transition-all duration-300 bg-card">
                   <div className="flex items-center gap-3 mb-6">
@@ -582,7 +582,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
               </div>
 
               {/* Right Column: Main Workspace */}
-              <div className="col-span-8 glass-panel rounded-2xl overflow-hidden flex flex-col shadow-floating border-border bg-card backdrop-blur-xl hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] transition-shadow duration-500 min-h-[400px]">
+              <div className="lg:col-span-8 glass-panel rounded-2xl overflow-hidden flex flex-col shadow-floating border-border bg-card backdrop-blur-xl hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] transition-shadow duration-500 min-h-[400px]">
                  <div className="border-b border-border p-4 flex items-center gap-4 bg-secondary/20">
                     <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 rounded-lg shadow-sm">
                       <Code className="w-4 h-4 text-primary" />
@@ -614,7 +614,11 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                                 })
 
                                 try {
-                                  await updateArtifactApi(artifact.id, newContent)
+                                  // Pass artifact_type in metadata to ensure proper versioning
+                                  await updateArtifactApi(artifact.id, newContent, {
+                                    artifact_type: artifact.type || props.selectedArtifactType,
+                                    source: 'ai_repair'
+                                  })
                                   addNotification('success', 'Diagram updated with AI repair')
                                 } catch (err: any) {
                                   console.error('Failed to persist AI repair:', err)
@@ -682,7 +686,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
 
         {/* VERSION CONTROL VIEW */}
         {activeView === 'version-control' && (
-          <div className="h-full overflow-auto custom-scrollbar p-4 animate-fade-in-up">
+          <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar p-4 animate-fade-in-up">
             <div className="w-full h-full">
               <Suspense fallback={<LoadingFallback />}>
                 <VersionControl />
@@ -693,7 +697,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
 
         {/* SETTINGS VIEW */}
         {activeView === 'settings' && (
-          <div className="h-full overflow-auto custom-scrollbar p-4 animate-fade-in-up">
+          <div className="h-full overflow-y-auto overflow-x-hidden custom-scrollbar p-4 animate-fade-in-up">
             <div className="max-w-5xl mx-auto space-y-8 pb-10">
               <div className="glass-panel rounded-2xl p-6 border-border shadow-elevated bg-card">
                 <h2 className="text-4xl font-black text-foreground tracking-tight flex items-center gap-3">

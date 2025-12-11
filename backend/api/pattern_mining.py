@@ -129,13 +129,33 @@ async def get_current_patterns():
         
         if result and result.get("patterns"):
             # Analysis service returned data - use it
+            patterns_list = result.get("patterns", [])
+            
+            # Calculate average confidence from patterns
+            total_conf = 0.0
+            conf_count = 0
+            for p in patterns_list:
+                if isinstance(p, dict):
+                    conf = p.get("confidence", 0)
+                else:
+                    conf = getattr(p, "confidence", 0)
+                if conf and conf > 0:
+                    total_conf += conf
+                    conf_count += 1
+            
+            avg_confidence = total_conf / conf_count if conf_count > 0 else 0.0
+            
+            # Use summary from result if available, otherwise calculate it
+            summary = result.get("summary", {})
+            if not summary.get("confidence_avg") or summary.get("confidence_avg") == 0:
+                summary["confidence_avg"] = avg_confidence
+            if not summary.get("total_patterns"):
+                summary["total_patterns"] = len(patterns_list)
+            
             return {
                 "success": True,
-                "patterns": result.get("patterns", []),
-                "summary": result.get("summary", {
-                    "total_patterns": len(result.get("patterns", [])),
-                    "confidence_avg": 0
-                })
+                "patterns": patterns_list,
+                "summary": summary
             }
         
         # Fallback to pattern miner directly

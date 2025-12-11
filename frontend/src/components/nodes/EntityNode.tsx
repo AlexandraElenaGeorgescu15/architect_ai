@@ -128,15 +128,14 @@ const EntityNode = ({ id, data, isConnectable, selected }: NodeProps<EntityNodeD
 
       {/* Entity Header */}
       <div
-        className="px-4 py-2 rounded-t-lg border-b-2"
+        className="px-4 py-2 rounded-t-lg border-b-2 bg-white dark:bg-gray-800"
         style={{
           backgroundColor: `${data.color || '#6366f1'}20`,
           borderColor: data.color || '#6366f1',
         }}
       >
         <input
-          className="w-full bg-transparent text-center font-bold focus:outline-none placeholder-gray-400"
-          style={{ color: '#1f2937' }}
+          className="w-full bg-transparent text-center font-bold focus:outline-none placeholder-gray-400 text-gray-900 dark:text-white"
           value={data.label}
           onChange={onLabelChange}
           placeholder="Entity Name"
@@ -144,12 +143,11 @@ const EntityNode = ({ id, data, isConnectable, selected }: NodeProps<EntityNodeD
       </div>
 
       {/* Properties */}
-      <div className="px-3 py-2 space-y-1 max-h-40 overflow-y-auto">
+      <div className="px-3 py-2 space-y-1 max-h-40 overflow-y-auto bg-white dark:bg-gray-800">
         {(data.properties || []).map((prop, index) => (
           <div
             key={index}
-            className="flex items-center justify-between text-xs hover:bg-black/5 px-2 py-1 rounded"
-            style={{ color: '#374151' }}
+            className="flex items-center justify-between text-xs hover:bg-black/5 dark:hover:bg-white/5 px-2 py-1 rounded text-gray-700 dark:text-gray-200"
           >
             <span className="font-mono">{prop}</span>
             <button
@@ -169,12 +167,11 @@ const EntityNode = ({ id, data, isConnectable, selected }: NodeProps<EntityNodeD
             onChange={(e) => setNewProperty(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onAddProperty()}
             placeholder="+ Add property"
-            className="flex-1 text-xs px-2 py-1 border border-gray-200 rounded focus:outline-none focus:border-blue-400 bg-white/50 placeholder-gray-400"
-            style={{ color: '#374151' }}
+            className="flex-1 text-xs px-2 py-1 border border-gray-200 dark:border-gray-600 rounded focus:outline-none focus:border-blue-400 bg-white/50 dark:bg-gray-700/50 placeholder-gray-400 text-gray-700 dark:text-gray-200"
           />
           <button
             onClick={onAddProperty}
-            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+            className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-500/20 rounded"
             title="Add Property"
           >
             <Plus size={14} />

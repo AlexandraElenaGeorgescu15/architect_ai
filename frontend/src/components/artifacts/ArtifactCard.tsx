@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Artifact } from '../../types'
-import { FileCode, ExternalLink, ThumbsUp, ThumbsDown, History, X, Clock, Check, RefreshCw, Loader2 } from 'lucide-react'
+import { FileCode, ExternalLink, ThumbsUp, ThumbsDown, History, X, Clock, Check, RefreshCw, Loader2, Pencil } from 'lucide-react'
 import { useArtifactStore } from '../../stores/artifactStore'
 import { useUIStore } from '../../stores/uiStore'
 import { submitFeedback } from '../../services/feedbackService'
@@ -23,6 +24,7 @@ interface ArtifactCardProps {
 }
 
 export default function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
+  const navigate = useNavigate()
   const { setCurrentArtifact, updateArtifact } = useArtifactStore()
   const { addNotification } = useUIStore()
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false)
@@ -88,6 +90,19 @@ export default function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
     e.stopPropagation()
     setShowVersionHistory(true)
     loadVersions()
+  }
+
+  // Open Mermaid diagram in Canvas for interactive editing
+  const handleOpenInCanvas = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    // Use artifact type as the stable ID (matches version service pattern)
+    navigate('/canvas', { 
+      state: { 
+        diagramId: artifact.type,
+        artifactType: artifact.type,
+        content: artifact.content  // Pass content for immediate display
+      } 
+    })
   }
 
   const loadVersions = async () => {
@@ -236,9 +251,24 @@ export default function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
         </div>
       </div>
 
+      {/* Type-specific actions */}
       {isMermaid && (
-        <div className="mt-2 text-xs text-primary">
-          📊 Diagram
+        <div className="mt-2 flex items-center justify-between">
+          <span className="text-xs text-primary">📊 Diagram</span>
+          <button
+            onClick={handleOpenInCanvas}
+            className="flex items-center gap-1 px-2 py-1 text-xs bg-primary/10 text-primary hover:bg-primary/20 rounded-md transition-colors"
+            title="Edit in Canvas"
+          >
+            <Pencil className="w-3 h-3" />
+            Edit in Canvas
+          </button>
+        </div>
+      )}
+      
+      {artifact.type.startsWith('html_') && (
+        <div className="mt-2 flex items-center justify-between">
+          <span className="text-xs text-accent">🌐 HTML</span>
         </div>
       )}
 

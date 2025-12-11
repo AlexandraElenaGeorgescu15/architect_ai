@@ -9,6 +9,10 @@ import { ERDAdapter } from './erdAdapter'
 import { SequenceAdapter } from './sequenceAdapter'
 import { ArchitectureAdapter } from './architectureAdapter'
 import { ClassAdapter } from './classAdapter'
+import { GanttAdapter } from './ganttAdapter'
+import { StateAdapter } from './stateAdapter'
+import { C4Adapter } from './c4Adapter'
+import { GenericAdapter } from './genericAdapter'
 
 /**
  * Diagram adapter factory
@@ -20,6 +24,8 @@ export function getAdapterForDiagramType(diagramType: string): BaseDiagramAdapte
   switch (type) {
     case 'flowchart':
     case 'flow':
+    case 'data_flow':
+    case 'user_flow':
       return new FlowchartAdapter()
 
     case 'erd':
@@ -39,14 +45,32 @@ export function getAdapterForDiagramType(diagramType: string): BaseDiagramAdapte
     case 'uml':
       return new ClassAdapter()
 
-    // Add more as implemented...
-    // case 'state':
-    //   return new StateAdapter()
+    case 'gantt':
+      return new GanttAdapter()
 
-    // Default to flowchart adapter for unsupported types
+    case 'state':
+      return new StateAdapter()
+
+    case 'c4_context':
+    case 'c4_container':
+    case 'c4_component':
+    case 'c4_deployment':
+      return new C4Adapter()
+
+    // Generic adapter for diagram types with limited canvas support
+    case 'pie':
+    case 'journey':
+    case 'mindmap':
+    case 'timeline':
+    case 'git_graph':
+    case 'quadrant':
+    case 'requirement':
+      return new GenericAdapter(type)
+
+    // Default to generic adapter for unknown types
     default:
-      console.warn(`No specific adapter for ${diagramType}, using FlowchartAdapter`)
-      return new FlowchartAdapter()
+      console.warn(`No specific adapter for ${diagramType}, using GenericAdapter`)
+      return new GenericAdapter(type)
   }
 }
 
@@ -58,5 +82,9 @@ export {
   SequenceAdapter,
   ArchitectureAdapter,
   ClassAdapter,
+  GanttAdapter,
+  StateAdapter,
+  C4Adapter,
+  GenericAdapter,
 }
 

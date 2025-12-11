@@ -11,6 +11,7 @@ import KnowledgeGraphViewer from '../components/KnowledgeGraphViewer'
 import PatternMiningResults from '../components/PatternMiningResults'
 import { generateSyntheticData, getAllStats, clearSynthetic, SyntheticStats } from '../services/syntheticDataService'
 import { useUIStore } from '../stores/uiStore'
+import api from '../services/api'
 
 export default function Intelligence() {
   const { models, setModels } = useModelStore()
@@ -50,11 +51,8 @@ export default function Intelligence() {
   const loadUniversalContext = async () => {
     setIsLoadingUniversalContext(true)
     try {
-      const response = await fetch('/api/universal-context/status')
-      if (response.ok) {
-        const data = await response.json()
-        setUniversalContextStatus(data)
-      }
+      const response = await api.get('/api/universal-context/status')
+      setUniversalContextStatus(response.data)
     } catch (error) {
       console.error('Failed to load Universal Context status:', error)
     } finally {
@@ -65,66 +63,58 @@ export default function Intelligence() {
   const rebuildUniversalContext = async () => {
     setIsLoadingUniversalContext(true)
     try {
-      const response = await fetch('/api/universal-context/rebuild', { method: 'POST' })
-      if (response.ok) {
-        const rebuildData = await response.json()
-        addNotification('success', 'Universal Context rebuild started. This will take a few moments...')
+      const response = await api.post('/api/universal-context/rebuild')
+      const rebuildData = response.data
+      addNotification('success', 'Universal Context rebuild started. This will take a few moments...')
+      
+      // Track the build ID if provided
+      const buildId = rebuildData.build_id
+      let pollCount = 0
+      const maxPolls = 20 // 60 seconds max (3s interval)
+      
+      // Poll for completion and refresh all data
+      const pollInterval = setInterval(async () => {
+        pollCount++
         
-        // Track the build ID if provided
-        const buildId = rebuildData.build_id
-        let pollCount = 0
-        const maxPolls = 20 // 60 seconds max (3s interval)
-        
-        // Poll for completion and refresh all data
-        const pollInterval = setInterval(async () => {
-          pollCount++
+        try {
+          const statusResponse = await api.get('/api/universal-context/status')
+          const data = statusResponse.data
+          setUniversalContextStatus(data)
           
-          try {
-            const status = await fetch('/api/universal-context/status')
-            if (status.ok) {
-              const data = await status.json()
-              setUniversalContextStatus(data)
-              
-              // Check if rebuild is complete (check build_id or built_at timestamp)
-              const isComplete = data.is_ready || 
-                (buildId && data.build_id === buildId) ||
-                (data.built_at && new Date(data.built_at).getTime() > Date.now() - 60000)
-              
-              if (isComplete) {
-                clearInterval(pollInterval)
-                
-                // Refresh KG and PM data to sync everything
-                await Promise.all([
-                  loadKnowledgeGraph(),
-                  loadPatternMining()
-                ])
-                
-                setIsLoadingUniversalContext(false)
-                addNotification('success', `Universal Context rebuilt successfully! ${data.total_files || 0} files indexed.`)
-              } else if (pollCount >= maxPolls) {
-                clearInterval(pollInterval)
-                setIsLoadingUniversalContext(false)
-                addNotification('info', 'Universal Context rebuild is taking longer than expected. Please refresh to check status.')
-              }
-            }
-          } catch (pollError) {
-            console.error('Error polling Universal Context status:', pollError)
-            // Don't stop polling on single error, just log it
-          }
-        }, 3000)
-        
-        // Safety cleanup after max time
-        setTimeout(() => {
-          clearInterval(pollInterval)
-          if (pollCount < maxPolls) {
+          // Check if rebuild is complete (check build_id or built_at timestamp)
+          const isComplete = data.is_ready || 
+            (buildId && data.build_id === buildId) ||
+            (data.built_at && new Date(data.built_at).getTime() > Date.now() - 60000)
+          
+          if (isComplete) {
+            clearInterval(pollInterval)
+            
+            // Refresh KG and PM data to sync everything
+            await Promise.all([
+              loadKnowledgeGraph(),
+              loadPatternMining()
+            ])
+            
             setIsLoadingUniversalContext(false)
+            addNotification('success', `Universal Context rebuilt successfully! ${data.total_files || 0} files indexed.`)
+          } else if (pollCount >= maxPolls) {
+            clearInterval(pollInterval)
+            setIsLoadingUniversalContext(false)
+            addNotification('info', 'Universal Context rebuild is taking longer than expected. Please refresh to check status.')
           }
-        }, 65000)
-      } else {
-        const errorData = await response.json().catch(() => ({}))
-        addNotification('error', errorData.detail || 'Failed to start Universal Context rebuild')
-        setIsLoadingUniversalContext(false)
-      }
+        } catch (pollError) {
+          console.error('Error polling Universal Context status:', pollError)
+          // Don't stop polling on single error, just log it
+        }
+      }, 3000)
+      
+      // Safety cleanup after max time
+      setTimeout(() => {
+        clearInterval(pollInterval)
+        if (pollCount < maxPolls) {
+          setIsLoadingUniversalContext(false)
+        }
+      }, 65000)
     } catch (error) {
       console.error('Universal Context rebuild error:', error)
       addNotification('error', 'Failed to rebuild Universal Context. Check console for details.')
@@ -136,10 +126,9 @@ export default function Intelligence() {
     setIsLoadingKG(true)
     try {
       // Call backend API to get knowledge graph
-      const response = await fetch('/api/knowledge-graph/current')
-      if (response.ok) {
-        const data = await response.json()
-        setKgData(data)
+      const response = await api.get('/api/knowledge-graph/current')
+      if (response.data) {
+        setKgData(response.data)
       } else {
         console.warn('Knowledge Graph not available:', response.status)
       }
@@ -155,32 +144,29 @@ export default function Intelligence() {
     setIsLoadingKG(true)
     try {
       // First clear the cache
-      const clearResponse = await fetch('/api/project-target/clear-cache', { method: 'POST' })
-      if (clearResponse.ok) {
-        const clearData = await clearResponse.json()
-        console.log('Cache cleared:', clearData)
+      const clearResponse = await api.post('/api/project-target/clear-cache')
+      if (clearResponse.data) {
+        console.log('Cache cleared:', clearResponse.data)
       }
       
       // Then rebuild via Universal Context (which rebuilds KG and PM)
       addNotification('info', 'Rebuilding Knowledge Graph and Pattern Mining...')
-      const rebuildResponse = await fetch('/api/universal-context/rebuild', { method: 'POST' })
-      if (rebuildResponse.ok) {
+      const rebuildResponse = await api.post('/api/universal-context/rebuild')
+      if (rebuildResponse.data) {
         // Poll for completion
         let attempts = 0
         const maxAttempts = 20
         const pollInterval = setInterval(async () => {
           attempts++
           try {
-            const statusResponse = await fetch('/api/universal-context/status')
-            if (statusResponse.ok) {
-              const status = await statusResponse.json()
-              if (status.is_ready || attempts >= maxAttempts) {
-                clearInterval(pollInterval)
-                // Reload KG and PM data
-                await Promise.all([loadKnowledgeGraph(), loadPatternMining()])
-                addNotification('success', 'Knowledge Graph and Pattern Mining rebuilt successfully!')
-                setIsLoadingKG(false)
-              }
+            const statusResponse = await api.get('/api/universal-context/status')
+            const status = statusResponse.data
+            if (status.is_ready || attempts >= maxAttempts) {
+              clearInterval(pollInterval)
+              // Reload KG and PM data
+              await Promise.all([loadKnowledgeGraph(), loadPatternMining()])
+              addNotification('success', 'Knowledge Graph and Pattern Mining rebuilt successfully!')
+              setIsLoadingKG(false)
             }
           } catch (pollError) {
             console.error('Polling error:', pollError)
@@ -206,9 +192,9 @@ export default function Intelligence() {
     setIsLoadingPM(true)
     try {
       // Call backend API to get pattern mining results
-      const response = await fetch('/api/analysis/patterns/current')
-      if (response.ok) {
-        const data = await response.json()
+      const response = await api.get('/api/analysis/patterns/current')
+      if (response.data) {
+        const data = response.data
         // The API returns { success: true, analysis: { patterns: [...], summary: {...} } }
         // Extract the actual pattern data from the nested structure
         const patternData = data.analysis || data
@@ -290,10 +276,9 @@ export default function Intelligence() {
 
   const loadFeedbackCounts = async () => {
     try {
-      const response = await fetch('/api/feedback/stats')
-      if (response.ok) {
-        const stats = await response.json()
-        setFeedbackCounts(stats.by_artifact_type || {})
+      const response = await api.get('/api/feedback/stats')
+      if (response.data) {
+        setFeedbackCounts(response.data.by_artifact_type || {})
       }
     } catch (error) {
       console.error('Failed to load feedback counts:', error)
@@ -361,7 +346,7 @@ export default function Intelligence() {
   }
 
   return (
-    <div className="h-full min-h-0 overflow-auto custom-scrollbar p-4 space-y-4">
+    <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden custom-scrollbar p-4 space-y-4">
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="glass-panel rounded-2xl p-6 text-center hover:border-primary/30 transition-all">
