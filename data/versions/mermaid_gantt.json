@@ -35,6 +35,18 @@
       ]
     },
     "created_at": "2025-12-10T21:44:27.664832",
+    "is_current": false
+  },
+  {
+    "version": 2,
+    "artifact_id": "mermaid_gantt",
+    "artifact_type": "unknown",
+    "content": "gantt\n    title Phone Swap Request Feature\n    dateFormat YYYY-MM-DD\n    section UX Team (October 14, 2025 - October 17, 2025)\n    Create wireframe of modal and form 2025-10-15T00:00:00    2025-10-17T23:59:59\n    section Backend Team (October 14, 2025 - October 21, 2025)\n    Develop new API endpoint and database schema 2025-10-14T00:00:00    2025-10-21T23:59:59\n    section Frontend Team (October 14, 2025 - October 21, 2025)\n    Build \"Request Phone Swap\" button and basic modal structure 2025-10-17T00:00:00    2025-10-21T23:59:59\n    Begin implementation once wireframes are approved\n    section Product Manager (October 14, 2025 - October 21, 2025)\n    Create formal Jira ticket with defined user story and acceptance criteria 2025-10-14T00:00:00    2025-10-21T23:59:59",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit"
+    },
+    "created_at": "2025-12-11T08:08:34.888887",
     "is_current": true
   }
 ]

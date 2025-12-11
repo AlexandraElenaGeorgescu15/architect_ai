@@ -85,6 +85,18 @@
       ]
     },
     "created_at": "2025-12-10T22:09:12.753181",
+    "is_current": false
+  },
+  {
+    "version": 4,
+    "artifact_id": "mermaid_class",
+    "artifact_type": "unknown",
+    "content": "classDiagram\n    class User {\n    -id: string\n    -phonesOwned: Phone[]\n    }\n    class Phone {\n    -id: string\n    -name: string\n    }\n    class PhoneSwapRequest {\n    -id: string\n    -requesterId: string\n    -requestedPhone: Phone\n    -offeredPhone: Phone\n    -status: string (default \"Pending\")\n    -comment: string\n    }\n    class PhoneSwapController {\n    +handleFormSubmission(PhoneSwapRequest)\n    }\n    class FrontendModal {\n    +show()\n    +hide()\n    }\n    User <|--* PhonesOwned\n    PhoneSwapRequest <|-- RequesterId\n    PhoneSwapRequest <|-- RequestedPhone\n    PhoneSwapRequest <|-- OfferedPhone\n    FrontendModal *--> PhoneSwapController: handlesFormSubmission\n    class FrontendButton {\n    +click()\n    }\n    FrontendButton *---> FrontendModal: showAndHide\n    class BackendEndpoint {\n    +postPhoneSwap(PhoneSwapRequest)\n    }\n    BackendEndpoint *---> PhoneSwapController: handleFormSubmission",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit"
+    },
+    "created_at": "2025-12-11T08:08:04.975030",
     "is_current": true
   }
 ]
