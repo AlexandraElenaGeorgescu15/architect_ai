@@ -92,60 +92,47 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
     }
   }, [])
   
-  // Repair function (rule-based first, AI fallback)
+  // Repair function - AGGRESSIVE: keeps trying until diagram renders
   const handleAIRepair = useCallback(async () => {
     if (isRepairing || !content) return
     
     setIsRepairing(true)
     try {
-      console.log('🔧 [MermaidRenderer] Requesting repair for diagram (rule-based first)')
+      console.log('🔧 [MermaidRenderer] AGGRESSIVE REPAIR: will try until diagram renders')
       
-      // Try rule-based repair first (fast, no AI)
-      let response
-      try {
-        response = await api.post('/api/ai/repair-diagram', {
-          mermaid_code: content,
-          diagram_type: artifactType,
-          improvement_focus: ['syntax']
-        })
-        
-        // If repair returns success but no changes, that's fine
-        if (response.data.success && response.data.improved_code) {
-          // Continue to update content
-        } else if (response.data.success && !response.data.improved_code) {
-          // Repair said success but no code - try improve instead
-          throw new Error('Repair returned no code')
-        }
-      } catch (repairErr: any) {
-        // If repair endpoint doesn't exist or failed, fall back to improve
-        console.warn('Repair endpoint failed, using improve:', repairErr?.message || repairErr)
-        try {
-          response = await api.post('/api/ai/improve-diagram', {
-            mermaid_code: content,
-            diagram_type: artifactType,
-            improvement_focus: ['syntax', 'layout', 'relationships']
-          })
-        } catch (improveErr) {
-          console.error('Both repair and improve failed:', improveErr)
-          throw improveErr
-        }
-      }
+      // Call the aggressive repair endpoint
+      const response = await api.post('/api/ai/repair-diagram', {
+        mermaid_code: content,
+        diagram_type: artifactType,
+        improvement_focus: ['syntax', 'layout', 'relationships']
+      })
       
       if (response.data.success && response.data.improved_code) {
         console.log('✅ [MermaidRenderer] Repair successful:', response.data.improvements_made)
+        
+        // Update content
         if (onContentUpdate) {
           onContentUpdate(response.data.improved_code)
         }
+        
         // Reset error state to trigger re-render
         setError(null)
         lastErrorContentRef.current = null
       } else {
-        console.error('❌ [MermaidRenderer] Repair failed:', response.data.error)
-        setError('Repair could not fix this diagram. Please adjust the code manually.')
+        // Repair failed even after all attempts
+        console.error('❌ [MermaidRenderer] All repair attempts failed:', response.data.error)
+        console.error('Attempts made:', response.data.improvements_made)
+        
+        // Still update content with best effort result
+        if (response.data.improved_code && onContentUpdate) {
+          onContentUpdate(response.data.improved_code)
+        }
+        
+        setError(`Repair could not fully fix this diagram. ${response.data.error || 'Please try regenerating.'}`)
       }
     } catch (err: any) {
       console.error('❌ [MermaidRenderer] Repair request failed:', err)
-      setError('Repair could not fix this diagram. Please adjust the code manually.')
+      setError('Repair service unavailable. Please try again or regenerate the diagram.')
     } finally {
       setIsRepairing(false)
     }

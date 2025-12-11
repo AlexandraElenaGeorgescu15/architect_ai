@@ -60,6 +60,132 @@
       "source": "ai_repair"
     },
     "created_at": "2025-12-11T15:26:25.409031",
+    "is_current": false
+  },
+  {
+    "version": 4,
+    "artifact_id": "mermaid_state",
+    "artifact_type": "mermaid_state",
+    "content": "stateDiagram\n    [*] --> \"Main Phone List Page\"\n    Note \"User sees available phones\"\n    \"Request Phone Swap\" button -->\n    \"Modal Pop-up\"\n    [*] --> \"Phone to Request\" dropdown\n    Note \"Select a phone from the list\"\n    \"Phone to Exchange\" dropdown -->\n    Note \"Only shows phones currently owned by the user\"\n    \"Reason for Request (Optional)\" text area -->\n    Note \"Enter additional comments\"\n    \"Actions: Submit Request and Cancel buttons\"\n    [*] --> \"Submit Request\"\n    Note \"Validate form submission and store request in database\"\n    [*] --> \"Cancel\"\n    Note \"Close modal pop-up and return to main phone list page\"\n    \"Confirmation Message\"\n    [*] --> \"Request submitted successfully\"\n    Note \"Show confirmation message after successful submission\"\n    \"Pending Status\" -->\n    Note \"Default status for new requests\"",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_state",
+      "source": "ai_repair"
+    },
+    "created_at": "2025-12-11T15:54:54.142356",
+    "is_current": false
+  },
+  {
+    "version": 5,
+    "artifact_id": "mermaid_state",
+    "artifact_type": "mermaid_state",
+    "content": "stateDiagram\n    [*] --> \"Main Phone List Page\"\n    Note \"User sees available phones\"\n    \"Request Phone Swap\" button -->\n    \"Modal Pop-up\"\n    [*] --> \"Phone to Request\" dropdown\n    Note \"Select a phone from the list\"\n    \"Phone to Exchange\" dropdown -->\n    Note \"Only shows phones currently owned by the user\"\n    \"Reason for Request (Optional)\" text area -->\n    Note \"Enter additional comments\"\n    \"Actions: Submit Request and Cancel buttons\"\n    [*] --> \"Submit Request\"\n    Note \"Validate form submission and store request in database\"\n    [*] --> \"Cancel\"\n    Note \"Close modal pop-up and return to main phone list page\"\n    \"Confirmation Message\"\n    [*] --> \"Request submitted successfully\"\n    Note \"Show confirmation message after successful submission\"\n    \"Pending Status\" -->\n    Note \"Default status for new requests\"",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_state",
+      "source": "ai_repair"
+    },
+    "created_at": "2025-12-11T15:55:35.805927",
+    "is_current": false
+  },
+  {
+    "version": 6,
+    "artifact_id": "mermaid_state",
+    "artifact_type": "mermaid_state",
+    "content": "stateDiagram\n    [*] --> \"Main Phone List Page\"\n    Note \"User sees available phones\"\n    \"Request Phone Swap\" button -->\n    \"Modal Pop-up\"\n    [*] --> \"Phone to Request\" dropdown\n    Note \"Select a phone from the list\"\n    \"Phone to Exchange\" dropdown -->\n    Note \"Only shows phones currently owned by the user\"\n    \"Reason for Request (Optional)\" text area -->\n    Note \"Enter additional comments\"\n    \"Actions: Submit Request and Cancel buttons\"\n    [*] --> \"Submit Request\"\n    Note \"Validate form submission and store request in database\"\n    [*] --> \"Cancel\"\n    Note \"Close modal pop-up and return to main phone list page\"\n    \"Confirmation Message\"\n    [*] --> \"Request submitted successfully\"\n    Note \"Show confirmation message after successful submission\"\n    \"Pending Status\" -->\n    Note \"Default status for new requests\"",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_state",
+      "source": "ai_repair"
+    },
+    "created_at": "2025-12-11T15:55:38.947544",
+    "is_current": false
+  },
+  {
+    "version": 7,
+    "artifact_id": "mermaid_state",
+    "artifact_type": "mermaid_state",
+    "content": "stateDiagram\n    [*] --> \"Main Phone List Page\"\n    Note \"User sees available phones\"\n    \"Request Phone Swap\" button -->\n    \"Modal Pop-up\"\n    [*] --> \"Phone to Request\" dropdown\n    Note \"Select a phone from the list\"\n    \"Phone to Exchange\" dropdown -->\n    Note \"Only shows phones currently owned by the user\"\n    \"Reason for Request (Optional)\" text area -->\n    Note \"Enter additional comments\"\n    \"Actions: Submit Request and Cancel buttons\"\n    [*] --> \"Submit Request\"\n    Note \"Validate form submission and store request in database\"\n    [*] --> \"Cancel\"\n    Note \"Close modal pop-up and return to main phone list page\"\n    \"Confirmation Message\"\n    [*] --> \"Request submitted successfully\"\n    Note \"Show confirmation message after successful submission\"\n    \"Pending Status\" -->\n    Note \"Default status for new requests\"",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_state",
+      "source": "ai_repair"
+    },
+    "created_at": "2025-12-11T15:55:39.488470",
+    "is_current": false
+  },
+  {
+    "version": 8,
+    "artifact_id": "mermaid_state",
+    "artifact_type": "mermaid_state",
+    "content": "stateDiagram\n    [*] --> \"Main Phone List Page\"\n    Note \"User sees available phones\"\n    \"Request Phone Swap\" button -->\n    \"Modal Pop-up\"\n    [*] --> \"Phone to Request\" dropdown\n    Note \"Select a phone from the list\"\n    \"Phone to Exchange\" dropdown -->\n    Note \"Only shows phones currently owned by the user\"\n    \"Reason for Request (Optional)\" text area -->\n    Note \"Enter additional comments\"\n    \"Actions: Submit Request and Cancel buttons\"\n    [*] --> \"Submit Request\"\n    Note \"Validate form submission and store request in database\"\n    [*] --> \"Cancel\"\n    Note \"Close modal pop-up and return to main phone list page\"\n    \"Confirmation Message\"\n    [*] --> \"Request submitted successfully\"\n    Note \"Show confirmation message after successful submission\"\n    \"Pending Status\" -->\n    Note \"Default status for new requests\"",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_state",
+      "source": "ai_repair"
+    },
+    "created_at": "2025-12-11T15:55:39.665506",
+    "is_current": false
+  },
+  {
+    "version": 9,
+    "artifact_id": "mermaid_state",
+    "artifact_type": "mermaid_state",
+    "content": "stateDiagram\n    [*] --> \"Main Phone List Page\"\n    Note \"User sees available phones\"\n    \"Request Phone Swap\" button -->\n    \"Modal Pop-up\"\n    [*] --> \"Phone to Request\" dropdown\n    Note \"Select a phone from the list\"\n    \"Phone to Exchange\" dropdown -->\n    Note \"Only shows phones currently owned by the user\"\n    \"Reason for Request (Optional)\" text area -->\n    Note \"Enter additional comments\"\n    \"Actions: Submit Request and Cancel buttons\"\n    [*] --> \"Submit Request\"\n    Note \"Validate form submission and store request in database\"\n    [*] --> \"Cancel\"\n    Note \"Close modal pop-up and return to main phone list page\"\n    \"Confirmation Message\"\n    [*] --> \"Request submitted successfully\"\n    Note \"Show confirmation message after successful submission\"\n    \"Pending Status\" -->\n    Note \"Default status for new requests\"",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_state",
+      "source": "ai_repair"
+    },
+    "created_at": "2025-12-11T15:55:39.871502",
+    "is_current": false
+  },
+  {
+    "version": 10,
+    "artifact_id": "mermaid_state",
+    "artifact_type": "mermaid_state",
+    "content": "stateDiagram\n    [*] --> \"Main Phone List Page\"\n    Note \"User sees available phones\"\n    \"Request Phone Swap\" button -->\n    \"Modal Pop-up\"\n    [*] --> \"Phone to Request\" dropdown\n    Note \"Select a phone from the list\"\n    \"Phone to Exchange\" dropdown -->\n    Note \"Only shows phones currently owned by the user\"\n    \"Reason for Request (Optional)\" text area -->\n    Note \"Enter additional comments\"\n    \"Actions: Submit Request and Cancel buttons\"\n    [*] --> \"Submit Request\"\n    Note \"Validate form submission and store request in database\"\n    [*] --> \"Cancel\"\n    Note \"Close modal pop-up and return to main phone list page\"\n    \"Confirmation Message\"\n    [*] --> \"Request submitted successfully\"\n    Note \"Show confirmation message after successful submission\"\n    \"Pending Status\" -->\n    Note \"Default status for new requests\"",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_state",
+      "source": "ai_repair"
+    },
+    "created_at": "2025-12-11T15:55:39.992533",
+    "is_current": false
+  },
+  {
+    "version": 11,
+    "artifact_id": "mermaid_state",
+    "artifact_type": "mermaid_state",
+    "content": "stateDiagram\n    [*] --> \"Main Phone List Page\"\n    Note \"User sees available phones\"\n    \"Request Phone Swap\" button -->\n    \"Modal Pop-up\"\n    [*] --> \"Phone to Request\" dropdown\n    Note \"Select a phone from the list\"\n    \"Phone to Exchange\" dropdown -->\n    Note \"Only shows phones currently owned by the user\"\n    \"Reason for Request (Optional)\" text area -->\n    Note \"Enter additional comments\"\n    \"Actions: Submit Request and Cancel buttons\"\n    [*] --> \"Submit Request\"\n    Note \"Validate form submission and store request in database\"\n    [*] --> \"Cancel\"\n    Note \"Close modal pop-up and return to main phone list page\"\n    \"Confirmation Message\"\n    [*] --> \"Request submitted successfully\"\n    Note \"Show confirmation message after successful submission\"\n    \"Pending Status\" -->\n    Note \"Default status for new requests\"",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_state",
+      "source": "ai_repair"
+    },
+    "created_at": "2025-12-11T15:55:40.229523",
+    "is_current": false
+  },
+  {
+    "version": 12,
+    "artifact_id": "mermaid_state",
+    "artifact_type": "mermaid_state",
+    "content": "stateDiagram\n    [*] --> \"Main Phone List Page\"\n    Note \"User sees available phones\"\n    \"Request Phone Swap\" button -->\n    \"Modal Pop-up\"\n    [*] --> \"Phone to Request\" dropdown\n    Note \"Select a phone from the list\"\n    \"Phone to Exchange\" dropdown -->\n    Note \"Only shows phones currently owned by the user\"\n    \"Reason for Request (Optional)\" text area -->\n    Note \"Enter additional comments\"\n    \"Actions: Submit Request and Cancel buttons\"\n    [*] --> \"Submit Request\"\n    Note \"Validate form submission and store request in database\"\n    [*] --> \"Cancel\"\n    Note \"Close modal pop-up and return to main phone list page\"\n    \"Confirmation Message\"\n    [*] --> \"Request submitted successfully\"\n    Note \"Show confirmation message after successful submission\"\n    \"Pending Status\" -->\n    Note \"Default status for new requests\"",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_state",
+      "source": "ai_repair"
+    },
+    "created_at": "2025-12-11T15:55:40.605410",
     "is_current": true
   }
 ]

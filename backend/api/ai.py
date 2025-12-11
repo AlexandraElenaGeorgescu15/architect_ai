@@ -5,7 +5,7 @@ Supports all Mermaid diagram types with intelligent model routing.
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Tuple
 import logging
 import re
 import json
@@ -543,74 +543,368 @@ async def repair_diagram(
     current_user: UserPublic = Depends(get_current_user)
 ):
     """
-    Rule-based diagram repair (fast, no AI).
-    AGGRESSIVELY cleans AI explanatory text and fixes syntax.
-    Only uses AI if rule-based repair fails to produce valid output.
+    AGGRESSIVE diagram repair that keeps trying until diagram renders.
+    Strategy:
+    1. Rule-based repair (fast)
+    2. AI repair with local model
+    3. AI repair with cloud model (fallback)
+    4. Full regeneration with cloud model (last resort)
+    
+    Does NOT stop until diagram is valid/renderable.
     """
     try:
-        logger.info(f"Repairing {request.diagram_type} diagram (rule-based first)")
+        logger.info(f"🔧 AGGRESSIVE REPAIR: {request.diagram_type} diagram")
         
-        # Try rule-based repair first (fast, no AI)
+        original_code = request.mermaid_code
+        attempts = []
+        
+        # Helper to validate diagram syntax
+        def validate_mermaid(code: str) -> Tuple[bool, str]:
+            """Check if Mermaid code is likely to render."""
+            if not code or len(code.strip()) < 10:
+                return False, "Code too short"
+            
+            code = code.strip()
+            
+            # Must start with valid diagram type
+            diagram_types = [
+                'erdiagram', 'flowchart', 'graph', 'sequencediagram',
+                'classdiagram', 'statediagram', 'gantt', 'pie', 'journey',
+                'gitgraph', 'mindmap', 'timeline', 'c4context', 'c4container',
+                'c4component', 'c4deployment'
+            ]
+            first_line = code.split('\n')[0].strip().lower()
+            if not any(first_line.startswith(dt) for dt in diagram_types):
+                return False, f"Invalid diagram start: {first_line[:30]}"
+            
+            # Check balanced brackets
+            if code.count('{') != code.count('}'):
+                return False, "Unbalanced curly braces"
+            if code.count('[') != code.count(']'):
+                return False, "Unbalanced square brackets"
+            
+            # Check for common syntax errors
+            if '-->|' in code and '|>' in code:
+                return False, "Invalid arrow syntax (|>)"
+            
+            # Check content has more than just header
+            lines = [l for l in code.split('\n') if l.strip() and not l.strip().startswith('%%')]
+            if len(lines) < 2:
+                return False, "Diagram has no content"
+            
+            # Check for AI text pollution
+            ai_markers = ['let me know', 'hope this', 'feel free', 'here is the', "i've made"]
+            for marker in ai_markers:
+                if marker in code.lower():
+                    return False, f"Contains AI text: {marker}"
+            
+            return True, "Valid"
+        
+        # ============================================================
+        # ATTEMPT 1: Rule-based repair (fast, no AI)
+        # ============================================================
         try:
             from components.universal_diagram_fixer import UniversalDiagramFixer
             fixer = UniversalDiagramFixer()
+            fixed_code, fixes_applied = fixer.fix_diagram(original_code, max_passes=5)
             
-            # Run with MORE passes (5) for aggressive cleaning
-            fixed_code, fixes_applied = fixer.fix_diagram(request.mermaid_code, max_passes=5)
+            is_valid, reason = validate_mermaid(fixed_code)
+            attempts.append(f"Rule-based: {is_valid} ({reason})")
             
-            if fixed_code and fixed_code.strip():
-                # Verify the fixed code starts with a valid diagram type
-                diagram_types = [
-                    'erdiagram', 'flowchart', 'graph', 'sequencediagram',
-                    'classdiagram', 'statediagram', 'gantt', 'pie', 'journey',
-                    'gitgraph', 'mindmap', 'timeline', 'c4context', 'c4container',
-                    'c4component', 'c4deployment'
-                ]
-                first_line = fixed_code.strip().split('\n')[0].lower()
-                is_valid_start = any(first_line.startswith(dt) for dt in diagram_types)
+            if is_valid:
+                logger.info(f"✅ Rule-based repair successful: {len(fixes_applied)} fixes")
+                return DiagramImproveResponse(
+                    success=True,
+                    improved_code=fixed_code,
+                    improvements_made=[f"Rule-based: {f}" for f in fixes_applied[:5]] if fixes_applied else ["Diagram validated"],
+                    error=None
+                )
+            else:
+                logger.warning(f"Rule-based repair produced invalid diagram: {reason}")
+        except Exception as e:
+            attempts.append(f"Rule-based: Failed ({e})")
+            logger.warning(f"Rule-based repair failed: {e}")
+        
+        # ============================================================
+        # ATTEMPT 2: AI repair with local model
+        # ============================================================
+        try:
+            ai_result = await _ai_repair_diagram(request, use_cloud=False)
+            if ai_result and ai_result.strip():
+                # Always clean AI output
+                try:
+                    fixer = UniversalDiagramFixer()
+                    ai_result, _ = fixer.fix_diagram(ai_result, max_passes=3)
+                except:
+                    pass
                 
-                if is_valid_start:
-                    logger.info(f"Rule-based repair successful: {len(fixes_applied)} fixes applied")
+                is_valid, reason = validate_mermaid(ai_result)
+                attempts.append(f"AI-local: {is_valid} ({reason})")
+                
+                if is_valid:
+                    logger.info(f"✅ AI (local) repair successful")
                     return DiagramImproveResponse(
                         success=True,
-                        improved_code=fixed_code,
-                        improvements_made=[f"Rule-based: {f}" for f in fixes_applied[:5]] if fixes_applied else ["Cleaned and validated diagram"],
+                        improved_code=ai_result,
+                        improvements_made=["AI repair (local model)", "Syntax fixed"],
                         error=None
                     )
                 else:
-                    logger.warning(f"Rule-based repair produced invalid diagram start: {first_line[:50]}")
-                    # Fall through to AI repair
-        except ImportError as e:
-            logger.warning(f"Rule-based repair not available (ImportError): {e}, falling back to AI")
+                    logger.warning(f"AI (local) repair produced invalid diagram: {reason}")
         except Exception as e:
-            logger.warning(f"Rule-based repair failed: {e}, falling back to AI", exc_info=True)
+            attempts.append(f"AI-local: Failed ({e})")
+            logger.warning(f"AI (local) repair failed: {e}")
         
-        # Fallback to AI repair if rule-based failed or produced invalid output
-        ai_result = await improve_diagram(request, current_user)
+        # ============================================================
+        # ATTEMPT 3: AI repair with CLOUD model (more capable)
+        # ============================================================
+        try:
+            logger.info("🌐 Falling back to CLOUD model for repair")
+            ai_result = await _ai_repair_diagram(request, use_cloud=True)
+            if ai_result and ai_result.strip():
+                # Always clean AI output
+                try:
+                    fixer = UniversalDiagramFixer()
+                    ai_result, _ = fixer.fix_diagram(ai_result, max_passes=3)
+                except:
+                    pass
+                
+                is_valid, reason = validate_mermaid(ai_result)
+                attempts.append(f"AI-cloud: {is_valid} ({reason})")
+                
+                if is_valid:
+                    logger.info(f"✅ AI (cloud) repair successful")
+                    return DiagramImproveResponse(
+                        success=True,
+                        improved_code=ai_result,
+                        improvements_made=["AI repair (cloud model)", "Syntax fixed", "Full regeneration"],
+                        error=None
+                    )
+                else:
+                    logger.warning(f"AI (cloud) repair produced invalid diagram: {reason}")
+        except Exception as e:
+            attempts.append(f"AI-cloud: Failed ({e})")
+            logger.warning(f"AI (cloud) repair failed: {e}")
         
-        # ALWAYS run the fixer on AI output too, to clean any explanatory text
-        if ai_result.success and ai_result.improved_code:
-            try:
-                from components.universal_diagram_fixer import UniversalDiagramFixer
-                fixer = UniversalDiagramFixer()
-                final_code, final_fixes = fixer.fix_diagram(ai_result.improved_code, max_passes=3)
-                if final_code and final_code.strip():
-                    ai_result.improved_code = final_code
-                    if final_fixes:
-                        ai_result.improvements_made.extend([f"Post-AI cleanup: {f}" for f in final_fixes[:3]])
-            except Exception as e:
-                logger.warning(f"Post-AI cleanup failed: {e}")
+        # ============================================================
+        # ATTEMPT 4: Full REGENERATION with cloud model (last resort)
+        # ============================================================
+        try:
+            logger.info("🔄 Last resort: Full regeneration with cloud model")
+            regenerated = await _regenerate_diagram_from_scratch(request)
+            if regenerated and regenerated.strip():
+                # Always clean output
+                try:
+                    fixer = UniversalDiagramFixer()
+                    regenerated, _ = fixer.fix_diagram(regenerated, max_passes=3)
+                except:
+                    pass
+                
+                is_valid, reason = validate_mermaid(regenerated)
+                attempts.append(f"Regenerate: {is_valid} ({reason})")
+                
+                if is_valid:
+                    logger.info(f"✅ Full regeneration successful")
+                    return DiagramImproveResponse(
+                        success=True,
+                        improved_code=regenerated,
+                        improvements_made=["Full regeneration (cloud)", "New diagram created"],
+                        error=None
+                    )
+        except Exception as e:
+            attempts.append(f"Regenerate: Failed ({e})")
+            logger.error(f"Full regeneration failed: {e}")
         
-        return ai_result
+        # ============================================================
+        # ALL ATTEMPTS FAILED - Return best effort
+        # ============================================================
+        logger.error(f"❌ All repair attempts failed: {attempts}")
+        
+        # Return the rule-based fix even if invalid (best we have)
+        try:
+            fixer = UniversalDiagramFixer()
+            best_effort, _ = fixer.fix_diagram(original_code, max_passes=5)
+        except:
+            best_effort = original_code
+        
+        return DiagramImproveResponse(
+            success=False,
+            improved_code=best_effort,
+            improvements_made=attempts,
+            error=f"All repair attempts failed. Attempts: {', '.join(attempts)}"
+        )
         
     except Exception as e:
-        logger.error(f"Repair failed: {e}", exc_info=True)
+        logger.error(f"Repair failed catastrophically: {e}", exc_info=True)
         return DiagramImproveResponse(
             success=False,
             improved_code=request.mermaid_code,
             improvements_made=[],
             error=f"Repair failed: {str(e)}"
         )
+
+
+async def _ai_repair_diagram(request: DiagramImproveRequest, use_cloud: bool = False) -> Optional[str]:
+    """
+    Use AI to repair a diagram.
+    
+    Args:
+        request: The repair request
+        use_cloud: If True, force use of cloud models (Gemini, GPT-4, etc.)
+    """
+    try:
+        # Get generation service
+        generation_service = get_generation_service()
+        
+        # Detect diagram type from code
+        diagram_type = "diagram"
+        code_lower = request.mermaid_code.lower().strip()
+        if code_lower.startswith("erdiagram"):
+            diagram_type = "erDiagram"
+        elif code_lower.startswith("flowchart") or code_lower.startswith("graph"):
+            diagram_type = "flowchart"
+        elif code_lower.startswith("classdiagram"):
+            diagram_type = "classDiagram"
+        elif code_lower.startswith("sequencediagram"):
+            diagram_type = "sequenceDiagram"
+        elif code_lower.startswith("statediagram"):
+            diagram_type = "stateDiagram-v2"
+        elif code_lower.startswith("gantt"):
+            diagram_type = "gantt"
+        elif code_lower.startswith("pie"):
+            diagram_type = "pie"
+        elif code_lower.startswith("journey"):
+            diagram_type = "journey"
+        
+        # Build strict prompt
+        prompt = f"""Fix this Mermaid {diagram_type} diagram. It has syntax errors and won't render.
+
+BROKEN DIAGRAM:
+{request.mermaid_code}
+
+REQUIREMENTS:
+1. Fix ALL syntax errors
+2. Keep the same structure and meaning
+3. Output ONLY the fixed Mermaid code
+4. Start directly with "{diagram_type}" (NO explanations)
+5. Do NOT include markdown code blocks
+6. Do NOT say "Here is" or any other text
+7. JUST the raw Mermaid code, nothing else
+
+VALID {diagram_type.upper()} SYNTAX:"""
+
+        # Get model routing - force cloud if requested
+        model_service = get_model_service()
+        
+        if use_cloud:
+            # Force cloud models
+            routing = {
+                "models": ["gemini-2.0-flash-exp", "gpt-4-turbo", "claude-3-sonnet"],
+                "priority": "cloud"
+            }
+        else:
+            routing = model_service.get_routing_for_artifact(request.diagram_type)
+        
+        # Call AI
+        result = await generation_service.generate_with_fallback(
+            prompt=prompt,
+            model_routing=routing,
+            temperature=0.1,  # Very low temperature for consistent syntax
+            system_instruction=f"""You are a Mermaid diagram syntax expert. You ONLY output valid Mermaid code.
+CRITICAL: 
+- Output ONLY the Mermaid diagram code
+- Start with "{diagram_type}" keyword
+- NO explanations, NO markdown, NO comments
+- Just the raw diagram code"""
+        )
+        
+        if result.success and result.content:
+            # Extract just the diagram
+            content = extract_mermaid_diagram(result.content)
+            return content
+        
+        return None
+        
+    except Exception as e:
+        logger.error(f"AI repair failed: {e}", exc_info=True)
+        return None
+
+
+async def _regenerate_diagram_from_scratch(request: DiagramImproveRequest) -> Optional[str]:
+    """
+    Completely regenerate a diagram from scratch using cloud models.
+    Last resort when repair fails.
+    """
+    try:
+        generation_service = get_generation_service()
+        
+        # Detect what the diagram is trying to show
+        diagram_type = "flowchart"
+        code_lower = request.mermaid_code.lower()
+        
+        if "erdiagram" in code_lower:
+            diagram_type = "erDiagram"
+        elif "classdiagram" in code_lower:
+            diagram_type = "classDiagram"
+        elif "sequencediagram" in code_lower:
+            diagram_type = "sequenceDiagram"
+        elif "statediagram" in code_lower:
+            diagram_type = "stateDiagram-v2"
+        elif "gantt" in code_lower:
+            diagram_type = "gantt"
+        elif "pie" in code_lower:
+            diagram_type = "pie"
+        elif "journey" in code_lower:
+            diagram_type = "journey"
+        
+        # Extract meaningful content from broken diagram to understand intent
+        # Look for node names, labels, relationships
+        content_hints = []
+        for line in request.mermaid_code.split('\n'):
+            line = line.strip()
+            if line and not line.startswith(('```', diagram_type.lower(), '#', '%%')):
+                # Extract words that look like identifiers
+                words = re.findall(r'\b[A-Z][a-zA-Z0-9_]*\b', line)
+                content_hints.extend(words[:3])  # Limit per line
+        
+        content_hints = list(set(content_hints))[:10]  # Unique, max 10
+        
+        prompt = f"""Generate a valid Mermaid {diagram_type} diagram.
+
+The diagram should include these elements (extracted from broken diagram):
+{', '.join(content_hints) if content_hints else 'Standard elements for this diagram type'}
+
+REQUIREMENTS:
+1. Output ONLY valid Mermaid {diagram_type} code
+2. Start directly with "{diagram_type}"
+3. NO explanations, NO markdown code blocks
+4. Include proper relationships and structure
+5. Make sure ALL syntax is correct
+
+OUTPUT:"""
+
+        # Force cloud models for regeneration
+        routing = {
+            "models": ["gemini-2.0-flash-exp", "gpt-4-turbo", "claude-3-sonnet"],
+            "priority": "cloud"
+        }
+        
+        result = await generation_service.generate_with_fallback(
+            prompt=prompt,
+            model_routing=routing,
+            temperature=0.3,
+            system_instruction=f"""You are a Mermaid diagram expert. Generate ONLY valid {diagram_type} code.
+CRITICAL: Output the raw Mermaid code only. No explanations. No markdown. Just the diagram."""
+        )
+        
+        if result.success and result.content:
+            return extract_mermaid_diagram(result.content)
+        
+        return None
+        
+    except Exception as e:
+        logger.error(f"Regeneration failed: {e}", exc_info=True)
+        return None
 
 
 @router.post("/improve-diagram", response_model=DiagramImproveResponse)

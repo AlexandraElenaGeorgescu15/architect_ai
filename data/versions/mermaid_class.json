@@ -51,6 +51,20 @@
       "source": "ai_repair"
     },
     "created_at": "2025-12-11T15:42:20.454568",
+    "is_current": false
+  },
+  {
+    "version": 4,
+    "artifact_id": "mermaid_class",
+    "artifact_type": "mermaid_class",
+    "content": "classDiagram\n    class User {\n    id: string\n    phonesOwned: Phone[]\n    }\n    class Phone {\n    id: string\n    name: string\n    ownedBy: User\n    }\n    class PhoneSwapRequest {\n    id: string\n    requesterId: string\n    requestedPhone: Phone\n    offeredPhone: Phone\n    status: string\n    comment: string\n    +validateOwner(): boolean\n    }\n    class Frontend {\n    +createModal(): void\n    +handleFormSubmission(): void\n    }\n    class Backend {\n    +createApiEndpoint(): void\n    +storeSwapRequest(PhoneSwapRequest): void\n    +updateStatus(PhoneSwapRequest, status): void\n    }\n    User \"1\" --> \"*\" Phone : owns\n    PhoneSwapRequest --> User : requester\n    PhoneSwapRequest --> Phone : requestedPhone\n    PhoneSwapRequest --> Phone : offeredPhone\n    Frontend --> Backend : calls",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_class",
+      "source": "ai_repair"
+    },
+    "created_at": "2025-12-11T16:05:35.743726",
     "is_current": true
   }
 ]
