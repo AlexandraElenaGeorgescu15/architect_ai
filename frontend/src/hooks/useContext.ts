@@ -5,8 +5,9 @@ import {
   buildContext,
   getContext,
   ContextBuildRequest,
+  ContextResponse,
 } from '../services/contextService'
-import { Context, ContextResponse } from '../types'
+import { Context } from '../types'
 
 export function useContext() {
   const [isBuilding, setIsBuilding] = useState(false)

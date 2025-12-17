@@ -121,11 +121,12 @@ const EditableNode = ({ id, data, isConnectable, selected }: NodeProps<NodeData>
 
       {/* Content */}
       <div
-        className="px-4 py-3 rounded-lg bg-white dark:bg-gray-800"
+        className="px-4 py-3 rounded-lg"
         style={{ backgroundColor: `${data.color || '#6366f1'}15` }}
       >
         <input
-          className="w-full bg-transparent text-center font-medium focus:outline-none focus:border-b border-border placeholder-gray-400 text-gray-900 dark:text-white"
+          className="w-full bg-transparent text-center font-medium focus:outline-none focus:border-b border-border placeholder-gray-400"
+          style={{ color: '#1f2937' }}
           value={data.label}
           onChange={onLabelChange}
           placeholder="Node Label"

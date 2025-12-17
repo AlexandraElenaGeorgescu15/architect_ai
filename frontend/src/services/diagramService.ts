@@ -4,7 +4,7 @@
  */
 
 import api from './api'
-import { ArtifactType } from './generationService'
+import { ArtifactType } from '../types/artifacts'
 
 export interface ReactFlowNode {
   id: string

@@ -40,7 +40,7 @@
   {
     "version": 2,
     "artifact_id": "mermaid_flowchart",
-    "artifact_type": "mermaid_flowchart",
+    "artifact_type": "unknown",
     "content": "flowchart LR\n    start[Start] -->|User clicks \"Request Phone Swap\" button|> modal[Modal: Request Phone Swap]\n    classDef primary fill:#4f46e5,stroke:#3730a3\n    modal -.-> form[Form: Phone to Request & Phone to Exchange]\n    form -->|User submits form|> backend[Backend API Endpoint (POST /api/phone-swaps)]\n    backend -->|Validate user's ownership of offered phone|> validation[Validation: User is owner of offered phone]\n    validation -->|Request is valid, create new swap request in database|> db[Database: Create new swap request table]\n    db -->|Return confirmation message to user|> confirm[Confirmation Message: Request submitted successfully]\n    confirm -.-> confirm[Confirmation Message: Request submitted successfully]\n    confirm -.-> end[End]\n    modal -->|User cancels request|> cancel[Cancel Request]\n    cancel -.-> end[End]\nLet me know if you have any further requests!",
     "metadata": {
       "updated_by": "default",
@@ -52,97 +52,13 @@
   {
     "version": 3,
     "artifact_id": "mermaid_flowchart",
-    "artifact_type": "mermaid_flowchart",
+    "artifact_type": "unknown",
     "content": "flowchart LR\n    start[Start] -->|User clicks \"Request Phone Swap\" button|> modal[Modal: Request Phone Swap]\n    classDef primary fill:#4f46e5,stroke:#3730a3\n    classDef secondary fill:#fff,stroke:#ddd\n    modal -.-> form[Form: Phone to Request & Phone to Exchange]\n    form -->|User submits form|> backend[Backend API Endpoint (POST /api/phone-swaps)]\n    backend -->|Validate user's ownership of offered phone|> validation[Validation: User is owner of offered phone]\n    class primary validation\n    validation -->|Request is valid, create new swap request in database|> db[Database: Create new swap request table]\n    db -->|Return confirmation message to user|> confirm[Confirmation Message: Request submitted successfully]\n    confirm -.-> confirm[Confirmation Message: Request submitted successfully]\n    confirm -.-> end[End]\n    modal -->|User cancels request|> cancel[Cancel Request]\n    class secondary cancel\n    cancel -.-> end[End]\nLet me know if this meets your requirements!",
     "metadata": {
       "updated_by": "default",
       "update_type": "manual_edit"
     },
     "created_at": "2025-12-10T22:17:50.500774",
-    "is_current": false
-  },
-  {
-    "version": 4,
-    "artifact_id": "mermaid_flowchart",
-    "artifact_type": "mermaid_flowchart",
-    "content": "flowchart LR\n    form -->|User submits form|> backend[\"Backend API Endpoint (POST /api/phone-swaps)\"]\n    class primary validation\n    confirm -.-> end[End]\n    modal -->|User cancels request|> cancel[\"Cancel Request\"]\n    class secondary cancel\n    cancel -.-> end[End]\n    Let me know if this meets your requirements!",
-    "metadata": {
-      "updated_by": "default",
-      "update_type": "manual_edit",
-      "artifact_type": "mermaid_flowchart",
-      "source": "ai_repair"
-    },
-    "created_at": "2025-12-11T12:22:41.829990",
-    "is_current": false
-  },
-  {
-    "version": 5,
-    "artifact_id": "mermaid_flowchart",
-    "artifact_type": "mermaid_flowchart",
-    "content": "flowchart LR\n    form -->|User submits form|> backend[\"Backend API Endpoint (POST /api/phone-swaps)\"]\n    class primary validation\n    confirm -.-> end[End]\n    modal -->|User cancels request|> cancel[\"Cancel Request\"]\n    class secondary cancel\n    cancel -.-> end[End]\n    Let me know if this meets your requirements!",
-    "metadata": {
-      "updated_by": "default",
-      "update_type": "manual_edit",
-      "artifact_type": "mermaid_flowchart",
-      "source": "ai_repair"
-    },
-    "created_at": "2025-12-11T12:48:08.181858",
-    "is_current": false
-  },
-  {
-    "version": 6,
-    "artifact_id": "mermaid_flowchart",
-    "artifact_type": "mermaid_flowchart",
-    "content": "flowchart LR\n    form -->|User submits form|> backend[\"Backend API Endpoint (POST /api/phone-swaps)\"]\n    class primary validation\n    confirm -.-> end[End]\n    modal -->|User cancels request|> cancel[\"Cancel Request\"]\n    class secondary cancel\n    cancel -.-> end[End]\n    Let me know if this meets your requirements!",
-    "metadata": {
-      "updated_by": "default",
-      "update_type": "manual_edit",
-      "artifact_type": "mermaid_flowchart",
-      "source": "ai_repair"
-    },
-    "created_at": "2025-12-11T14:16:48.005620",
-    "is_current": false
-  },
-  {
-    "version": 7,
-    "artifact_id": "mermaid_flowchart",
-    "artifact_type": "mermaid_flowchart",
-    "content": "flowchart LR\n    form -->|User submits form|> backend[\"Backend API Endpoint (POST /api/phone-swaps)\"]\n    class primary validation\n    confirm -.-> end[End]\n    modal -->|User cancels request|> cancel[\"Cancel Request\"]\n    class secondary cancel\n    cancel -.-> end[End]\n    Let me know if this meets your requirements!",
-    "metadata": {
-      "updated_by": "default",
-      "update_type": "manual_edit",
-      "artifact_type": "mermaid_flowchart",
-      "source": "ai_repair"
-    },
-    "created_at": "2025-12-11T14:16:50.219647",
-    "is_current": false
-  },
-  {
-    "version": 8,
-    "artifact_id": "mermaid_flowchart",
-    "artifact_type": "mermaid_flowchart",
-    "content": "flowchart LR\n    start[Start] --> modal[Request Phone Swap]\n    modal --> form[Phone Selection Form]\n    form -->|Submit| backend[Backend API]\n    backend --> validation[Validation]\n    validation -->|Valid| db[Database]\n    db --> confirm[Confirmation]\n    confirm --> endNode[End]\n    modal -->|Cancel| cancel[Cancel Request]\n    cancel --> endNode",
-    "metadata": {
-      "updated_by": "default",
-      "update_type": "manual_edit",
-      "artifact_type": "mermaid_flowchart",
-      "source": "ai_repair"
-    },
-    "created_at": "2025-12-11T14:22:22.289446",
-    "is_current": false
-  },
-  {
-    "version": 9,
-    "artifact_id": "mermaid_flowchart",
-    "artifact_type": "mermaid_flowchart",
-    "content": "flowchart LR\n    start[Start] --> modal[Request Phone Swap]\n    modal --> form[\"Phone Selection Form\"]\n    form -->|Submit| backend[\"Backend API\"]\n    backend --> validation[Validation]\n    validation -->|Valid| db[Database]\n    db --> confirm[Confirmation]\n    confirm --> endNode[End]\n    modal -->|Cancel| cancel[\"Cancel Request\"]\n    cancel --> endNode",
-    "metadata": {
-      "updated_by": "default",
-      "update_type": "manual_edit",
-      "artifact_type": "mermaid_flowchart",
-      "source": "ai_repair"
-    },
-    "created_at": "2025-12-11T15:21:33.300537",
     "is_current": true
   }
 ]

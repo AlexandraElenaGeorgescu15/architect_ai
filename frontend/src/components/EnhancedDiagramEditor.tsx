@@ -135,7 +135,7 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
     // Update artifact
     updateArtifact(selectedArtifact.id, {
       content: generated,
-      updated_at: new Date().toISOString(),
+      lastModified: new Date().toISOString(),
     })
 
     addNotification('success', 'Code updated from canvas')
@@ -549,7 +549,7 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
   // Empty state
   if (diagramArtifacts.length === 0) {
     return (
-      <div className="h-full flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="h-full flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <CodeIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
           <p className="text-lg font-medium text-gray-600 mb-2">
@@ -576,15 +576,15 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
             onConnect={onConnect}
             nodeTypes={nodeTypes}
             fitView
-            className="bg-gray-50 dark:bg-gray-900"
+            className="bg-gray-50"
           >
-            <Background variant={BackgroundVariant.Dots} gap={20} size={1} color="currentColor" className="text-gray-300 dark:text-gray-700" />
+            <Background variant={BackgroundVariant.Dots} gap={20} size={1} />
             <Controls />
 
             {/* Top Toolbar */}
-            <Panel position="top-center" className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-2 flex gap-2 items-center border border-gray-200 dark:border-gray-700 z-10">
+            <Panel position="top-center" className="bg-white rounded-lg shadow-lg p-2 flex gap-2 items-center border border-gray-200 z-10">
               {/* Add Node Controls */}
-              <div className="flex items-center gap-1 border-r border-gray-300 dark:border-gray-600 pr-2">
+              <div className="flex items-center gap-1 border-r border-gray-300 pr-2">
                 <button
                   onClick={() => handleAddNode('custom')}
                   className="px-2 py-1.5 bg-blue-500 text-white rounded-md text-xs font-medium flex items-center gap-1 hover:bg-blue-600"
@@ -619,7 +619,7 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
                 </button>
               </div>
 
-              <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
+              <div className="w-px h-6 bg-gray-300"></div>
 
               <button
                 onClick={handleSave}
@@ -635,7 +635,7 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
                 Save Version
               </button>
 
-              <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
+              <div className="w-px h-6 bg-gray-300"></div>
 
               <button
                 onClick={handleMagicImprovement}
@@ -651,11 +651,11 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
                 AI Improve
               </button>
 
-              <div className="w-px h-6 bg-gray-300 dark:bg-gray-600"></div>
+              <div className="w-px h-6 bg-gray-300"></div>
 
               <button
                 onClick={() => setViewMode('code')}
-                className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md text-sm font-medium flex items-center gap-1.5 hover:bg-gray-200 dark:hover:bg-gray-600"
+                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm font-medium flex items-center gap-1.5 hover:bg-gray-200"
               >
                 <CodeIcon size={16} />
                 Code
@@ -663,7 +663,7 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
 
               <button
                 onClick={handleDownload}
-                className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-md text-sm font-medium flex items-center gap-1.5 hover:bg-gray-200 dark:hover:bg-gray-600"
+                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm font-medium flex items-center gap-1.5 hover:bg-gray-200"
               >
                 <Download size={16} />
                 Export
@@ -671,8 +671,8 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
             </Panel>
             
             {/* Stats Badge - Bottom left, always visible */}
-            <Panel position="bottom-left" className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg shadow-md px-3 py-2 border border-gray-200 dark:border-gray-700">
-              <div className="text-sm font-medium text-gray-700 dark:text-gray-200 flex items-center gap-3">
+            <Panel position="bottom-left" className="bg-white/90 backdrop-blur-sm rounded-lg shadow-md px-3 py-2 border border-gray-200">
+              <div className="text-sm font-medium text-gray-700 flex items-center gap-3">
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-blue-500"></span>
                   {nodes.length} nodes
@@ -688,8 +688,8 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
       ) : (
         /* Code View */
         <div className="flex-1 flex">
-          <div className="flex-1 flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-2xl">
+          <div className="flex-1 flex items-center justify-center bg-gray-100 p-4">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-2xl">
               <CodeIcon className="w-12 h-12 mx-auto mb-4 text-indigo-600" />
               <h3 className="text-lg font-semibold text-center mb-2">
                 Code Editor Mode

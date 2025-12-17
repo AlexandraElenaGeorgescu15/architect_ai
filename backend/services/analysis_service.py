@@ -119,34 +119,21 @@ class AnalysisService:
             include_code_smells=include_code_smells
         )
         
-        # Convert patterns with confidence included
-        patterns_list = [
-            {
-                "name": p.name,
-                "pattern_type": p.pattern_type,  # Match frontend expected key
-                "type": p.pattern_type,  # Keep for compatibility
-                "description": p.description,
-                "frequency": p.frequency,
-                "severity": p.severity,
-                "files": p.files[:10],  # Limit file list
-                "suggestions": p.suggestions,
-                "confidence": getattr(p, 'confidence', 0.0)  # Include confidence!
-            }
-            for p in analysis.patterns
-        ]
-        
-        # Calculate average confidence
-        total_conf = sum(p.get("confidence", 0) for p in patterns_list)
-        avg_confidence = total_conf / len(patterns_list) if patterns_list else 0.0
-        
         result = {
             "analysis_id": f"analysis_{uuid.uuid4().hex[:8]}",
             "project_root": str(project_path),
-            "patterns": patterns_list,
-            "summary": {
-                "total_patterns": len(patterns_list),
-                "confidence_avg": avg_confidence
-            },
+            "patterns": [
+                {
+                    "name": p.name,
+                    "type": p.pattern_type,
+                    "description": p.description,
+                    "frequency": p.frequency,
+                    "severity": p.severity,
+                    "files": p.files[:10],  # Limit file list
+                    "suggestions": p.suggestions
+                }
+                for p in analysis.patterns
+            ],
             "metrics": analysis.metrics,
             "recommendations": analysis.recommendations,
             "code_quality_score": analysis.code_quality_score,

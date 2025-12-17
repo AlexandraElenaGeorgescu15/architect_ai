@@ -143,9 +143,7 @@ def extract_mermaid_diagram(content: str) -> str:
     try:
         from backend.services.validation_service import get_service as get_validation_service
         validator = get_validation_service()
-        extracted = validator._extract_mermaid_diagram(content)
-        # Apply additional cleaning for AI explanatory text
-        return _clean_ai_explanations(extracted)
+        return validator._extract_mermaid_diagram(content)
     except ImportError:
         # Fallback if validation service not available
         pass
@@ -155,7 +153,7 @@ def extract_mermaid_diagram(content: str) -> str:
     mermaid_pattern = r'```(?:mermaid)?\s*\n(.*?)```'
     matches = re.findall(mermaid_pattern, content, re.DOTALL | re.IGNORECASE)
     if matches:
-        return _clean_ai_explanations(matches[0].strip())
+        return matches[0].strip()
     
     # Check for diagram type declarations
     diagram_types = [
@@ -170,68 +168,23 @@ def extract_mermaid_diagram(content: str) -> str:
             idx = content.lower().find(dt.lower())
             if idx != -1:
                 diagram = content[idx:].strip()
-                diagram = _clean_ai_explanations(diagram)
-                if diagram:
-                    return diagram
+                lines = diagram.split('\n')
+                diagram_lines = []
+                for line in lines:
+                    line_stripped = line.strip()
+                    if (line_stripped.startswith('**Explanation') or 
+                        line_stripped.startswith('**Note') or
+                        line_stripped.startswith('Explanation') or
+                        line_stripped.startswith('This diagram') or
+                        line_stripped.startswith('The diagram')):
+                        break
+                    if line_stripped and not line_stripped.startswith('**') and not line_stripped.startswith('#'):
+                        diagram_lines.append(line)
+                
+                if diagram_lines:
+                    return '\n'.join(diagram_lines).strip()
     
-    return _clean_ai_explanations(content)
-
-
-def _clean_ai_explanations(content: str) -> str:
-    """
-    Remove common AI explanatory text that appears before or after diagram code.
-    """
-    if not content:
-        return content
-    
-    # Patterns that indicate end of diagram code (AI explanation starting)
-    end_patterns = [
-        r'\n\s*Let me know',
-        r'\n\s*Hope this helps',
-        r'\n\s*Feel free to',
-        r'\n\s*If you have',
-        r'\n\s*If you need',
-        r'\n\s*Note:',
-        r'\n\s*\*\*Note',
-        r'\n\s*\*\*Explanation',
-        r'\n\s*Explanation:',
-        r'\n\s*This diagram',
-        r'\n\s*The diagram',
-        r'\n\s*I\'ve',
-        r'\n\s*Here\'s',
-        r'\n\s*Above is',
-        r'\n\s*The above',
-        r'\n\s*This shows',
-        r'\n\s*---',
-        r'\n\s*\*\*Key',
-        r'\n\s*Key improvements',
-        r'\n\s*Changes made',
-        r'\n\s*Improvements:',
-    ]
-    
-    result = content
-    for pattern in end_patterns:
-        match = re.search(pattern, result, re.IGNORECASE)
-        if match:
-            result = result[:match.start()].strip()
-    
-    # Also clean lines that start with common AI prefixes at the end
-    lines = result.split('\n')
-    cleaned_lines = []
-    for line in lines:
-        line_stripped = line.strip().lower()
-        # Skip lines that are clearly explanatory
-        if any(line_stripped.startswith(p) for p in [
-            'let me know', 'hope this', 'feel free', 'if you', 
-            'note:', '**note', '**explanation', 'explanation:',
-            'this diagram', 'the diagram', "i've", "here's",
-            'above is', 'the above', 'this shows', 'key improvements',
-            'changes made', 'improvements:'
-        ]):
-            break
-        cleaned_lines.append(line)
-    
-    return '\n'.join(cleaned_lines).strip()
+    return content
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 

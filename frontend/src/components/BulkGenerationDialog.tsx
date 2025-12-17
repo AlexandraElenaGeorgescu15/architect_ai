@@ -82,8 +82,8 @@ export default function BulkGenerationDialog({
   const totalCount = bulkProgress.length
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-fade-in">
-      <div className="glass-panel bg-card text-card-foreground border-2 border-border rounded-2xl shadow-floating w-full max-w-3xl max-h-[85vh] sm:max-h-[80vh] overflow-hidden flex flex-col animate-scale-in mx-2 sm:mx-0">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-fade-in">
+      <div className="glass-panel bg-card text-card-foreground border-2 border-border rounded-2xl shadow-floating w-full max-w-3xl max-h-[80vh] overflow-hidden flex flex-col animate-scale-in">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-background/50">
           <div className="flex items-center gap-3">

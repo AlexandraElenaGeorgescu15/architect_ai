@@ -106,7 +106,7 @@ const ParticipantNode = ({ id, data, isConnectable, selected }: NodeProps<NodeDa
 
       {/* Participant Icon/Avatar */}
       <div
-        className="px-4 py-3 rounded-lg flex flex-col items-center gap-2 bg-white dark:bg-gray-800"
+        className="px-4 py-3 rounded-lg flex flex-col items-center gap-2"
         style={{ backgroundColor: `${data.color || '#6366f1'}15` }}
       >
         <div
@@ -116,7 +116,8 @@ const ParticipantNode = ({ id, data, isConnectable, selected }: NodeProps<NodeDa
           {(data.label || 'P')[0].toUpperCase()}
         </div>
         <input
-          className="w-full bg-transparent text-center font-medium focus:outline-none placeholder-gray-400 text-sm text-gray-900 dark:text-white"
+          className="w-full bg-transparent text-center font-medium focus:outline-none placeholder-gray-400 text-sm"
+          style={{ color: '#1f2937' }}
           value={data.label}
           onChange={onLabelChange}
           placeholder="Participant"

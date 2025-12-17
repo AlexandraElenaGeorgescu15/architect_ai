@@ -63,7 +63,6 @@ class PatternDetail:
     severity: str
     files: List[str]
     suggestions: List[str]
-    confidence: float = 0.0  # Average confidence of all matches for this pattern type
 
 
 @dataclass
@@ -746,7 +745,6 @@ class PatternMiner:
     def _summarize_patterns(self, patterns: List[PatternMatch]) -> List[PatternDetail]:
         """Aggregate pattern matches into concise summaries."""
         summaries: Dict[str, PatternDetail] = {}
-        confidence_totals: Dict[str, List[float]] = {}  # Track confidences per pattern type
         severity_rank = {
             "info": 0,
             "low": 1,
@@ -761,8 +759,6 @@ class PatternMiner:
             "singleton": ["Ensure lazy initialization is thread-safe and consider dependency injection if possible."],
             "factory": ["Confirm factory methods are cohesive and avoid excessive branching or configuration complexity."],
             "observer": ["Validate observers are unsubscribed properly to avoid memory leaks and unexpected notifications."],
-            "custom hook": ["Ensure custom hooks follow the Rules of Hooks and are well-documented."],
-            "repository": ["Confirm repository abstractions are clean and don't leak implementation details."],
         }
 
         for match in patterns:
@@ -775,11 +771,6 @@ class PatternMiner:
                 + (f" in {match.details.get('class_name')}" if isinstance(match.details, dict) and match.details.get('class_name') else "")
                 + "."
             )
-
-            # Track confidence for averaging
-            if key not in confidence_totals:
-                confidence_totals[key] = []
-            confidence_totals[key].append(match.confidence)
 
             entry = summaries.get(key)
             if not entry:
@@ -798,7 +789,6 @@ class PatternMiner:
                     severity=match.severity or "info",
                     files=[file_path],
                     suggestions=suggestions,
-                    confidence=match.confidence,  # Initial confidence from first match
                 )
                 summaries[key] = entry
             else:
@@ -809,12 +799,6 @@ class PatternMiner:
                 incoming_rank = severity_rank.get(match.severity or "info", 0)
                 if incoming_rank > current_rank:
                     entry.severity = match.severity or entry.severity
-
-        # Calculate average confidence for each pattern type
-        for key, entry in summaries.items():
-            confidences = confidence_totals.get(key, [])
-            if confidences:
-                entry.confidence = sum(confidences) / len(confidences)
 
         return sorted(summaries.values(), key=lambda item: item.frequency, reverse=True)
 

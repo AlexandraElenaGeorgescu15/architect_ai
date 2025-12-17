@@ -567,28 +567,9 @@ async def update_artifact(
     try:
         from backend.services.version_service import get_version_service
         version_service = get_version_service()
-        
-        # Determine artifact_type (priority order):
-        # 1. From request metadata (explicitly passed by frontend)
-        # 2. From the updated artifact
-        # 3. From existing versions
-        # 4. Use artifact_id as type (for stable IDs like "mermaid_flowchart")
-        metadata = body.get("metadata") or {}
-        artifact_type = metadata.get("artifact_type") or updated.get("artifact_type")
-        
-        if not artifact_type or artifact_type == "unknown":
-            # Try to get from existing versions
-            existing_versions = version_service.versions.get(artifact_id, [])
-            if existing_versions:
-                # Use type from first version (original)
-                artifact_type = existing_versions[0].get("artifact_type", artifact_id)
-            else:
-                # Use artifact_id as type (works for stable IDs like "mermaid_flowchart")
-                artifact_type = artifact_id
-        
         version_service.create_version(
             artifact_id=artifact_id,
-            artifact_type=artifact_type,
+            artifact_type=updated.get("artifact_type", "unknown"),
             content=body.get("content"),
             metadata={
                 "updated_by": current_user.username,
@@ -734,10 +715,6 @@ async def list_artifacts(
                 if current_version and artifact_id not in artifact_ids_seen:
                     artifact_ids_seen.add(artifact_id)
                     artifact_type = current_version.get("artifact_type", "unknown")
-                    # If artifact_type is "unknown", use artifact_id as the type
-                    # (works for stable IDs like "mermaid_flowchart")
-                    if artifact_type == "unknown" and artifact_id.startswith(("mermaid_", "html_", "code_", "api_", "jira", "workflow", "backlog", "personas", "estimations", "feature_")):
-                        artifact_type = artifact_id
                     raw_content = current_version.get("content", "")
                     # Clean Mermaid content if needed
                     cleaned_content = clean_mermaid_content(raw_content, artifact_type)
@@ -1079,161 +1056,4 @@ async def get_artifact(
     )
 
 
-from pydantic import BaseModel, Field
-
-class ImproveRequest(BaseModel):
-    """Request to improve an artifact using AI."""
-    artifact_type: str = Field(..., description="Type of artifact to improve")
-    content: str = Field(..., description="Current content to improve")
-    improvement_type: str = Field("general", description="Type of improvement (html, mermaid, general)")
-    instructions: Optional[str] = Field(None, description="Optional custom instructions for improvement")
-
-
-class ImproveResponse(BaseModel):
-    """Response from artifact improvement."""
-    success: bool
-    improved_content: Optional[str] = None
-    improvements_made: List[str] = Field(default_factory=list)
-    error: Optional[str] = None
-
-
-@router.post("/improve", response_model=ImproveResponse)
-@limiter.limit("10/minute")
-async def improve_artifact(
-    request: Request,
-    improve_request: ImproveRequest,
-    current_user: UserPublic = Depends(get_current_user)
-):
-    """
-    AI-powered artifact improvement.
-    
-    Supports both Mermaid diagrams and HTML artifacts.
-    Uses appropriate AI prompts based on artifact type.
-    """
-    try:
-        logger.info(f"🔧 [IMPROVE] Improving {improve_request.artifact_type} ({len(improve_request.content)} chars)")
-        
-        # Route to appropriate AI endpoint based on type
-        if improve_request.artifact_type.startswith("mermaid_"):
-            # Use the diagram improve endpoint
-            from backend.services.enhanced_generation import get_enhanced_service
-            from backend.services.model_service import get_service as get_model_service
-            
-            model_service = get_model_service()
-            routing = model_service.get_routing_for_artifact(ArtifactType(improve_request.artifact_type))
-            
-            prompt = f"""You are an expert Mermaid diagram improver. Improve this diagram while preserving its structure and meaning.
-
-INPUT DIAGRAM:
-{improve_request.content}
-
-INSTRUCTIONS: {improve_request.instructions or 'Improve syntax, add colors if missing, and enhance readability.'}
-
-RULES:
-1. Fix any syntax errors
-2. Keep all existing nodes and relationships
-3. Add colors using classDef if not present
-4. Do NOT add explanations or comments
-5. Do NOT wrap in markdown code blocks
-6. Start output directly with the diagram keyword
-
-OUTPUT (improved Mermaid code only):"""
-            
-            generation_service = get_enhanced_service()
-            result = await generation_service.generate_with_fallback(
-                prompt=prompt,
-                model_routing=routing,
-                temperature=0.3
-            )
-            
-            if result.success and result.content:
-                # Clean AI explanations from response
-                from backend.api.ai import _clean_ai_explanations, extract_mermaid_diagram
-                cleaned = extract_mermaid_diagram(result.content)
-                cleaned = _clean_ai_explanations(cleaned)
-                
-                if cleaned and len(cleaned.strip()) > 10:
-                    return ImproveResponse(
-                        success=True,
-                        improved_content=cleaned,
-                        improvements_made=["AI-enhanced diagram"]
-                    )
-            
-            return ImproveResponse(
-                success=False,
-                error="AI could not improve the diagram"
-            )
-        
-        elif improve_request.artifact_type.startswith("html_"):
-            # HTML improvement
-            from backend.services.enhanced_generation import get_enhanced_service
-            from backend.services.model_service import get_service as get_model_service
-            
-            model_service = get_model_service()
-            routing = model_service.get_routing_for_artifact(ArtifactType(improve_request.artifact_type))
-            
-            prompt = f"""You are an expert HTML/CSS developer. Improve this HTML artifact.
-
-INPUT HTML:
-{improve_request.content}
-
-INSTRUCTIONS: {improve_request.instructions or 'Improve accessibility, semantic markup, and modern best practices.'}
-
-RULES:
-1. Improve semantic HTML structure
-2. Add aria-labels where appropriate
-3. Ensure responsive design
-4. Keep the original design intent
-5. Do NOT add explanations
-6. Return ONLY the improved HTML code
-
-OUTPUT (improved HTML only):"""
-            
-            generation_service = get_enhanced_service()
-            result = await generation_service.generate_with_fallback(
-                prompt=prompt,
-                model_routing=routing,
-                temperature=0.3
-            )
-            
-            if result.success and result.content:
-                # Clean any markdown code blocks from response
-                content = result.content.strip()
-                if content.startswith("```html"):
-                    content = content[7:]
-                if content.startswith("```"):
-                    content = content[3:]
-                if content.endswith("```"):
-                    content = content[:-3]
-                content = content.strip()
-                
-                # Remove AI explanations
-                from backend.api.ai import _clean_ai_explanations
-                content = _clean_ai_explanations(content)
-                
-                if content and len(content.strip()) > 10:
-                    return ImproveResponse(
-                        success=True,
-                        improved_content=content,
-                        improvements_made=["AI-enhanced HTML"]
-                    )
-            
-            return ImproveResponse(
-                success=False,
-                error="AI could not improve the HTML"
-            )
-        
-        else:
-            # Generic improvement
-            return ImproveResponse(
-                success=False,
-                error=f"Improvement not supported for type: {improve_request.artifact_type}"
-            )
-    
-    except Exception as e:
-        logger.error(f"❌ [IMPROVE] Failed: {e}", exc_info=True)
-        return ImproveResponse(
-            success=False,
-            error=str(e)
-        )
 
