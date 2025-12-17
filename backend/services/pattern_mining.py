@@ -655,8 +655,14 @@ class PatternMiner:
                 if "error" in result or result.get("excluded"):
                     continue
                 
-                # Aggregate results
+                # Aggregate results - ensure confidence is always present
                 for pattern_dict in result.get("patterns", []):
+                    # Ensure confidence exists and is valid
+                    if "confidence" not in pattern_dict or not isinstance(pattern_dict.get("confidence"), (int, float)):
+                        pattern_dict["confidence"] = 0.5  # Default confidence
+                    else:
+                        # Clamp confidence between 0 and 1
+                        pattern_dict["confidence"] = max(0.0, min(1.0, float(pattern_dict["confidence"])))
                     self.patterns_detected.append(PatternMatch(**pattern_dict))
                 
                 for smell_dict in result.get("code_smells", []):
@@ -944,8 +950,17 @@ class PatternMiner:
             with open(cache_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
             
-            # Restore results
-            self.patterns_detected = [PatternMatch(**p) for p in data.get("patterns_detected", [])]
+            # Restore results - ensure confidence is always present
+            patterns_data = data.get("patterns_detected", [])
+            for p in patterns_data:
+                # Ensure confidence exists and is valid
+                if "confidence" not in p or not isinstance(p.get("confidence"), (int, float)):
+                    p["confidence"] = 0.5  # Default confidence
+                else:
+                    # Clamp confidence between 0 and 1
+                    p["confidence"] = max(0.0, min(1.0, float(p["confidence"])))
+            
+            self.patterns_detected = [PatternMatch(**p) for p in patterns_data]
             self.code_smells = [CodeSmell(**s) for s in data.get("code_smells", [])]
             self.security_issues = [SecurityIssue(**sec) for sec in data.get("security_issues", [])]
             

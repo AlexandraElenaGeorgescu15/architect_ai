@@ -256,8 +256,8 @@ class RAGIngester:
                 })
                 ids.append(chunk_id)
             
-            # Add to ChromaDB
-            self.collection.add(
+            # Add to ChromaDB (use upsert to handle existing IDs gracefully)
+            self.collection.upsert(
                 documents=documents,
                 metadatas=metadatas,
                 ids=ids

@@ -71,6 +71,19 @@
       ]
     },
     "created_at": "2025-12-10T22:20:50.485946",
+    "is_current": false
+  },
+  {
+    "version": 3,
+    "artifact_id": "mermaid_api_sequence",
+    "artifact_type": "mermaid_api_sequence",
+    "content": "sequenceDiagram\n    participant User as \"User\"\n    participant Frontend as \"Frontend\"\n    participant Backend as \"Backend\"\n    participant Database as \"Database\"\n    note \"Phone Swap Request Feature\"\n    note \"Date: October 14, 2025\"\n    User->>Frontend: Click \"Request Phone Swap\" button\n    Frontend->>Modal: Trigger modal pop-up\n    Modal->>User: Display form with fields:\n    Phone to Request: Dropdown list of available phones\n    Phone to Exchange: Dropdown list of user's owned phones\n    Reason for Request (Optional): Text area for comments\n    Actions: \"Submit Request\" and \"Cancel\" buttons\n    User->>Modal: Fill out form and submit request\n    Modal->>Frontend: Send form data to Frontend\n    Frontend->>Backend: POST /api/phone-swaps with form data\n    Backend->>Database: Store swap request in database table\n    |+ Columns:\n    |- Requester's ID\n    |- Requested phone\n    |- Offered phone\n    |- Status (defaulting to 'Pending')\n    |- Comment\n    Backend->>Frontend: Validate user ownership of offered phone\n    Frontend->>User: Display confirmation message upon successful submission\n    User->>Frontend: Close modal pop-up\n    note \"Action Items\"\n    UX Team: Create wireframe of modal and form by EOD, October 17\n    Backend Team: Develop new API endpoint and database schema. Target completion: October 21\n    Frontend Team: Build \"Request Phone Swap\" button and basic modal structure. Begin implementation once wireframes are approved\n    Product Manager: Create formal Jira ticket with defined user story and acceptance criteria\n    note \"Entities\"\n    - UserDto (class)\n    - WeatherForecast (class)\n    - UsersController (class)\n    - WeatherForecastController (class)\n    - IUserService (class)\n    - UserService (class)\n    - IMongoDBSettings (class)\n    - MongoDBSettings (class)\n    - AppRoutingModule (class)\n    - AppComponent (class)\n    note \"Project Context\"\n    Project Directories: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\agents, C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln, C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\n    Total Files Indexed: 70\n    Key Entities: 24",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_api_sequence"
+    },
+    "created_at": "2025-12-17T18:15:29.001745",
     "is_current": true
   }
 ]

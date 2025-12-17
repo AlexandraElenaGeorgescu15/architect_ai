@@ -121,24 +121,7 @@ async def get_current_patterns():
     Returns the cached pattern mining results if available.
     """
     try:
-        # First try to get from analysis service (which includes cached results)
-        from backend.services.analysis_service import get_service
-        
-        service = get_service()
-        result = await service.get_current_patterns()
-        
-        if result and result.get("patterns"):
-            # Analysis service returned data - use it
-            return {
-                "success": True,
-                "patterns": result.get("patterns", []),
-                "summary": result.get("summary", {
-                    "total_patterns": len(result.get("patterns", [])),
-                    "confidence_avg": 0
-                })
-            }
-        
-        # Fallback to pattern miner directly
+        # Always use pattern miner directly to get PatternMatch objects with confidence scores
         miner = get_miner()
         
         if not miner.patterns_detected:
@@ -158,21 +141,55 @@ async def get_current_patterns():
                 }
             }
         
-        # Extract patterns from miner
+        # Extract patterns from miner - PatternMatch objects have confidence scores
         patterns = []
         total_confidence = 0
         
         for pattern in miner.patterns_detected[:50]:  # Limit to first 50
+            # Ensure confidence is a valid number
+            confidence = getattr(pattern, 'confidence', None)
+            if confidence is None or not isinstance(confidence, (int, float)):
+                confidence = 0.5  # Default confidence if missing
+            else:
+                # Ensure confidence is between 0 and 1
+                confidence = max(0.0, min(1.0, float(confidence)))
+            
+            # Extract details safely
+            details = getattr(pattern, 'details', {})
+            if not isinstance(details, dict):
+                details = {}
+            
+            # Extract name - try class_name, function_name, or use pattern name
+            name = details.get("class_name") or details.get("function_name")
+            if not name:
+                # Use pattern name as fallback (e.g., "Observer" instead of "Unnamed")
+                name = pattern.pattern_name
+            
+            # Extract file path - handle Windows paths with colons (C:\path\to\file.py:123)
+            file_path = ""
+            if hasattr(pattern, 'location') and pattern.location:
+                # Split from the right to handle Windows drive letters (C:)
+                # Format is typically: "path/to/file.py:line_number" or "C:\path\to\file.py:line_number"
+                if ':' in pattern.location:
+                    # Find the last colon (which separates file path from line number)
+                    last_colon_idx = pattern.location.rfind(':')
+                    if last_colon_idx > 0:
+                        file_path = pattern.location[:last_colon_idx]
+                    else:
+                        file_path = pattern.location
+                else:
+                    file_path = pattern.location
+            
             pattern_data = {
                 "id": f"{pattern.pattern_name}_{pattern.location}",
-                "name": pattern.details.get("class_name") or pattern.details.get("function_name") or "Unnamed",
+                "name": name,
                 "pattern_type": pattern.pattern_name,
-                "file": pattern.location.split(':')[0] if hasattr(pattern, 'location') else "",
-                "confidence": pattern.confidence if hasattr(pattern, 'confidence') else 0.5,
-                "description": pattern.details.get("description", f"{pattern.pattern_name} pattern detected") if hasattr(pattern, 'details') else ""
+                "file": file_path,
+                "confidence": confidence,
+                "description": details.get("description", f"{pattern.pattern_name} pattern detected")
             }
             patterns.append(pattern_data)
-            total_confidence += pattern_data["confidence"]
+            total_confidence += confidence
         
         avg_confidence = total_confidence / len(patterns) if patterns else 0
         

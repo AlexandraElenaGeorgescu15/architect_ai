@@ -268,8 +268,8 @@ class EnhancedGenerationService:
                         
                         # Check if diagram is actually runnable (can be rendered)
                         try:
-                            from backend.services.validation_service import ValidationService
-                            validator = ValidationService()
+                            from backend.services.validation_service import get_service
+                            validator = get_service()
                             cleaned = validator._extract_mermaid_diagram(candidate)
                             # Check for basic runnability: has diagram type, balanced brackets
                             mermaid_errors = validator._validate_mermaid(cleaned)

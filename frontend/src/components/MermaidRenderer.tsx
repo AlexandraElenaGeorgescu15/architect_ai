@@ -34,8 +34,25 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
 
   const clearMermaidErrorArtifacts = () => {
     try {
+      // Remove error elements
       document.querySelectorAll('.error, .error-text, .error-icon, .messageText').forEach((el) => {
         el.remove()
+      })
+      // Remove error SVGs (Mermaid creates SVGs with error-icon and error-text classes)
+      document.querySelectorAll('svg[role="graphics-document document"][aria-roledescription="error"]').forEach((el) => {
+        el.remove()
+      })
+      // Remove any SVG with error classes inside
+      document.querySelectorAll('svg .error-icon, svg .error-text').forEach((el) => {
+        const svg = el.closest('svg')
+        if (svg) svg.remove()
+      })
+      // Remove any div containing error SVGs
+      document.querySelectorAll('div[id^="dmermaid-"]').forEach((div) => {
+        const svg = div.querySelector('svg[aria-roledescription="error"]')
+        if (svg) {
+          div.remove()
+        }
       })
     } catch {
       // ignore
@@ -312,8 +329,31 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         // Render the diagram
         const { svg } = await mermaid.render(id, diagramContent)
         
+        // Check if the rendered SVG contains error elements
+        const tempCheckDiv = document.createElement('div')
+        tempCheckDiv.innerHTML = svg
+        const hasError = tempCheckDiv.querySelector('.error-icon, .error-text, svg[aria-roledescription="error"]')
+        
+        if (hasError) {
+          // If error SVG was created, don't insert it and show error message instead
+          clearMermaidErrorArtifacts()
+          setError(formatMermaidError())
+          lastErrorContentRef.current = content
+          return
+        }
+        
         // Insert the SVG
         container.innerHTML = svg
+
+        // Double-check after insertion that no error SVG was created
+        const insertedErrorSvg = container.querySelector('svg[aria-roledescription="error"]')
+        if (insertedErrorSvg) {
+          clearMermaidErrorArtifacts()
+          container.innerHTML = ''
+          setError(formatMermaidError())
+          lastErrorContentRef.current = content
+          return
+        }
 
         // Apply zoom
         const svgElement = container.querySelector('svg')
@@ -331,6 +371,13 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         if (containerRefSnapshot.current) {
           containerRefSnapshot.current.innerHTML = ''
         }
+        // Additional cleanup: remove any error SVGs that might have been created
+        setTimeout(() => {
+          clearMermaidErrorArtifacts()
+          if (containerRefSnapshot.current) {
+            containerRefSnapshot.current.innerHTML = ''
+          }
+        }, 100)
         setError(formatMermaidError())
         lastErrorContentRef.current = content
       }

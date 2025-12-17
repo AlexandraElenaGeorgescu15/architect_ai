@@ -175,8 +175,8 @@ async def generate_artifact(
                 # Ensure artifact has cleaned Mermaid content if it's a Mermaid diagram
                 if artifact.get("artifact_type", "").startswith("mermaid_") and artifact.get("content"):
                     try:
-                        from backend.services.validation_service import ValidationService
-                        validator = ValidationService()
+                        from backend.services.validation_service import get_service
+                        validator = get_service()
                         cleaned_content = validator._extract_mermaid_diagram(artifact["content"])
                         if cleaned_content != artifact["content"]:
                             logger.info(f"🧹 [GENERATION] Cleaning Mermaid content for WebSocket: removed {len(artifact['content']) - len(cleaned_content)} chars")
@@ -567,9 +567,42 @@ async def update_artifact(
     try:
         from backend.services.version_service import get_version_service
         version_service = get_version_service()
+        
+        # Intelligent artifact_type fallback logic
+        artifact_type = updated.get("artifact_type")
+        
+        # If not in updated artifact, check existing versions
+        if not artifact_type or artifact_type == "unknown":
+            if artifact_id in version_service.versions:
+                versions = version_service.versions[artifact_id]
+                if versions:
+                    # Get artifact_type from latest version
+                    artifact_type = versions[-1].get("artifact_type")
+        
+        # If still unknown, try to infer from artifact_id pattern
+        if not artifact_type or artifact_type == "unknown":
+            # Check if artifact_id matches an ArtifactType enum value
+            try:
+                from backend.models.dto import ArtifactType
+                try:
+                    artifact_type_enum = ArtifactType(artifact_id)
+                    artifact_type = artifact_type_enum.value
+                except ValueError:
+                    # Try to extract type from ID pattern like "mermaid_erd_20231209_123456"
+                    for art_type in ArtifactType:
+                        if artifact_id.startswith(art_type.value):
+                            artifact_type = art_type.value
+                            break
+            except ImportError:
+                pass
+        
+        # Final fallback
+        if not artifact_type or artifact_type == "unknown":
+            artifact_type = "unknown"
+        
         version_service.create_version(
             artifact_id=artifact_id,
-            artifact_type=updated.get("artifact_type", "unknown"),
+            artifact_type=artifact_type,
             content=body.get("content"),
             metadata={
                 "updated_by": current_user.username,
@@ -612,8 +645,8 @@ async def list_artifacts(
         """Clean Mermaid diagram content if needed."""
         if artifact_type.startswith("mermaid_") and content:
             try:
-                from backend.services.validation_service import ValidationService
-                validator = ValidationService()
+                from backend.services.validation_service import get_service
+                validator = get_service()
                 cleaned = validator._extract_mermaid_diagram(content)
                 if cleaned != content:
                     logger.debug(f"🧹 [LIST_ARTIFACTS] Cleaned Mermaid content: removed {len(content) - len(cleaned)} chars")
@@ -968,8 +1001,8 @@ async def get_artifact(
         """Clean Mermaid diagram content if needed."""
         if artifact_type.startswith("mermaid_") and content:
             try:
-                from backend.services.validation_service import ValidationService
-                validator = ValidationService()
+                from backend.services.validation_service import get_service
+                validator = get_service()
                 cleaned = validator._extract_mermaid_diagram(content)
                 if cleaned != content:
                     logger.debug(f"🧹 [GET_ARTIFACT] Cleaned Mermaid content: removed {len(content) - len(cleaned)} chars")

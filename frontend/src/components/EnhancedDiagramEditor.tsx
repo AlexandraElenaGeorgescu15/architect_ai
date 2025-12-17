@@ -135,7 +135,7 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
     // Update artifact
     updateArtifact(selectedArtifact.id, {
       content: generated,
-      lastModified: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     })
 
     addNotification('success', 'Code updated from canvas')

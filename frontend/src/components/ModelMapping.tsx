@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useModelStore } from '../stores/modelStore'
 import { useUIStore } from '../stores/uiStore'
 import api from '../services/api'
@@ -22,19 +22,51 @@ export default function ModelMapping() {
   const [huggingfaceResults, setHuggingfaceResults] = useState<any[]>([])
   const [searching, setSearching] = useState(false)
   const [downloadingModels, setDownloadingModels] = useState<Set<string>>(new Set())
+  const [isAutoRefreshing, setIsAutoRefreshing] = useState(false)
 
+  // Check if there are any unavailable configured models
+  const hasUnavailableModels = useMemo(() => {
+    const ollamaModels = models.filter(m => m.provider === 'ollama')
+    const cloudModels = models.filter(m => m.provider !== 'ollama' && m.status === 'available')
+    
+    return Object.values(routings).some(routing => {
+      if (!routing.primary_model) return false
+      return !ollamaModels.some(m => m.id === routing.primary_model) && 
+             !cloudModels.some(m => m.id === routing.primary_model)
+    })
+  }, [routings, models])
+
+  // Adaptive refresh: more frequent when models are unavailable
   useEffect(() => {
     loadRoutings()
     fetchModels()
     
-    // Auto-refresh models every 30 seconds to catch newly created fine-tuned models
-    const interval = setInterval(() => {
-      fetchModels()
-      loadRoutings()
-    }, 30000)
+    // Refresh interval: 10 seconds if unavailable models, 30 seconds otherwise
+    const refreshInterval = hasUnavailableModels ? 10000 : 30000
     
-    return () => clearInterval(interval)
-  }, [])
+    const interval = setInterval(async () => {
+      setIsAutoRefreshing(true)
+      await Promise.all([fetchModels(), loadRoutings()])
+      setIsAutoRefreshing(false)
+    }, refreshInterval)
+    
+    // Also refresh when page becomes visible (user switches back to tab)
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        setIsAutoRefreshing(true)
+        Promise.all([fetchModels(), loadRoutings()]).finally(() => {
+          setIsAutoRefreshing(false)
+        })
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasUnavailableModels])
 
   const loadRoutings = async () => {
     try {
@@ -53,6 +85,18 @@ export default function ModelMapping() {
     } catch (error) {
       console.error('Failed to load model routing:', error)
       // Don't show notification on initial load - silent degradation
+    }
+  }
+
+  const handleManualRefresh = async () => {
+    setIsAutoRefreshing(true)
+    try {
+      await Promise.all([fetchModels(), loadRoutings()])
+      addNotification('success', 'Models refreshed successfully')
+    } catch (error) {
+      addNotification('error', 'Failed to refresh models')
+    } finally {
+      setIsAutoRefreshing(false)
     }
   }
 
@@ -236,15 +280,22 @@ export default function ModelMapping() {
           <h2 className="text-2xl font-bold text-foreground">Model-to-Artifact Mapping</h2>
           <p className="text-muted-foreground mt-1">
             Configure which models to use for each artifact type
+            {hasUnavailableModels && (
+              <span className="ml-2 text-xs text-yellow-600 dark:text-yellow-500">
+                ⚠️ Auto-checking for unavailable models every 10 seconds...
+              </span>
+            )}
           </p>
         </div>
         <div className="flex gap-2">
           <button
-            onClick={loadRoutings}
-            className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 flex items-center gap-2"
+            onClick={handleManualRefresh}
+            disabled={isAutoRefreshing}
+            className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 flex items-center gap-2 disabled:opacity-50"
+            title={hasUnavailableModels ? 'Auto-refreshing every 10 seconds (unavailable models detected)' : 'Auto-refreshing every 30 seconds'}
           >
-            <RefreshCw className="w-4 h-4" />
-            Refresh
+            <RefreshCw className={`w-4 h-4 ${isAutoRefreshing ? 'animate-spin' : ''}`} />
+            {isAutoRefreshing ? 'Refreshing...' : 'Refresh'}
           </button>
           <button
             onClick={saveRoutings}

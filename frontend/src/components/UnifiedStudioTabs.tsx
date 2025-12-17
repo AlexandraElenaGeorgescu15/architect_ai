@@ -448,9 +448,9 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
         {/* STUDIO VIEW */}
         {activeView === 'studio' && (
           <div className="h-full p-1 animate-fade-in-up overflow-auto custom-scrollbar">
-            <div className="grid grid-cols-12 gap-4 min-h-full">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-full">
               {/* Left Column: Inputs */}
-              <div className="col-span-4 flex flex-col gap-4 overflow-auto custom-scrollbar">
+              <div className="lg:col-span-4 flex flex-col gap-4 overflow-auto custom-scrollbar">
                 {/* Generation Controls */}
                 <div className="glass-panel rounded-2xl p-6 flex-shrink-0 border-border shadow-elevated hover:shadow-floating transition-all duration-300 bg-card">
                   <div className="flex items-center gap-3 mb-6">
@@ -582,7 +582,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
               </div>
 
               {/* Right Column: Main Workspace */}
-              <div className="col-span-8 glass-panel rounded-2xl overflow-hidden flex flex-col shadow-floating border-border bg-card backdrop-blur-xl hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] transition-shadow duration-500 min-h-[400px]">
+              <div className="lg:col-span-8 glass-panel rounded-2xl overflow-hidden flex flex-col shadow-floating border-border bg-card backdrop-blur-xl hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] transition-shadow duration-500 min-h-[400px]">
                  <div className="border-b border-border p-4 flex items-center gap-4 bg-secondary/20">
                     <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 rounded-lg shadow-sm">
                       <Code className="w-4 h-4 text-primary" />
@@ -614,7 +614,9 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                                 })
 
                                 try {
-                                  await updateArtifactApi(artifact.id, newContent)
+                                  await updateArtifactApi(artifact.id, newContent, {
+                                    artifact_type: artifact.type || props.selectedArtifactType
+                                  })
                                   addNotification('success', 'Diagram updated with AI repair')
                                 } catch (err: any) {
                                   console.error('Failed to persist AI repair:', err)

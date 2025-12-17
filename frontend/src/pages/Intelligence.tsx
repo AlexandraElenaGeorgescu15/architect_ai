@@ -121,8 +121,17 @@ export default function Intelligence() {
           }
         }, 65000)
       } else {
-        const errorData = await response.json().catch(() => ({}))
-        addNotification('error', errorData.detail || 'Failed to start Universal Context rebuild')
+        let errorMessage = 'Failed to start Universal Context rebuild'
+        try {
+          const errorData = await response.json()
+          if (errorData && errorData.detail) {
+            errorMessage = errorData.detail
+          }
+        } catch (jsonError) {
+          // If JSON parsing fails, use response status text or default message
+          errorMessage = response.statusText || errorMessage
+        }
+        addNotification('error', errorMessage)
         setIsLoadingUniversalContext(false)
       }
     } catch (error) {
