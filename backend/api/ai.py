@@ -805,11 +805,12 @@ VALID {diagram_type.upper()} SYNTAX:"""
         else:
             routing = model_service.get_routing_for_artifact(request.diagram_type)
         
-        # Call AI
+        # Call AI (cloud-only for repair)
         result = await generation_service.generate_with_fallback(
             prompt=prompt,
             model_routing=routing,
             temperature=0.1,  # Very low temperature for consistent syntax
+            max_local_attempts=0,  # enforce cloud-only models for repair
             system_instruction=f"""You are a Mermaid diagram syntax expert. You ONLY output valid Mermaid code.
 CRITICAL: 
 - Output ONLY the Mermaid diagram code
@@ -893,6 +894,7 @@ OUTPUT:"""
             prompt=prompt,
             model_routing=routing,
             temperature=0.3,
+            max_local_attempts=0,  # enforce cloud-only models for regeneration
             system_instruction=f"""You are a Mermaid diagram expert. Generate ONLY valid {diagram_type} code.
 CRITICAL: Output the raw Mermaid code only. No explanations. No markdown. Just the diagram."""
         )

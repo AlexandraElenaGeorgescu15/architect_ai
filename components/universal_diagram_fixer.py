@@ -31,7 +31,10 @@ class UniversalDiagramFixer:
         'statediagram': 'stateDiagram-v2',
         'gantt': 'gantt',
         'pie': 'pie',
-        'journey': 'journey'
+        'journey': 'journey',
+        'gitgraph': 'gitGraph',
+        'mindmap': 'mindmap',
+        'timeline': 'timeline'
     }
     
     def __init__(self):
@@ -93,6 +96,12 @@ class UniversalDiagramFixer:
                 content = self._fix_pie_diagram(content)
             elif diagram_type == 'journey':
                 content = self._fix_journey_diagram(content)
+            elif diagram_type == 'gitgraph':
+                content = self._fix_gitgraph_diagram(content)
+            elif diagram_type == 'mindmap':
+                content = self._fix_mindmap_diagram(content)
+            elif diagram_type == 'timeline':
+                content = self._fix_timeline_diagram(content)
             
             # Step 4: General cleanup
             content = self._general_cleanup(content)
@@ -600,7 +609,7 @@ class UniversalDiagramFixer:
         return '\n'.join(fixed_lines)
     
     def _fix_journey_diagram(self, content: str) -> str:
-        """Fix user journey diagram syntax"""
+        """Fix user journey diagram syntax."""
         lines = content.strip().split('\n')
         fixed_lines = ['journey']
         
@@ -611,6 +620,48 @@ class UniversalDiagramFixer:
             fixed_lines.append('    ' + line)
         
         return '\n'.join(fixed_lines)
+    
+    def _fix_gitgraph_diagram(self, content: str) -> str:
+        """Fix Git Graph diagram syntax issues, especially label syntax."""
+        lines = content.split('\n')
+        cleaned_lines = []
+        
+        for line in lines:
+            line_stripped = line.strip()
+            
+            # Fix invalid label syntax: A[label="text"] -> just remove the invalid assignment
+            # Git graph commits don't use label="text" syntax like flowcharts
+            if re.match(r'^\s*[A-Z]\[.*label=.*\]', line):
+                # This is invalid - Git Graph uses id: "label" or just commit statements
+                # Remove these standalone label assignments
+                self.errors_fixed.append(f"Removed invalid Git Graph label assignment: {line_stripped[:50]}")
+                continue
+            
+            # Fix missing equals in label syntax: K[label"text"] -> skip entirely
+            if re.search(r'\[label"[^"]+"\]', line):
+                self.errors_fixed.append(f"Removed invalid Git Graph label (missing =): {line_stripped[:50]}")
+                continue
+            
+            # Proper Git Graph syntax examples:
+            # commit id: \"Initial Commit\"
+            # branch develop
+            # checkout develop
+            # commit id: \"Feature A\"
+            # merge develop
+            
+            cleaned_lines.append(line)
+        
+        return '\\n'.join(cleaned_lines)
+    
+    def _fix_mindmap_diagram(self, content: str) -> str:
+        """Fix Mindmap diagram syntax issues."""
+        # Mindmap is relatively simple, just ensure proper indentation
+        return content
+    
+    def _fix_timeline_diagram(self, content: str) -> str:
+        """Fix Timeline diagram syntax issues."""
+        # Timeline uses section-based syntax, minimal fixes needed
+        return content
     
     def _general_cleanup(self, content: str) -> str:
         """Apply general cleanup to all diagram types"""

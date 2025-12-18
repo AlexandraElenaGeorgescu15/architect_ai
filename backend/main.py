@@ -47,6 +47,10 @@ chromadb_telemetry_logger.setLevel(logging.CRITICAL)
 chromadb_posthog_logger = logging.getLogger("chromadb.telemetry.product.posthog")
 chromadb_posthog_logger.setLevel(logging.CRITICAL)
 
+# Suppress ChromaDB HNSW duplicate embedding warnings (harmless - upsert handles them)
+chromadb_hnsw_logger = logging.getLogger("chromadb.segment.impl.vector.local_persistent_hnsw")
+chromadb_hnsw_logger.setLevel(logging.ERROR)  # Only show errors, not warnings about duplicates
+
 logger = logging.getLogger(__name__)
 
 # UTF-8 console wrapper for Windows compatibility

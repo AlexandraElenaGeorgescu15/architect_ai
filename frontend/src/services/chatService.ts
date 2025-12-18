@@ -56,20 +56,26 @@ export async function* streamChatMessage(request: ChatRequest): AsyncGenerator<s
       const lines = chunk.split('\n')
 
       for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const data = JSON.parse(line.slice(6))
-            if (data.type === 'chunk' && data.content) {
-              yield data.content
-            } else if (data.type === 'complete' && data.content) {
-              yield data.content
-              return
-            } else if (data.type === 'error') {
-              throw new Error(data.error || 'Chat error')
-            }
-          } catch (e) {
-            // Skip invalid JSON
+        if (!line.startsWith('data: ')) continue
+
+        try {
+          const data = JSON.parse(line.slice(6))
+
+          // For streaming we build up the response from incremental "chunk" events.
+          // Some backends also send a final "complete" event that includes the full
+          // content again. If we yielded that here, the assistant reply would appear
+          // duplicated (chunks + full content). To avoid this, we treat "complete"
+          // as a control signal and DO NOT yield its content.
+          if (data.type === 'chunk' && data.content) {
+            yield data.content
+          } else if (data.type === 'complete') {
+            // Stop the stream without appending the full content again
+            return
+          } else if (data.type === 'error') {
+            throw new Error(data.error || 'Chat error')
           }
+        } catch {
+          // Skip invalid JSON lines without breaking the stream
         }
       }
     }

@@ -41,6 +41,9 @@ class ArtifactType(Enum):
     OPENAPI = "openapi"
     API_CLIENT_PYTHON = "api_client_python"
     API_CLIENT_TYPESCRIPT = "api_client_typescript"
+    
+    # Chat
+    CHAT = "chat"
 
 
 @dataclass
@@ -229,6 +232,17 @@ class ArtifactModelMapper:
             priority_models=["codellama:7b-instruct-q4_K_M", "llama3:8b-instruct-q4_K_M"],
             task_type="code",
             description="TypeScript API clients",
+            persistent=True,
+            min_quality_score=80
+        ),
+        
+        # Chat - conversational AI
+        ArtifactType.CHAT.value: ModelMapping(
+            artifact_type=ArtifactType.CHAT.value,
+            base_model="llama3:8b-instruct-q4_K_M",
+            priority_models=["llama3:8b-instruct-q4_K_M", "llama3.2:3b-instruct-q4_K_M", "mistral:7b-instruct-q4_K_M"],
+            task_type="documentation",
+            description="AI chat conversations",
             persistent=True,
             min_quality_score=80
         ),

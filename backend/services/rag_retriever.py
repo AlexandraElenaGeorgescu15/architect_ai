@@ -33,6 +33,15 @@ from backend.core.config import settings
 
 logger = logging.getLogger(__name__)
 
+# Optional: load RAG config from rag/config.yaml to respect hybrid settings
+try:
+    from rag.filters import load_cfg as _load_rag_cfg  # type: ignore
+    _RAG_CFG = _load_rag_cfg()
+    _HYBRID_CFG = _RAG_CFG.get("hybrid", {}) if isinstance(_RAG_CFG, dict) else {}
+except Exception:  # pragma: no cover - config is optional
+    _RAG_CFG = None
+    _HYBRID_CFG = {}
+
 
 class RAGRetriever:
     """
@@ -68,6 +77,11 @@ class RAGRetriever:
         # BM25 index (lazy-loaded)
         self._bm25_index: Optional[Any] = None
         self._docs_cache: Optional[List[Dict]] = None
+
+        # Hybrid search configuration (with sensible defaults)
+        self._use_bm25: bool = bool(_HYBRID_CFG.get("bm25", True))
+        self._k_vector_default: int = int(_HYBRID_CFG.get("k_vector", 200) or 200)
+        self._k_bm25_default: int = int(_HYBRID_CFG.get("k_bm25", 200) or 200)
         
         # Query logging
         self.query_log: List[Dict[str, Any]] = []
@@ -312,7 +326,12 @@ class RAGRetriever:
         
         # Perform both searches with enhanced query
         vec_hits = self.vector_search(enhanced_query, k=k_vector, metadata_filter=metadata_filter)
-        bm25_hits = self.bm25_search(enhanced_query, k=k_bm25)
+
+        # BM25 can be disabled via config; also allow callers to set k_bm25=0
+        if self._use_bm25 and k_bm25 > 0:
+            bm25_hits = self.bm25_search(enhanced_query, k=k_bm25)
+        else:
+            bm25_hits = []
         
         # Merge and rerank using RRF
         return self._merge_rerank(vec_hits, bm25_hits, k_final, vector_weight, bm25_weight)
@@ -593,6 +612,13 @@ class RAGRetriever:
         Returns:
             List of snippet dictionaries with content, metadata, and score
         """
+        # Derive efficient per-stage k values from requested final k and config.
+        # We over-fetch a bit for reranking but avoid the hard-coded 200x200 cost.
+        overfetch_factor = 4
+        k_final = max(1, k)
+        k_vector = min(self._k_vector_default, k_final * overfetch_factor)
+        k_bm25 = min(self._k_bm25_default, k_final * overfetch_factor) if self._use_bm25 else 0
+
         # Run hybrid search in thread pool to avoid blocking
         import asyncio
         loop = asyncio.get_event_loop()
@@ -600,7 +626,9 @@ class RAGRetriever:
             None,
             lambda: self.hybrid_search(
                 query=query,
-                k_final=k,
+                k_vector=k_vector,
+                k_bm25=k_bm25,
+                k_final=k_final,
                 artifact_type=artifact_type
             )
         )

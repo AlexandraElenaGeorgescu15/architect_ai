@@ -34,6 +34,19 @@
       ]
     },
     "created_at": "2025-12-10T22:22:44.636258",
+    "is_current": false
+  },
+  {
+    "version": 2,
+    "artifact_id": "mermaid_git_graph",
+    "artifact_type": "mermaid_git_graph",
+    "content": "graph LR\n    A[\"Initial Commit\"] --> B[Feature Planning]\n    B --> C[\"UX Team: Create Wireframe\"]\n    C --> D[\"Backend Team: Develop API Endpoint & Database Schema\"]\n    D --> E[\"Frontend Team: Build \"Request Phone Swap\" Button & Basic Modal Structure\"]\n    E --> F[\"Product Manager: Create Formal Jira Ticket\"]\n    G[\"Action Items\"] --> H[UX Team: Create Wireframe by October 17]\n    I[\"Action Items\"] --> J[Backend Team: Develop API Endpoint & Database Schema by October 21]\n    K[\"Action Items\"] --> L[Frontend Team: Build \"Request Phone Swap\" Button & Basic Modal Structure after Wireframes are approved]\n    M[\"Action Items\"] --> N[Product Manager: Create Formal Jira Ticket with defined user story and acceptance criteria]\n    A[\"label=\"October 14, 2025\"\"]\n    B[\"label=\"Define Requirements & Implementation Plan\"\"]\n    C[\"label=\"Create Wireframe of Modal & Form\"\"]\n    D[\"label=\"Develop New API Endpoint & Database Schema\"\"]\n    E[\"label=\"Build \"Request Phone Swap\" Button & Basic Modal Structure\"\"]\n    F[\"label=\"Create Formal Jira Ticket with User Story & Acceptance Criteria\"\"]\n    G[\"label=\"Action Items\"\"]\n    H[\"label=\"EOD, October 17\"\"]\n    I[\"label=\"October 21\"\"]\n    K[\"label\"After Wireframes are approved\"\"]\n    L[\"label=\"After Wireframes are approved\"\"]\n    M[\"label=\"Define User Story & Acceptance Criteria\"\"]\n    N[\"label=\"Create Formal Jira Ticket with defined user story and acceptance criteria\"\"]",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_git_graph"
+    },
+    "created_at": "2025-12-17T18:50:07.970903",
     "is_current": true
   }
 ]

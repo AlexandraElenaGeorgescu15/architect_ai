@@ -84,6 +84,110 @@
       "artifact_type": "mermaid_api_sequence"
     },
     "created_at": "2025-12-17T18:15:29.001745",
+    "is_current": false
+  },
+  {
+    "version": 4,
+    "artifact_id": "mermaid_api_sequence",
+    "artifact_type": "mermaid_api_sequence",
+    "content": "sequenceDiagram\n    participant User as \"User\"\n    participant Frontend as \"Frontend\"\n    participant Backend as \"Backend\"\n    participant Database as \"Database\"\n    note \"Phone Swap Request Feature\"\n    note \"Date: October 14, 2025\"\n    User->>Frontend: Click \"Request Phone Swap\" button\n    Frontend->>Modal: Trigger modal pop-up\n    Modal->>User: Display form with fields:\n    Phone to Request: Dropdown list of available phones\n    Phone to Exchange: Dropdown list of user's owned phones\n    Reason for Request (Optional): Text area for comments\n    Actions: \"Submit Request\" and \"Cancel\" buttons\n    User->>Modal: Fill out form and submit request\n    Modal->>Frontend: Send form data to Frontend\n    Frontend->>Backend: POST /api/phone-swaps with form data\n    Backend->>Database: Store swap request in database table\n    |+ Columns:\n    |- Requester's ID\n    |- Requested phone\n    |- Offered phone\n    |- Status (defaulting to 'Pending')\n    |- Comment\n    Backend->>Frontend: Validate user ownership of offered phone\n    Frontend->>User: Display confirmation message upon successful submission\n    User->>Frontend: Close modal pop-up\n    note \"Action Items\"\n    UX Team: Create wireframe of modal and form by EOD, October 17\n    Backend Team: Develop new API endpoint and database schema. Target completion: October 21\n    Frontend Team: Build \"Request Phone Swap\" button and basic modal structure. Begin implementation once wireframes are approved\n    Product Manager: Create formal Jira ticket with defined user story and acceptance criteria\n    note \"Entities\"\n    - UserDto (class)\n    - WeatherForecast (class)\n    - UsersController (class)\n    - WeatherForecastController (class)\n    - IUserService (class)\n    - UserService (class)\n    - IMongoDBSettings (class)\n    - MongoDBSettings (class)\n    - AppRoutingModule (class)\n    - AppComponent (class)\n    note \"Project Context\"\n    Project Directories: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\agents, C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln, C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\n    Total Files Indexed: 70\n    Key Entities: 24",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_api_sequence"
+    },
+    "created_at": "2025-12-17T18:22:31.541885",
+    "is_current": false
+  },
+  {
+    "version": 5,
+    "artifact_id": "mermaid_api_sequence",
+    "artifact_type": "mermaid_api_sequence",
+    "content": "sequenceDiagram\n    participant User as \"User\"\n    participant Frontend as \"Frontend\"\n    participant Backend as \"Backend\"\n    participant Database as \"Database\"\n    note \"Phone Swap Request Feature\"\n    note \"Date: October 14, 2025\"\n    User->>Frontend: Click \"Request Phone Swap\" button\n    Frontend->>Modal: Trigger modal pop-up\n    Modal->>User: Display form with fields:\n    Phone to Request: Dropdown list of available phones\n    Phone to Exchange: Dropdown list of user's owned phones\n    Reason for Request (Optional): Text area for comments\n    Actions: \"Submit Request\" and \"Cancel\" buttons\n    User->>Modal: Fill out form and submit request\n    Modal->>Frontend: Send form data to Frontend\n    Frontend->>Backend: POST /api/phone-swaps with form data\n    Backend->>Database: Store swap request in database table\n    |+ Columns:\n    |- Requester's ID\n    |- Requested phone\n    |- Offered phone\n    |- Status (defaulting to 'Pending')\n    |- Comment\n    Backend->>Frontend: Validate user ownership of offered phone\n    Frontend->>User: Display confirmation message upon successful submission\n    User->>Frontend: Close modal pop-up\n    note \"Action Items\"\n    UX Team: Create wireframe of modal and form by EOD, October 17\n    Backend Team: Develop new API endpoint and database schema. Target completion: October 21\n    Frontend Team: Build \"Request Phone Swap\" button and basic modal structure. Begin implementation once wireframes are approved\n    Product Manager: Create formal Jira ticket with defined user story and acceptance criteria\n    note \"Entities\"\n    - UserDto (class)\n    - WeatherForecast (class)\n    - UsersController (class)\n    - WeatherForecastController (class)\n    - IUserService (class)\n    - UserService (class)\n    - IMongoDBSettings (class)\n    - MongoDBSettings (class)\n    - AppRoutingModule (class)\n    - AppComponent (class)\n    note \"Project Context\"\n    Project Directories: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\agents, C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln, C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\n    Total Files Indexed: 70\n    Key Entities: 24",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_api_sequence"
+    },
+    "created_at": "2025-12-18T11:55:51.093647",
+    "is_current": false
+  },
+  {
+    "version": 6,
+    "artifact_id": "mermaid_api_sequence",
+    "artifact_type": "mermaid_api_sequence",
+    "content": "sequenceDiagram\n  participant _User_ as User\n  participant _Frontend_ as Frontend\n  participant _Backend_ as Backend\n  participant _Database_ as Database\n  participant Modal\n\n  _User_->>_Frontend_: Click Request Phone Swap button\n  _Frontend_->>Modal: Trigger modal pop-up\n  Modal->>_User_: Display form with fields:\n  _User_->>Modal: Fill out form and submit request\n  Modal->>_Frontend_: Send form data to Frontend\n  _Frontend_->>_Backend_: POST /api/phone-swaps with form data\n  _Backend_->>_Database_: Store swap request in database table\n  _Backend_->>_Frontend_: Validate user ownership of offered phone\n  _Frontend_->>_User_: Display confirmation message upon successful submission\n  _User_->>_Frontend_: Close modal pop-up\n",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit"
+    },
+    "created_at": "2025-12-18T11:57:13.192744",
+    "is_current": false
+  },
+  {
+    "version": 7,
+    "artifact_id": "mermaid_api_sequence",
+    "artifact_type": "mermaid_api_sequence",
+    "content": "sequenceDiagram\n  participant _User_ as User\n  participant _Frontend_ as Frontend\n  participant _Backend_ as Backend\n  participant _Database_ as Database\n  participant Modal\n\n  _User_->>_Frontend_: Click Request Phone Swap button\n  _Frontend_->>Modal: Trigger modal pop-up\n  Modal->>_User_: Display form with fields:\n  _User_->>Modal: Fill out form and submit request\n  Modal->>_Frontend_: Send form data to Frontend\n  _Frontend_->>_Backend_: POST /api/phone-swaps with form data\n  _Backend_->>_Database_: Store swap request in database table\n  _Backend_->>_Frontend_: Validate user ownership of offered phone\n  _Frontend_->>_User_: Display confirmation message upon successful submission\n  _User_->>_Frontend_: Close modal pop-up\n",
+    "metadata": {
+      "source": "canvas_editor",
+      "model_used": "manual_edit",
+      "validation_score": 100,
+      "is_valid": true
+    },
+    "created_at": "2025-12-18T11:57:13.215260",
+    "is_current": false
+  },
+  {
+    "version": 8,
+    "artifact_id": "mermaid_api_sequence",
+    "artifact_type": "mermaid_api_sequence",
+    "content": "sequenceDiagram\n  participant User\n  participant Frontend\n  participant Backend\n  participant Database\n  participant Modal\n\n  User->>Frontend: Click Request Phone Swap button\n  Frontend->>Modal: Trigger modal pop-up\n  Modal->>User: Display form with fields:\n  User->>Modal: Fill out form and submit request\n  Modal->>Frontend: Send form data to Frontend\n  Frontend->>Backend: POST /api/phone-swaps with form data\n  Backend->>Database: Store swap request in database table\n  Backend->>Frontend: Validate user ownership of offered phone\n  Frontend->>User: Display confirmation message upon successful submission\n  User->>Frontend: Close modal pop-up\n",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit"
+    },
+    "created_at": "2025-12-18T11:57:26.559944",
+    "is_current": false
+  },
+  {
+    "version": 9,
+    "artifact_id": "mermaid_api_sequence",
+    "artifact_type": "mermaid_api_sequence",
+    "content": "sequenceDiagram\n  participant User\n  participant Frontend\n  participant Backend\n  participant Database\n  participant Modal\n\n  User->>Frontend: Click Request Phone Swap button\n  Frontend->>Modal: Trigger modal pop-up\n  Modal->>User: Display form with fields:\n  User->>Modal: Fill out form and submit request\n  Modal->>Frontend: Send form data to Frontend\n  Frontend->>Backend: POST /api/phone-swaps with form data\n  Backend->>Database: Store swap request in database table\n  Backend->>Frontend: Validate user ownership of offered phone\n  Frontend->>User: Display confirmation message upon successful submission\n  User->>Frontend: Close modal pop-up\n",
+    "metadata": {
+      "source": "canvas_editor",
+      "model_used": "manual_edit",
+      "validation_score": 100,
+      "is_valid": true
+    },
+    "created_at": "2025-12-18T11:57:26.579820",
+    "is_current": false
+  },
+  {
+    "version": 10,
+    "artifact_id": "mermaid_api_sequence",
+    "artifact_type": "mermaid_api_sequence",
+    "content": "sequenceDiagram\n  participant User\n  participant Frontend\n  participant Backend\n  participant Database\n  participant Modal\n\n  User->>Frontend: Click Request Phone Swap button\n  Frontend->>Modal: Trigger modal pop-up\n  Modal->>User: Display form with fields:\n  User->>Modal: Fill out form and submit request\n  Modal->>Frontend: Send form data to Frontend\n  Frontend->>Backend: POST /api/phone-swaps with form data\n  Backend->>Database: Store swap request in database table\n  Backend->>Frontend: Validate user ownership of offered phone\n  Frontend->>User: Display confirmation message upon successful submission\n  User->>Frontend: Close modal pop-up\n",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit"
+    },
+    "created_at": "2025-12-18T11:57:30.805697",
+    "is_current": false
+  },
+  {
+    "version": 11,
+    "artifact_id": "mermaid_api_sequence",
+    "artifact_type": "mermaid_api_sequence",
+    "content": "sequenceDiagram\n  participant User\n  participant Frontend\n  participant Backend\n  participant Database\n  participant Modal\n\n  User->>Frontend: Click Request Phone Swap button\n  Frontend->>Modal: Trigger modal pop-up\n  Modal->>User: Display form with fields:\n  User->>Modal: Fill out form and submit request\n  Modal->>Frontend: Send form data to Frontend\n  Frontend->>Backend: POST /api/phone-swaps with form data\n  Backend->>Database: Store swap request in database table\n  Backend->>Frontend: Validate user ownership of offered phone\n  Frontend->>User: Display confirmation message upon successful submission\n  User->>Frontend: Close modal pop-up\n",
+    "metadata": {
+      "source": "canvas_editor",
+      "model_used": "manual_edit",
+      "validation_score": 100,
+      "is_valid": true
+    },
+    "created_at": "2025-12-18T11:57:30.831918",
     "is_current": true
   }
 ]

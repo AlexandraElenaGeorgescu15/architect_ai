@@ -554,11 +554,25 @@ class EnhancedAdaptiveLearningLoop:
         for event_file in events_dir.glob("*.json"):
             try:
                 with open(event_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
+                    content = f.read().strip()
+                    if not content:
+                        # Skip empty files
+                        continue
+                    data = json.loads(content)
                 # Reconstruct event
                 # ... (implementation details)
+            except json.JSONDecodeError as e:
+                # Log and skip corrupted JSON files (they may be partially written)
+                print(f"[WARN] Skipping corrupted feedback event file {event_file.name}: {e}")
+                # Optionally: move corrupted file to a backup location
+                try:
+                    backup_dir = events_dir / "corrupted"
+                    backup_dir.mkdir(exist_ok=True)
+                    event_file.rename(backup_dir / event_file.name)
+                except Exception:
+                    pass
             except Exception as e:
-                print(f"[WARN] Could not load feedback event: {e}")
+                print(f"[WARN] Could not load feedback event {event_file.name}: {e}")
 
 
 # Convenience function for backward compatibility

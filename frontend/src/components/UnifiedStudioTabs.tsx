@@ -196,6 +196,59 @@ const ArtifactTypeButton = memo(function ArtifactTypeButton({
   )
 })
 
+// MermaidDiagramViewer component that uses store directly for reactivity
+const MermaidDiagramViewer = memo(function MermaidDiagramViewer({
+  selectedArtifactType,
+  progress,
+  artifactTypes,
+  onContentUpdate
+}: {
+  selectedArtifactType: ArtifactType
+  progress: any
+  artifactTypes: { value: ArtifactType; label: string; category: string }[]
+  onContentUpdate: (artifact: any, newContent: string) => Promise<void>
+}) {
+  // Use store directly to ensure reactivity
+  const { getArtifactsByType } = useArtifactStore()
+  const latestArtifact = getArtifactsByType(selectedArtifactType)?.[0]
+
+  const handleDiagramContentUpdate = useCallback(async (newContent: string) => {
+    const artifact = latestArtifact || progress?.artifact
+    if (!artifact) return
+    await onContentUpdate(artifact, newContent)
+  }, [latestArtifact, progress?.artifact, onContentUpdate])
+
+  if (latestArtifact?.content) {
+    return (
+      <MermaidRenderer
+        content={latestArtifact.content}
+        artifactType={selectedArtifactType}
+        onContentUpdate={handleDiagramContentUpdate}
+      />
+    )
+  } else if (progress?.artifact?.content) {
+    return (
+      <MermaidRenderer
+        content={progress.artifact.content}
+        artifactType={selectedArtifactType}
+        onContentUpdate={handleDiagramContentUpdate}
+      />
+    )
+  } else {
+    return (
+      <div className="h-full flex items-center justify-center p-8">
+        <div className="text-center max-w-md">
+          <FileCode className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+          <h3 className="text-lg font-semibold text-muted-foreground mb-2">No Diagram Generated Yet</h3>
+          <p className="text-sm text-muted-foreground">
+            Click "Generate" to create your {artifactTypes.find(t => t.value === selectedArtifactType)?.label || 'diagram'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+})
+
 function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
   const [activeView, setActiveView] = useState('context')
   const navigate = useNavigate()
@@ -221,7 +274,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
       : qualityPrediction.label === 'medium'
         ? 'bg-accent/10 text-accent border border-accent/30'
         : 'bg-destructive/10 text-destructive border border-destructive/30'
-  const { addArtifact, updateArtifact } = useArtifactStore()
+  const { addArtifact, updateArtifact, getArtifactsByType } = useArtifactStore()
   const { addNotification } = useUIStore()
   const [isBulkDialogOpen, setBulkDialogOpen] = useState(false)
   const [isBulkGenerating, setIsBulkGenerating] = useState(false)
@@ -600,13 +653,11 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                         {/* Mermaid Diagram Rendering */}
                         <div className="flex-1 overflow-hidden">
                           <Suspense fallback={<LoadingFallback />}>
-                            {(() => {
-                              const latestArtifact = props.getArtifactsByType(props.selectedArtifactType)?.[0]
-
-                              const handleDiagramContentUpdate = async (newContent: string) => {
-                                const artifact = latestArtifact || props.progress?.artifact
-                                if (!artifact) return
-
+                            <MermaidDiagramViewer
+                              selectedArtifactType={props.selectedArtifactType}
+                              progress={props.progress}
+                              artifactTypes={props.artifactTypes}
+                              onContentUpdate={async (artifact, newContent) => {
                                 // Update local store (prefer update to avoid duplicates)
                                 updateArtifact(artifact.id, {
                                   content: newContent,
@@ -622,26 +673,8 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                                   console.error('Failed to persist AI repair:', err)
                                   addNotification('warning', 'Diagram updated locally, but saving failed.')
                                 }
-                              }
-
-                              if (latestArtifact?.content) {
-                                return <MermaidRenderer content={latestArtifact.content} onContentUpdate={handleDiagramContentUpdate} />
-                              } else if (props.progress?.artifact?.content) {
-                                return <MermaidRenderer content={props.progress.artifact.content} onContentUpdate={handleDiagramContentUpdate} />
-                              } else {
-                                return (
-                                  <div className="h-full flex items-center justify-center p-8">
-                                    <div className="text-center max-w-md">
-                                      <FileCode className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                                      <h3 className="text-lg font-semibold text-muted-foreground mb-2">No Diagram Generated Yet</h3>
-                                      <p className="text-sm text-muted-foreground">
-                                        Click "Generate" to create your {props.artifactTypes.find(t => t.value === props.selectedArtifactType)?.label || 'diagram'}
-                                      </p>
-                                    </div>
-                                  </div>
-                                )
-                              }
-                            })()}
+                              }}
+                            />
                           </Suspense>
                         </div>
                         {/* Small Footer - Canvas Editor Link */}
@@ -652,8 +685,16 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                           </span>
                           <button
                             onClick={() => {
-                              const latestArtifact = props.getArtifactsByType(props.selectedArtifactType)?.[0]
-                              navigate('/canvas', { state: { artifactId: latestArtifact?.id, artifactType: props.selectedArtifactType } })
+                              const latestArtifact = getArtifactsByType(props.selectedArtifactType)?.[0]
+                              if (latestArtifact) {
+                                navigate('/canvas', { 
+                                  state: { 
+                                    artifactId: latestArtifact.id,
+                                    artifactType: latestArtifact.type,
+                                    diagramId: latestArtifact.id // Support both parameter names
+                                  } 
+                                })
+                              }
                             }}
                             className="text-xs px-3 py-1.5 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors flex items-center gap-1.5 font-medium"
                           >

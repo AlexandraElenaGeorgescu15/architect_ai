@@ -21,6 +21,7 @@ from backend.core.config import settings
 from backend.core.logger import get_logger
 from backend.core.metrics import get_metrics_collector, timed
 from backend.core.cache import cached
+from config.artifact_model_mapping import get_artifact_mapper, ArtifactType
 
 logger = get_logger(__name__)
 metrics = get_metrics_collector()
@@ -53,6 +54,7 @@ class ProjectAwareChatService:
         self.kg_builder = get_kg_builder()
         self.pattern_miner = get_miner()
         self.ollama_client = OllamaClient() if OLLAMA_AVAILABLE else None
+        self.artifact_mapper = get_artifact_mapper()
         
         logger.info("Project-Aware Chat Service initialized")
     
@@ -124,28 +126,41 @@ class ProjectAwareChatService:
         prompt = self._build_prompt(message, conversation_history, project_context)
         
         # Generate response (try Ollama first, then cloud)
-        # Try multiple local models for better success rate
-        local_models_to_try = ["llama3", "llama3.2", "mistral", "codellama"]
+        # Get models from model mapping configuration for chat
+        chat_mapping = self.artifact_mapper.get_model_for_artifact(ArtifactType.CHAT.value)
+        priority_models = chat_mapping.priority_models or [chat_mapping.base_model]
+        
+        # Extract base model names (remove :tag suffix for Ollama client)
+        local_models_to_try = []
+        for model in priority_models:
+            # Extract base name (e.g., "llama3:8b-instruct-q4_K_M" -> "llama3")
+            base_name = model.split(":")[0] if ":" in model else model
+            if base_name not in local_models_to_try:
+                local_models_to_try.append(base_name)
+        
+        # Fallback to default models if mapping doesn't provide any
+        if not local_models_to_try:
+            local_models_to_try = ["llama3", "llama3.2", "mistral", "codellama"]
         
         if self.ollama_client and OLLAMA_AVAILABLE:
-            for model_name in local_models_to_try:
+            for model_base_name in local_models_to_try:
                 try:
                     # Check if model is available
-                    await self.ollama_client.ensure_model_available(model_name)
+                    await self.ollama_client.ensure_model_available(model_base_name)
                     
                     # Try Ollama generation with timeout
                     response = await asyncio.wait_for(
                         self.ollama_client.generate(
-                            model_name=model_name,
+                            model_name=model_base_name,
                             prompt=prompt,
                             system_message=system_message,
                             temperature=0.7
                         ),
-                        timeout=60.0  # 60 second timeout
+                        timeout=90.0  # 90 second timeout for complex responses
                     )
                     
                     if response.success and response.content and len(response.content.strip()) > 20:
-                        logger.info(f"Chat successful with {model_name}")
+                        logger.info(f"Chat successful with {model_base_name}")
                         if stream:
                             # Stream character by character for effect
                             content = response.content
@@ -154,7 +169,7 @@ class ProjectAwareChatService:
                                 yield {
                                     "type": "chunk",
                                     "content": content[i:i+chunk_size],
-                                    "model": model_name,
+                                    "model": model_base_name,
                                     "provider": "ollama"
                                 }
                                 await asyncio.sleep(0.02)  # Faster streaming
@@ -162,23 +177,24 @@ class ProjectAwareChatService:
                             yield {
                                 "type": "complete",
                                 "content": content,
-                                "model": model_name,
+                                "model": model_base_name,
                                 "provider": "ollama"
                             }
+                            return  # Critical: return immediately after streaming complete
                         else:
                             yield {
                                 "type": "complete",
                                 "content": response.content,
-                                "model": model_name,
+                                "model": model_base_name,
                                 "provider": "ollama"
                             }
-                        return
+                            return  # Critical: return immediately after non-streaming complete
                     else:
-                        logger.warning(f"Model {model_name} returned empty/short response, trying next...")
+                        logger.warning(f"Model {model_base_name} returned empty/short response, trying next...")
                 except asyncio.TimeoutError:
-                    logger.warning(f"Timeout with {model_name}, trying next...")
+                    logger.warning(f"Timeout with {model_base_name}, trying next...")
                 except Exception as e:
-                    logger.warning(f"Model {model_name} failed: {e}, trying next...")
+                    logger.warning(f"Model {model_base_name} failed: {e}, trying next...")
         
         # Fallback to cloud (Gemini preferred for chat)
         try:

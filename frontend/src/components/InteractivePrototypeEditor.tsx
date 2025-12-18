@@ -251,12 +251,17 @@ Please provide the COMPLETE modified HTML code (not just the changes). Include a
 Return ONLY the HTML code, no explanations or markdown code blocks.
 `
 
-      // Call AI to generate modified prototype
-      const response = await sendChatMessage({
-        message: modificationPrompt,
-        conversation_history: [],
-        include_project_context: false,
-      })
+      // Call AI to generate modified prototype with extended timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 second timeout
+      
+      try {
+        const response = await sendChatMessage({
+          message: modificationPrompt,
+          conversation_history: [],
+          include_project_context: false,
+        })
+        clearTimeout(timeoutId)
 
       // Extract HTML from response - improved extraction to ignore explanatory text
       let modifiedHtml = extractHtmlFromResponse(response.message)
@@ -282,7 +287,21 @@ Return ONLY the HTML code, no explanations or markdown code blocks.
         },
       ])
 
-      addNotification('success', 'Prototype updated successfully!')
+        addNotification('success', 'Prototype updated successfully!')
+      } catch (innerError: any) {
+        console.error('Failed to modify prototype:', innerError)
+        const errorMsg = innerError.name === 'AbortError' 
+          ? 'Request timed out after 60 seconds. Please try a simpler modification.'
+          : innerError.message
+        setChatHistory((prev) => [
+          ...prev,
+          {
+            role: 'assistant',
+            content: `Sorry, I encountered an error: ${errorMsg}. Please try again.`,
+          },
+        ])
+        addNotification('error', 'Failed to modify prototype')
+      }
     } catch (error: any) {
       console.error('Failed to modify prototype:', error)
       setChatHistory((prev) => [

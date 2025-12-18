@@ -276,14 +276,44 @@ class RAGIngester:
     def _remove_file_chunks(self, file_path: str):
         """Remove all chunks for a file from the index."""
         try:
-            # Get all document IDs for this file
+            # Normalize file path for comparison (handle both absolute and relative paths)
+            file_path_normalized = str(Path(file_path).resolve())
+            file_path_str = str(file_path)
+            
+            # Try to get chunks by exact file_path match
             results = self.collection.get(
-                where={"file_path": file_path},
+                where={"file_path": file_path_str},
                 include=["metadatas"]
             )
             
+            # Also try normalized path in case chunks were indexed with absolute paths
+            if not results["ids"]:
+                try:
+                    results_normalized = self.collection.get(
+                        where={"file_path": file_path_normalized},
+                        include=["metadatas"]
+                    )
+                    if results_normalized["ids"]:
+                        results = results_normalized
+                except Exception:
+                    pass
+            
+            # If still no results, get all chunks and filter by file_path in metadata
+            if not results["ids"]:
+                all_results = self.collection.get(include=["metadatas"])
+                matching_ids = []
+                for i, metadata in enumerate(all_results.get("metadatas", [])):
+                    if metadata and metadata.get("file_path") in (file_path_str, file_path_normalized):
+                        matching_ids.append(all_results["ids"][i])
+                if matching_ids:
+                    results = {"ids": matching_ids}
+            
             if results["ids"]:
-                self.collection.delete(ids=results["ids"])
+                # Delete in batches to avoid overwhelming ChromaDB
+                batch_size = 100
+                for i in range(0, len(results["ids"]), batch_size):
+                    batch_ids = results["ids"][i:i + batch_size]
+                    self.collection.delete(ids=batch_ids)
                 logger.debug(f"Removed {len(results['ids'])} chunks for {file_path}")
         except Exception as e:
             logger.warning(f"Error removing chunks for {file_path}: {e}")

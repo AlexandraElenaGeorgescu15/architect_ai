@@ -111,9 +111,16 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
   
   // Repair function - AGGRESSIVE: keeps trying until diagram renders
   const handleAIRepair = useCallback(async () => {
-    if (isRepairing || !content) return
+    if (isRepairing) return
+    
+    // If content is empty, we can't repair - show error
+    if (!content || content.trim().length === 0) {
+      setError('Cannot repair empty diagram. Please generate a diagram first.')
+      return
+    }
     
     setIsRepairing(true)
+    const originalContent = content // Save original content in case repair fails
     try {
       console.log('🔧 [MermaidRenderer] AGGRESSIVE REPAIR: will try until diagram renders')
       
@@ -140,15 +147,22 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         console.error('❌ [MermaidRenderer] All repair attempts failed:', response.data.error)
         console.error('Attempts made:', response.data.improvements_made)
         
-        // Still update content with best effort result
+        // Restore original content if repair completely failed
         if (response.data.improved_code && onContentUpdate) {
           onContentUpdate(response.data.improved_code)
+        } else if (onContentUpdate) {
+          // No improved code, restore original
+          onContentUpdate(originalContent)
         }
         
         setError(`Repair could not fully fix this diagram. ${response.data.error || 'Please try regenerating.'}`)
       }
     } catch (err: any) {
       console.error('❌ [MermaidRenderer] Repair request failed:', err)
+      // Restore original content on error
+      if (onContentUpdate) {
+        onContentUpdate(originalContent)
+      }
       setError('Repair service unavailable. Please try again or regenerate the diagram.')
     } finally {
       setIsRepairing(false)
@@ -184,7 +198,13 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
   }, [isInitialized])
 
   useEffect(() => {
-    if (!containerRef.current || !content || !isInitialized) return
+    if (!containerRef.current || !isInitialized) return
+    
+    // Handle empty content
+    if (!content || content.trim().length === 0) {
+      setError('Diagram content is empty. Please generate a diagram first or use AI Repair if you have existing content.')
+      return
+    }
 
     const renderDiagram = async () => {
       try {
@@ -394,7 +414,10 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
     if (!containerRef.current) return
     
     const svg = containerRef.current.querySelector('svg')
-    if (!svg) return
+    if (!svg) {
+      setError('No diagram to download. Please generate or repair the diagram first.')
+      return
+    }
 
     const svgData = new XMLSerializer().serializeToString(svg)
     const blob = new Blob([svgData], { type: 'image/svg+xml' })

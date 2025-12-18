@@ -7,12 +7,16 @@ import { ApiResponse } from '../types'
 const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 
 // Create axios instance
+// Many AI operations (diagram repair, HTML modifier, bulk generation) can legitimately
+// take longer than 30s, especially when models are cold or context building is involved.
+// Bump the global timeout to 60s so users don't see "timeout of 30000ms exceeded" for
+// otherwise-successful long-running requests.
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 30000, // 30 seconds
+  timeout: 60000, // 60 seconds
 })
 
 // Request interceptor - Add auth token

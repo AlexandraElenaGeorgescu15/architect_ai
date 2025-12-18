@@ -30,7 +30,7 @@ const ChatMessage = memo(function ChatMessage({ message }: { message: Message })
             : 'bg-card/80 text-foreground border border-border/50 rounded-tl-none'
         }`}
       >
-        <p className="whitespace-pre-wrap text-sm leading-relaxed line-clamp-[20]">{message.content}</p>
+        <p className="whitespace-pre-wrap text-sm leading-relaxed break-words">{message.content}</p>
         <p className="text-[10px] opacity-70 mt-2 text-right font-mono">
           {message.timestamp.toLocaleTimeString()}
         </p>
