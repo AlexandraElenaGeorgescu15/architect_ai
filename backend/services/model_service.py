@@ -393,6 +393,9 @@ class ModelService:
         if OLLAMA_AVAILABLE:
             await self._refresh_ollama_models()
         
+        # Refresh HuggingFace models
+        await self._refresh_huggingface_models()
+        
         # Register cloud models if API keys are available
         await self._refresh_cloud_models()
         
@@ -549,6 +552,59 @@ class ModelService:
         except Exception as e:
             logger.warning(f"Could not refresh Ollama models: {e}")
     
+    async def _refresh_huggingface_models(self):
+        """Refresh HuggingFace models from the HuggingFace service registry."""
+        try:
+            from backend.services.huggingface_service import get_service as get_hf_service
+            hf_service = get_hf_service()
+            
+            # Get all downloaded models from HuggingFace service
+            downloaded_models = await hf_service.list_downloaded_models()
+            
+            for model_data in downloaded_models:
+                model_id = model_data.get("id", "")
+                if not model_id:
+                    continue
+                
+                # Create model ID in standard format
+                clean_model_id = f"huggingface:{model_id.replace('/', '-')}"
+                
+                # Check if model is already registered
+                if clean_model_id not in self.models:
+                    self.models[clean_model_id] = ModelInfoDTO(
+                        id=clean_model_id,
+                        name=f"{model_id} (HuggingFace)",
+                        provider="huggingface",
+                        status="downloaded",  # Mark as downloaded and available
+                        is_trained=False,
+                        metadata={
+                            "huggingface_id": model_id,
+                            "path": model_data.get("path", ""),
+                            "actual_file_path": model_data.get("actual_file_path"),
+                            "source": "huggingface",
+                            "usable_via_transformers": True
+                        }
+                    )
+                    logger.debug(f"Registered HuggingFace model: {clean_model_id}")
+                else:
+                    # Update existing model status
+                    self.models[clean_model_id].status = "downloaded"
+                    # Update metadata
+                    if "metadata" not in self.models[clean_model_id].metadata:
+                        self.models[clean_model_id].metadata = {}
+                    self.models[clean_model_id].metadata.update({
+                        "huggingface_id": model_id,
+                        "path": model_data.get("path", ""),
+                        "actual_file_path": model_data.get("actual_file_path"),
+                        "usable_via_transformers": True
+                    })
+            
+            # Save registry after updating
+            self._save_registry()
+            logger.debug(f"Refreshed {len(downloaded_models)} HuggingFace models")
+        except Exception as e:
+            logger.warning(f"Could not refresh HuggingFace models: {e}")
+    
     def _load_finetuned_models_from_registry(self):
         """Load fine-tuned models from the model_registry.json file."""
         try:
@@ -658,7 +714,7 @@ class ModelService:
         
         # Find fine-tuned models for this artifact type
         for model_id, model_info in self.models.items():
-            if model_info.is_trained and model_info.provider == "ollama":
+            if model_info.is_trained and model_info.provider in ["ollama", "huggingface"]:
                 # Check if this fine-tuned model is for this artifact type
                 model_artifact_type = model_info.metadata.get("artifact_type", "").lower().replace("-", "_")
                 
@@ -667,10 +723,16 @@ class ModelService:
                     artifact_type_str in model_id.lower() or
                     artifact_type_str in model_info.name.lower()):
                     # Use normalization to extract model name
-                    model_name = get_ollama_model_name(model_id)
-                    if model_name not in models:
-                        models.append(model_name)
-                        logger.info(f"✅ Found fine-tuned model for {artifact_type_str}: {model_name}")
+                    if model_info.provider == "ollama":
+                        model_name = get_ollama_model_name(model_id)
+                        if model_name not in models:
+                            models.append(model_name)
+                            logger.info(f"✅ Found fine-tuned model for {artifact_type_str}: {model_name}")
+                    elif model_info.provider == "huggingface":
+                        # Keep full model_id for HuggingFace (with provider prefix)
+                        if model_id not in models:
+                            models.append(model_id)
+                            logger.info(f"✅ Found fine-tuned HuggingFace model for {artifact_type_str}: {model_id}")
         
         # STEP 2: Check user-configured routing
         routing = self.get_routing_for_artifact(artifact_type)
@@ -681,19 +743,26 @@ class ModelService:
             primary = routing.primary_model
             provider, model_name = normalize_model_id(primary, "ollama")
             
-            # Only add Ollama models to local models list
-            if provider == "ollama" and model_name and model_name not in models:
-                models.append(model_name)
-                logger.info(f"✅ [MODEL_SERVICE] Added primary model: {model_name}")
+            # Add local models (Ollama or HuggingFace) to local models list
+            if provider in ["ollama", "huggingface"]:
+                if provider == "ollama" and model_name and model_name not in models:
+                    models.append(model_name)
+                    logger.info(f"✅ [MODEL_SERVICE] Added primary model: {model_name}")
+                elif provider == "huggingface" and primary not in models:
+                    models.append(primary)  # Keep full ID with provider prefix
+                    logger.info(f"✅ [MODEL_SERVICE] Added primary HuggingFace model: {primary}")
             
-            # Add fallback models (only Ollama)
+            # Add fallback models (Ollama or HuggingFace)
             for fallback in routing.fallback_models:
                 provider, model_name = normalize_model_id(fallback, "ollama")
                 
-                # Only add Ollama models to local models list
+                # Add local models to local models list
                 if provider == "ollama" and model_name and model_name not in models:
                     models.append(model_name)
                     logger.debug(f"✅ [MODEL_SERVICE] Added fallback model: {model_name}")
+                elif provider == "huggingface" and fallback not in models:
+                    models.append(fallback)  # Keep full ID with provider prefix
+                    logger.debug(f"✅ [MODEL_SERVICE] Added fallback HuggingFace model: {fallback}")
         else:
             if routing:
                 logger.warning(f"⚠️ [MODEL_SERVICE] Routing for {artifact_type_str} exists but is disabled")
@@ -717,15 +786,19 @@ class ModelService:
         except Exception as e:
             logger.debug(f"Could not load base model mappings: {e}")
         
-        # STEP 4: Universal fallback - any available Ollama model
+        # STEP 4: Universal fallback - any available local model (Ollama or HuggingFace)
         # This ensures ANY model can work with ANY artifact
         if not models:
-            # Get all available Ollama models
+            # Get all available local models (Ollama and HuggingFace)
             for model_id, model_info in self.models.items():
-                if model_info.provider == "ollama" and model_info.status == "available":
+                if model_info.provider == "ollama" and model_info.status in ["available", "downloaded"]:
                     model_name = get_ollama_model_name(model_id)
                     if model_name not in models:
                         models.append(model_name)
+                elif model_info.provider == "huggingface" and model_info.status in ["available", "downloaded"]:
+                    # Add HuggingFace models with provider prefix
+                    if model_id not in models:
+                        models.append(model_id)
             
             # If still no models, use defaults
             if not models:

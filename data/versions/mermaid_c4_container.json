@@ -34,6 +34,58 @@
       ]
     },
     "created_at": "2025-12-10T22:26:12.428408",
+    "is_current": false
+  },
+  {
+    "version": 2,
+    "artifact_id": "mermaid_c4_container",
+    "artifact_type": "mermaid_c4_container",
+    "content": "graph LR\n    User[User] -->|Owns Phones|-> PhoneList[Phone List]\n    PhoneList -->|Requests Swap RequestModal[\"Request Modal\"]\n    RequestModal -->|Submits Request Backend[Backend]\n    Backend -->|Handles Request Database[Database]\n    style User fill:#f9f,stroke:#333,stroke-width:4px;\n    style PhoneList fill:#ff69b4,stroke:#333,stroke-width:4px;\n    style RequestModal fill:#ff69b4,stroke:#333,stroke-width:4px;\n    style Backend fill:#f9f,stroke:#333,stroke-width:4px;\n    style Database fill:#f9f,stroke:#333,stroke-width:4px;\n    PhoneList -->|Available Phones RequestModal\n    RequestModal -->|Offered Phones User\n    UXTeam[\"UX Team\"] -->|Creates Wireframe Wireframe[Wireframe]\n    BackendTeam[\"Backend Team\"] -->|Develops API Endpoint Backend\n    FrontendTeam[\"Frontend Team\"] -->|Builds Modal Structure RequestModal\n    ProductManager[\"Product Manager\"] -->|Creates Jira Ticket JiraTicket[Jira Ticket]\n    style UXTeam fill:#f9f,stroke:#333,stroke-width:4px;\n    style BackendTeam fill:#ff69b4,stroke:#333,stroke-width:4px;\n    style FrontendTeam fill:#ff69b4,stroke:#333,stroke-width:4px;\n    style ProductManager fill:#f9f,stroke:#333,stroke-width:4px;\n    Note -->|Meeting Notes User\n    Wireframe -->|Approved by UX Team FrontendTeam\n    JiraTicket -->|Acceptance Criteria ProductManager\n    style MeetingNotes fill:#f9f,stroke:#333,stroke-width:4px;\n    style ApprovedWireframe fill:#ff69b4,stroke:#333,stroke-width:4px;\n    style AcceptanceCriteria fill:#f9f,stroke:#333,stroke-width:4px;",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_c4_container"
+    },
+    "created_at": "2025-12-18T12:06:38.413161",
+    "is_current": false
+  },
+  {
+    "version": 3,
+    "artifact_id": "mermaid_c4_container",
+    "artifact_type": "mermaid_c4_container",
+    "content": "graph LR\n    User[User] -->|Owns Phones|-> PhoneList[Phone List]\n    PhoneList -->|Requests Swap RequestModal[\"Request Modal\"]\n    RequestModal -->|Submits Request Backend[Backend]\n    Backend -->|Handles Request Database[Database]\n    style User fill:#f9f,stroke:#333,stroke-width:4px;\n    style PhoneList fill:#ff69b4,stroke:#333,stroke-width:4px;\n    style RequestModal fill:#ff69b4,stroke:#333,stroke-width:4px;\n    style Backend fill:#f9f,stroke:#333,stroke-width:4px;\n    style Database fill:#f9f,stroke:#333,stroke-width:4px;\n    PhoneList -->|Available Phones RequestModal\n    RequestModal -->|Offered Phones User\n    UXTeam[\"UX Team\"] -->|Creates Wireframe Wireframe[Wireframe]\n    BackendTeam[\"Backend Team\"] -->|Develops API Endpoint Backend\n    FrontendTeam[\"Frontend Team\"] -->|Builds Modal Structure RequestModal\n    ProductManager[\"Product Manager\"] -->|Creates Jira Ticket JiraTicket[Jira Ticket]\n    style UXTeam fill:#f9f,stroke:#333,stroke-width:4px;\n    style BackendTeam fill:#ff69b4,stroke:#333,stroke-width:4px;\n    style FrontendTeam fill:#ff69b4,stroke:#333,stroke-width:4px;\n    style ProductManager fill:#f9f,stroke:#333,stroke-width:4px;\n    Note -->|Meeting Notes User\n    Wireframe -->|Approved by UX Team FrontendTeam\n    JiraTicket -->|Acceptance Criteria ProductManager\n    style MeetingNotes fill:#f9f,stroke:#333,stroke-width:4px;\n    style ApprovedWireframe fill:#ff69b4,stroke:#333,stroke-width:4px;\n    style AcceptanceCriteria fill:#f9f,stroke:#333,stroke-width:4px;",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_c4_container"
+    },
+    "created_at": "2025-12-18T12:06:39.420098",
+    "is_current": false
+  },
+  {
+    "version": 4,
+    "artifact_id": "mermaid_c4_container",
+    "artifact_type": "mermaid_c4_container",
+    "content": "graph TD\n  User[\"User\"]\n  style User fill:#6366f1,stroke:#333,stroke-width:2px\n  Phone_List[\"Phone List\"]\n  style Phone_List fill:#6366f1,stroke:#333,stroke-width:2px\n  RequestModal[\"Request Modal\"]\n  style RequestModal fill:#6366f1,stroke:#333,stroke-width:2px\n  Backend[\"Backend\"]\n  style Backend fill:#ef4444,stroke:#333,stroke-width:2px\n  Database[\"Database\"]\n  style Database fill:#06b6d4,stroke:#333,stroke-width:2px\n  UXTeam[\"UX Team\"]\n  style UXTeam fill:#6366f1,stroke:#333,stroke-width:2px\n  Wireframe[\"Wireframe\"]\n  style Wireframe fill:#6366f1,stroke:#333,stroke-width:2px\n  BackendTeam[\"Backend Team\"]\n  style BackendTeam fill:#ef4444,stroke:#333,stroke-width:2px\n  FrontendTeam[\"Frontend Team\"]\n  style FrontendTeam fill:#ef4444,stroke:#333,stroke-width:2px\n  ProductManager[\"Product Manager\"]\n  style ProductManager fill:#6366f1,stroke:#333,stroke-width:2px\n  Jira_Ticket[\"Jira Ticket\"]\n  style Jira_Ticket fill:#6366f1,stroke:#333,stroke-width:2px\n\n  Phone_List -->|\"Requests Swap RequestModalRequest Modal     RequestModal -->\"| Submits\n  Backend -->|\"Handles Request DatabaseDatabase     style User fill:#f9f,stroke:#333,stroke-width:4px;     style PhoneList fill:#ff69b4,stroke:#333,stroke-width:4px;     style RequestModal fill:#ff69b4,stroke:#333,stroke-width:4px;     style Backend fill:#f9f,stroke:#333,stroke-width:4px;     style Database fill:#f9f,stroke:#333,stroke-width:4px;     PhoneList -->\"| Available\n  RequestModal -->|\"Offered Phones User     UXTeamUX Team -->\"| Creates\n  Note -->|\"Meeting Notes User     Wireframe -->\"| Approved\n  Jira_Ticket --> Acceptance\n",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit"
+    },
+    "created_at": "2025-12-18T12:08:09.003387",
+    "is_current": false
+  },
+  {
+    "version": 5,
+    "artifact_id": "mermaid_c4_container",
+    "artifact_type": "mermaid_c4_container",
+    "content": "graph TD\n  User[\"User\"]\n  style User fill:#6366f1,stroke:#333,stroke-width:2px\n  Phone_List[\"Phone List\"]\n  style Phone_List fill:#6366f1,stroke:#333,stroke-width:2px\n  RequestModal[\"Request Modal\"]\n  style RequestModal fill:#6366f1,stroke:#333,stroke-width:2px\n  Backend[\"Backend\"]\n  style Backend fill:#ef4444,stroke:#333,stroke-width:2px\n  Database[\"Database\"]\n  style Database fill:#06b6d4,stroke:#333,stroke-width:2px\n  UXTeam[\"UX Team\"]\n  style UXTeam fill:#6366f1,stroke:#333,stroke-width:2px\n  Wireframe[\"Wireframe\"]\n  style Wireframe fill:#6366f1,stroke:#333,stroke-width:2px\n  BackendTeam[\"Backend Team\"]\n  style BackendTeam fill:#ef4444,stroke:#333,stroke-width:2px\n  FrontendTeam[\"Frontend Team\"]\n  style FrontendTeam fill:#ef4444,stroke:#333,stroke-width:2px\n  ProductManager[\"Product Manager\"]\n  style ProductManager fill:#6366f1,stroke:#333,stroke-width:2px\n  Jira_Ticket[\"Jira Ticket\"]\n  style Jira_Ticket fill:#6366f1,stroke:#333,stroke-width:2px\n\n  Phone_List -->|\"Requests Swap RequestModalRequest Modal     RequestModal -->\"| Submits\n  Backend -->|\"Handles Request DatabaseDatabase     style User fill:#f9f,stroke:#333,stroke-width:4px;     style PhoneList fill:#ff69b4,stroke:#333,stroke-width:4px;     style RequestModal fill:#ff69b4,stroke:#333,stroke-width:4px;     style Backend fill:#f9f,stroke:#333,stroke-width:4px;     style Database fill:#f9f,stroke:#333,stroke-width:4px;     PhoneList -->\"| Available\n  RequestModal -->|\"Offered Phones User     UXTeamUX Team -->\"| Creates\n  Note -->|\"Meeting Notes User     Wireframe -->\"| Approved\n  Jira_Ticket --> Acceptance\n",
+    "metadata": {
+      "source": "canvas_editor",
+      "model_used": "manual_edit",
+      "validation_score": 100,
+      "is_valid": true
+    },
+    "created_at": "2025-12-18T12:08:09.022389",
     "is_current": true
   }
 ]

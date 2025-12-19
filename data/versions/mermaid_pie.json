@@ -34,6 +34,84 @@
       ]
     },
     "created_at": "2025-12-10T22:21:17.230909",
+    "is_current": false
+  },
+  {
+    "version": 2,
+    "artifact_id": "mermaid_pie",
+    "artifact_type": "mermaid_pie",
+    "content": "pie\n    \"UX Team\" : 30%\n    \"Backend Team\" : 25%\n    \"Frontend Team\" : 20%\n    \"Product Manager\" : 10%\n    \"Action Items\" : 15%\n    note\n    The pie chart represents the breakdown of tasks and responsibilities for the Phone Swap Request Feature.\n    The UX Team is responsible for creating a wireframe of the modal and form, while the Backend Team will develop the new API endpoint and database schema.\n    The Frontend Team will build the \"Request Phone Swap\" button and basic modal structure, and the Product Manager will create the formal Jira ticket with the defined user story and acceptance criteria.\n    Action Items include creating wireframes by EOD October 17, developing the new API endpoint and database schema by October 21, building the \"Request Phone Swap\" button and basic modal structure once wireframes are approved, and creating the formal Jira ticket with the defined user story and acceptance criteria.",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_pie"
+    },
+    "created_at": "2025-12-18T12:07:05.922031",
+    "is_current": false
+  },
+  {
+    "version": 3,
+    "artifact_id": "mermaid_pie",
+    "artifact_type": "mermaid_pie",
+    "content": "pie\n    \"UX Team\" : 30%\n    \"Backend Team\" : 25%\n    \"Frontend Team\" : 20%\n    \"Product Manager\" : 10%\n    \"Action Items\" : 15%\n    note\n    The pie chart represents the breakdown of tasks and responsibilities for the Phone Swap Request Feature.\n    The UX Team is responsible for creating a wireframe of the modal and form, while the Backend Team will develop the new API endpoint and database schema.\n    The Frontend Team will build the \"Request Phone Swap\" button and basic modal structure, and the Product Manager will create the formal Jira ticket with the defined user story and acceptance criteria.\n    Action Items include creating wireframes by EOD October 17, developing the new API endpoint and database schema by October 21, building the \"Request Phone Swap\" button and basic modal structure once wireframes are approved, and creating the formal Jira ticket with the defined user story and acceptance criteria.",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_pie"
+    },
+    "created_at": "2025-12-18T12:07:08.441295",
+    "is_current": false
+  },
+  {
+    "version": 4,
+    "artifact_id": "mermaid_pie",
+    "artifact_type": "mermaid_pie",
+    "content": "pie\n    \"UX Team\" : 30%\n    \"Backend Team\" : 25%\n    \"Frontend Team\" : 20%\n    \"Product Manager\" : 10%\n    \"Action Items\" : 15%\n    note\n    The pie chart represents the breakdown of tasks and responsibilities for the Phone Swap Request Feature.\n    The UX Team is responsible for creating a wireframe of the modal and form, while the Backend Team will develop the new API endpoint and database schema.\n    The Frontend Team will build the \"Request Phone Swap\" button and basic modal structure, and the Product Manager will create the formal Jira ticket with the defined user story and acceptance criteria.\n    Action Items include creating wireframes by EOD October 17, developing the new API endpoint and database schema by October 21, building the \"Request Phone Swap\" button and basic modal structure once wireframes are approved, and creating the formal Jira ticket with the defined user story and acceptance criteria.",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_pie"
+    },
+    "created_at": "2025-12-18T12:07:45.818187",
+    "is_current": false
+  },
+  {
+    "version": 5,
+    "artifact_id": "mermaid_pie",
+    "artifact_type": "mermaid_pie",
+    "content": "pie\n    \"UX Team\" : 30%\n    \"Backend Team\" : 25%\n    \"Frontend Team\" : 20%\n    \"Product Manager\" : 10%\n    \"Action Items\" : 15%\n    note\n    The pie chart represents the breakdown of tasks and responsibilities for the Phone Swap Request Feature.\n    The UX Team is responsible for creating a wireframe of the modal and form, while the Backend Team will develop the new API endpoint and database schema.\n    The Frontend Team will build the \"Request Phone Swap\" button and basic modal structure, and the Product Manager will create the formal Jira ticket with the defined user story and acceptance criteria.\n    Action Items include creating wireframes by EOD October 17, developing the new API endpoint and database schema by October 21, building the \"Request Phone Swap\" button and basic modal structure once wireframes are approved, and creating the formal Jira ticket with the defined user story and acceptance criteria.",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_pie"
+    },
+    "created_at": "2025-12-18T12:07:46.873990",
+    "is_current": false
+  },
+  {
+    "version": 6,
+    "artifact_id": "mermaid_pie",
+    "artifact_type": "mermaid_pie",
+    "content": "graph TD\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  Frontend(\"UI/UX\")\n  style Frontend fill:#6366f1,stroke:#333,stroke-width:2px\n  Logic(\"Logic\")\n  style Logic fill:#6366f1,stroke:#333,stroke-width:2px\n\n  entity --> Users\n  entity --> User\n  Validation --> Ensure\n  requirement --> Universal\n  requirement --> Meeting\n",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit"
+    },
+    "created_at": "2025-12-18T12:08:20.098591",
+    "is_current": false
+  },
+  {
+    "version": 7,
+    "artifact_id": "mermaid_pie",
+    "artifact_type": "mermaid_pie",
+    "content": "graph TD\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  Frontend(\"UI/UX\")\n  style Frontend fill:#6366f1,stroke:#333,stroke-width:2px\n  Logic(\"Logic\")\n  style Logic fill:#6366f1,stroke:#333,stroke-width:2px\n\n  entity --> Users\n  entity --> User\n  Validation --> Ensure\n  requirement --> Universal\n  requirement --> Meeting\n",
+    "metadata": {
+      "source": "canvas_editor",
+      "model_used": "manual_edit",
+      "validation_score": 100,
+      "is_valid": true
+    },
+    "created_at": "2025-12-18T12:08:20.117106",
     "is_current": true
   }
 ]

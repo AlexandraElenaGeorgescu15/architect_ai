@@ -34,6 +34,58 @@
       ]
     },
     "created_at": "2025-12-10T22:22:02.055110",
+    "is_current": false
+  },
+  {
+    "version": 2,
+    "artifact_id": "mermaid_journey",
+    "artifact_type": "mermaid_journey",
+    "content": "journey\n    title: Streamlined Device Swap Workflow\n    sections:\n    - title: Background\n    nodes:\n    - \"Users lack formal way to request phone swap\"\n    - \"New feature aims to create streamlined workflow\"\n    - title: User Story\n    nodes:\n    - \"As a user, I want to request a phone from the available list and offer one of my current phones in exchange, so I can easily manage my device swaps.\"\n    - title: Implementation Details\n    nodes:\n    - \"Frontend (UI/UX): Add 'Request Phone Swap' button to main phone page\"\n    - \"Clicking button triggers modal pop-up with form\"\n    - \"Form includes fields for Phone to Request, Phone to Exchange, and Reason for Request (optional)\"\n    - \"Actions: Submit Request and Cancel buttons\"\n    - title: Backend Logic\n    nodes:\n    - \"Create new API endpoint (POST /api/phone-swaps) to handle form submissions\"\n    - \"Create new table in database to store swap requests\"\n    - \"Table includes columns for requester's ID, requested phone, offered phone, status (defaulting to 'Pending'), and comment\"\n    - title: Validation\n    nodes:\n    - \"Backend validation ensures user making request is actual owner of phone being offered in exchange\"\n    - title: Action Items\n    nodes:\n    - \"UX Team: Create wireframe of modal and form by EOD, October 17\"\n    - \"Backend Team: Develop new API endpoint and database schema. Target completion: October 21\"\n    - \"Frontend Team: Build 'Request Phone Swap' button and basic modal structure. Begin implementation once wireframes are approved\"\n    - \"Product Manager: Create formal Jira ticket with defined user story and acceptance criteria\"\n    - title: Confirmation\n    nodes:\n    - \"Upon successful submission, modal closes and confirmation message is displayed\"",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_journey"
+    },
+    "created_at": "2025-12-18T12:07:19.756036",
+    "is_current": false
+  },
+  {
+    "version": 3,
+    "artifact_id": "mermaid_journey",
+    "artifact_type": "mermaid_journey",
+    "content": "journey\n    title: Streamlined Device Swap Workflow\n    sections:\n    - title: Background\n    nodes:\n    - \"Users lack formal way to request phone swap\"\n    - \"New feature aims to create streamlined workflow\"\n    - title: User Story\n    nodes:\n    - \"As a user, I want to request a phone from the available list and offer one of my current phones in exchange, so I can easily manage my device swaps.\"\n    - title: Implementation Details\n    nodes:\n    - \"Frontend (UI/UX): Add 'Request Phone Swap' button to main phone page\"\n    - \"Clicking button triggers modal pop-up with form\"\n    - \"Form includes fields for Phone to Request, Phone to Exchange, and Reason for Request (optional)\"\n    - \"Actions: Submit Request and Cancel buttons\"\n    - title: Backend Logic\n    nodes:\n    - \"Create new API endpoint (POST /api/phone-swaps) to handle form submissions\"\n    - \"Create new table in database to store swap requests\"\n    - \"Table includes columns for requester's ID, requested phone, offered phone, status (defaulting to 'Pending'), and comment\"\n    - title: Validation\n    nodes:\n    - \"Backend validation ensures user making request is actual owner of phone being offered in exchange\"\n    - title: Action Items\n    nodes:\n    - \"UX Team: Create wireframe of modal and form by EOD, October 17\"\n    - \"Backend Team: Develop new API endpoint and database schema. Target completion: October 21\"\n    - \"Frontend Team: Build 'Request Phone Swap' button and basic modal structure. Begin implementation once wireframes are approved\"\n    - \"Product Manager: Create formal Jira ticket with defined user story and acceptance criteria\"\n    - title: Confirmation\n    nodes:\n    - \"Upon successful submission, modal closes and confirmation message is displayed\"",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_journey"
+    },
+    "created_at": "2025-12-18T12:07:20.568405",
+    "is_current": false
+  },
+  {
+    "version": 4,
+    "artifact_id": "mermaid_journey",
+    "artifact_type": "mermaid_journey",
+    "content": "graph TD\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  Frontend(\"UI/UX\")\n  style Frontend fill:#6366f1,stroke:#333,stroke-width:2px\n  Logic(\"Logic\")\n  style Logic fill:#6366f1,stroke:#333,stroke-width:2px\n\n  entity --> Users\n  entity --> User\n  Validation --> Ensure\n  requirement --> Universal\n  requirement --> Meeting\n",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit"
+    },
+    "created_at": "2025-12-18T12:08:17.033247",
+    "is_current": false
+  },
+  {
+    "version": 5,
+    "artifact_id": "mermaid_journey",
+    "artifact_type": "mermaid_journey",
+    "content": "graph TD\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  Frontend(\"UI/UX\")\n  style Frontend fill:#6366f1,stroke:#333,stroke-width:2px\n  Logic(\"Logic\")\n  style Logic fill:#6366f1,stroke:#333,stroke-width:2px\n\n  entity --> Users\n  entity --> User\n  Validation --> Ensure\n  requirement --> Universal\n  requirement --> Meeting\n",
+    "metadata": {
+      "source": "canvas_editor",
+      "model_used": "manual_edit",
+      "validation_score": 100,
+      "is_valid": true
+    },
+    "created_at": "2025-12-18T12:08:17.054247",
     "is_current": true
   }
 ]

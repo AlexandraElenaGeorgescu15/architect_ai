@@ -34,6 +34,58 @@
       ]
     },
     "created_at": "2025-12-10T22:23:47.069508",
+    "is_current": false
+  },
+  {
+    "version": 2,
+    "artifact_id": "mermaid_mindmap",
+    "artifact_type": "mermaid_mindmap",
+    "content": "graph LR\n    Phone Swap Request Feature[requirement]\n    --> Background[entity]\n    --> Feature Overview[entity]\n    --> Implementation Details[entity]\n    Background\n    --> Users Lack Formal Way to Request Phone Exchange[entity]\n    --> New Feature Aims to Create Streamlined Workflow[entity]\n    Feature Overview\n    --> User Story: \"As a user, I want to request a phone from the available list and offer one of my current phones in exchange...\"[entity]\n    Implementation Details\n    Frontend(UI/UX)[requirement]\n    --> New Button: \"Request Phone Swap\"[entity]\n    --> Modal Pop-up with Form[entity]\n    --> Phone to Request: Dropdown List[entity]\n    --> Phone to Exchange: Dropdown List[entity]\n    --> Reason for Request (Optional): Text Area[entity]\n    --> Actions: \"Submit Request\" and \"Cancel\" Buttons[entity]\n    Backend(Logic)[requirement]\n    --> New API Endpoint: POST /api/phone-swaps[entity]\n    --> New Table in Database to Store Swap Requests[entity]\n    --> Columns: Requester's ID, Requested Phone, Offered Phone, Status (defaulting to 'Pending'), and Comment[entity]\n    Backend Validation\n    --> Ensure User Making Request is Actual Owner of Phone Being Offered in Exchange[entity]\n    Action Items\n    UX Team: Create Wireframe of Modal and Form by EOD, October 17[requirement]\n    Backend Team: Develop New API Endpoint and Database Schema. Target Completion: October 21[requirement]\n    Frontend Team: Build \"Request Phone Swap\" Button and Basic Modal Structure. Begin Implementation Once Wireframes are Approved[requirement]\n    Product Manager: Create Formal Jira Ticket with Defined User Story and Acceptance Criteria[requirement]\n    Project Context\n    --> Universal Project Context: Knows Entire Project By Heart[entity]\n    --> Key Entities: 24[entity]\n    --> Most Important Entities in Your Project:\n    --> UserDto (class)[entity]\n    --> WeatherForecast (class)[entity]\n    --> UsersController (class)[entity]\n    --> WeatherForecastController (class)[entity]\n    --> IUserService (class)[entity]\n    --> UserService (class)[entity]\n    --> IMongoDBSettings (class)[entity]\n    --> MongoDBSettings (class)[entity]\n    --> AppRoutingModule (class)[entity]\n    --> AppComponent (class)[entity]\n    Retrieved Context\n    --> Meeting Notes and Requirements[requirement]\n    --> Codebase Context[requirement]",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_mindmap"
+    },
+    "created_at": "2025-12-18T12:07:15.955448",
+    "is_current": false
+  },
+  {
+    "version": 3,
+    "artifact_id": "mermaid_mindmap",
+    "artifact_type": "mermaid_mindmap",
+    "content": "graph LR\n    Phone Swap Request Feature[requirement]\n    --> Background[entity]\n    --> Feature Overview[entity]\n    --> Implementation Details[entity]\n    Background\n    --> Users Lack Formal Way to Request Phone Exchange[entity]\n    --> New Feature Aims to Create Streamlined Workflow[entity]\n    Feature Overview\n    --> User Story: \"As a user, I want to request a phone from the available list and offer one of my current phones in exchange...\"[entity]\n    Implementation Details\n    Frontend(UI/UX)[requirement]\n    --> New Button: \"Request Phone Swap\"[entity]\n    --> Modal Pop-up with Form[entity]\n    --> Phone to Request: Dropdown List[entity]\n    --> Phone to Exchange: Dropdown List[entity]\n    --> Reason for Request (Optional): Text Area[entity]\n    --> Actions: \"Submit Request\" and \"Cancel\" Buttons[entity]\n    Backend(Logic)[requirement]\n    --> New API Endpoint: POST /api/phone-swaps[entity]\n    --> New Table in Database to Store Swap Requests[entity]\n    --> Columns: Requester's ID, Requested Phone, Offered Phone, Status (defaulting to 'Pending'), and Comment[entity]\n    Backend Validation\n    --> Ensure User Making Request is Actual Owner of Phone Being Offered in Exchange[entity]\n    Action Items\n    UX Team: Create Wireframe of Modal and Form by EOD, October 17[requirement]\n    Backend Team: Develop New API Endpoint and Database Schema. Target Completion: October 21[requirement]\n    Frontend Team: Build \"Request Phone Swap\" Button and Basic Modal Structure. Begin Implementation Once Wireframes are Approved[requirement]\n    Product Manager: Create Formal Jira Ticket with Defined User Story and Acceptance Criteria[requirement]\n    Project Context\n    --> Universal Project Context: Knows Entire Project By Heart[entity]\n    --> Key Entities: 24[entity]\n    --> Most Important Entities in Your Project:\n    --> UserDto (class)[entity]\n    --> WeatherForecast (class)[entity]\n    --> UsersController (class)[entity]\n    --> WeatherForecastController (class)[entity]\n    --> IUserService (class)[entity]\n    --> UserService (class)[entity]\n    --> IMongoDBSettings (class)[entity]\n    --> MongoDBSettings (class)[entity]\n    --> AppRoutingModule (class)[entity]\n    --> AppComponent (class)[entity]\n    Retrieved Context\n    --> Meeting Notes and Requirements[requirement]\n    --> Codebase Context[requirement]",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_mindmap"
+    },
+    "created_at": "2025-12-18T12:07:16.996692",
+    "is_current": false
+  },
+  {
+    "version": 4,
+    "artifact_id": "mermaid_mindmap",
+    "artifact_type": "mermaid_mindmap",
+    "content": "graph TD\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  Frontend(\"UI/UX\")\n  style Frontend fill:#6366f1,stroke:#333,stroke-width:2px\n  Logic(\"Logic\")\n  style Logic fill:#6366f1,stroke:#333,stroke-width:2px\n\n  entity --> Users\n  entity --> User\n  Validation --> Ensure\n  requirement --> Universal\n  requirement --> Meeting\n",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit"
+    },
+    "created_at": "2025-12-18T12:08:14.415929",
+    "is_current": false
+  },
+  {
+    "version": 5,
+    "artifact_id": "mermaid_mindmap",
+    "artifact_type": "mermaid_mindmap",
+    "content": "graph TD\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  entity[\"entity\"]\n  style entity fill:#6366f1,stroke:#333,stroke-width:2px\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  requirement[\"requirement\"]\n  style requirement fill:#6366f1,stroke:#333,stroke-width:2px\n  Frontend(\"UI/UX\")\n  style Frontend fill:#6366f1,stroke:#333,stroke-width:2px\n  Logic(\"Logic\")\n  style Logic fill:#6366f1,stroke:#333,stroke-width:2px\n\n  entity --> Users\n  entity --> User\n  Validation --> Ensure\n  requirement --> Universal\n  requirement --> Meeting\n",
+    "metadata": {
+      "source": "canvas_editor",
+      "model_used": "manual_edit",
+      "validation_score": 100,
+      "is_valid": true
+    },
+    "created_at": "2025-12-18T12:08:14.437455",
     "is_current": true
   }
 ]

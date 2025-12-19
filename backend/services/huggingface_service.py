@@ -323,16 +323,18 @@ class HuggingFaceService:
                         id=clean_model_id,
                         name=f"{model_id} (HuggingFace)",
                         provider="huggingface",
-                        status="downloaded",
+                        status="downloaded",  # Mark as downloaded and available
                         is_trained=False,
                         metadata={
                             "huggingface_id": model_id,
                             "path": str(model_dir),
-                            "source": "huggingface"
+                            "actual_file_path": str(actual_download_path) if actual_download_path else None,
+                            "source": "huggingface",
+                            "usable_via_transformers": True  # Can be used directly
                         }
                     )
                     model_service._save_registry()
-                    logger.info(f"✅ [HF_DOWNLOAD] Model registered in ModelService: {clean_model_id}")
+                    logger.info(f"✅ [HF_DOWNLOAD] Model registered in ModelService: {clean_model_id} (usable via transformers)")
             except Exception as e:
                 logger.warning(f"⚠️ [HF_DOWNLOAD] Failed to register in ModelService: {e}")
             
@@ -356,13 +358,17 @@ class HuggingFaceService:
                     }
                 else:
                     # Download succeeded but conversion failed
+                    # Model is still usable via HuggingFace transformers directly
+                    logger.info(f"✅ [HF_DOWNLOAD] Model {model_id} downloaded successfully. "
+                              f"Can be used directly via HuggingFace transformers (Ollama conversion not required).")
                     return {
                         "success": True,  # Download was successful
-                        "message": f"Model {model_id} downloaded but conversion to Ollama failed",
+                        "message": f"Model {model_id} downloaded successfully. Can be used via HuggingFace transformers.",
                         "model_id": model_id,
                         "path": str(model_dir),
                         "conversion": conversion_result,
-                        "warning": conversion_result.get("error", "Conversion failed")
+                        "warning": conversion_result.get("error", "Ollama conversion failed, but model is usable via transformers"),
+                        "usable_via_transformers": True  # Mark as usable via transformers
                     }
             
             result = {

@@ -36,6 +36,13 @@ except ImportError:
     logger.warning("OllamaClient not available. Local model generation disabled.")
 
 try:
+    from ai.huggingface_client import get_client as get_hf_client
+    HF_CLIENT_AVAILABLE = True
+except ImportError:
+    HF_CLIENT_AVAILABLE = False
+    logger.warning("HuggingFace client not available. Direct HF model usage disabled.")
+
+try:
     from agents.universal_agent import UniversalArchitectAgent
     UNIVERSAL_AGENT_AVAILABLE = True
 except ImportError:
@@ -58,6 +65,7 @@ class EnhancedGenerationService:
         self.context_builder = get_context_builder()
         self.validation_service = get_validation_service()
         self.ollama_client = OllamaClient() if OLLAMA_AVAILABLE else None
+        self.hf_client = get_hf_client() if HF_CLIENT_AVAILABLE else None
         
         logger.info("Enhanced Generation Service initialized")
     
@@ -179,22 +187,49 @@ class EnhancedGenerationService:
         # Step 1: Try local models (with retry logic per model)
         logger.info(f"🔄 [ENHANCED_GEN] Starting local model attempts: {len(local_models)} model(s)")
         for model_idx, model_id in enumerate(local_models):
-            if not self.ollama_client:
-                logger.warning(f"⚠️ [ENHANCED_GEN] Ollama client not available, skipping local models")
-                break
+            # Check if this is a local model (Ollama/HuggingFace) or cloud model
+            provider = "ollama"  # default
+            model_name = model_id
+            hf_model_id = None
+            hf_model_path = None
             
-            # Check if this is a local model (Ollama) or cloud model
             if ":" in model_id:
                 provider, model_name = model_id.split(":", 1)
-                if provider != "ollama":
-                    logger.debug(f"⏭️ [ENHANCED_GEN] Skipping cloud model in local phase: {model_id}")
-                    # Skip cloud models in local phase
-                    continue
-            else:
-                # Assume Ollama model if no provider prefix
-                model_name = model_id
+                if provider == "huggingface":
+                    # Extract HuggingFace model ID
+                    hf_model_id = model_name.replace("-", "/")  # Convert back from registry format
+                    # Try to get model path from registry
+                    try:
+                        from backend.services.huggingface_service import get_service as get_hf_service
+                        hf_service = get_hf_service()
+                        if hf_model_id in hf_service.downloaded_models:
+                            hf_model_path = hf_service.downloaded_models[hf_model_id].get("path")
+                            # Also check for actual_file_path
+                            if not hf_model_path:
+                                hf_model_path = hf_service.downloaded_models[hf_model_id].get("actual_file_path")
+                        # Also check ModelService metadata
+                        if not hf_model_path:
+                            model_info = self.model_service.models.get(model_id)
+                            if model_info and model_info.metadata:
+                                hf_model_path = model_info.metadata.get("path") or model_info.metadata.get("actual_file_path")
+                    except Exception as e:
+                        logger.debug(f"Could not get HF model path: {e}")
             
-            logger.info(f"🤖 [ENHANCED_GEN] Attempting local model [{model_idx + 1}/{len(local_models)}]: {model_name} for {artifact_type.value}")
+            # Skip cloud models in local phase
+            if provider not in ["ollama", "huggingface"]:
+                logger.debug(f"⏭️ [ENHANCED_GEN] Skipping cloud model in local phase: {model_id}")
+                continue
+            
+            # Check if we have the appropriate client
+            if provider == "ollama" and not self.ollama_client:
+                logger.debug(f"⏭️ [ENHANCED_GEN] Ollama client not available, skipping: {model_id}")
+                continue
+            
+            if provider == "huggingface" and not self.hf_client:
+                logger.debug(f"⏭️ [ENHANCED_GEN] HuggingFace client not available, skipping: {model_id}")
+                continue
+            
+            logger.info(f"🤖 [ENHANCED_GEN] Attempting local model [{model_idx + 1}/{len(local_models)}]: {model_name} ({provider}) for {artifact_type.value}")
             
             # Progress: Trying model
             if progress_callback:
@@ -209,23 +244,49 @@ class EnhancedGenerationService:
                         f"Retrying {model_name} (attempt {retry + 1}/{opts['max_retries'] + 1})..."
                     )
                 try:
-                    logger.info(f"🔄 [ENHANCED_GEN] Model attempt {retry + 1}/{opts['max_retries'] + 1}: {model_name}")
-                    # Load model (with VRAM management)
-                    await self.ollama_client.ensure_model_available(model_name)
-                    logger.debug(f"✅ [ENHANCED_GEN] Model {model_name} is available")
+                    logger.info(f"🔄 [ENHANCED_GEN] Model attempt {retry + 1}/{opts['max_retries'] + 1}: {model_name} ({provider})")
                     
                     # Build prompt with context
                     prompt = self._build_prompt(meeting_notes, assembled_context, artifact_type)
                     logger.debug(f"📝 [ENHANCED_GEN] Prompt built: length={len(prompt)}")
                     
-                    # Generate
-                    logger.info(f"⚡ [ENHANCED_GEN] Generating with {model_name}...")
-                    response = await self.ollama_client.generate(
-                        model_name=model_name,
-                        prompt=prompt,
-                        system_message=self._get_system_message(artifact_type),
-                        temperature=opts["temperature"]
-                    )
+                    # Generate based on provider
+                    if provider == "ollama":
+                        # Load model (with VRAM management)
+                        await self.ollama_client.ensure_model_available(model_name)
+                        logger.debug(f"✅ [ENHANCED_GEN] Model {model_name} is available")
+                        
+                        # Generate
+                        logger.info(f"⚡ [ENHANCED_GEN] Generating with {model_name}...")
+                        response = await self.ollama_client.generate(
+                            model_name=model_name,
+                            prompt=prompt,
+                            system_message=self._get_system_message(artifact_type),
+                            temperature=opts["temperature"]
+                        )
+                    elif provider == "huggingface":
+                        # Use HuggingFace client
+                        logger.info(f"⚡ [ENHANCED_GEN] Generating with HuggingFace model: {hf_model_id or model_name}...")
+                        hf_response = await self.hf_client.generate(
+                            model_id=hf_model_id or model_name,
+                            prompt=prompt,
+                            system_message=self._get_system_message(artifact_type),
+                            temperature=opts["temperature"],
+                            model_path=hf_model_path
+                        )
+                        # Convert HF response to Ollama-like response format
+                        from ai.ollama_client import GenerationResponse as OllamaResponse
+                        response = OllamaResponse(
+                            content=hf_response.content,
+                            model_used=hf_response.model_used,
+                            generation_time=hf_response.generation_time,
+                            tokens_generated=hf_response.tokens_generated,
+                            success=hf_response.success,
+                            error_message=hf_response.error_message
+                        )
+                    else:
+                        logger.warning(f"⚠️ [ENHANCED_GEN] Unknown provider: {provider}")
+                        continue
                     
                     if not response.success or not response.content:
                         logger.warning(f"⚠️ [ENHANCED_GEN] Generation failed with {model_name} (attempt {retry + 1}): {response.error_message}")
@@ -1101,16 +1162,25 @@ async def _generate_with_fallback(
     
     # Try local models first (with limited attempts for faster response)
     local_attempts = 0
-    if self.ollama_client:
-        for model_name in models_to_try:
-            if local_attempts >= max_local_attempts:
-                logger.info(f"⏭️ [ENHANCED_GEN] Reached max local attempts ({max_local_attempts}), moving to cloud")
-                break
+    for model_name in models_to_try:
+        if local_attempts >= max_local_attempts:
+            logger.info(f"⏭️ [ENHANCED_GEN] Reached max local attempts ({max_local_attempts}), moving to cloud")
+            break
+        
+        # Determine provider
+        provider = "ollama"  # default
+        hf_model_id = None
+        if ":" in model_name:
+            provider, model_name = model_name.split(":", 1)
+            if provider == "huggingface":
+                hf_model_id = model_name.replace("-", "/")
+        
+        local_attempts += 1
+        try:
+            logger.info(f"🤖 [ENHANCED_GEN] Trying local model: {model_name} ({provider}) (attempt {local_attempts}/{max_local_attempts})")
             
-            local_attempts += 1
-            try:
-                logger.info(f"🤖 [ENHANCED_GEN] Trying local model: {model_name} (attempt {local_attempts}/{max_local_attempts})")
-                
+            # Generate based on provider
+            if provider == "ollama" and self.ollama_client:
                 # Ensure model is available
                 await self.ollama_client.ensure_model_available(model_name)
                 
@@ -1129,20 +1199,49 @@ async def _generate_with_fallback(
                 except asyncio.TimeoutError:
                     logger.warning(f"⏱️ [ENHANCED_GEN] Timeout after {timeout_seconds}s with {model_name}")
                     continue
-                
-                if response.success and response.content:
-                    logger.info(f"✅ [ENHANCED_GEN] Success with {model_name}: content_length={len(response.content)}")
-                    return GenerationResult(
-                        content=response.content,
-                        model_used=model_name,
-                        success=True
+            elif provider == "huggingface" and self.hf_client:
+                # Use HuggingFace client
+                try:
+                    import asyncio
+                    hf_response = await asyncio.wait_for(
+                        self.hf_client.generate(
+                            model_id=hf_model_id or model_name,
+                            prompt=prompt,
+                            system_message=system_instruction,
+                            temperature=temperature
+                        ),
+                        timeout=timeout_seconds
                     )
-                else:
-                    logger.warning(f"⚠️ [ENHANCED_GEN] {model_name} returned no content")
-                    
-            except Exception as e:
-                logger.warning(f"⚠️ [ENHANCED_GEN] Error with {model_name}: {e}")
+                    # Convert to Ollama-like response
+                    from ai.ollama_client import GenerationResponse as OllamaResponse
+                    response = OllamaResponse(
+                        content=hf_response.content,
+                        model_used=hf_response.model_used,
+                        generation_time=hf_response.generation_time,
+                        tokens_generated=hf_response.tokens_generated,
+                        success=hf_response.success,
+                        error_message=hf_response.error_message
+                    )
+                except asyncio.TimeoutError:
+                    logger.warning(f"⏱️ [ENHANCED_GEN] Timeout after {timeout_seconds}s with HuggingFace {model_name}")
+                    continue
+            else:
+                logger.debug(f"⏭️ [ENHANCED_GEN] Skipping {model_name} ({provider}) - client not available")
                 continue
+            
+            if response.success and response.content:
+                logger.info(f"✅ [ENHANCED_GEN] Success with {model_name}: content_length={len(response.content)}")
+                return GenerationResult(
+                    content=response.content,
+                    model_used=f"{provider}:{model_name}" if provider != "ollama" else model_name,
+                    success=True
+                )
+            else:
+                logger.warning(f"⚠️ [ENHANCED_GEN] {model_name} returned no content")
+                
+        except Exception as e:
+            logger.warning(f"⚠️ [ENHANCED_GEN] Error with {model_name}: {e}")
+            continue
     
     # Try cloud models as fallback
     # Prioritize cloud models from routing, then default providers

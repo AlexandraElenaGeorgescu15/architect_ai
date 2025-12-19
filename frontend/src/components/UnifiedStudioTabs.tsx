@@ -196,6 +196,53 @@ const ArtifactTypeButton = memo(function ArtifactTypeButton({
   )
 })
 
+// Helper function to get the currently displayed artifact (matches MermaidDiagramViewer logic)
+function getDisplayedArtifact(selectedArtifactType: ArtifactType, progress: any, getArtifactsByType: (type: ArtifactType) => any[]) {
+  const latestArtifact = getArtifactsByType(selectedArtifactType)?.[0]
+  return latestArtifact || progress?.artifact || null
+}
+
+// Edit in Canvas button component that uses the same artifact as MermaidDiagramViewer
+const EditInCanvasButton = memo(function EditInCanvasButton({
+  selectedArtifactType,
+  progress,
+  getArtifactsByType,
+  navigate
+}: {
+  selectedArtifactType: ArtifactType
+  progress: any
+  getArtifactsByType: (type: ArtifactType) => any[]
+  navigate: (path: string, state?: any) => void
+}) {
+  const handleEditInCanvas = useCallback(() => {
+    const displayedArtifact = getDisplayedArtifact(selectedArtifactType, progress, getArtifactsByType)
+    if (displayedArtifact) {
+      navigate('/canvas', { 
+        state: { 
+          artifactId: displayedArtifact.id,
+          artifactType: displayedArtifact.type
+        } 
+      })
+    }
+  }, [selectedArtifactType, progress, getArtifactsByType, navigate])
+
+  const displayedArtifact = getDisplayedArtifact(selectedArtifactType, progress, getArtifactsByType)
+  
+  if (!displayedArtifact) {
+    return null
+  }
+
+  return (
+    <button
+      onClick={handleEditInCanvas}
+      className="text-xs px-3 py-1.5 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors flex items-center gap-1.5 font-medium"
+    >
+      <Edit3 className="w-3 h-3" />
+      Edit in Canvas
+    </button>
+  )
+})
+
 // MermaidDiagramViewer component that uses store directly for reactivity
 const MermaidDiagramViewer = memo(function MermaidDiagramViewer({
   selectedArtifactType,
@@ -683,24 +730,12 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                             <Sparkles className="w-3 h-3 text-primary" />
                             For interactive editing with drag-and-drop, use <strong>Canvas</strong>
                           </span>
-                          <button
-                            onClick={() => {
-                              const latestArtifact = getArtifactsByType(props.selectedArtifactType)?.[0]
-                              if (latestArtifact) {
-                                navigate('/canvas', { 
-                                  state: { 
-                                    artifactId: latestArtifact.id,
-                                    artifactType: latestArtifact.type,
-                                    diagramId: latestArtifact.id // Support both parameter names
-                                  } 
-                                })
-                              }
-                            }}
-                            className="text-xs px-3 py-1.5 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors flex items-center gap-1.5 font-medium"
-                          >
-                            <Edit3 className="w-3 h-3" />
-                            Edit in Canvas
-                          </button>
+                          <EditInCanvasButton 
+                            selectedArtifactType={props.selectedArtifactType}
+                            progress={props.progress}
+                            getArtifactsByType={getArtifactsByType}
+                            navigate={navigate}
+                          />
                         </div>
                       </>
                     ) : props.selectedArtifactType === 'code_prototype' ? (

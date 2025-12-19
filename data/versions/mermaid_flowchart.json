@@ -199,6 +199,32 @@
       "is_valid": true
     },
     "created_at": "2025-12-18T11:58:07.898118",
+    "is_current": false
+  },
+  {
+    "version": 11,
+    "artifact_id": "mermaid_flowchart",
+    "artifact_type": "mermaid_flowchart",
+    "content": "graph TD\n  Start[\"Start\"]\n  style Start fill:#22c55e,stroke:#333,stroke-width:2px\n  Phone_Swap_Request_Feature[\"Phone Swap Request Feature\"]\n  style Phone_Swap_Request_Feature fill:#6366f1,stroke:#333,stroke-width:2px\n  DefineRequirements[\"Define Requirements\"]\n  style DefineRequirements fill:#6366f1,stroke:#333,stroke-width:2px\n  UxDesign[\"UX Design: Create wireframe of modal and form by EOD, October 17\"]\n  style UxDesign fill:#6366f1,stroke:#333,stroke-width:2px\n  FrontendDevelopment[\"Frontend Development: Build Request Phone Swap button and basic modal structure. Begin implementation once wireframes are approved\"]\n  style FrontendDevelopment fill:#22c55e,stroke:#333,stroke-width:2px\n  BackendDevelopment[\"Backend Development: Develop new API endpoint (POST /api/phone-swaps) and database schema. Target completion: October 21\"]\n  style BackendDevelopment fill:#ef4444,stroke:#333,stroke-width:2px\n  ProductManagement[\"Product Management: Create formal Jira ticket with defined user story and acceptance criteria\"]\n  style ProductManagement fill:#6366f1,stroke:#333,stroke-width:2px\n  SubmitRequest[\"Submit Request\"]\n  style SubmitRequest fill:#6366f1,stroke:#333,stroke-width:2px\n  ConfirmationMessage[\"Confirmation Message: Successful submission closes modal and displays confirmation message\"]\n  style ConfirmationMessage fill:#6366f1,stroke:#333,stroke-width:2px\n\n  Phone_Swap_Request_Feature -->|\"Define Requirements DefineRequirementsDefine Requirements     DefineRequirements -->\"| UX\n  UxDesign -->|\"Frontend Development FrontendDevelopmentFrontend Development: Build Request Phone Swap button and basic modal structure. Begin implementation once wireframes are approved     FrontendDevelopment -->\"| Backend\n  BackendDevelopment -->|\"Product Management ProductManagementProduct Management: Create formal Jira ticket with defined user story and acceptance criteria     ProductManagement -->\"| Submit\n  SubmitRequest --> Confirmation\n",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit"
+    },
+    "created_at": "2025-12-18T12:08:02.346133",
+    "is_current": false
+  },
+  {
+    "version": 12,
+    "artifact_id": "mermaid_flowchart",
+    "artifact_type": "mermaid_flowchart",
+    "content": "graph TD\n  Start[\"Start\"]\n  style Start fill:#22c55e,stroke:#333,stroke-width:2px\n  Phone_Swap_Request_Feature[\"Phone Swap Request Feature\"]\n  style Phone_Swap_Request_Feature fill:#6366f1,stroke:#333,stroke-width:2px\n  DefineRequirements[\"Define Requirements\"]\n  style DefineRequirements fill:#6366f1,stroke:#333,stroke-width:2px\n  UxDesign[\"UX Design: Create wireframe of modal and form by EOD, October 17\"]\n  style UxDesign fill:#6366f1,stroke:#333,stroke-width:2px\n  FrontendDevelopment[\"Frontend Development: Build Request Phone Swap button and basic modal structure. Begin implementation once wireframes are approved\"]\n  style FrontendDevelopment fill:#22c55e,stroke:#333,stroke-width:2px\n  BackendDevelopment[\"Backend Development: Develop new API endpoint (POST /api/phone-swaps) and database schema. Target completion: October 21\"]\n  style BackendDevelopment fill:#ef4444,stroke:#333,stroke-width:2px\n  ProductManagement[\"Product Management: Create formal Jira ticket with defined user story and acceptance criteria\"]\n  style ProductManagement fill:#6366f1,stroke:#333,stroke-width:2px\n  SubmitRequest[\"Submit Request\"]\n  style SubmitRequest fill:#6366f1,stroke:#333,stroke-width:2px\n  ConfirmationMessage[\"Confirmation Message: Successful submission closes modal and displays confirmation message\"]\n  style ConfirmationMessage fill:#6366f1,stroke:#333,stroke-width:2px\n\n  Phone_Swap_Request_Feature -->|\"Define Requirements DefineRequirementsDefine Requirements     DefineRequirements -->\"| UX\n  UxDesign -->|\"Frontend Development FrontendDevelopmentFrontend Development: Build Request Phone Swap button and basic modal structure. Begin implementation once wireframes are approved     FrontendDevelopment -->\"| Backend\n  BackendDevelopment -->|\"Product Management ProductManagementProduct Management: Create formal Jira ticket with defined user story and acceptance criteria     ProductManagement -->\"| Submit\n  SubmitRequest --> Confirmation\n",
+    "metadata": {
+      "source": "canvas_editor",
+      "model_used": "manual_edit",
+      "validation_score": 100,
+      "is_valid": true
+    },
+    "created_at": "2025-12-18T12:08:02.367140",
     "is_current": true
   }
 ]

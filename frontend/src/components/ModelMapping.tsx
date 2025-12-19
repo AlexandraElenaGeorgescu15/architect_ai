@@ -27,11 +27,13 @@ export default function ModelMapping() {
   // Check if there are any unavailable configured models
   const hasUnavailableModels = useMemo(() => {
     const ollamaModels = models.filter(m => m.provider === 'ollama')
-    const cloudModels = models.filter(m => m.provider !== 'ollama' && m.status === 'available')
+    const huggingfaceModels = models.filter(m => m.provider === 'huggingface' && (m.status === 'downloaded' || m.status === 'available'))
+    const cloudModels = models.filter(m => m.provider !== 'ollama' && m.provider !== 'huggingface' && m.status === 'available')
     
     return Object.values(routings).some(routing => {
       if (!routing.primary_model) return false
       return !ollamaModels.some(m => m.id === routing.primary_model) && 
+             !huggingfaceModels.some(m => m.id === routing.primary_model) &&
              !cloudModels.some(m => m.id === routing.primary_model)
     })
   }, [routings, models])
@@ -271,7 +273,8 @@ export default function ModelMapping() {
   )
 
   const ollamaModels = models.filter(m => m.provider === 'ollama')
-  const cloudModels = models.filter(m => m.provider !== 'ollama' && m.status === 'available')
+  const huggingfaceModels = models.filter(m => m.provider === 'huggingface' && (m.status === 'downloaded' || m.status === 'available'))
+  const cloudModels = models.filter(m => m.provider !== 'ollama' && m.provider !== 'huggingface' && m.status === 'available')
 
   return (
     <div className="space-y-6">
@@ -396,6 +399,7 @@ export default function ModelMapping() {
                       {/* Show current model if not in the list (unavailable but configured) */}
                       {routing.primary_model && 
                        !ollamaModels.some(m => m.id === routing.primary_model) && 
+                       !huggingfaceModels.some(m => m.id === routing.primary_model) &&
                        !cloudModels.some(m => m.id === routing.primary_model) && (
                         <option value={routing.primary_model} className="text-yellow-600">
                           ⚠️ {routing.primary_model} (configured but unavailable)
@@ -406,6 +410,17 @@ export default function ModelMapping() {
                           <option disabled>No Ollama models found - install models first</option>
                         ) : (
                           ollamaModels.map(model => (
+                            <option key={model.id} value={model.id}>
+                              {model.name} ({model.provider})
+                            </option>
+                          ))
+                        )}
+                      </optgroup>
+                      <optgroup label="HuggingFace Models (Local)">
+                        {huggingfaceModels.length === 0 ? (
+                          <option disabled>No HuggingFace models - download models first</option>
+                        ) : (
+                          huggingfaceModels.map(model => (
                             <option key={model.id} value={model.id}>
                               {model.name} ({model.provider})
                             </option>
@@ -441,6 +456,11 @@ export default function ModelMapping() {
                           <option value="">-- Select fallback --</option>
                           <optgroup label="Ollama (Local)">
                             {ollamaModels.map(m => (
+                              <option key={m.id} value={m.id}>{m.name}</option>
+                            ))}
+                          </optgroup>
+                          <optgroup label="HuggingFace (Local)">
+                            {huggingfaceModels.map(m => (
                               <option key={m.id} value={m.id}>{m.name}</option>
                             ))}
                           </optgroup>

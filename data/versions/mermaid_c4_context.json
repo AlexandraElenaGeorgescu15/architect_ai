@@ -34,6 +34,32 @@
       ]
     },
     "created_at": "2025-12-10T22:25:14.740883",
+    "is_current": false
+  },
+  {
+    "version": 2,
+    "artifact_id": "mermaid_c4_context",
+    "artifact_type": "mermaid_c4_context",
+    "content": "graph TD\n  User[\"User\"]\n  style User fill:#6366f1,stroke:#333,stroke-width:2px\n  Phone_Swap_Request_Feature[\"Phone Swap Request Feature\"]\n  style Phone_Swap_Request_Feature fill:#6366f1,stroke:#333,stroke-width:2px\n  C[\"Backend API Endpoint (POST /api/phone-swaps)\"]\n  style C fill:#ef4444,stroke:#333,stroke-width:2px\n  Database_Table_for_Swap_Requests[\"Database Table for Swap Requests\"]\n  style Database_Table_for_Swap_Requests fill:#06b6d4,stroke:#333,stroke-width:2px\n  System_Database[\"System Database\"]\n  style System_Database fill:#06b6d4,stroke:#333,stroke-width:2px\n  Product_Manager[\"Product Manager\"]\n  style Product_Manager fill:#6366f1,stroke:#333,stroke-width:2px\n  Jira_Ticket_with_User_Story_and_Acceptance_Criteria[\"Jira Ticket with User Story and Acceptance Criteria\"]\n  style Jira_Ticket_with_User_Story_and_Acceptance_Criteria fill:#6366f1,stroke:#333,stroke-width:2px\n  UX_Team[\"UX Team\"]\n  style UX_Team fill:#6366f1,stroke:#333,stroke-width:2px\n  Wireframe_of_Modal_and_Form[\"Wireframe of Modal and Form\"]\n  style Wireframe_of_Modal_and_Form fill:#6366f1,stroke:#333,stroke-width:2px\n  Frontend_Team[\"Frontend Team\"]\n  style Frontend_Team fill:#ef4444,stroke:#333,stroke-width:2px\n  K[\"Request Phone Swap Button and Basic Modal Structure\"]\n  style K fill:#6366f1,stroke:#333,stroke-width:2px\n  Backend_Team[\"Backend Team\"]\n  style Backend_Team fill:#ef4444,stroke:#333,stroke-width:2px\n  M[\"New API Endpoint (POST /api/phone-swaps)\"]\n  style M fill:#ef4444,stroke:#333,stroke-width:2px\n  Database_Table_for_Swap_Requests[\"Database Table for Swap Requests\"]\n  style Database_Table_for_Swap_Requests fill:#06b6d4,stroke:#333,stroke-width:2px\n\n  Phone_Swap_Request_Feature -->|\"handles request\"| C\n  C -->|\"validates user ownership\"| Database_Table_for_Swap_Requests\n  Database_Table_for_Swap_Requests -->|\"stores swap requests\"| System_Database\n  Wireframe_of_Modal_and_Form -->|\"approved\"| Frontend_Team\n  Frontend_Team -->|\"builds modal structure\"| K\n  M -->|\"develops database schema\"| Database_Table_for_Swap_Requests\n",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit"
+    },
+    "created_at": "2025-12-18T12:09:21.750492",
+    "is_current": false
+  },
+  {
+    "version": 3,
+    "artifact_id": "mermaid_c4_context",
+    "artifact_type": "mermaid_c4_context",
+    "content": "graph TD\n  User[\"User\"]\n  style User fill:#6366f1,stroke:#333,stroke-width:2px\n  Phone_Swap_Request_Feature[\"Phone Swap Request Feature\"]\n  style Phone_Swap_Request_Feature fill:#6366f1,stroke:#333,stroke-width:2px\n  C[\"Backend API Endpoint (POST /api/phone-swaps)\"]\n  style C fill:#ef4444,stroke:#333,stroke-width:2px\n  Database_Table_for_Swap_Requests[\"Database Table for Swap Requests\"]\n  style Database_Table_for_Swap_Requests fill:#06b6d4,stroke:#333,stroke-width:2px\n  System_Database[\"System Database\"]\n  style System_Database fill:#06b6d4,stroke:#333,stroke-width:2px\n  Product_Manager[\"Product Manager\"]\n  style Product_Manager fill:#6366f1,stroke:#333,stroke-width:2px\n  Jira_Ticket_with_User_Story_and_Acceptance_Criteria[\"Jira Ticket with User Story and Acceptance Criteria\"]\n  style Jira_Ticket_with_User_Story_and_Acceptance_Criteria fill:#6366f1,stroke:#333,stroke-width:2px\n  UX_Team[\"UX Team\"]\n  style UX_Team fill:#6366f1,stroke:#333,stroke-width:2px\n  Wireframe_of_Modal_and_Form[\"Wireframe of Modal and Form\"]\n  style Wireframe_of_Modal_and_Form fill:#6366f1,stroke:#333,stroke-width:2px\n  Frontend_Team[\"Frontend Team\"]\n  style Frontend_Team fill:#ef4444,stroke:#333,stroke-width:2px\n  K[\"Request Phone Swap Button and Basic Modal Structure\"]\n  style K fill:#6366f1,stroke:#333,stroke-width:2px\n  Backend_Team[\"Backend Team\"]\n  style Backend_Team fill:#ef4444,stroke:#333,stroke-width:2px\n  M[\"New API Endpoint (POST /api/phone-swaps)\"]\n  style M fill:#ef4444,stroke:#333,stroke-width:2px\n  Database_Table_for_Swap_Requests[\"Database Table for Swap Requests\"]\n  style Database_Table_for_Swap_Requests fill:#06b6d4,stroke:#333,stroke-width:2px\n\n  Phone_Swap_Request_Feature -->|\"handles request\"| C\n  C -->|\"validates user ownership\"| Database_Table_for_Swap_Requests\n  Database_Table_for_Swap_Requests -->|\"stores swap requests\"| System_Database\n  Wireframe_of_Modal_and_Form -->|\"approved\"| Frontend_Team\n  Frontend_Team -->|\"builds modal structure\"| K\n  M -->|\"develops database schema\"| Database_Table_for_Swap_Requests\n",
+    "metadata": {
+      "source": "canvas_editor",
+      "model_used": "manual_edit",
+      "validation_score": 100,
+      "is_valid": true
+    },
+    "created_at": "2025-12-18T12:09:21.772486",
     "is_current": true
   }
 ]

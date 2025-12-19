@@ -30,16 +30,16 @@ export default function Canvas() {
     const state = (location.state as { 
       artifactId?: string; 
       artifactType?: string;
-      diagramId?: string;  // Alternative key from ArtifactCard
+      diagramId?: string;  // Alternative key from ArtifactCard (this is an ID, not a type)
       content?: string;    // Optional content for immediate display
     } | null) || {}
     const queryArtifactId = searchParams.get('artifactId') || searchParams.get('diagram')
     const queryArtifactType = searchParams.get('artifactType')
     
-    // Support both 'artifactId' and 'diagramId' keys
+    // Support both 'artifactId' and 'diagramId' keys (both are IDs)
     const initialId = state.artifactId || state.diagramId || queryArtifactId
-    // Support both 'artifactType' and using 'diagramId' as type (since we use artifact type as ID)
-    const initialType = state.artifactType || state.diagramId || queryArtifactType
+    // Only use artifactType from state or query - diagramId is an ID, not a type!
+    const initialType = state.artifactType || queryArtifactType
     
     if (initialId) {
       setSelectedArtifactId(initialId)
