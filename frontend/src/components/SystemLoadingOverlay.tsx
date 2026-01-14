@@ -215,6 +215,25 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
           </div>
         </div>
 
+        {/* Connection hint when there's an error */}
+        {error && (
+          <div className="mt-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30">
+            <div className="flex items-start gap-3">
+              <div className="p-2 bg-amber-500/20 rounded-lg flex-shrink-0">
+                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-amber-700 dark:text-amber-400">Need to connect to a custom backend?</p>
+                <p className="text-xs text-amber-600/80 dark:text-amber-400/70 mt-1">
+                  Click the <strong>WiFi icon</strong> in the <strong>bottom-left corner</strong> to configure your ngrok URL or local backend address.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="mt-6 flex items-center justify-between pt-6 border-t border-border">
           <div className="text-xs text-muted-foreground">
             {error ? (
