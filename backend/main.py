@@ -709,6 +709,7 @@ from backend.api import config as config_router
 from backend.api import synthetic_data as synthetic_data_router
 from backend.api import ai as ai_router  # AI diagram parsing and improvement
 from backend.api import project_target as project_target_router  # Project target management
+from backend.api import assistant as assistant_router  # Intelligent Assistant - suggestions, linking, review, etc.
 
 app.include_router(models_router.router)
 app.include_router(training_router.router)
@@ -728,6 +729,7 @@ app.include_router(config_router.router)
 app.include_router(synthetic_data_router.router)
 app.include_router(ai_router.router)  # AI diagram parsing and improvement
 app.include_router(project_target_router.router)  # Project target management
+app.include_router(assistant_router.router)  # Intelligent Assistant - suggestions, artifact linking, sprint packages, etc.
 
 if __name__ == "__main__":
     import uvicorn

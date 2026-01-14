@@ -179,9 +179,7 @@ async def get_versions_by_type(
 
 # Migration routes - MUST be before /{artifact_id} to avoid route conflicts
 @router.get("/migration/preview", response_model=Dict[str, Any])
-@limiter.limit("10/minute")
 async def preview_migration(
-    request: Request,
     current_user: UserPublic = Depends(get_current_user)
 ):
     """
