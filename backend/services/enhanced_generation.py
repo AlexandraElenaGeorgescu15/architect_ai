@@ -151,6 +151,40 @@ class EnhancedGenerationService:
         logger.info(f"📊 [ENHANCED_GEN] Context assembled: length={len(assembled_context)}, "
                    f"has_rag={bool(context.get('rag'))}, has_kg={bool(context.get('knowledge_graph'))}")
         
+        # ========================================================================
+        # STEP 0: Check if user has a CLOUD model preference (highest priority)
+        # This respects user's Model Mapping configuration
+        # ========================================================================
+        preferred = self.model_service.get_preferred_model_for_artifact(artifact_type)
+        if preferred:
+            pref_provider, pref_model = preferred
+            logger.info(f"🎯 [ENHANCED_GEN] User's preferred model: {pref_provider}:{pref_model}")
+            
+            # If user prefers a CLOUD model, try it FIRST before local models
+            if pref_provider not in ["ollama", "huggingface"]:
+                logger.info(f"☁️ [ENHANCED_GEN] User prefers cloud model, trying {pref_provider}:{pref_model} FIRST...")
+                
+                if progress_callback:
+                    await progress_callback(35.0, f"Using your preferred cloud model: {pref_provider}:{pref_model}...")
+                
+                # Try the user's preferred cloud model
+                cloud_result = await self._try_single_cloud_model(
+                    provider=pref_provider,
+                    model_name=pref_model,
+                    artifact_type=artifact_type,
+                    meeting_notes=meeting_notes,
+                    assembled_context=assembled_context,
+                    context=context,
+                    threshold=opts.get("validation_threshold", 80.0),
+                    progress_callback=progress_callback
+                )
+                
+                if cloud_result and cloud_result.get("success"):
+                    logger.info(f"✅ [ENHANCED_GEN] User's preferred cloud model succeeded!")
+                    return cloud_result
+                else:
+                    logger.warning(f"⚠️ [ENHANCED_GEN] User's preferred cloud model failed, falling back to local models...")
+        
         # Get models for this artifact type
         # This now properly prioritizes fine-tuned models first
         logger.info(f"🔍 [ENHANCED_GEN] Getting models for artifact type: {artifact_type.value}")
@@ -164,8 +198,28 @@ class EnhancedGenerationService:
                 model_preview += f" (+{len(local_models) - 3} more)"
             logger.info(f"🎯 [ENHANCED_GEN] Model priority order: {model_preview}")
         
+        # If no local models AND no cloud preference worked, try cloud fallback
         if not local_models:
-            error_msg = "No local models available. Please ensure Ollama is running and models are installed."
+            logger.warning(f"⚠️ [ENHANCED_GEN] No local models available, trying cloud fallback...")
+            
+            if progress_callback:
+                await progress_callback(40.0, "No local models, trying cloud models...")
+            
+            # Try cloud models as fallback
+            cloud_result = await self._try_cloud_models(
+                artifact_type=artifact_type,
+                meeting_notes=meeting_notes,
+                assembled_context=assembled_context,
+                context=context,
+                threshold=opts.get("validation_threshold", 80.0),
+                progress_callback=progress_callback
+            )
+            
+            if cloud_result and cloud_result.get("success"):
+                return cloud_result
+            
+            # If even cloud failed, return error
+            error_msg = "No models available. Please ensure Ollama is running or configure cloud API keys."
             logger.error(f"❌ [ENHANCED_GEN] {error_msg}")
             if progress_callback:
                 await progress_callback(100.0, f"Error: {error_msg}")
@@ -408,8 +462,10 @@ class EnhancedGenerationService:
                                 from backend.services.validation_service import ValidationService
                                 validator = ValidationService()
                                 cleaned_content = validator._extract_mermaid_diagram(response.content)
-                                if cleaned_content != response.content:
-                                    logger.info(f"🧹 [ENHANCED_GEN] Cleaned Mermaid diagram: removed {len(response.content) - len(cleaned_content)} chars of extra text")
+                                chars_removed = len(response.content) - len(cleaned_content)
+                                # Only log significant cleanups to reduce log spam
+                                if chars_removed > 5:
+                                    logger.info(f"🧹 [ENHANCED_GEN] Cleaned Mermaid diagram: removed {chars_removed} chars of extra text")
                                 
                                 # Fix ERD syntax if it's using class diagram syntax
                                 if artifact_type.value == "mermaid_erd" and ("class " in cleaned_content or "CLASS " in cleaned_content):
@@ -735,8 +791,10 @@ class EnhancedGenerationService:
         if rag_context:
             parts.append("\n## Project Context (from codebase)")
             # Sanitize RAG context (already from our own codebase, but still good practice)
-            # Limit RAG context to avoid token limits, but preserve important parts
-            safe_context = sanitize_prompt_input(rag_context, max_length=3000)
+            # FIX: Increased from 3000 to 12000 chars to preserve more important context
+            # The previous 3000 char limit was losing critical architectural details
+            # Most LLMs can handle 8K+ context; Ollama/llama3 supports 8K tokens (~32K chars)
+            safe_context = sanitize_prompt_input(rag_context, max_length=12000)
             parts.append(safe_context)
         
         parts.append("\n## Instructions")
@@ -971,6 +1029,109 @@ Follow the repository's coding style and test patterns. Make tests realistic and
                 continue
         
         return None
+    
+    async def _try_single_cloud_model(
+        self,
+        provider: str,
+        model_name: str,
+        artifact_type: ArtifactType,
+        meeting_notes: str,
+        assembled_context: str,
+        context: Dict[str, Any],
+        threshold: float,
+        progress_callback: Optional[callable] = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Try a single specific cloud model (user's preferred model from routing).
+        
+        This is called when the user has explicitly configured a cloud model
+        as their primary model for an artifact type.
+        
+        Args:
+            provider: Cloud provider (gemini, groq, openai, anthropic)
+            model_name: Model name
+            artifact_type: Type of artifact to generate
+            meeting_notes: User requirements
+            assembled_context: RAG context
+            context: Full context dict
+            threshold: Validation score threshold
+            progress_callback: Optional progress callback
+        
+        Returns:
+            Generation result dict or None if failed
+        """
+        # Check if API key is available for this provider
+        has_key = False
+        if provider == "gemini" and (settings.google_api_key or settings.gemini_api_key):
+            has_key = True
+        elif provider == "groq" and settings.groq_api_key:
+            has_key = True
+        elif provider == "openai" and settings.openai_api_key:
+            has_key = True
+        elif provider == "anthropic" and settings.anthropic_api_key:
+            has_key = True
+        
+        if not has_key:
+            logger.warning(f"⚠️ [ENHANCED_GEN] No API key for {provider}, cannot use preferred model {model_name}")
+            return None
+        
+        try:
+            logger.info(f"☁️ [ENHANCED_GEN] Trying user's preferred cloud model: {provider}:{model_name}")
+            
+            if progress_callback:
+                await progress_callback(40.0, f"Generating with your preferred model: {provider}:{model_name}...")
+            
+            # Call cloud API
+            content = await self._call_cloud_api(
+                provider=provider,
+                model_name=model_name,
+                meeting_notes=meeting_notes,
+                rag_context=assembled_context,
+                artifact_type=artifact_type
+            )
+            
+            if not content:
+                logger.warning(f"⚠️ [ENHANCED_GEN] Cloud model {provider}:{model_name} returned no content")
+                return None
+            
+            # Validate
+            if progress_callback:
+                await progress_callback(70.0, f"Validating output from {provider}:{model_name}...")
+            
+            validation_result = await self.validation_service.validate_artifact(
+                artifact_type=artifact_type,
+                content=content,
+                meeting_notes=meeting_notes,
+                context=context
+            )
+            
+            score = validation_result.score
+            is_valid = validation_result.is_valid and score >= threshold
+            
+            # Generate artifact ID
+            artifact_id = f"{artifact_type.value}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            
+            if is_valid:
+                if progress_callback:
+                    await progress_callback(90.0, f"Generation successful with {provider}:{model_name}! (Score: {score:.1f})")
+                
+                return {
+                    "success": True,
+                    "content": content,
+                    "model_used": model_name,
+                    "provider": provider,
+                    "validation_score": score,
+                    "is_valid": True,
+                    "artifact_id": artifact_id,
+                    "attempts": 1
+                }
+            else:
+                logger.warning(f"⚠️ [ENHANCED_GEN] Cloud model {provider}:{model_name} output failed validation (score: {score:.1f})")
+                return None
+                
+        except Exception as e:
+            logger.error(f"❌ [ENHANCED_GEN] Error with user's preferred cloud model {provider}:{model_name}: {e}")
+            return None
     
     async def _call_cloud_api(
         self,

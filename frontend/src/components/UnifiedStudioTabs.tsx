@@ -11,6 +11,7 @@ import BulkGenerationDialog from './BulkGenerationDialog'
 import { bulkGenerate, updateArtifact as updateArtifactApi } from '../services/generationService'
 import { useArtifactStore } from '../stores/artifactStore'
 import { useUIStore } from '../stores/uiStore'
+import { useDiagramStore } from '../stores/diagramStore'
 import { useKeyboardShortcuts, COMMON_SHORTCUTS } from '../hooks/useKeyboardShortcuts'
 
 // Lazy load heavy components for better initial load performance
@@ -302,12 +303,21 @@ const MermaidDiagramViewer = memo(function MermaidDiagramViewer({
   // CRITICAL FIX: Use reactive selector pattern to ensure re-render on artifact updates
   // This fixes the bug where AI Repair succeeds but component doesn't re-render
   const { isLoading } = useArtifactStore()
+  const { resetState: resetDiagramState } = useDiagramStore()
   const latestArtifact = useArtifactStore(
     useCallback(state => state.artifacts
       .filter(a => a.type === selectedArtifactType)
       .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))[0],
     [selectedArtifactType])
   )
+  
+  // CRITICAL FIX: Reset diagram state when artifact type changes
+  // This prevents "zombie state" where errors from a broken diagram of type A
+  // persist when viewing a working diagram of type B
+  // We use useEffect here but also add a key to MermaidRenderer below for instant reset
+  useEffect(() => {
+    resetDiagramState()
+  }, [selectedArtifactType, resetDiagramState])
 
   const handleDiagramContentUpdate = useCallback(async (newContent: string) => {
     const artifact = latestArtifact || progress?.artifact
@@ -329,6 +339,8 @@ const MermaidDiagramViewer = memo(function MermaidDiagramViewer({
   if (latestArtifact?.content) {
     return (
       <MermaidRenderer
+        // CRITICAL: key forces remount when artifact type/id changes, clearing all state including errors
+        key={`${selectedArtifactType}-${latestArtifact.id}`}
         content={latestArtifact.content}
         artifactType={selectedArtifactType}
         onContentUpdate={handleDiagramContentUpdate}
@@ -337,6 +349,8 @@ const MermaidDiagramViewer = memo(function MermaidDiagramViewer({
   } else if (progress?.artifact?.content) {
     return (
       <MermaidRenderer
+        // CRITICAL: key forces remount when artifact type changes during generation
+        key={`${selectedArtifactType}-progress`}
         content={progress.artifact.content}
         artifactType={selectedArtifactType}
         onContentUpdate={handleDiagramContentUpdate}
@@ -360,6 +374,16 @@ const MermaidDiagramViewer = memo(function MermaidDiagramViewer({
 function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
   const [activeView, setActiveView] = useState('context')
   const navigate = useNavigate()
+  
+  // CRITICAL FIX: Reset diagram error state when switching artifact types
+  // This prevents "zombie state" where errors from broken diagrams persist
+  // and infect subsequent working diagrams
+  const { resetState: resetDiagramState } = useDiagramStore()
+  
+  useEffect(() => {
+    // Clear stale diagram errors when switching to a different artifact type
+    resetDiagramState()
+  }, [props.selectedArtifactType, resetDiagramState])
   
   // Memoize tabs configuration
   const tabs = useMemo(() => [

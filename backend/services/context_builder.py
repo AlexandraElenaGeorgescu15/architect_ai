@@ -52,7 +52,26 @@ class ContextBuilder:
         self.universal_context_service = get_universal_context_service()
         self._context_store: Dict[str, Dict[str, Any]] = {}  # Store contexts by ID
         
+        # FIX: Memory management - limit context store size
+        self._max_context_store_size = 50  # Keep last 50 contexts
+        
         logger.info("Context Builder initialized with Universal Context Powerhouse")
+    
+    def _cleanup_old_contexts(self):
+        """Remove old contexts to prevent memory growth."""
+        if len(self._context_store) <= self._max_context_store_size:
+            return
+        
+        # Sort by created_at and keep newest
+        sorted_contexts = sorted(
+            self._context_store.items(),
+            key=lambda x: x[1].get("created_at", ""),
+            reverse=True
+        )
+        
+        # Keep only the newest N contexts
+        self._context_store = dict(sorted_contexts[:self._max_context_store_size])
+        logger.info(f"🧹 [CONTEXT] Cleaned up old contexts, {len(self._context_store)} remain")
     
     @timed("context_build", tags={"operation": "build_context"})
     async def build_context(
@@ -198,6 +217,9 @@ class ContextBuilder:
         # Store context for retrieval by ID
         context_id = final_context["context_id"]
         self._context_store[context_id] = final_context
+        
+        # FIX: Cleanup old contexts to prevent memory leak
+        self._cleanup_old_contexts()
         
         return final_context
     

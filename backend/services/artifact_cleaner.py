@@ -140,8 +140,11 @@ class ArtifactCleaner:
         
         content = '\n'.join(lines).strip()
         
-        if len(content) < original_length:
-            logger.info(f"🧹 [CLEANER] Cleaned Mermaid: removed {original_length - len(content)} chars")
+        chars_removed = original_length - len(content)
+        # Only log if significant content was removed (not just whitespace trimming)
+        # Threshold of 10+ chars to reduce log spam from minor cleanups
+        if chars_removed >= 10:
+            logger.info(f"🧹 [CLEANER] Cleaned Mermaid: removed {chars_removed} chars")
         
         return content
     

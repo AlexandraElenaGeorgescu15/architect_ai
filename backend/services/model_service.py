@@ -204,7 +204,13 @@ class ModelService:
             logger.error(f"Error saving routing config: {e}")
     
     def _update_routing_with_finetuned_models(self):
-        """Update routing to prioritize fine-tuned models."""
+        """
+        Update routing to make fine-tuned models available as fallbacks.
+        
+        IMPORTANT: This method NO LONGER overwrites user's primary model choice.
+        Fine-tuned models are added as high-priority fallbacks instead.
+        User's explicit model preferences are always respected.
+        """
         try:
             # Load fine-tuned models from registry
             self._load_finetuned_models_from_registry()
@@ -224,29 +230,30 @@ class ModelService:
                         if artifact_type_enum:
                             # Extract model name
                             model_name = model_id.split(":", 1)[1] if ":" in model_id else model_id
+                            finetuned_model_id = f"ollama:{model_name}"
                             
                             # Get or create routing
                             routing = self.get_routing_for_artifact(artifact_type_enum)
                             if not routing:
                                 # Create new routing with fine-tuned model as primary
+                                # (Only set as primary if NO routing exists - user hasn't configured anything)
                                 base_model = model_info.metadata.get("base_model", "llama3")
                                 routing = ModelRoutingDTO(
                                     artifact_type=artifact_type_enum,
-                                    primary_model=f"ollama:{model_name}",
+                                    primary_model=finetuned_model_id,
                                     fallback_models=[f"ollama:{base_model}"],
                                     enabled=True
                                 )
                                 self.routing[artifact_type_enum.value] = routing
                                 logger.info(f"✅ Created routing for {artifact_type_str} with fine-tuned model {model_name}")
                             else:
-                                # Update existing routing to prioritize fine-tuned model
-                                if not routing.primary_model.startswith(f"ollama:{model_name}"):
-                                    # Move current primary to fallback
-                                    if routing.primary_model not in routing.fallback_models:
-                                        routing.fallback_models.insert(0, routing.primary_model)
-                                    # Set fine-tuned as primary
-                                    routing.primary_model = f"ollama:{model_name}"
-                                    logger.info(f"✅ Updated routing for {artifact_type_str} to prioritize {model_name}")
+                                # FIX: Don't overwrite user's primary model choice!
+                                # Instead, add fine-tuned model as first fallback if not already there
+                                if routing.primary_model != finetuned_model_id:
+                                    # Only add to fallbacks, don't touch primary
+                                    if finetuned_model_id not in routing.fallback_models:
+                                        routing.fallback_models.insert(0, finetuned_model_id)
+                                        logger.info(f"✅ Added fine-tuned model {model_name} as fallback for {artifact_type_str} (user's primary preserved: {routing.primary_model})")
         except Exception as e:
             logger.debug(f"Could not update routing with fine-tuned models: {e}")
     
@@ -687,6 +694,27 @@ class ModelService:
             Routing configuration or None
         """
         return self.routing.get(artifact_type.value)
+    
+    def get_preferred_model_for_artifact(self, artifact_type: ArtifactType) -> Optional[tuple]:
+        """
+        Get the user's preferred model for an artifact type.
+        
+        This method returns the user's explicitly configured primary model,
+        INCLUDING cloud models (not just local). This allows the generation
+        pipeline to respect user preferences for cloud models.
+        
+        Args:
+            artifact_type: Artifact type
+        
+        Returns:
+            Tuple of (provider, model_name) or None if no routing configured.
+        """
+        routing = self.get_routing_for_artifact(artifact_type)
+        if routing and routing.enabled and routing.primary_model:
+            provider, model_name = normalize_model_id(routing.primary_model)
+            logger.debug(f"🎯 [MODEL_SERVICE] User's preferred model for {artifact_type.value}: {provider}:{model_name}")
+            return (provider, model_name)
+        return None
     
     def get_models_for_artifact(self, artifact_type: ArtifactType) -> List[str]:
         """

@@ -24,6 +24,50 @@ MEETING_NOTES_DIR = settings.meeting_notes_dir
 MEETING_NOTES_DIR.mkdir(parents=True, exist_ok=True)
 
 
+def _safe_path(base_dir: Path, *parts: str) -> Path:
+    """
+    Safely construct a path, preventing path traversal attacks.
+    
+    Args:
+        base_dir: The base directory to stay within
+        *parts: Path parts to join
+    
+    Returns:
+        Safe resolved path
+    
+    Raises:
+        HTTPException: If path traversal is detected
+    """
+    # Sanitize parts - remove any path traversal attempts
+    safe_parts = []
+    for part in parts:
+        # Remove dangerous characters and patterns
+        clean_part = part.replace('..', '').replace('/', '').replace('\\', '')
+        if clean_part:
+            safe_parts.append(clean_part)
+    
+    if not safe_parts:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid path: no valid path components"
+        )
+    
+    # Construct path
+    target_path = base_dir.joinpath(*safe_parts).resolve()
+    
+    # Verify path is within base directory
+    try:
+        target_path.relative_to(base_dir.resolve())
+    except ValueError:
+        logger.warning(f"Security: Blocked path traversal attempt: {parts}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid path: path traversal not allowed"
+        )
+    
+    return target_path
+
+
 class CreateFolderRequest(BaseModel):
     name: str
 
@@ -193,10 +237,13 @@ async def get_note(
     current_user: UserPublic = Depends(get_current_user)
 ) -> Dict[str, Any]:
     """Get content of a meeting note."""
-    note_path = MEETING_NOTES_DIR / folder_id / f"{note_id}.md"
+    # FIX: Security - use safe path to prevent path traversal
+    folder_path = _safe_path(MEETING_NOTES_DIR, folder_id)
+    note_path = _safe_path(folder_path, f"{note_id}.md")
+    
     if not note_path.exists():
         # Try .txt extension
-        note_path = MEETING_NOTES_DIR / folder_id / f"{note_id}.txt"
+        note_path = _safe_path(folder_path, f"{note_id}.txt")
     
     if not note_path.exists():
         raise HTTPException(

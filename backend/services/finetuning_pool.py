@@ -16,6 +16,7 @@ import logging
 from datetime import datetime
 import json
 import asyncio
+import time
 
 # Add parent directory for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -57,6 +58,11 @@ class FinetuningPool:
         self.incremental_finetuning_threshold = 50  # Examples for incremental finetuning
         self.major_finetuning_threshold = 2000  # Examples for major finetuning (user-triggered)
         self.min_score_threshold = 85.0  # Minimum validation score to include
+        
+        # FIX: Stats cache to speed up slow stats endpoints (was taking 9+ seconds)
+        self._stats_cache: Optional[Dict[str, Any]] = None
+        self._stats_cache_time: float = 0
+        self._stats_cache_ttl: float = 30.0  # Cache TTL in seconds
         
         # Load existing pools
         self._load_pools()
@@ -151,6 +157,9 @@ class FinetuningPool:
         self.pools[artifact_type].append(example)
         self._save_pool(artifact_type)
         
+        # FIX: Invalidate stats cache when data changes
+        self._invalidate_stats_cache()
+        
         pool_size = len(self.pools[artifact_type])
         logger.info(f"Added example to {artifact_type} pool (score: {validation_score:.1f}, total: {pool_size})")
         
@@ -231,9 +240,23 @@ class FinetuningPool:
         except Exception as e:
             logger.error(f"Error triggering finetuning for {artifact_type}: {e}", exc_info=True)
     
+    def _invalidate_stats_cache(self):
+        """Invalidate the stats cache when data changes."""
+        self._stats_cache = None
+        self._stats_cache_time = 0
+    
+    def _is_cache_valid(self) -> bool:
+        """Check if the stats cache is still valid."""
+        if self._stats_cache is None:
+            return False
+        return (time.time() - self._stats_cache_time) < self._stats_cache_ttl
+    
     def get_pool_stats(self, artifact_type: Optional[str] = None) -> Dict[str, Any]:
         """
         Get statistics about the finetuning pool.
+        
+        FIX: Added caching to speed up stats endpoints (was taking 9+ seconds).
+        Cache TTL is 30 seconds, invalidated when examples are added.
         
         Args:
             artifact_type: Optional artifact type to filter by
@@ -242,6 +265,7 @@ class FinetuningPool:
             Dictionary with pool statistics
         """
         if artifact_type:
+            # Per-type stats are fast, no caching needed
             pool = self.pools.get(artifact_type, [])
             return {
                 "artifact_type": artifact_type,
@@ -255,6 +279,13 @@ class FinetuningPool:
                 "avg_score": sum([e["validation_score"] for e in pool]) / len(pool) if pool else 0.0
             }
         else:
+            # FIX: Use cache for aggregate stats (the slow operation)
+            if self._is_cache_valid():
+                logger.debug("Using cached pool stats")
+                return self._stats_cache
+            
+            logger.debug("Computing pool stats (cache miss or expired)")
+            
             # Aggregate stats
             total_examples = sum(len(pool) for pool in self.pools.values())
             ready_types = [
@@ -262,13 +293,13 @@ class FinetuningPool:
                 if len(pool) >= self.incremental_finetuning_threshold
             ]
             
-            return {
+            stats = {
                 "total_examples": total_examples,
                 "artifact_types": len(self.pools),
                 "ready_for_finetuning": len(ready_types),
                 "ready_types": ready_types,
-                        "incremental_threshold": self.incremental_finetuning_threshold,
-                        "major_threshold": self.major_finetuning_threshold,
+                "incremental_threshold": self.incremental_finetuning_threshold,
+                "major_threshold": self.major_finetuning_threshold,
                 "min_score_threshold": self.min_score_threshold,
                 "per_type": {
                     atype: {
@@ -279,6 +310,12 @@ class FinetuningPool:
                     for atype, pool in self.pools.items()
                 }
             }
+            
+            # Cache the result
+            self._stats_cache = stats
+            self._stats_cache_time = time.time()
+            
+            return stats
     
     def get_examples(self, artifact_type: str) -> List[Dict[str, Any]]:
         """

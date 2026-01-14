@@ -103,10 +103,10 @@ function App() {
             <OnboardingTour />
             {/* Celebration effect for successful generations */}
             <CelebrationEffect />
-            {/* Backend connection settings (for split deployment) */}
-            <BackendSettings />
           </Router>
         ) : null}
+        {/* Backend connection settings - ALWAYS visible so user can configure before connecting */}
+        <BackendSettings />
         <SystemLoadingOverlay 
           status={{
             ...systemStatus,

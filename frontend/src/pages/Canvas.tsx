@@ -29,11 +29,27 @@ export default function Canvas() {
     .filter(a => a.type.startsWith('mermaid_'))
     .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
 
-  const selectedArtifact = selectedArtifactId 
-    ? artifacts.find(a => a.id === selectedArtifactId)
-    : (targetType
-        ? diagramArtifacts.find(a => a.type === targetType) || diagramArtifacts[0] || null
-        : diagramArtifacts[0] || null)
+  // FIXED: If ID is set but not found, fall back to type-based or first diagram
+  // This prevents showing empty canvas when artifact ID is stale/deleted
+  const selectedArtifact = (() => {
+    // First priority: Try to find by exact ID
+    if (selectedArtifactId) {
+      const byId = artifacts.find(a => a.id === selectedArtifactId)
+      if (byId) return byId
+      
+      // ID not found - log warning and fall back
+      console.warn(`[Canvas] Artifact ID "${selectedArtifactId}" not found, falling back to type/first`)
+    }
+    
+    // Second priority: Find by type
+    if (targetType) {
+      const byType = diagramArtifacts.find(a => a.type === targetType)
+      if (byType) return byType
+    }
+    
+    // Last resort: First available diagram
+    return diagramArtifacts[0] || null
+  })()
 
   // Initialize selection from navigation state or query param
   // Supports multiple parameter styles: artifactId/artifactType OR diagramId/content
@@ -64,7 +80,16 @@ export default function Canvas() {
   }, [location.state, searchParams])
 
   useEffect(() => {
-    // If we have a target type but the id isn't found yet, pick latest of that type when it arrives
+    // FIXED: Sync selectedArtifactId with actual selection to prevent stale ID issues
+    
+    // Case 1: ID is set but artifact not found (stale ID) - sync with actual selection
+    if (selectedArtifactId && selectedArtifact && selectedArtifact.id !== selectedArtifactId) {
+      console.debug('[Canvas] Syncing stale ID to actual artifact:', selectedArtifact.id)
+      setSelectedArtifactId(selectedArtifact.id)
+      return
+    }
+    
+    // Case 2: No ID but have a target type - find by type
     if (!selectedArtifactId && targetType) {
       const latestOfType = diagramArtifacts.find(a => a.type === targetType)
       if (latestOfType) {
@@ -72,10 +97,12 @@ export default function Canvas() {
         return
       }
     }
+    
+    // Case 3: No ID, no type - use first available
     if (diagramArtifacts.length > 0 && !selectedArtifactId) {
       setSelectedArtifactId(diagramArtifacts[0].id)
     }
-  }, [diagramArtifacts, selectedArtifactId, targetType])
+  }, [diagramArtifacts, selectedArtifactId, selectedArtifact, targetType])
 
   // Close dropdown when clicking outside
   useEffect(() => {

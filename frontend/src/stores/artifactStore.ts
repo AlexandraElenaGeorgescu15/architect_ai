@@ -34,10 +34,22 @@ export const useArtifactStore = create<ArtifactStore>((set, get) => ({
 
   setArtifacts: (artifacts) => set({ artifacts }),
 
+  // FIX: Replace existing artifact with same ID instead of creating duplicates
+  // This ensures stable ID scheme works correctly (artifact_type as ID)
   addArtifact: (artifact) =>
-    set((state) => ({
-      artifacts: [...state.artifacts, artifact],
-    })),
+    set((state) => {
+      const existingIndex = state.artifacts.findIndex(a => a.id === artifact.id)
+      if (existingIndex >= 0) {
+        // Replace existing artifact (update in place)
+        const newArtifacts = [...state.artifacts]
+        newArtifacts[existingIndex] = artifact
+        console.log(`📦 [ARTIFACT_STORE] Updated existing artifact: ${artifact.id}`)
+        return { artifacts: newArtifacts }
+      }
+      // Add new artifact
+      console.log(`📦 [ARTIFACT_STORE] Added new artifact: ${artifact.id}`)
+      return { artifacts: [...state.artifacts, artifact] }
+    }),
 
   updateArtifact: (id, updates) =>
     set((state) => ({

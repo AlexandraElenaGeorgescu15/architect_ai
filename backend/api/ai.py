@@ -138,19 +138,42 @@ def extract_mermaid_diagram(content: str) -> str:
     Extract Mermaid diagram code from markdown code blocks or plain text.
     Removes any surrounding text and returns only the diagram code.
     
-    Handles common LLM output patterns:
+    AGGRESSIVELY handles common LLM output patterns:
     - ```mermaid\n...\n``` 
     - ```\n...\n```
     - Plain text starting with diagram type
     - Text with AI explanations before/after
+    - "Here is the corrected..." preambles
+    - "Sure, " or "Of course, " prefixes
     """
     if not content:
         return content
     
-    # Step 1: Strip markdown code fences aggressively
-    result = _strip_markdown_fences(content)
+    # Step 0: AGGRESSIVE pre-cleaning - strip common AI preambles
+    result = content.strip()
     
-    # Step 2: Find diagram start and extract from there
+    # Common AI preamble patterns to strip BEFORE anything else
+    ai_preambles = [
+        r'^Sure[,.]?\s*',
+        r'^Of course[,.]?\s*',
+        r'^Certainly[,.]?\s*',
+        r'^Here is the (?:corrected|fixed|updated|improved).*?[:\n]',
+        r'^Here\'s the (?:corrected|fixed|updated|improved).*?[:\n]',
+        r'^I\'ve (?:corrected|fixed|updated|improved).*?[:\n]',
+        r'^The (?:corrected|fixed|updated|improved).*?[:\n]',
+        r'^Below is.*?[:\n]',
+        r'^As requested.*?[:\n]',
+    ]
+    
+    for pattern in ai_preambles:
+        result = re.sub(pattern, '', result, flags=re.IGNORECASE | re.MULTILINE)
+    
+    result = result.strip()
+    
+    # Step 1: Strip markdown code fences aggressively
+    result = _strip_markdown_fences(result)
+    
+    # Step 2: Find diagram start and extract from there (MOST IMPORTANT)
     diagram_types = [
         "erDiagram", "flowchart", "graph", "sequenceDiagram",
         "classDiagram", "stateDiagram", "gantt", "pie", "journey",
@@ -158,18 +181,36 @@ def extract_mermaid_diagram(content: str) -> str:
         "C4Component", "C4Deployment"
     ]
     
+    # Find the FIRST occurrence of any diagram type
+    earliest_idx = len(result)
+    matched_type = None
     for dt in diagram_types:
-        if dt.lower() in result.lower():
-            idx = result.lower().find(dt.lower())
-            if idx != -1:
-                result = result[idx:].strip()
-                break
+        idx = result.lower().find(dt.lower())
+        if idx != -1 and idx < earliest_idx:
+            earliest_idx = idx
+            matched_type = dt
     
-    # Step 3: Clean AI explanatory text
+    if matched_type and earliest_idx < len(result):
+        result = result[earliest_idx:].strip()
+    
+    # Step 3: Clean AI explanatory text (after diagram)
     result = _clean_ai_explanations(result)
     
     # Step 4: Final fence cleanup (in case AI still included them)
     result = _strip_markdown_fences(result)
+    
+    # Step 5: Final safety - if still has preamble text, try harder
+    # Look for first line that starts with a diagram type
+    lines = result.split('\n')
+    for i, line in enumerate(lines):
+        line_lower = line.strip().lower()
+        for dt in diagram_types:
+            if line_lower.startswith(dt.lower()):
+                result = '\n'.join(lines[i:]).strip()
+                break
+        else:
+            continue
+        break
     
     return result.strip()
 
@@ -854,31 +895,56 @@ OUTPUT THE CORRECTED CODE ONLY:"""
         # Get model routing - force cloud if requested
         model_service = get_model_service()
         
+        # Create a proper routing object that generate_with_fallback expects
+        # It checks for hasattr(model_routing, 'primary_model') and hasattr(model_routing, 'fallback_models')
+        class CloudRouting:
+            """Simple routing object for cloud-only repair."""
+            def __init__(self, primary: str, fallbacks: List[str]):
+                self.primary_model = primary
+                self.fallback_models = fallbacks
+        
         if use_cloud:
-            # Force cloud models
-            routing = {
-                "models": ["gemini-2.0-flash-exp", "gpt-4-turbo", "claude-3-sonnet"],
-                "priority": "cloud"
-            }
+            # Force cloud models - use proper object format
+            routing = CloudRouting(
+                primary="gemini:gemini-2.0-flash-exp",
+                fallbacks=["groq:llama-3.3-70b-versatile", "openai:gpt-4-turbo"]
+            )
         else:
             routing = model_service.get_routing_for_artifact(request.diagram_type)
         
-        # Call AI (cloud-only for repair)
+        # Call AI with EXTREMELY STRICT system prompt
+        # LLMs consistently ignore instructions - use aggressive negative examples
         result = await generation_service.generate_with_fallback(
             prompt=prompt,
             model_routing=routing,
-            temperature=0.1,  # Very low temperature for consistent syntax
-            max_local_attempts=0,  # enforce cloud-only models for repair
-            system_instruction=f"""You are a Mermaid diagram syntax repair tool. You output ONLY valid Mermaid code.
+            temperature=0.05,  # Near-zero temperature for pure syntax repair
+            max_local_attempts=1 if not use_cloud else 0,  # Try 1 local before cloud, or 0 if forced cloud
+            system_instruction=f"""YOU ARE A CODE-ONLY MERMAID SYNTAX REPAIR TOOL.
 
-ABSOLUTE RULES:
-1. Output starts with "{diagram_type}" - nothing before it
-2. NO markdown fences (``` or ```mermaid)
-3. NO explanatory text ("Here is", "I've fixed", "The corrected", etc.)
-4. NO comments about changes made
-5. ONLY raw Mermaid syntax
+⚠️ CRITICAL OUTPUT RULES - VIOLATION = FAILURE:
+1. Your ENTIRE response must be ONLY the Mermaid diagram code
+2. First character of your response MUST be the letter of "{diagram_type}"
+3. ZERO words before the diagram type declaration
+4. ZERO words after the last diagram element
 
-If you include ANY text besides the diagram code, the repair will fail."""
+❌ INSTANT FAILURE EXAMPLES (DO NOT OUTPUT THESE):
+- "Here is the corrected diagram:" ← FAIL
+- "I've fixed the syntax:" ← FAIL  
+- "The corrected code:" ← FAIL
+- "```mermaid" ← FAIL
+- "```" ← FAIL
+- "Sure, " ← FAIL
+- "Of course, " ← FAIL
+- ANY English sentence before the code ← FAIL
+
+✅ CORRECT OUTPUT (your response should look EXACTLY like this):
+{diagram_type}
+    EntityA ||--o{{ EntityB : has
+    EntityB {{
+        int id PK
+    }}
+
+YOUR RESPONSE STARTS NOW - FIRST CHARACTER MUST BE "{diagram_type[0].upper()}"."""
         )
         
         if result.success and result.content:
@@ -946,11 +1012,17 @@ REQUIREMENTS:
 
 OUTPUT:"""
 
-        # Force cloud models for regeneration
-        routing = {
-            "models": ["gemini-2.0-flash-exp", "gpt-4-turbo", "claude-3-sonnet"],
-            "priority": "cloud"
-        }
+        # Force cloud models for regeneration - use proper object format
+        class CloudRouting:
+            """Simple routing object for cloud-only regeneration."""
+            def __init__(self, primary: str, fallbacks: List[str]):
+                self.primary_model = primary
+                self.fallback_models = fallbacks
+        
+        routing = CloudRouting(
+            primary="gemini:gemini-2.0-flash-exp",
+            fallbacks=["groq:llama-3.3-70b-versatile", "openai:gpt-4-turbo"]
+        )
         
         result = await generation_service.generate_with_fallback(
             prompt=prompt,

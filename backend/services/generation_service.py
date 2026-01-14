@@ -46,7 +46,58 @@ class GenerationService:
         self.quality_predictor = get_quality_predictor()
         self.active_jobs: Dict[str, Dict[str, Any]] = {}
         
+        # FIX: Memory leak prevention - limit max jobs and add cleanup
+        self.max_jobs = 100  # Maximum jobs to keep in memory
+        self.job_retention_seconds = 3600  # Keep completed jobs for 1 hour max
+        
         logger.info("Generation Service initialized")
+    
+    def _cleanup_old_jobs(self):
+        """
+        Clean up old completed/failed jobs to prevent memory leak.
+        Called automatically when adding new jobs.
+        """
+        if len(self.active_jobs) <= self.max_jobs // 2:
+            return  # No cleanup needed
+        
+        now = datetime.now()
+        jobs_to_remove = []
+        
+        for job_id, job in self.active_jobs.items():
+            # Only cleanup completed or failed jobs
+            status = job.get("status", "")
+            if status not in [GenerationStatus.COMPLETED.value, GenerationStatus.FAILED.value]:
+                continue
+            
+            # Check age
+            created_at_str = job.get("created_at", "")
+            if created_at_str:
+                try:
+                    created_at = datetime.fromisoformat(created_at_str)
+                    age_seconds = (now - created_at).total_seconds()
+                    if age_seconds > self.job_retention_seconds:
+                        jobs_to_remove.append(job_id)
+                except Exception:  # Explicit exception handling
+                    pass
+        
+        # Remove old jobs (keep max_jobs // 2 most recent)
+        if len(self.active_jobs) - len(jobs_to_remove) > self.max_jobs:
+            # Need to remove more - sort by created_at and keep newest
+            sorted_jobs = sorted(
+                [(jid, j.get("created_at", "")) for jid, j in self.active_jobs.items()
+                 if j.get("status") in [GenerationStatus.COMPLETED.value, GenerationStatus.FAILED.value]],
+                key=lambda x: x[1]
+            )
+            # Remove oldest jobs beyond limit
+            for jid, _ in sorted_jobs[:len(sorted_jobs) - self.max_jobs // 2]:
+                if jid not in jobs_to_remove:
+                    jobs_to_remove.append(jid)
+        
+        for job_id in jobs_to_remove:
+            del self.active_jobs[job_id]
+        
+        if jobs_to_remove:
+            logger.info(f"🧹 [GEN_SERVICE] Cleaned up {len(jobs_to_remove)} old jobs, {len(self.active_jobs)} jobs remain")
     
     
     async def generate_artifact(
@@ -87,6 +138,9 @@ class GenerationService:
         if options:
             opts.update(options)
         logger.info(f"⚙️ [GEN_SERVICE] Generation options: {opts}")
+        
+        # FIX: Cleanup old jobs to prevent memory leak
+        self._cleanup_old_jobs()
         
         # Initialize job
         self.active_jobs[job_id] = {
@@ -326,10 +380,13 @@ class GenerationService:
                 logger.debug(f"📄 [GEN_SERVICE] Skipping HTML generation (not a diagram type, job_id={job_id})")
             
             # Create artifact object
+            # FIX: Use artifact_type as the stable ID (not job_id) for consistent navigation
+            # This ensures the ID matches what listArtifacts() returns from version_service
             logger.info(f"📦 [GEN_SERVICE] Step 6: Creating artifact object (job_id={job_id})")
             artifact_obj = {
-                "id": job_id,
-                "artifact_id": job_id,
+                "id": artifact_type.value,  # STABLE ID: matches version_service and listArtifacts()
+                "artifact_id": artifact_type.value,  # Also update artifact_id for consistency
+                "job_id": job_id,  # Keep job_id separate for tracking
                 "artifact_type": artifact_type.value,
                 "content": artifact_content,
                 "validation": {
@@ -396,7 +453,7 @@ class GenerationService:
                     "status": GenerationStatus.COMPLETED.value,
                     "progress": 100.0,
                     "artifact": {
-                        "id": job_id,
+                        "id": artifact_type.value,  # STABLE ID for consistent navigation
                         "artifact_type": artifact_type.value,
                         "content": artifact_content,
                         "validation": {
@@ -414,7 +471,7 @@ class GenerationService:
                     "job_id": job_id,
                     "status": GenerationStatus.COMPLETED.value,
                     "artifact": {
-                        "id": job_id,
+                        "id": artifact_type.value,  # STABLE ID for consistent navigation
                         "artifact_type": artifact_type.value,
                         "content": artifact_content,
                         "validation": {

@@ -20,8 +20,7 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 
 from backend.core.auth import get_current_user
-from backend.models.dto import ArtifactType
-from backend.models.schemas import UserPublic
+from backend.models.dto import ArtifactType, UserPublic
 
 logger = logging.getLogger(__name__)
 
@@ -629,13 +628,26 @@ async def contextual_ask(
     try:
         from backend.services.chat_service import get_chat_service
         from pathlib import Path
+        from backend.core.config import settings
+        
+        # FIX: Security - Validate file paths to prevent path traversal attacks
+        # Only allow files within the workspace/project directory
+        workspace_root = Path(settings.workspace_path or ".").resolve()
         
         # Build context from specific files
         file_context = ""
         if request.file_paths:
             for file_path in request.file_paths[:10]:  # Limit to 10 files
-                path = Path(file_path)
-                if path.exists():
+                path = Path(file_path).resolve()
+                
+                # Security check: ensure path is within workspace
+                try:
+                    path.relative_to(workspace_root)
+                except ValueError:
+                    logger.warning(f"Security: Blocked path traversal attempt: {file_path}")
+                    continue  # Skip files outside workspace
+                
+                if path.exists() and path.is_file():
                     try:
                         content = path.read_text(encoding="utf-8", errors="ignore")[:3000]
                         file_context += f"\n\n### {path.name}\n```\n{content}\n```"
