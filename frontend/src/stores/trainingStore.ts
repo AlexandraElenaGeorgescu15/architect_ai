@@ -22,6 +22,9 @@ interface TrainingStore {
   getJobsByStatus: (status: TrainingStatus) => TrainingJob[]
   getJobById: (id: string) => TrainingJob | undefined
   getActiveJobs: () => TrainingJob[]
+
+  // Reset
+  reset: () => void
 }
 
 export const useTrainingStore = create<TrainingStore>((set, get) => ({
@@ -79,5 +82,13 @@ export const useTrainingStore = create<TrainingStore>((set, get) => ({
         j.status === 'converting'
     )
   },
+
+  // Reset store to initial state (call on cleanup/logout)
+  reset: () => set({
+    jobs: [],
+    currentJob: null,
+    isLoading: false,
+    error: null,
+  }),
 }))
 

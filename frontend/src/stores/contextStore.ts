@@ -19,6 +19,9 @@ interface ContextStore {
 
   // Selectors
   getContextById: (id: string) => Context | undefined
+
+  // Reset
+  reset: () => void
 }
 
 export const useContextStore = create<ContextStore>((set, get) => ({
@@ -62,5 +65,13 @@ export const useContextStore = create<ContextStore>((set, get) => ({
   getContextById: (id) => {
     return get().contexts.find((c) => c.id === id)
   },
+
+  // Reset store to initial state (call on cleanup/logout)
+  reset: () => set({
+    contexts: [],
+    currentContext: null,
+    isLoading: false,
+    error: null,
+  }),
 }))
 

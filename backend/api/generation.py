@@ -101,120 +101,107 @@ async def generate_artifact(
     service = get_service()
     logger.info(f"🚀 [GENERATION] Starting generation service for {gen_request.artifact_type}")
     
-    # Generate in background
-    job_id = None
+    # Use a mutable container to share job_id between async task and main coroutine
+    job_state = {"job_id": None}
     
-    def generate_task():
-        nonlocal job_id
+    async def generate_task_async():
+        """
+        Async background task for artifact generation.
+        
+        FIX: Previously this was a sync function that created its own event loop,
+        which blocked FastAPI's main event loop. Now properly async to allow
+        concurrent request handling.
+        """
         result = None
-        import asyncio
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         try:
             logger.info(f"🔄 [GENERATION] Background task started for {gen_request.artifact_type}")
             
-            # Generate with progress updates
-            async def generate_with_progress():
-                nonlocal job_id
-                final_result = None
-                temp_job_id = f"temp_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
-                
-                # Start generation to get job_id and emit progress
-                async for update in service.generate_artifact(
-                    artifact_type=gen_request.artifact_type,
-                    meeting_notes=meeting_notes,
-                    context_id=gen_request.context_id,
-                    options=gen_request.options.dict() if gen_request.options else None,
-                    stream=False
-                ):
-                    # Capture job_id from first update
-                    if not job_id and update.get("job_id"):
-                        job_id = update.get("job_id")
-                        logger.info(f"📋 [GENERATION] Job ID assigned: {job_id}")
-                        # Use the real job_id for all subsequent events
-                        temp_job_id = job_id
-                    
-                    # Use temp_job_id if real job_id not yet available
-                    current_job_id = job_id or temp_job_id
-                    
-                    # Emit progress if this is a progress update
-                    if update.get("type") == "progress":
-                        try:
-                            await websocket_manager.emit_generation_progress(
-                                job_id=current_job_id,
-                                progress=update.get("progress", 0.0),
-                                message=update.get("message", ""),
-                                quality_prediction=update.get("quality_prediction")
-                            )
-                            logger.debug(f"📡 [GENERATION] Emitted progress: {update.get('progress', 0.0)}% for job {current_job_id}")
-                        except Exception as e:
-                            logger.warning(f"Failed to emit progress: {e}")
-                    
-                    # Save every update as potential final result (last one wins)
-                    final_result = update
-                
-                return final_result
+            final_result = None
+            temp_job_id = f"temp_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"
             
-            result = loop.run_until_complete(generate_with_progress())
-            job_id = result.get("job_id") if result else job_id
-            logger.info(f"✅ [GENERATION] Background task completed: job_id={job_id}, "
+            # Start generation to get job_id and emit progress
+            async for update in service.generate_artifact(
+                artifact_type=gen_request.artifact_type,
+                meeting_notes=meeting_notes,
+                context_id=gen_request.context_id,
+                options=gen_request.options.dict() if gen_request.options else None,
+                stream=False
+            ):
+                # Capture job_id from first update
+                if not job_state["job_id"] and update.get("job_id"):
+                    job_state["job_id"] = update.get("job_id")
+                    logger.info(f"📋 [GENERATION] Job ID assigned: {job_state['job_id']}")
+                    temp_job_id = job_state["job_id"]
+                
+                # Use temp_job_id if real job_id not yet available
+                current_job_id = job_state["job_id"] or temp_job_id
+                
+                # Emit progress if this is a progress update
+                if update.get("type") == "progress":
+                    try:
+                        await websocket_manager.emit_generation_progress(
+                            job_id=current_job_id,
+                            progress=update.get("progress", 0.0),
+                            message=update.get("message", ""),
+                            quality_prediction=update.get("quality_prediction")
+                        )
+                        logger.debug(f"📡 [GENERATION] Emitted progress: {update.get('progress', 0.0)}% for job {current_job_id}")
+                    except Exception as e:
+                        logger.warning(f"Failed to emit progress: {e}")
+                
+                # Save every update as potential final result (last one wins)
+                final_result = update
+            
+            result = final_result
+            if result:
+                job_state["job_id"] = result.get("job_id") or job_state["job_id"]
+            
+            logger.info(f"✅ [GENERATION] Background task completed: job_id={job_state['job_id']}, "
                        f"has_artifact={bool(result.get('artifact') if result else False)}, "
                        f"status={result.get('status') if result else 'unknown'}")
             
             # Emit WebSocket event
-            if job_id and result and result.get("artifact"):
-                logger.info(f"📡 [WEBSOCKET] Emitting generation_complete event: job_id={job_id}, "
+            if job_state["job_id"] and result and result.get("artifact"):
+                logger.info(f"📡 [WEBSOCKET] Emitting generation_complete event: job_id={job_state['job_id']}, "
                            f"artifact_id={result.get('artifact', {}).get('id')}, "
                            f"validation_score={result.get('artifact', {}).get('validation', {}).get('score', 0)}")
                 artifact = result.get("artifact", {}).copy()
-                artifact_id = artifact.get("id") or artifact.get("artifact_id") or job_id
+                artifact_id = artifact.get("id") or artifact.get("artifact_id") or job_state["job_id"]
                 validation = artifact.get("validation", {})
                 validation_score = validation.get("score", 0.0) if isinstance(validation, dict) else getattr(validation, "score", 0.0)
                 is_valid = validation.get("is_valid", False) if isinstance(validation, dict) else getattr(validation, "is_valid", False)
                 
-                # Ensure artifact has cleaned Mermaid content if it's a Mermaid diagram
+                # Ensure artifact has cleaned content
                 if artifact.get("artifact_type", "").startswith("mermaid_") and artifact.get("content"):
                     try:
-                        from backend.services.validation_service import get_service
-                        validator = get_service()
-                        cleaned_content = validator._extract_mermaid_diagram(artifact["content"])
+                        from backend.services.artifact_cleaner import get_cleaner
+                        cleaner = get_cleaner()
+                        cleaned_content = cleaner.clean_artifact(artifact["content"], artifact["artifact_type"])
                         if cleaned_content != artifact["content"]:
-                            logger.info(f"🧹 [GENERATION] Cleaning Mermaid content for WebSocket: removed {len(artifact['content']) - len(cleaned_content)} chars")
+                            logger.info(f"🧹 [GENERATION] Cleaning artifact content for WebSocket: removed {len(artifact['content']) - len(cleaned_content)} chars")
                             artifact["content"] = cleaned_content
                     except Exception as e:
-                        logger.warning(f"Failed to clean Mermaid content for WebSocket: {e}")
+                        logger.warning(f"Failed to clean artifact content for WebSocket: {e}")
                 
-                # Use asyncio to call async method from sync context
-                import asyncio
-                try:
-                    loop = asyncio.get_event_loop()
-                except RuntimeError:
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-                
-                loop.run_until_complete(
-                    websocket_manager.emit_generation_complete(
-                        job_id=job_id,
-                        artifact_id=str(artifact_id),
-                        validation_score=float(validation_score),
-                        is_valid=bool(is_valid),
-                        artifact=artifact  # Include full artifact with cleaned content
-                    )
+                # Now we can directly await since we're already async
+                await websocket_manager.emit_generation_complete(
+                    job_id=job_state["job_id"],
+                    artifact_id=str(artifact_id),
+                    validation_score=float(validation_score),
+                    is_valid=bool(is_valid),
+                    artifact=artifact
                 )
-                logger.info(f"✅ [WEBSOCKET] Successfully emitted generation_complete for job {job_id}")
+                logger.info(f"✅ [WEBSOCKET] Successfully emitted generation_complete for job {job_state['job_id']}")
             elif result and not result.get("artifact"):
-                logger.warning(f"⚠️ [GENERATION] Result has no artifact: job_id={job_id}, result_keys={list(result.keys()) if result else []}")
-            elif not job_id:
+                logger.warning(f"⚠️ [GENERATION] Result has no artifact: job_id={job_state['job_id']}, result_keys={list(result.keys()) if result else []}")
+            elif not job_state["job_id"]:
                 logger.warning(f"⚠️ [GENERATION] No job_id available to emit WebSocket event")
         except Exception as e:
             logger.error(f"❌ [GENERATION] Background generation task failed: {e}", exc_info=True)
-        finally:
-            loop.close()
-            logger.debug(f"🧹 [GENERATION] Background task cleanup completed")
     
-    # Wait a short time for the artifact to be ready (improves UX)
-    # This gives immediate results for fast generations while still allowing background for slow ones
-    background_tasks.add_task(generate_task)
+    # Start the async task properly using asyncio.create_task()
+    # This runs concurrently without blocking the event loop
+    asyncio.create_task(generate_task_async())
     
     # Wait up to 60 seconds for the job to complete (most generations finish within this time)
     # Longer wait avoids premature "pending" responses that feel like timeouts in the UI.
@@ -222,17 +209,18 @@ async def generate_artifact(
     for i in range(max_wait * 2):  # Check every 0.5 seconds
         await asyncio.sleep(0.5)
         
-        # Check if job completed
+        # Check if job completed (use job_state dict for shared state with async task)
+        current_job_id = job_state["job_id"]
         service = get_service()
-        if job_id and job_id in service.active_jobs:
-            job_status = service.active_jobs[job_id]
+        if current_job_id and current_job_id in service.active_jobs:
+            job_status = service.active_jobs[current_job_id]
             if job_status.get("status") == GenerationStatus.COMPLETED.value:
                 # Artifact is ready! Return it directly
                 artifact = job_status.get("artifact")
                 if artifact:
-                    logger.info(f"✅ [GENERATION] Artifact ready within {(i+1)/2}s, returning directly: job_id={job_id}")
+                    logger.info(f"✅ [GENERATION] Artifact ready within {(i+1)/2}s, returning directly: job_id={current_job_id}")
                     return GenerationResponse(
-                        job_id=job_id,
+                        job_id=current_job_id,
                         status=GenerationStatus.COMPLETED,
                         artifact_id=artifact.get("id") or artifact.get("artifact_id"),
                         artifact=artifact
@@ -243,7 +231,7 @@ async def generate_artifact(
                 error_type = job_status.get("error_type", "unknown")
                 suggestion = job_status.get("suggestion", "")
                 
-                logger.error(f"❌ [GENERATION] Generation failed: job_id={job_id}, error={error}, type={error_type}")
+                logger.error(f"❌ [GENERATION] Generation failed: job_id={current_job_id}, error={error}, type={error_type}")
                 
                 # Return more helpful error message
                 error_detail = error
@@ -255,11 +243,12 @@ async def generate_artifact(
                     detail=error_detail
                 )
     
-    # If we reach here, generation is still in progress after 30 seconds
+    # If we reach here, generation is still in progress after max_wait seconds
     # Return the job_id so frontend can wait for WebSocket events
-    logger.info(f"⏳ [GENERATION] Generation still in progress after {max_wait}s, returning job_id: {job_id}")
+    final_job_id = job_state["job_id"]
+    logger.info(f"⏳ [GENERATION] Generation still in progress after {max_wait}s, returning job_id: {final_job_id}")
     response = GenerationResponse(
-        job_id=job_id or "pending",
+        job_id=final_job_id or "pending",
         status=GenerationStatus.IN_PROGRESS,
         message="Generation in progress. The artifact will be delivered via WebSocket when ready."
     )
@@ -640,20 +629,17 @@ async def list_artifacts(
     artifacts = []
     artifact_ids_seen = set()  # Track to avoid duplicates
     
-    # Helper function to clean Mermaid content
-    def clean_mermaid_content(content: str, artifact_type: str) -> str:
-        """Clean Mermaid diagram content if needed."""
-        if artifact_type.startswith("mermaid_") and content:
-            try:
-                from backend.services.validation_service import get_service
-                validator = get_service()
-                cleaned = validator._extract_mermaid_diagram(content)
-                if cleaned != content:
-                    logger.debug(f"🧹 [LIST_ARTIFACTS] Cleaned Mermaid content: removed {len(content) - len(cleaned)} chars")
-                return cleaned
-            except Exception as e:
-                logger.warning(f"⚠️ [LIST_ARTIFACTS] Failed to clean Mermaid content: {e}")
-        return content
+    # Use centralized ArtifactCleaner service (avoids code duplication)
+    from backend.services.artifact_cleaner import get_cleaner
+    cleaner = get_cleaner()
+    
+    def clean_artifact_content(content: str, artifact_type: str) -> str:
+        """Clean artifact content using the centralized ArtifactCleaner service."""
+        try:
+            return cleaner.clean_artifact(content, artifact_type)
+        except Exception as e:
+            logger.warning(f"⚠️ [LIST_ARTIFACTS] Failed to clean artifact content: {e}")
+            return content
     
     # 1. Get all completed artifacts from active_jobs (in-memory, current session)
     for job_id, job in service.active_jobs.items():
@@ -665,8 +651,8 @@ async def list_artifacts(
                     artifact_ids_seen.add(artifact_id)
                     artifact_type = artifact.get("artifact_type") or artifact.get("type") or job.get("artifact_type", "unknown")
                     raw_content = artifact.get("content") or job.get("artifact_content", "")
-                    # Clean Mermaid content if needed
-                    cleaned_content = clean_mermaid_content(raw_content, artifact_type)
+                    # Clean artifact content using centralized cleaner
+                    cleaned_content = clean_artifact_content(raw_content, artifact_type)
                     
                     # Convert to frontend format
                     artifact_dict = {
@@ -704,8 +690,8 @@ async def list_artifacts(
                 for version in versions:
                     artifact_type = version.get("artifact_type", "unknown")
                     raw_content = version.get("content", "")
-                    # Clean Mermaid content if needed
-                    cleaned_content = clean_mermaid_content(raw_content, artifact_type)
+                    # Clean artifact content using centralized cleaner
+                    cleaned_content = clean_artifact_content(raw_content, artifact_type)
                     
                     # Convert version to frontend format
                     metadata = version.get("metadata", {})
@@ -749,8 +735,8 @@ async def list_artifacts(
                     artifact_ids_seen.add(artifact_id)
                     artifact_type = current_version.get("artifact_type", "unknown")
                     raw_content = current_version.get("content", "")
-                    # Clean Mermaid content if needed
-                    cleaned_content = clean_mermaid_content(raw_content, artifact_type)
+                    # Clean artifact content using centralized cleaner
+                    cleaned_content = clean_artifact_content(raw_content, artifact_type)
                     
                     # Convert version to frontend format
                     metadata = current_version.get("metadata", {})
@@ -884,7 +870,8 @@ async def regenerate_artifact(
     else:
         try:
             body_json = await request.json()
-        except:
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.debug(f"Could not parse request body as JSON: {e}")
             body_json = {}
     
     meeting_notes = body_json.get("meeting_notes", original_meeting_notes or "Regenerate previous artifact")
@@ -904,77 +891,71 @@ async def regenerate_artifact(
     logger.info(f"🚀 [REGENERATE] Starting regeneration: artifact_type={gen_request.artifact_type.value}, "
                 f"meeting_notes_length={len(meeting_notes)}")
     
-    # Generate in background (same logic as generate_artifact)
-    job_id = None
+    # Use a mutable container to share job_id between async task and main coroutine
+    regen_job_state = {"job_id": None}
     
-    def regenerate_task():
-        nonlocal job_id
+    async def regenerate_task_async():
+        """
+        Async background task for artifact regeneration.
+        
+        FIX: Previously this was a sync function that created its own event loop,
+        which blocked FastAPI's main event loop. Now properly async.
+        """
         result = None
-        import asyncio
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         try:
             logger.info(f"🔄 [REGENERATE] Background task started for {gen_request.artifact_type.value}")
             
-            async def generate_with_progress():
-                nonlocal job_id
-                final_result = None
-                
-                async for update in service.generate_artifact(
-                    artifact_type=gen_request.artifact_type,
-                    meeting_notes=meeting_notes,
-                    context_id=None,
-                    options=gen_request.options.dict() if gen_request.options else None,
-                    stream=False
-                ):
-                    if not job_id and update.get("job_id"):
-                        job_id = update.get("job_id")
-                        logger.info(f"📋 [REGENERATE] Job ID assigned: {job_id}")
-                    
-                    if update.get("type") == "progress":
-                        try:
-                            from backend.core.websocket import websocket_manager
-                            await websocket_manager.emit_generation_progress(
-                                job_id=job_id or f"regen_{artifact_id}",
-                                progress=update.get("progress", 0.0),
-                                message=f"Regenerating: {update.get('message', '')}",
-                                quality_prediction=update.get("quality_prediction")
-                            )
-                        except Exception as e:
-                            logger.warning(f"Failed to emit progress: {e}")
-                    
-                    final_result = update
-                
-                return final_result
+            final_result = None
             
-            result = loop.run_until_complete(generate_with_progress())
-            job_id = result.get("job_id") if result else job_id
-            logger.info(f"✅ [REGENERATE] Background task completed: job_id={job_id}")
+            async for update in service.generate_artifact(
+                artifact_type=gen_request.artifact_type,
+                meeting_notes=meeting_notes,
+                context_id=None,
+                options=gen_request.options.dict() if gen_request.options else None,
+                stream=False
+            ):
+                if not regen_job_state["job_id"] and update.get("job_id"):
+                    regen_job_state["job_id"] = update.get("job_id")
+                    logger.info(f"📋 [REGENERATE] Job ID assigned: {regen_job_state['job_id']}")
+                
+                if update.get("type") == "progress":
+                    try:
+                        await websocket_manager.emit_generation_progress(
+                            job_id=regen_job_state["job_id"] or f"regen_{artifact_id}",
+                            progress=update.get("progress", 0.0),
+                            message=f"Regenerating: {update.get('message', '')}",
+                            quality_prediction=update.get("quality_prediction")
+                        )
+                    except Exception as e:
+                        logger.warning(f"Failed to emit progress: {e}")
+                
+                final_result = update
+            
+            result = final_result
+            if result:
+                regen_job_state["job_id"] = result.get("job_id") or regen_job_state["job_id"]
+            logger.info(f"✅ [REGENERATE] Background task completed: job_id={regen_job_state['job_id']}")
             
             # Emit WebSocket event
-            if job_id and result and result.get("artifact"):
-                from backend.core.websocket import websocket_manager
+            if regen_job_state["job_id"] and result and result.get("artifact"):
                 artifact = result.get("artifact", {})
-                loop.run_until_complete(
-                    websocket_manager.emit_generation_complete(
-                        job_id=job_id,
-                        artifact_id=str(artifact.get("id", job_id)),
-                        validation_score=float(artifact.get("validation", {}).get("score", 0)),
-                        is_valid=bool(artifact.get("validation", {}).get("is_valid", False)),
-                        artifact=artifact
-                    )
+                await websocket_manager.emit_generation_complete(
+                    job_id=regen_job_state["job_id"],
+                    artifact_id=str(artifact.get("id", regen_job_state["job_id"])),
+                    validation_score=float(artifact.get("validation", {}).get("score", 0)),
+                    is_valid=bool(artifact.get("validation", {}).get("is_valid", False)),
+                    artifact=artifact
                 )
-                logger.info(f"✅ [REGENERATE] WebSocket event emitted for job {job_id}")
+                logger.info(f"✅ [REGENERATE] WebSocket event emitted for job {regen_job_state['job_id']}")
         except Exception as e:
             logger.error(f"❌ [REGENERATE] Background regeneration task failed: {e}", exc_info=True)
-        finally:
-            loop.close()
     
-    background_tasks.add_task(regenerate_task)
+    # Start the async task properly using asyncio.create_task()
+    asyncio.create_task(regenerate_task_async())
     
-    # Return immediately with job_id
+    # Return immediately with placeholder job_id (actual ID will be assigned in background)
     response = GenerationResponse(
-        job_id=job_id or f"regen_{artifact_id}",
+        job_id=f"regen_{artifact_id}",
         status=GenerationStatus.IN_PROGRESS
     )
     logger.info(f"📤 [REGENERATE] Returning response: job_id={response.job_id}, status={response.status}")
@@ -996,20 +977,17 @@ async def get_artifact(
     """
     service = get_service()
     
-    # Helper function to clean Mermaid content
-    def clean_mermaid_content(content: str, artifact_type: str) -> str:
-        """Clean Mermaid diagram content if needed."""
-        if artifact_type.startswith("mermaid_") and content:
-            try:
-                from backend.services.validation_service import get_service
-                validator = get_service()
-                cleaned = validator._extract_mermaid_diagram(content)
-                if cleaned != content:
-                    logger.debug(f"🧹 [GET_ARTIFACT] Cleaned Mermaid content: removed {len(content) - len(cleaned)} chars")
-                return cleaned
-            except Exception as e:
-                logger.warning(f"⚠️ [GET_ARTIFACT] Failed to clean Mermaid content: {e}")
-        return content
+    # Use centralized ArtifactCleaner service (avoids code duplication)
+    from backend.services.artifact_cleaner import get_cleaner
+    cleaner = get_cleaner()
+    
+    def clean_artifact_content(content: str, artifact_type: str) -> str:
+        """Clean artifact content using the centralized ArtifactCleaner service."""
+        try:
+            return cleaner.clean_artifact(content, artifact_type)
+        except Exception as e:
+            logger.warning(f"⚠️ [GET_ARTIFACT] Failed to clean artifact content: {e}")
+            return content
     
     # Find artifact in active_jobs
     if artifact_id in service.active_jobs:
@@ -1018,8 +996,8 @@ async def get_artifact(
         if artifact:
             artifact_type = artifact.get("artifact_type") or artifact.get("type") or job.get("artifact_type", "unknown")
             raw_content = artifact.get("content") or job.get("artifact_content", "")
-            # Clean Mermaid content if needed
-            cleaned_content = clean_mermaid_content(raw_content, artifact_type)
+            # Clean artifact content using centralized cleaner
+            cleaned_content = clean_artifact_content(raw_content, artifact_type)
             
             # Convert to frontend format
             artifact_dict = {
@@ -1061,8 +1039,8 @@ async def get_artifact(
                 if current_version:
                     artifact_type = current_version.get("artifact_type", "unknown")
                     raw_content = current_version.get("content", "")
-                    # Clean Mermaid content if needed
-                    cleaned_content = clean_mermaid_content(raw_content, artifact_type)
+                    # Clean artifact content using centralized cleaner
+                    cleaned_content = clean_artifact_content(raw_content, artifact_type)
                     
                     metadata = current_version.get("metadata", {})
                     artifact_dict = {

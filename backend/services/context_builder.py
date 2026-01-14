@@ -367,15 +367,16 @@ class ContextBuilder:
             logger.error(f"Error building ML features context: {e}", exc_info=True)
             return {"error": str(e)}
     
-    def _assemble_context(self, context: Dict[str, Any]) -> str:
+    def _assemble_context(self, context: Dict[str, Any], max_tokens: int = 8000) -> str:
         """
         Assemble context from all sources into a single string.
         
         Args:
             context: Context dictionary with sources
+            max_tokens: Maximum token limit to prevent context window overflow
         
         Returns:
-            Assembled context string
+            Assembled context string (truncated if exceeds max_tokens)
         """
         parts = []
         
@@ -441,7 +442,23 @@ class ContextBuilder:
                 parts.append(f"Lines: {features.get('lines_of_code', 0)}")
                 parts.append("\n")
         
-        return "\n".join(parts)
+        assembled = "\n".join(parts)
+        
+        # Safety check: Ensure context doesn't overflow model's context window
+        try:
+            from rag.filters import estimate_tokens, truncate_to_token_limit
+            token_count = estimate_tokens(assembled)
+            if token_count > max_tokens:
+                logger.warning(f"⚠️ Context {token_count} tokens exceeds limit {max_tokens}, truncating")
+                assembled = truncate_to_token_limit(assembled, max_tokens)
+        except ImportError:
+            # Fallback: simple character-based truncation (rough estimate: 4 chars per token)
+            char_limit = max_tokens * 4
+            if len(assembled) > char_limit:
+                logger.warning(f"⚠️ Context length {len(assembled)} chars exceeds estimate, truncating")
+                assembled = assembled[:char_limit] + "\n\n[... content truncated to fit context window ...]"
+        
+        return assembled
     
     def _extract_key_terms(self, text: str) -> List[str]:
         """Extract key terms from text for graph queries."""

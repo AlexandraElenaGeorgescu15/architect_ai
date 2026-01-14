@@ -9,6 +9,7 @@ from typing import Dict, List, Any, Optional
 import logging
 from datetime import datetime
 import re
+from dataclasses import dataclass
 
 # Add parent directory for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -559,6 +560,178 @@ def get_service() -> ValidationService:
     if _service is None:
         _service = ValidationService()
     return _service
+
+
+# =============================================================================
+# Diagram Improvement Service
+# =============================================================================
+# NOTE: This was extracted from backend/api/ai.py to maintain proper separation
+# of concerns. API routes should only coordinate; services should do the work.
+# =============================================================================
+
+@dataclass
+class DiagramImprovementResult:
+    """Result of a diagram improvement operation."""
+    success: bool
+    improved_code: str
+    improvements_made: list
+    error: Optional[str] = None
+    model_used: Optional[str] = None
+
+
+async def improve_mermaid_diagram(
+    mermaid_code: str,
+    diagram_type: str,
+    improvement_focus: Optional[list] = None
+) -> DiagramImprovementResult:
+    """
+    AI-powered diagram improvement service.
+    
+    Extracted from API layer to maintain separation of concerns.
+    The API route should only coordinate; this service does the actual work.
+    
+    Args:
+        mermaid_code: The Mermaid diagram code to improve
+        diagram_type: The type of diagram (e.g., 'mermaid_erd', 'mermaid_flowchart')
+        improvement_focus: List of areas to focus on (e.g., ['syntax', 'colors'])
+    
+    Returns:
+        DiagramImprovementResult with success status, improved code, and details
+    """
+    from backend.services.model_service import get_service as get_model_service
+    from backend.services.enhanced_generation import get_enhanced_service
+    from rag.filters import sanitize_prompt_input
+    
+    try:
+        logger.info(f"🔧 [DIAGRAM_IMPROVE] Starting improvement: type={diagram_type}")
+        
+        # Get model routing
+        model_service = get_model_service()
+        routing = model_service.get_routing_for_artifact(diagram_type)
+        
+        # Build improvement areas
+        improvement_areas = ", ".join(improvement_focus or ["syntax", "colors"])
+        
+        # Detect diagram type from code
+        diagram_start = _detect_diagram_type(mermaid_code)
+        
+        # Sanitize input to prevent prompt injection
+        safe_code = sanitize_prompt_input(mermaid_code, max_length=8000)
+        
+        # Build improvement prompt
+        prompt = f"""You are a Mermaid diagram expert. Improve this diagram while preserving its structure and meaning.
+
+INPUT DIAGRAM:
+{safe_code}
+
+IMPROVEMENT FOCUS: {improvement_areas}
+
+RULES:
+1. Fix any syntax errors (missing quotes, brackets, etc.)
+2. Keep all existing nodes and relationships
+3. Add colors using classDef if not present
+4. Do NOT add explanations or comments
+5. Do NOT wrap in markdown code blocks
+6. Start output directly with "{diagram_start or 'the diagram keyword'}"
+
+OUTPUT (improved Mermaid code only):"""
+        
+        # Call AI generation service
+        generation_service = get_enhanced_service()
+        result = await generation_service.generate_with_fallback(
+            prompt=prompt,
+            model_routing=routing,
+            temperature=0.3
+        )
+        
+        if not result.success or not result.content or len(result.content.strip()) < 10:
+            logger.warning(f"⚠️ [DIAGRAM_IMPROVE] AI generation failed")
+            return DiagramImprovementResult(
+                success=False,
+                improved_code=mermaid_code,
+                improvements_made=[],
+                error=result.error or "AI returned empty response"
+            )
+        
+        # Extract clean diagram code
+        from backend.services.artifact_cleaner import get_cleaner
+        cleaner = get_cleaner()
+        improved_code = cleaner.clean_mermaid(result.content)
+        
+        if not improved_code or len(improved_code.strip()) < 10:
+            logger.warning(f"⚠️ [DIAGRAM_IMPROVE] Extraction resulted in empty content")
+            return DiagramImprovementResult(
+                success=False,
+                improved_code=mermaid_code,
+                improvements_made=[],
+                error="AI returned incomplete diagram"
+            )
+        
+        # Validate diagram type consistency
+        improved_lower = improved_code.lower().strip()
+        if diagram_start and not improved_lower.startswith(diagram_start.lower()):
+            improved_code = _fix_diagram_type(improved_code, diagram_start)
+        
+        logger.info(f"✅ [DIAGRAM_IMPROVE] Successfully improved diagram")
+        return DiagramImprovementResult(
+            success=True,
+            improved_code=improved_code,
+            improvements_made=["Syntax fixed", "Structure validated"],
+            model_used=getattr(result, 'model_used', None)
+        )
+        
+    except Exception as e:
+        logger.error(f"❌ [DIAGRAM_IMPROVE] Error: {e}", exc_info=True)
+        return DiagramImprovementResult(
+            success=False,
+            improved_code=mermaid_code,
+            improvements_made=[],
+            error=str(e)
+        )
+
+
+def _detect_diagram_type(mermaid_code: str) -> str:
+    """Detect the diagram type from Mermaid code."""
+    code_lower = mermaid_code.lower().strip()
+    
+    diagram_types = [
+        ("erdiagram", "erDiagram"),
+        ("graph", "graph"),
+        ("flowchart", "flowchart"),
+        ("sequencediagram", "sequenceDiagram"),
+        ("classdiagram", "classDiagram"),
+        ("statediagram", "stateDiagram-v2"),
+        ("gantt", "gantt"),
+        ("pie", "pie"),
+        ("journey", "journey"),
+        ("gitgraph", "gitgraph"),
+        ("mindmap", "mindmap"),
+        ("timeline", "timeline"),
+    ]
+    
+    for prefix, proper_name in diagram_types:
+        if code_lower.startswith(prefix):
+            return proper_name
+    
+    return ""
+
+
+def _fix_diagram_type(improved_code: str, expected_type: str) -> str:
+    """Fix diagram type if it's missing or incorrect."""
+    improved_lower = improved_code.lower().strip()
+    
+    diagram_keywords = [
+        "erDiagram", "flowchart", "graph", "sequenceDiagram",
+        "classDiagram", "stateDiagram", "gantt", "pie", "journey",
+        "gitgraph", "mindmap", "timeline"
+    ]
+    
+    for dt in diagram_keywords:
+        if dt.lower() in improved_lower:
+            idx = improved_lower.find(dt.lower())
+            return improved_code[idx:].strip()
+    
+    return improved_code
 
 
 

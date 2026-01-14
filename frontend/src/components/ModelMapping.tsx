@@ -23,6 +23,8 @@ export default function ModelMapping() {
   const [searching, setSearching] = useState(false)
   const [downloadingModels, setDownloadingModels] = useState<Set<string>>(new Set())
   const [isAutoRefreshing, setIsAutoRefreshing] = useState(false)
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)  // Track unsaved changes
+  const [initialRoutings, setInitialRoutings] = useState<Record<string, ModelRouting>>({})  // Track original state
 
   // Check if there are any unavailable configured models
   const hasUnavailableModels = useMemo(() => {
@@ -39,6 +41,7 @@ export default function ModelMapping() {
   }, [routings, models])
 
   // Adaptive refresh: more frequent when models are unavailable
+  // BUT: Skip routing refresh if user has unsaved changes
   useEffect(() => {
     loadRoutings()
     fetchModels()
@@ -48,7 +51,11 @@ export default function ModelMapping() {
     
     const interval = setInterval(async () => {
       setIsAutoRefreshing(true)
-      await Promise.all([fetchModels(), loadRoutings()])
+      // Always refresh models, but only refresh routings if no unsaved changes
+      await fetchModels()
+      if (!hasUnsavedChanges) {
+        await loadRoutings()
+      }
       setIsAutoRefreshing(false)
     }, refreshInterval)
     
@@ -56,7 +63,12 @@ export default function ModelMapping() {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         setIsAutoRefreshing(true)
-        Promise.all([fetchModels(), loadRoutings()]).finally(() => {
+        const promises: Promise<any>[] = [fetchModels()]
+        // Only refresh routings if no unsaved changes
+        if (!hasUnsavedChanges) {
+          promises.push(loadRoutings())
+        }
+        Promise.all(promises).finally(() => {
           setIsAutoRefreshing(false)
         })
       }
@@ -68,7 +80,7 @@ export default function ModelMapping() {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasUnavailableModels])
+  }, [hasUnavailableModels, hasUnsavedChanges])
 
   const loadRoutings = async () => {
     try {
@@ -84,6 +96,8 @@ export default function ModelMapping() {
         }
       })
       setRoutings(routingDict)
+      setInitialRoutings(routingDict)  // Track initial state for change detection
+      setHasUnsavedChanges(false)  // Reset unsaved changes flag
     } catch (error) {
       console.error('Failed to load model routing:', error)
       // Don't show notification on initial load - silent degradation
@@ -115,7 +129,9 @@ export default function ModelMapping() {
       
       await api.put('/api/models/routing', { routings: routingList })
       addNotification('success', 'Model routing updated successfully!')
-      await loadRoutings() // Refresh to get updated data
+      setHasUnsavedChanges(false)  // Reset unsaved changes flag
+      setInitialRoutings(routings)  // Update initial state to current
+      await loadRoutings() // Refresh to get updated data (and sync with backend)
     } catch (error: any) {
       // Failed to save routings - show user error
       addNotification('error', error?.response?.data?.detail || 'Failed to save model routing')
@@ -133,9 +149,15 @@ export default function ModelMapping() {
       const response = await api.get('/api/huggingface/search', {
         params: { query: huggingfaceQuery, limit: 10 }
       })
-      setHuggingfaceResults(response.data.results || [])
-      console.log('🔎 [HUGGINGFACE] Search results:', response.data)
-      addNotification('info', `Found ${response.data.results?.length || 0} models for "${huggingfaceQuery}"`)
+      // Guard against unexpected API response shape to prevent crashes
+      const data = response?.data
+      const results = Array.isArray(data?.results) ? data.results : []
+      setHuggingfaceResults(results)
+      if (!Array.isArray(data?.results)) {
+        console.warn('[ModelMapping] Unexpected HuggingFace response shape:', data)
+      }
+      console.log('🔎 [HUGGINGFACE] Search results:', data)
+      addNotification('info', `Found ${results.length} models for "${huggingfaceQuery}"`)
     } catch (error: any) {
       console.error('❌ [HUGGINGFACE] Search failed:', error)
       const status = error?.response?.status
@@ -266,6 +288,7 @@ export default function ModelMapping() {
         [field]: value
       }
     }))
+    setHasUnsavedChanges(true)  // Mark as having unsaved changes
   }
 
   const filteredRoutings = Object.entries(routings).filter(([type]) =>
@@ -290,23 +313,32 @@ export default function ModelMapping() {
             )}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          {hasUnsavedChanges && (
+            <span className="text-xs text-yellow-600 dark:text-yellow-500 font-medium">
+              ⚠️ Unsaved changes
+            </span>
+          )}
           <button
             onClick={handleManualRefresh}
-            disabled={isAutoRefreshing}
+            disabled={isAutoRefreshing || hasUnsavedChanges}
             className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md hover:bg-secondary/90 flex items-center gap-2 disabled:opacity-50"
-            title={hasUnavailableModels ? 'Auto-refreshing every 10 seconds (unavailable models detected)' : 'Auto-refreshing every 30 seconds'}
+            title={hasUnsavedChanges ? 'Save changes before refreshing' : (hasUnavailableModels ? 'Auto-refreshing every 10 seconds (unavailable models detected)' : 'Auto-refreshing every 30 seconds')}
           >
             <RefreshCw className={`w-4 h-4 ${isAutoRefreshing ? 'animate-spin' : ''}`} />
             {isAutoRefreshing ? 'Refreshing...' : 'Refresh'}
           </button>
           <button
             onClick={saveRoutings}
-            disabled={loading}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 flex items-center gap-2 disabled:opacity-50"
+            disabled={loading || !hasUnsavedChanges}
+            className={`px-4 py-2 rounded-md flex items-center gap-2 disabled:opacity-50 transition-colors ${
+              hasUnsavedChanges 
+                ? 'bg-primary text-primary-foreground hover:bg-primary/90 animate-pulse' 
+                : 'bg-secondary text-secondary-foreground'
+            }`}
           >
             <Save className="w-4 h-4" />
-            Save
+            {hasUnsavedChanges ? 'Save Changes' : 'Saved'}
           </button>
         </div>
       </div>

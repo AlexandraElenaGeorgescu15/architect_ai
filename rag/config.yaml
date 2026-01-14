@@ -19,48 +19,86 @@ allow_extensions:
   - ".scss"
   - ".less"
 
+# ============================================================================
+# IGNORE PATTERNS
+# ============================================================================
+# IMPORTANT: Tool self-exclusion is handled dynamically by _tool_detector.py
+# Only add UNIVERSAL patterns here that should be excluded from ANY project.
+# Do NOT add common folder names like "components/", "services/", "models/" etc.
+# ============================================================================
 ignore_globs:
+  # --- Package managers & dependencies ---
   - "node_modules/**"
+  - "**/node_modules/**"
+  - "**/.yarn/**"
+  - "**/bower_components/**"
+  - "**/vendor/**"           # PHP/Go vendors
+  - "**/packages/**"         # NuGet packages
+  
+  # --- Build outputs ---
   - "dist/**"
+  - "**/dist/**"
   - "build/**"
+  - "**/build/**"
+  - "**/out/**"
+  - "**/target/**"           # Rust/Java
+  - "**/bin/**"              # .NET binaries
+  - "**/obj/**"              # .NET intermediate
+  - "**/.next/**"            # Next.js
+  - "**/.nuxt/**"            # Nuxt.js
+  - "**/.output/**"          # Nuxt 3
+  
+  # --- Version control ---
   - ".git/**"
+  - "**/.git/**"
+  - "**/.svn/**"
+  - "**/.hg/**"
+  
+  # --- Virtual environments ---
   - ".venv/**"
+  - "**/.venv/**"
+  - "**/venv/**"
+  - "**/__pycache__/**"
+  - "**/.pytest_cache/**"
+  - "**/.mypy_cache/**"
+  - "**/*.egg-info/**"
+  
+  # --- IDE & editor ---
+  - "**/.idea/**"
+  - "**/.vscode/**"
+  - "**/.vs/**"
+  
+  # --- Test coverage ---
   - "coverage/**"
+  - "**/coverage/**"
+  - "**/.coverage/**"
+  - "**/htmlcov/**"
+  
+  # --- Minified files (not useful for analysis) ---
   - "**/*.min.js"
   - "**/*.min.css"
-  - "**/*.md"  # Exclude all markdown files (documentation)
-  - "app/**"  # Exclude Architect AI app code
-  - "agents/**"  # Exclude Architect AI agents
-  - "ai/**"  # Exclude Architect AI models
-  - "components/**"  # Exclude Architect AI components
-  - "rag/**"  # Exclude RAG system code
-  - "utils/**"  # Exclude utility code
-  - "scripts/**"  # Exclude scripts
-  - "config/**"  # Exclude config
-  - "db/**"  # Exclude database models
-  - "services/**"  # Exclude services
-  - "workers/**"  # Exclude workers
-  - "monitoring/**"  # Exclude monitoring
-  - "logs/**"  # Exclude logs
-  - "outputs/**"  # Exclude outputs
-  - "finetuned_models/**"  # Exclude AI models
-  - "finetune_datasets/**"  # Exclude datasets
-  - "training_jobs/**"  # Exclude training data
-  - "analysis/**"  # Exclude analysis code
-  - "context/**"  # Exclude context
-  - "core/**"  # Exclude core
-  - "models/**"  # Exclude models
-  - "suggestions/**"  # Exclude suggestions
-  - "tenants/**"  # Exclude tenants
-  - "validation/**"  # Exclude validation
-  - "versioning/**"  # Exclude versioning
-  - "secrets/**"  # Exclude secrets
-  - "nginx/**"  # Exclude nginx
-  - "**/rag/index/**"  # Exclude RAG index data
-  - "**/bin/**"
-  - "**/obj/**"
-  - "**/target/**"
-  - "**/out/**"
+  - "**/*.map"               # Source maps
+  
+  # --- Large binary/data files ---
+  - "**/*.sqlite3"
+  - "**/*.db"
+  - "**/chroma.sqlite3"
+  - "**/rag/index/**"        # RAG index data (self)
+  
+  # --- Logs & temp ---
+  - "**/logs/**"
+  - "**/*.log"
+  - "**/tmp/**"
+  - "**/temp/**"
+  
+  # --- Generated outputs (prevent self-contamination) ---
+  - "outputs/**"
+  - "**/outputs/**"
+  
+  # --- Secrets (safety) ---
+  - "**/secrets/**"
+  - "**/.env"
+  - "**/.env.*"
 
 max_file_mb: 1.5
 
@@ -141,27 +179,26 @@ api:
   cors_origins: ["*"]
 
 # Auto-ingestion settings
-# NOTE: Place your project code in the 'inputs/' directory for analysis
+# NOTE: Tool self-exclusion is handled by _tool_detector.py - no need to list folders here
 auto_ingestion:
   enabled: true
-  watch_directories: ["inputs"]  # Only watch user project code, not the tool itself
+  watch_directories: ["inputs", "."]  # Watch inputs/ and current project
   debounce_seconds: 5
   batch_size: 10
   max_file_size_mb: 1.5
   exclude_patterns:
+    # Only universal exclusions - same as ignore_globs
     - "**/node_modules/**"
     - "**/.git/**"
     - "**/dist/**"
     - "**/build/**"
     - "**/coverage/**"
-    - "**/rag/index/**"  # Exclude RAG index data
-    - "app/**"  # Exclude Architect AI app
-    - "agents/**"
-    - "ai/**"
-    - "components/**"
-    - "rag/**"
-    - "utils/**"
-    - "scripts/**"
+    - "**/.venv/**"
+    - "**/venv/**"
+    - "**/__pycache__/**"
+    - "**/bin/**"
+    - "**/obj/**"
+    - "**/rag/index/**"
 
 # Background worker settings
 background_worker:

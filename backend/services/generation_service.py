@@ -6,7 +6,6 @@ Handles artifact generation with streaming support.
 import sys
 from pathlib import Path
 from typing import Dict, List, Any, Optional, AsyncGenerator
-import logging
 from datetime import datetime
 import uuid
 import asyncio
@@ -18,9 +17,10 @@ from backend.services.context_builder import get_builder as get_context_builder
 from backend.services.enhanced_generation import get_enhanced_service
 from backend.services.quality_predictor import get_quality_predictor
 from backend.core.config import settings
+from backend.core.logger import get_logger, log_error_to_file, capture_exceptions
 from backend.models.dto import ArtifactType, GenerationStatus
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Enhanced Generation Service is the primary generation path
 # It handles: local models → retry → cloud fallback → validation → finetuning pool
@@ -429,6 +429,19 @@ class GenerationService:
             
         except Exception as e:
             logger.error(f"❌ [GEN_SERVICE] Generation failed: job_id={job_id}, error={e}", exc_info=True)
+            
+            # Log exception to JSONL for persistent tracking
+            log_error_to_file(
+                error=e,
+                context={
+                    "job_id": job_id,
+                    "artifact_type": artifact_type.value,
+                    "meeting_notes_preview": meeting_notes[:200] if meeting_notes else "",
+                    "context_id": context_id
+                },
+                module="generation_service",
+                function="generate_artifact"
+            )
             
             self.active_jobs[job_id].update({
                 "status": GenerationStatus.FAILED.value,

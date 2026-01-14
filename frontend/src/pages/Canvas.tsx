@@ -1,17 +1,28 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { useArtifactStore } from '../stores/artifactStore'
+import { useDiagramStore } from '../stores/diagramStore'
 import { FileCode, Sparkles, ChevronDown } from 'lucide-react'
 import EnhancedDiagramEditor from '../components/EnhancedDiagramEditor'
 
 export default function Canvas() {
   const { artifacts } = useArtifactStore()
+  const { resetState: resetDiagramState } = useDiagramStore()
   const location = useLocation()
   const [searchParams] = useSearchParams()
   const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null)
   const [targetType, setTargetType] = useState<string | null>(null)
   const [showSelector, setShowSelector] = useState(false)
   const selectorRef = useRef<HTMLDivElement>(null)
+  
+  // CRITICAL: Reset diagram state on unmount to prevent stale errors from leaking
+  // between diagram views. This fixes the bug where viewing a broken diagram
+  // then navigating to a working one would still show the error state.
+  useEffect(() => {
+    return () => {
+      resetDiagramState()
+    }
+  }, [resetDiagramState])
   
   // Only show Mermaid diagrams (exclude HTML)
   const diagramArtifacts = artifacts

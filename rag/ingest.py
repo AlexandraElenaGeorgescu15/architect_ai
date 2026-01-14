@@ -25,9 +25,22 @@ from rag.filters import CODE_EXTS
 from components._tool_detector import should_exclude_path
 
 def read_file(p:Path)->str:
+    """
+    Read file contents with proper error logging.
+    
+    Instead of silently failing, logs warnings so users know which files
+    couldn't be indexed (permissions, encoding, etc.).
+    """
     try:
         return p.read_text(encoding="utf-8", errors="ignore")
-    except Exception:
+    except PermissionError:
+        print(f"[yellow]⚠ Permission denied: {p}[/]")
+        return ""
+    except UnicodeDecodeError as e:
+        print(f"[yellow]⚠ Encoding error in {p}: {e}[/]")
+        return ""
+    except Exception as e:
+        print(f"[yellow]⚠ Failed to read {p}: {type(e).__name__}: {e}[/]")
         return ""
 
 def main():
@@ -35,19 +48,15 @@ def main():
     
     # SMART ROOT DETECTION: Find the actual project root
     # If this tool is in a subdirectory, go up to find the real project root
-    # Look for common project root markers
     current = Path(".").resolve()
     
     # Check if we're in a tool/utility subdirectory
-    # Look for project root indicators in parent directories
     root = current
     check_path = current
     for _ in range(3):  # Check up to 3 levels up
         parent = check_path.parent
-        # If parent has multiple project folders or is more "root-like", use that
         if parent != check_path:
             subdirs = [d for d in parent.iterdir() if d.is_dir() and not d.name.startswith('.')]
-            # If parent has multiple project-like directories, it's probably the root
             if len(subdirs) >= 2 and check_path.name in [d.name for d in subdirs]:
                 root = parent
                 print(f"[bold yellow]Detected project root at: {root}[/]")
@@ -57,20 +66,28 @@ def main():
     if root == current:
         print(f"[bold cyan]Indexing from current directory: {root}[/]")
     
-    # Get all files that pass the filters (including ignore_globs)
-    all_files = [p for p in root.rglob("*") if allow_file(p, cfg)]
+    # Phase 1: Get all files that pass config filters (extensions, size, ignore_globs)
+    config_passed = [p for p in root.rglob("*") if allow_file(p, cfg)]
     
-    # Additional filter: Exclude the tool itself using intelligent detection
+    # Phase 2: Exclude tool's own code using intelligent detection
+    # This is separate from ignore_globs to keep config clean
     files = []
-    for p in all_files:
-        # Skip if file is inside the tool directory (intelligent detection)
+    tool_excluded = 0
+    for p in config_passed:
         if should_exclude_path(p):
+            tool_excluded += 1
             continue
         files.append(p)
     
-    print(f"[bold cyan]Ingesting {len(files)} files (excluding tool directory)...[/]")
-    if len(all_files) != len(files):
-        print(f"[bold yellow]Excluded {len(all_files) - len(files)} files from tool directory[/]")
+    # Report filtering results
+    print(f"\n[bold cyan]📊 File Discovery Summary:[/]")
+    print(f"   Total files found: {len(list(root.rglob('*')))}")
+    print(f"   After config filters (extensions, size, ignore_globs): {len(config_passed)}")
+    print(f"   After tool self-exclusion: {len(files)}")
+    if tool_excluded > 0:
+        print(f"   [yellow]⚠ Excluded {tool_excluded} files from Architect.AI tool directory[/]")
+    
+    print(f"\n[bold green]✓ Indexing {len(files)} files...[/]")
 
     # embeddings
     provider = os.getenv("EMBEDDINGS_PROVIDER", cfg["embedding"]["provider"])

@@ -223,7 +223,7 @@ class UniversalArchitectAgent:
                 response = requests.get("http://localhost:11434/api/tags", timeout=1)
                 if response.status_code != 200:
                     print("[💡 TIP] Install Ollama for full learning pipeline: https://ollama.com/download")
-            except:
+            except (requests.RequestException, OSError):
                 print("[💡 TIP] Install Ollama for full learning pipeline: https://ollama.com/download")
         else:
             self.adaptive_loop = None
@@ -3069,8 +3069,8 @@ Generate a data flow diagram with max 6 nodes following these EXACT rules.
         try:
             from components.universal_diagram_fixer import fix_any_diagram
             cleaned_dataflow, _ = fix_any_diagram(cleaned_dataflow)
-        except:
-            pass
+        except (ImportError, Exception):
+            pass  # Fixer module optional; silently continue if unavailable
         diagrams['dataflow'] = cleaned_dataflow
         await asyncio.sleep(2)  # Delay to avoid rate limits
         
@@ -3106,8 +3106,8 @@ Generate a user flow diagram with max 7 nodes following these EXACT rules.
         try:
             from components.universal_diagram_fixer import fix_any_diagram
             cleaned_userflow, _ = fix_any_diagram(cleaned_userflow)
-        except:
-            pass
+        except (ImportError, Exception):
+            pass  # Fixer module optional; silently continue if unavailable
         diagrams['userflow'] = cleaned_userflow
         await asyncio.sleep(2)  # Delay to avoid rate limits
         
@@ -3142,8 +3142,8 @@ Generate a component diagram with max 7 nodes following these EXACT rules.
         try:
             from components.universal_diagram_fixer import fix_any_diagram
             cleaned_components, _ = fix_any_diagram(cleaned_components)
-        except:
-            pass
+        except (ImportError, Exception):
+            pass  # Fixer module optional; silently continue if unavailable
         diagrams['components'] = cleaned_components
         await asyncio.sleep(2)  # Delay to avoid rate limits
         
@@ -3176,8 +3176,8 @@ Generate an API sequence diagram with max 6 interactions following these EXACT r
         try:
             from components.universal_diagram_fixer import fix_any_diagram
             cleaned_api, _ = fix_any_diagram(cleaned_api)
-        except:
-            pass
+        except (ImportError, Exception):
+            pass  # Fixer module optional; silently continue if unavailable
         diagrams['api'] = cleaned_api
         
         print(f"[OK] Generated {len(diagrams)} diagrams with universal syntax validation")

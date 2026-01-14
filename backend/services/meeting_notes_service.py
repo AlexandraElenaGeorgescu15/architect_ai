@@ -145,10 +145,13 @@ Folder name:"""
     
     def get_existing_folders(self) -> List[str]:
         """Get list of existing folder names."""
-        from backend.api.meeting_notes import MEETING_NOTES_DIR
+        # Use centralized config to avoid circular import with API layer
+        meeting_notes_dir = settings.meeting_notes_dir
+        meeting_notes_dir.mkdir(parents=True, exist_ok=True)
+        
         folders = []
-        if MEETING_NOTES_DIR.exists():
-            for folder_path in MEETING_NOTES_DIR.iterdir():
+        if meeting_notes_dir.exists():
+            for folder_path in meeting_notes_dir.iterdir():
                 if folder_path.is_dir():
                     folders.append(folder_path.name)
         return folders
@@ -163,9 +166,11 @@ Folder name:"""
         Returns:
             List of note dictionaries with id, name, content, etc.
         """
-        from backend.api.meeting_notes import MEETING_NOTES_DIR
+        # Use centralized config to avoid circular import with API layer
+        meeting_notes_dir = settings.meeting_notes_dir
+        meeting_notes_dir.mkdir(parents=True, exist_ok=True)
         
-        folder_path = MEETING_NOTES_DIR / folder_id
+        folder_path = meeting_notes_dir / folder_id
         if not folder_path.exists() or not folder_path.is_dir():
             logger.warning(f"Folder not found: {folder_id}")
             return []

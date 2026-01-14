@@ -203,21 +203,15 @@ export default function ApiKeysManager() {
                   )}
                 </div>
 
-                {provider.id === 'groq' && (
+                {/* API key hints - keys should be in .env file, NEVER hardcoded */}
+                {(provider.id === 'groq' || provider.id === 'gemini') && (
                   <div className="text-xs text-muted-foreground bg-info/5 border border-info/20 p-3 rounded-xl flex items-start gap-2">
                     <span className="text-base">💡</span>
                     <div>
-                      <span className="font-medium">Your Grok key:</span>
-                      <code className="block mt-1 bg-background px-2 py-1 rounded font-mono text-[10px] break-all">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</code>
-                    </div>
-                  </div>
-                )}
-                {provider.id === 'gemini' && (
-                  <div className="text-xs text-muted-foreground bg-info/5 border border-info/20 p-3 rounded-xl flex items-start gap-2">
-                    <span className="text-base">💡</span>
-                    <div>
-                      <span className="font-medium">Your Gemini key:</span>
-                      <code className="block mt-1 bg-background px-2 py-1 rounded font-mono text-[10px] break-all">AIzaSyAg6R0U0Noix5QRc4-mRio5ovaQz2CSSWs</code>
+                      <span className="font-medium">Add your {provider.name} key to <code>.env</code> file:</span>
+                      <code className="block mt-1 bg-background px-2 py-1 rounded font-mono text-[10px]">
+                        {provider.id === 'groq' ? 'GROQ_API_KEY=gsk_your_key_here' : 'GEMINI_API_KEY=your_key_here'}
+                      </code>
                     </div>
                   </div>
                 )}

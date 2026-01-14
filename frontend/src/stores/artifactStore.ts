@@ -21,6 +21,9 @@ interface ArtifactStore {
   // Selectors
   getArtifactsByType: (type: ArtifactType) => Artifact[]
   getArtifactById: (id: string) => Artifact | undefined
+
+  // Reset
+  reset: () => void
 }
 
 export const useArtifactStore = create<ArtifactStore>((set, get) => ({
@@ -72,5 +75,13 @@ export const useArtifactStore = create<ArtifactStore>((set, get) => ({
   getArtifactById: (id) => {
     return get().artifacts.find((a) => a.id === id)
   },
+
+  // Reset store to initial state (call on cleanup/logout)
+  reset: () => set({
+    artifacts: [],
+    currentArtifact: null,
+    isLoading: false,
+    error: null,
+  }),
 }))
 

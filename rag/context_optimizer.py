@@ -18,8 +18,8 @@ class ContextOptimizer:
         """
         try:
             self.encoding = tiktoken.encoding_for_model(model_name)
-        except:
-            # Fallback to cl100k_base (GPT-4, GPT-3.5-turbo)
+        except KeyError:
+            # Fallback to cl100k_base (GPT-4, GPT-3.5-turbo) for unknown models
             self.encoding = tiktoken.get_encoding("cl100k_base")
     
     def count_tokens(self, text: str) -> int:

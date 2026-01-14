@@ -5,6 +5,7 @@ import Layout from './components/layout/Layout'
 import OnboardingTour from './components/OnboardingTour'
 import CelebrationEffect from './components/CelebrationEffect'
 import SystemLoadingOverlay from './components/SystemLoadingOverlay'
+import BackendSettings from './components/BackendSettings'
 import { useSystemStatus } from './hooks/useSystemStatus'
 import { useAppLoading } from './hooks/useAppLoading'
 
@@ -102,6 +103,8 @@ function App() {
             <OnboardingTour />
             {/* Celebration effect for successful generations */}
             <CelebrationEffect />
+            {/* Backend connection settings (for split deployment) */}
+            <BackendSettings />
           </Router>
         ) : null}
         <SystemLoadingOverlay 

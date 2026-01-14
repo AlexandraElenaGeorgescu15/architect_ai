@@ -1,10 +1,84 @@
 import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios'
 import { ApiResponse } from '../types'
 
-// Use empty string to make requests relative to the current origin
-// This allows Vite's proxy to intercept /api/* requests in development
-// In production, set VITE_API_URL to the actual backend URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || ''
+// ============== CONFIGURABLE BACKEND URL ==============
+// Allows the frontend to connect to any backend (local or remote)
+// Stored in localStorage so users can configure their own backend
+
+const BACKEND_URL_KEY = 'architect_ai_backend_url'
+const DEFAULT_BACKEND_URL = '' // Empty = relative to current origin (for local dev with Vite proxy)
+
+/**
+ * Get the configured backend URL
+ * Falls back to environment variable or empty string (relative URLs)
+ */
+export function getBackendUrl(): string {
+  // Check localStorage first (user-configured)
+  const stored = localStorage.getItem(BACKEND_URL_KEY)
+  if (stored !== null) {
+    return stored
+  }
+  // Fall back to env variable or default
+  return import.meta.env.VITE_API_URL || DEFAULT_BACKEND_URL
+}
+
+/**
+ * Set a custom backend URL
+ * Pass empty string to reset to default
+ */
+export function setBackendUrl(url: string): void {
+  if (url === '' || url === DEFAULT_BACKEND_URL) {
+    localStorage.removeItem(BACKEND_URL_KEY)
+  } else {
+    // Normalize: remove trailing slash
+    const normalized = url.replace(/\/+$/, '')
+    localStorage.setItem(BACKEND_URL_KEY, normalized)
+  }
+  // Update the axios instance baseURL
+  api.defaults.baseURL = getBackendUrl()
+}
+
+/**
+ * Check if using a custom (non-default) backend URL
+ */
+export function isUsingCustomBackend(): boolean {
+  return localStorage.getItem(BACKEND_URL_KEY) !== null
+}
+
+/**
+ * Test connection to the backend
+ * Returns { connected: boolean, version?: string, error?: string }
+ */
+export async function testBackendConnection(url?: string): Promise<{
+  connected: boolean
+  version?: string
+  latency?: number
+  error?: string
+}> {
+  const testUrl = url ?? getBackendUrl()
+  const start = Date.now()
+  
+  try {
+    const response = await axios.get(`${testUrl}/api/health`, {
+      timeout: 5000, // 5 second timeout for health check
+    })
+    const latency = Date.now() - start
+    
+    return {
+      connected: true,
+      version: response.data?.version || 'unknown',
+      latency,
+    }
+  } catch (error: any) {
+    return {
+      connected: false,
+      error: error.message || 'Connection failed',
+    }
+  }
+}
+
+// Get initial backend URL
+const API_BASE_URL = getBackendUrl()
 
 // Create axios instance
 // Many AI operations (diagram repair, HTML modifier, bulk generation) can legitimately

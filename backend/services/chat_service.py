@@ -84,9 +84,10 @@ class ProjectAwareChatService:
         if include_project_context:
             try:
                 # Get RAG context (most relevant code snippets)
+                # IMPROVED: Retrieve more chunks for richer context
                 rag_results = await self.rag_retriever.retrieve(
                     query=message,
-                    k=10,  # More chunks for chat (broader context)
+                    k=20,  # More chunks for comprehensive chat context
                     artifact_type=None  # General context
                 )
                 
@@ -101,10 +102,14 @@ class ProjectAwareChatService:
                 
                 if rag_results:
                     project_context_parts.append("## Relevant Code Snippets:")
-                    for i, result in enumerate(rag_results[:5], 1):  # Top 5
+                    # IMPROVED: Include more snippets with longer content
+                    for i, result in enumerate(rag_results[:8], 1):  # Top 8 (was 5)
+                        file_path = result.get('metadata', {}).get('file_path', 'unknown')
+                        content = result.get('content', '')
+                        # IMPROVED: Include more content per snippet (was 500)
                         project_context_parts.append(
-                            f"\n### Snippet {i} (from {result.get('metadata', {}).get('file_path', 'unknown')}):\n"
-                            f"{result.get('content', '')[:500]}"
+                            f"\n### Snippet {i} (from {file_path}):\n"
+                            f"```\n{content[:800]}\n```"
                         )
                 
                 if kg_context:
@@ -114,6 +119,7 @@ class ProjectAwareChatService:
                     project_context_parts.append(f"\n## Pattern Mining Insights:\n{pattern_context}")
                 
                 project_context = "\n".join(project_context_parts)
+                logger.info(f"Chat context built: {len(project_context)} chars, {len(rag_results) if rag_results else 0} RAG snippets")
                 
             except Exception as e:
                 logger.warning(f"Error building project context: {e}")
@@ -304,29 +310,35 @@ class ProjectAwareChatService:
         """Build system message for chat."""
         base_message = """You are Architect.AI, an expert AI assistant specialized in software architecture and development.
 
+Your primary purpose is to help users understand and work with their specific project codebase.
+
 Your role:
 - Help users understand their codebase structure and architecture
-- Provide intelligent answers about code, patterns, and design decisions
-- Suggest improvements and best practices
+- Provide intelligent, specific answers about code, patterns, and design decisions
+- Suggest improvements and best practices based on what you see in their code
 - Answer questions about feasibility, complexity, and implementation
 - Explain technical concepts clearly
+- Reference specific files, functions, and code structures from the project
 
 Guidelines:
+- Be specific and reference actual code from the project context provided
+- When answering questions about "this codebase" or "my code", always look at the provided code snippets first
 - Be concise but comprehensive
-- Reference specific code when relevant
-- Provide actionable advice
-- Consider the full project context when answering"""
+- Provide actionable advice based on actual project structure
+- If you don't have enough context from the snippets, say so and ask for clarification"""
         
         if include_project_context:
             base_message += """
 
 You have access to:
-- Relevant code snippets from the project (via RAG)
-- Knowledge Graph showing component relationships
-- Pattern Mining insights about design patterns
-- Full project structure and dependencies
+- ACTUAL CODE SNIPPETS from the user's project (included below as "Relevant Code Snippets")
+- Knowledge Graph showing component relationships in their codebase
+- Pattern Mining insights about design patterns detected in their code
+- Project structure and file organization
 
-Use this context to provide accurate, project-specific answers."""
+IMPORTANT: The code snippets provided are from the USER'S ACTUAL PROJECT, not hypothetical examples.
+Always reference these snippets when answering questions about "my code", "this project", or "the codebase".
+If the user asks "what do you do?", explain that you help them understand THEIR specific project."""
         
         return base_message
     
@@ -418,7 +430,7 @@ Use this context to provide accurate, project-specific answers."""
         if settings.google_api_key or settings.gemini_api_key:
             try:
                 api_key = settings.google_api_key or settings.gemini_api_key
-                model_name = "gemini-2.0-flash-exp"  # Use faster model
+                model_name = settings.default_chat_model  # Use config-driven model
                 
                 async with httpx.AsyncClient(timeout=60.0) as client:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"

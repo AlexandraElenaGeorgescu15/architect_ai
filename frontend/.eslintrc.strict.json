@@ -1,0 +1,136 @@
+{
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "parserOptions": {
+    "project": ["./tsconfig.json"],
+    "ecmaVersion": 2022,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "react",
+    "react-hooks",
+    "import"
+  ],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/recommended-requiring-type-checking",
+    "plugin:@typescript-eslint/strict",
+    "plugin:react/recommended",
+    "plugin:react-hooks/recommended"
+  ],
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "rules": {
+    // ==========================================================================
+    // STRICT: Ban 'any' types completely
+    // ==========================================================================
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/no-unsafe-assignment": "error",
+    "@typescript-eslint/no-unsafe-member-access": "error",
+    "@typescript-eslint/no-unsafe-call": "error",
+    "@typescript-eslint/no-unsafe-return": "error",
+    "@typescript-eslint/no-unsafe-argument": "error",
+    
+    // Require explicit return types (prevents implicit any)
+    "@typescript-eslint/explicit-function-return-type": ["warn", {
+      "allowExpressions": true,
+      "allowTypedFunctionExpressions": true,
+      "allowHigherOrderFunctions": true
+    }],
+    "@typescript-eslint/explicit-module-boundary-types": "warn",
+    
+    // ==========================================================================
+    // STRICT: React Hooks dependency arrays (critical for state management)
+    // ==========================================================================
+    "react-hooks/rules-of-hooks": "error",
+    "react-hooks/exhaustive-deps": ["error", {
+      "additionalHooks": "(useAsync|useAsyncFn|useDebounce|useThrottle)"
+    }],
+    
+    // ==========================================================================
+    // Type Safety
+    // ==========================================================================
+    "@typescript-eslint/no-non-null-assertion": "warn",
+    "@typescript-eslint/prefer-nullish-coalescing": "error",
+    "@typescript-eslint/prefer-optional-chain": "error",
+    "@typescript-eslint/strict-boolean-expressions": ["error", {
+      "allowString": true,
+      "allowNumber": true,
+      "allowNullableObject": true
+    }],
+    
+    // Unused variables (error on unused, allow underscore prefix)
+    "@typescript-eslint/no-unused-vars": ["error", {
+      "argsIgnorePattern": "^_",
+      "varsIgnorePattern": "^_",
+      "caughtErrorsIgnorePattern": "^_"
+    }],
+    
+    // ==========================================================================
+    // Code Quality
+    // ==========================================================================
+    "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/await-thenable": "error",
+    "@typescript-eslint/no-misused-promises": ["error", {
+      "checksVoidReturn": {
+        "arguments": false
+      }
+    }],
+    "@typescript-eslint/require-await": "warn",
+    
+    // No console.log in production (use proper logging)
+    "no-console": ["warn", { "allow": ["warn", "error", "debug"] }],
+    
+    // ==========================================================================
+    // React Best Practices
+    // ==========================================================================
+    "react/react-in-jsx-scope": "off",
+    "react/prop-types": "off",
+    "react/jsx-key": ["error", { "checkFragmentShorthand": true }],
+    "react/jsx-no-useless-fragment": "warn",
+    "react/self-closing-comp": "warn",
+    "react/no-array-index-key": "warn",
+    
+    // ==========================================================================
+    // Import Organization
+    // ==========================================================================
+    "import/order": ["warn", {
+      "groups": [
+        "builtin",
+        "external",
+        "internal",
+        "parent",
+        "sibling",
+        "index"
+      ],
+      "newlines-between": "always",
+      "alphabetize": { "order": "asc", "caseInsensitive": true }
+    }],
+    "import/no-duplicates": "error",
+    
+    // ==========================================================================
+    // General
+    // ==========================================================================
+    "prefer-const": "error",
+    "no-var": "error",
+    "eqeqeq": ["error", "always", { "null": "ignore" }]
+  },
+  "overrides": [
+    {
+      "files": ["*.test.ts", "*.test.tsx", "*.spec.ts", "*.spec.tsx"],
+      "rules": {
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/no-unsafe-assignment": "off"
+      }
+    }
+  ]
+}
+

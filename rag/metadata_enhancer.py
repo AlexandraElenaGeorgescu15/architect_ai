@@ -87,7 +87,7 @@ class MetadataEnhancer:
         try:
             mtime = os.path.getmtime(file_path)
             return datetime.fromtimestamp(mtime).isoformat()
-        except:
+        except (OSError, ValueError):
             return datetime.now().isoformat()
     
     def _detect_language(self, file_path: str, content: str) -> str:
@@ -348,8 +348,8 @@ class MetadataEnhancer:
                 score += 0.1
             elif days_old < 30:
                 score += 0.05
-        except:
-            pass
+        except (KeyError, ValueError, TypeError):
+            pass  # Metadata may be incomplete or malformed
         
         # Boost for files with good comment ratio
         if 0.1 <= metadata['comment_ratio'] <= 0.3:

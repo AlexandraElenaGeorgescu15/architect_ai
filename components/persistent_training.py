@@ -211,7 +211,7 @@ class PersistentTrainingManager:
         try:
             from .local_finetuning import local_finetuning_system
             is_currently_training = local_finetuning_system.is_training()
-        except:
+        except (ImportError, AttributeError):
             is_currently_training = False
         
         for job in self.active_jobs.values():

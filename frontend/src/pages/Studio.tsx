@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, memo } from 'react'
 import { useGeneration } from '../hooks/useGeneration'
 import { useContext } from '../hooks/useContext'
 import { useArtifactStore } from '../stores/artifactStore'
+import { useDiagramStore } from '../stores/diagramStore'
 import { ArtifactType, listArtifacts } from '../services/generationService'
 import UnifiedStudioTabs from '../components/UnifiedStudioTabs'
 import { useLocation } from 'react-router-dom'
@@ -15,8 +16,18 @@ function Studio() {
   const { isGenerating, progress, generate, clearProgress, cancelGeneration } = useGeneration()
   const { isBuilding, build } = useContext()
   const { artifacts, getArtifactsByType, setArtifacts, setLoading } = useArtifactStore()
+  const { resetState: resetDiagramState } = useDiagramStore()
   const { addNotification } = useUIStore()
   const location = useLocation()
+
+  // CRITICAL: Reset diagram error state on unmount to prevent stale errors
+  // This fixes the bug where viewing a broken diagram then navigating to a 
+  // working one would still show the error state
+  useEffect(() => {
+    return () => {
+      resetDiagramState()
+    }
+  }, [resetDiagramState])
 
   // Handle applied template from navigation state
   useEffect(() => {

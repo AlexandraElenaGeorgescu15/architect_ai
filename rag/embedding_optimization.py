@@ -113,8 +113,8 @@ class EmbeddingOptimizer:
         try:
             with open(filepath, 'rb') as f:
                 self.cache = pickle.load(f)
-        except:
-            pass
+        except (FileNotFoundError, EOFError, pickle.UnpicklingError):
+            pass  # Cache file doesn't exist or is corrupted
 
 class SemanticCompression:
     """

@@ -24,6 +24,9 @@ interface ModelStore {
   getModelById: (id: string) => Model | undefined
   getModelsByProvider: (provider: string) => Model[]
   getModelsByStatus: (status: string) => Model[]
+
+  // Reset
+  reset: () => void
 }
 
 export const useModelStore = create<ModelStore>((set, get) => ({
@@ -66,6 +69,14 @@ export const useModelStore = create<ModelStore>((set, get) => ({
     return get().models.filter((m) => m.status === status)
   },
 
+  // Reset store to initial state (call on cleanup/logout)
+  reset: () => set({
+    models: [],
+    routing: null,
+    isLoading: false,
+    error: null,
+  }),
+
   fetchModels: async () => {
     try {
       set({ isLoading: true, error: null })
@@ -78,32 +89,6 @@ export const useModelStore = create<ModelStore>((set, get) => ({
   },
 }))
 
-// Auto-refresh models every 30 seconds to catch newly created fine-tuned models
-if (typeof window !== 'undefined') {
-  let refreshInterval: ReturnType<typeof setInterval> | null = null
-  
-  const startAutoRefresh = () => {
-    if (refreshInterval) return
-    
-    refreshInterval = setInterval(() => {
-      const store = useModelStore.getState()
-      if (!store.isLoading) {
-        store.fetchModels()
-      }
-    }, 30000) // Refresh every 30 seconds
-  }
-  
-  const stopAutoRefresh = () => {
-    if (refreshInterval) {
-      clearInterval(refreshInterval)
-      refreshInterval = null
-    }
-  }
-  
-  // Start auto-refresh when store is first used
-  startAutoRefresh()
-  
-  // Stop on page unload
-  window.addEventListener('beforeunload', stopAutoRefresh)
-}
+// Auto-refresh is now handled by components via useAutoRefreshModels hook
+// This prevents zombie intervals during HMR and ensures proper cleanup
 

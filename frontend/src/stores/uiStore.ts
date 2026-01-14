@@ -21,6 +21,9 @@ interface UIStore {
   ) => void
   removeNotification: (id: string) => void
   clearNotifications: () => void
+
+  // Reset (clears notifications only, preserves UI preferences)
+  reset: () => void
 }
 
 export const useUIStore = create<UIStore>((set, get) => ({
@@ -73,5 +76,9 @@ export const useUIStore = create<UIStore>((set, get) => ({
     })),
 
   clearNotifications: () => set({ notifications: [] }),
+
+  // Reset store to initial state (call on cleanup/logout)
+  // Note: darkMode and sidebarOpen are persisted preferences, so we don't reset them
+  reset: () => set({ notifications: [] }),
 }))
 

@@ -20,7 +20,7 @@ from backend.services.context_builder import get_builder as get_context_builder
 from backend.services.validation_service import get_service as get_validation_service
 from backend.core.config import settings
 from backend.core.metrics import get_metrics_collector, timed
-from backend.core.logger import get_logger
+from backend.core.logger import get_logger, log_error_to_file, log_token_usage, log_ai_call
 from backend.core.cache import cached
 from backend.models.dto import ArtifactType
 
@@ -288,6 +288,30 @@ class EnhancedGenerationService:
                         logger.warning(f"⚠️ [ENHANCED_GEN] Unknown provider: {provider}")
                         continue
                     
+                    # Log AI call and token usage
+                    if response.success:
+                        log_ai_call(
+                            model=model_name,
+                            prompt_length=len(prompt),
+                            response_length=len(response.content) if response.content else 0,
+                            operation="artifact_generation",
+                            success=True,
+                            duration_seconds=response.generation_time if hasattr(response, 'generation_time') else 0,
+                            metadata={"artifact_type": artifact_type.value, "provider": provider}
+                        )
+                        
+                        # Log token usage if available
+                        if hasattr(response, 'tokens_generated') and response.tokens_generated:
+                            log_token_usage(
+                                model=f"{provider}:{model_name}",
+                                input_tokens=len(prompt) // 4,  # Rough estimate: 4 chars per token
+                                output_tokens=response.tokens_generated,
+                                operation="artifact_generation",
+                                artifact_type=artifact_type.value,
+                                duration_seconds=response.generation_time if hasattr(response, 'generation_time') else None,
+                                success=True
+                            )
+                    
                     if not response.success or not response.content:
                         logger.warning(f"⚠️ [ENHANCED_GEN] Generation failed with {model_name} (attempt {retry + 1}): {response.error_message}")
                         if retry < opts["max_retries"]:
@@ -524,10 +548,11 @@ class EnhancedGenerationService:
                                         logger.debug(f"⚠️ [ENHANCED_GEN] Model {model_name} scored {score:.1f} but not promoting (already primary or score < 80)")
                                 else:
                                     # Create new routing with this successful model
+                                    from backend.core.config import settings
                                     routing = ModelRoutingDTO(
                                         artifact_type=artifact_type,
                                         primary_model=model_id,
-                                        fallback_models=["ollama:llama3", "gemini:gemini-2.0-flash-exp"],
+                                        fallback_models=settings.default_fallback_models,
                                         enabled=True
                                     )
                                     model_service.update_routing([routing])
@@ -557,6 +582,21 @@ class EnhancedGenerationService:
                         
                 except Exception as e:
                     logger.error(f"Error with {model_name} (attempt {retry + 1}): {e}")
+                    
+                    # Log error to JSONL
+                    log_error_to_file(
+                        error=e,
+                        context={
+                            "model": model_name,
+                            "provider": provider,
+                            "artifact_type": artifact_type.value,
+                            "retry": retry,
+                            "operation": "artifact_generation"
+                        },
+                        module="enhanced_generation",
+                        function="generate_with_pipeline"
+                    )
+                    
                     if retry < opts["max_retries"]:
                         continue  # Retry
                     else:
@@ -678,23 +718,26 @@ class EnhancedGenerationService:
     
     def _build_prompt(self, meeting_notes: str, rag_context: str, artifact_type: ArtifactType) -> str:
         """Build comprehensive prompt with all context."""
+        # Import prompt sanitization to prevent injection attacks
+        from rag.filters import sanitize_prompt_input
+        
         parts = []
         
         # Add artifact-specific instructions
         artifact_name = artifact_type.value.replace("_", " ").title()
         parts.append(f"Generate a {artifact_name} based on the following requirements and project context.")
         parts.append("\n## Requirements")
-        parts.append(meeting_notes)
+        
+        # Sanitize user-provided meeting notes to prevent prompt injection
+        safe_notes = sanitize_prompt_input(meeting_notes, max_length=8000)
+        parts.append(safe_notes)
         
         if rag_context:
             parts.append("\n## Project Context (from codebase)")
+            # Sanitize RAG context (already from our own codebase, but still good practice)
             # Limit RAG context to avoid token limits, but preserve important parts
-            rag_limit = 3000
-            if len(rag_context) > rag_limit:
-                # Try to keep the beginning (usually most relevant) and end
-                parts.append(rag_context[:rag_limit] + "\n[... truncated for length ...]")
-            else:
-                parts.append(rag_context)
+            safe_context = sanitize_prompt_input(rag_context, max_length=3000)
+            parts.append(safe_context)
         
         parts.append("\n## Instructions")
         parts.append("1. Ensure the output is complete and production-ready")
@@ -814,21 +857,42 @@ Follow the repository's coding style and test patterns. Make tests realistic and
         routing = self.model_service.get_routing_for_artifact(artifact_type)
         cloud_providers = []
         
-        # Extract cloud models from routing fallback_models
+        def _add_cloud_provider_if_valid(model_id: str) -> bool:
+            """Helper to add a cloud provider if the model_id is a cloud model with valid API key."""
+            if ":" not in model_id:
+                return False
+            provider, model_name = model_id.split(":", 1)
+            # Skip local models (Ollama/HuggingFace)
+            if provider in ["ollama", "huggingface"]:
+                return False
+            # Check if API key is available for this provider
+            if provider == "gemini" and (settings.google_api_key or settings.gemini_api_key):
+                cloud_providers.append((provider, model_name))
+                return True
+            elif provider == "groq" and settings.groq_api_key:
+                cloud_providers.append((provider, model_name))
+                return True
+            elif provider == "openai" and settings.openai_api_key:
+                cloud_providers.append((provider, model_name))
+                return True
+            elif provider == "anthropic" and settings.anthropic_api_key:
+                cloud_providers.append((provider, model_name))
+                return True
+            return False
+        
+        # FIRST: Check if routing.primary_model is a cloud model (user's explicit choice)
+        if routing and routing.primary_model:
+            if _add_cloud_provider_if_valid(routing.primary_model):
+                logger.info(f"📋 [CLOUD_FALLBACK] Using user's primary_model as cloud provider: {routing.primary_model}")
+        
+        # SECOND: Extract cloud models from routing fallback_models
         if routing and routing.fallback_models:
             for model_id in routing.fallback_models:
+                # Skip if already added (e.g., primary_model was same as a fallback)
                 if ":" in model_id:
                     provider, model_name = model_id.split(":", 1)
-                    if provider != "ollama":
-                        # Check if API key is available
-                        if provider == "gemini" and (settings.google_api_key or settings.gemini_api_key):
-                            cloud_providers.append((provider, model_name))
-                        elif provider == "groq" and settings.groq_api_key:
-                            cloud_providers.append((provider, model_name))
-                        elif provider == "openai" and settings.openai_api_key:
-                            cloud_providers.append((provider, model_name))
-                        elif provider == "anthropic" and settings.anthropic_api_key:
-                            cloud_providers.append((provider, model_name))
+                    if (provider, model_name) not in cloud_providers:
+                        _add_cloud_provider_if_valid(model_id)
         
         # Add default cloud models if routing didn't provide any
         if not cloud_providers:

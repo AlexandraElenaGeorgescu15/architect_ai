@@ -12,14 +12,15 @@ from datetime import datetime
 from backend.models.dto import UserPublic
 from backend.core.auth import get_current_user
 from backend.core.middleware import limiter
+from backend.core.config import settings
 from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/meeting-notes", tags=["Meeting Notes"])
 
-# Storage directory
-MEETING_NOTES_DIR = Path("data/meeting_notes")
+# Storage directory - use centralized config to avoid circular imports
+MEETING_NOTES_DIR = settings.meeting_notes_dir
 MEETING_NOTES_DIR.mkdir(parents=True, exist_ok=True)
 
 

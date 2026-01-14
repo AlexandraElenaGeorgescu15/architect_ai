@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import mermaid from 'mermaid'
-import { ZoomIn, ZoomOut, Maximize2, Download, Wand2, AlertTriangle, Loader2, Code, Eye } from 'lucide-react'
+import { ZoomIn, ZoomOut, Maximize2, Download, Wand2, AlertTriangle, Loader2, Code, Eye, Move } from 'lucide-react'
 import api from '../services/api'
+import { useDiagramStore } from '../stores/diagramStore'
 
 interface MermaidRendererProps {
   content: string
@@ -10,25 +11,84 @@ interface MermaidRendererProps {
   artifactType?: string
 }
 
-interface ValidationResult {
-  isValid: boolean
-  errors: string[]
-  warnings: string[]
+// Pan/drag state for diagram viewer
+interface PanState {
+  x: number
+  y: number
+  isDragging: boolean
+  startX: number
+  startY: number
 }
 
 export default function MermaidRenderer({ content, className = '', onContentUpdate, artifactType = 'mermaid_erd' }: MermaidRendererProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [zoom, setZoom] = useState(1)
+  const diagramWrapperRef = useRef<HTMLDivElement>(null)
   const [isInitialized, setIsInitialized] = useState(false)
-  const [isRepairing, setIsRepairing] = useState(false)
   const [showCode, setShowCode] = useState(false)
-  const [validation, setValidation] = useState<ValidationResult | null>(null)
-  const lastErrorContentRef = useRef<string | null>(null)
   const containerRefSnapshot = useRef<HTMLDivElement | null>(null)
+  
+  // Pan/drag state for moving the diagram with mouse
+  const [pan, setPan] = useState<PanState>({ x: 0, y: 0, isDragging: false, startX: 0, startY: 0 })
+  
+  // Use Zustand store for error state - this fixes the stale error bug
+  const {
+    error,
+    setError,
+    validation,
+    setValidation,
+    lastErrorContent,
+    setLastErrorContent,
+    isRepairing,
+    setIsRepairing,
+    zoom,
+    zoomIn,
+    zoomOut,
+    resetZoom,
+    resetState,
+  } = useDiagramStore()
 
-  const formatMermaidError = (): string => {
-    // Force a friendly, generic message to avoid leaking raw Mermaid errors
+  // Store the actual Mermaid error for AI repair context
+  const [mermaidErrorDetail, setMermaidErrorDetail] = useState<string | null>(null)
+  
+  // Pan/drag handlers for moving the diagram with mouse
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return // Only left click
+    e.preventDefault()
+    setPan(prev => ({
+      ...prev,
+      isDragging: true,
+      startX: e.clientX - prev.x,
+      startY: e.clientY - prev.y
+    }))
+  }, [])
+  
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!pan.isDragging) return
+    e.preventDefault()
+    setPan(prev => ({
+      ...prev,
+      x: e.clientX - prev.startX,
+      y: e.clientY - prev.startY
+    }))
+  }, [pan.isDragging])
+  
+  const handleMouseUp = useCallback(() => {
+    setPan(prev => ({ ...prev, isDragging: false }))
+  }, [])
+  
+  const handleMouseLeave = useCallback(() => {
+    setPan(prev => ({ ...prev, isDragging: false }))
+  }, [])
+  
+  const resetPan = useCallback(() => {
+    setPan({ x: 0, y: 0, isDragging: false, startX: 0, startY: 0 })
+  }, [])
+
+  const formatMermaidError = (rawError?: string): string => {
+    // Store raw error for AI repair, but show friendly message to user
+    if (rawError) {
+      setMermaidErrorDetail(rawError)
+    }
     return 'Mermaid syntax error. Please fix the diagram or click AI Repair.'
   }
 
@@ -60,7 +120,7 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
   }
 
   // Validate Mermaid content before rendering
-  const validateMermaidContent = useCallback((diagramContent: string): ValidationResult => {
+  const validateMermaidContent = useCallback((diagramContent: string): { isValid: boolean; errors: string[]; warnings: string[] } => {
     const errors: string[] = []
     const warnings: string[] = []
     
@@ -108,6 +168,17 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
       warnings
     }
   }, [])
+
+  // CRITICAL FIX: Reset error state when content changes
+  // This must happen BEFORE the containerRef check to fix the stale error bug
+  useEffect(() => {
+    // When content changes, clear previous error state immediately
+    // This ensures a fresh render attempt for the new diagram
+    setError(null)
+    setValidation(null)
+    setLastErrorContent(null)
+    setMermaidErrorDetail(null)
+  }, [content, setError, setValidation, setLastErrorContent])
   
   // Repair function - AGGRESSIVE: keeps trying until diagram renders
   const handleAIRepair = useCallback(async () => {
@@ -123,11 +194,13 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
     const originalContent = content // Save original content in case repair fails
     try {
       console.log('🔧 [MermaidRenderer] AGGRESSIVE REPAIR: will try until diagram renders')
+      console.log('🔧 [MermaidRenderer] Error context:', mermaidErrorDetail || error || 'No specific error captured')
       
-      // Call the aggressive repair endpoint
+      // Call the aggressive repair endpoint with error context
       const response = await api.post('/api/ai/repair-diagram', {
         mermaid_code: content,
         diagram_type: artifactType,
+        error_message: mermaidErrorDetail || error || null,
         improvement_focus: ['syntax', 'layout', 'relationships']
       })
       
@@ -141,7 +214,8 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         
         // Reset error state to trigger re-render
         setError(null)
-        lastErrorContentRef.current = null
+        setLastErrorContent(null)
+        setMermaidErrorDetail(null)
       } else {
         // Repair failed even after all attempts
         console.error('❌ [MermaidRenderer] All repair attempts failed:', response.data.error)
@@ -167,7 +241,7 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
     } finally {
       setIsRepairing(false)
     }
-  }, [content, artifactType, onContentUpdate, isRepairing])
+  }, [content, artifactType, onContentUpdate, isRepairing, setError, setIsRepairing, setLastErrorContent, mermaidErrorDetail, error])
 
   useEffect(() => {
     // Initialize Mermaid once
@@ -339,10 +413,12 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         try {
           clearMermaidErrorArtifacts()
           mermaid.parse(diagramContent)
-        } catch (_) {
+        } catch (parseErr: any) {
           clearMermaidErrorArtifacts()
-          setError(formatMermaidError())
-          lastErrorContentRef.current = content
+          const rawErrorMsg = parseErr?.message || parseErr?.toString() || 'Unknown parse error'
+          console.error('🔍 [MermaidRenderer] Parse error:', rawErrorMsg)
+          setError(formatMermaidError(rawErrorMsg))
+          setLastErrorContent(content)
           return
         }
 
@@ -358,7 +434,7 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
           // If error SVG was created, don't insert it and show error message instead
           clearMermaidErrorArtifacts()
           setError(formatMermaidError())
-          lastErrorContentRef.current = content
+          setLastErrorContent(content)
           return
         }
         
@@ -371,22 +447,18 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
           clearMermaidErrorArtifacts()
           container.innerHTML = ''
           setError(formatMermaidError())
-          lastErrorContentRef.current = content
+          setLastErrorContent(content)
           return
         }
 
-        // Apply zoom
-        const svgElement = container.querySelector('svg')
-        if (svgElement) {
-          svgElement.style.transform = `scale(${zoom})`
-          svgElement.style.transformOrigin = 'top center'
-          svgElement.style.transition = 'transform 0.3s ease'
-        }
+        // Note: Zoom is now applied via CSS transform on the container wrapper
+        // This allows both zoom and pan to work together smoothly
         
         // Clear any previous error on successful render
         setError(null)
       } catch (err: any) {
-        console.error('Mermaid rendering error:', err)
+        const rawErrorMsg = err?.message || err?.toString() || 'Unknown rendering error'
+        console.error('Mermaid rendering error:', rawErrorMsg)
         clearMermaidErrorArtifacts()
         if (containerRefSnapshot.current) {
           containerRefSnapshot.current.innerHTML = ''
@@ -398,17 +470,20 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
             containerRefSnapshot.current.innerHTML = ''
           }
         }, 100)
-        setError(formatMermaidError())
-        lastErrorContentRef.current = content
+        setError(formatMermaidError(rawErrorMsg))
+        setLastErrorContent(content)
       }
     }
 
     renderDiagram()
-  }, [content, zoom, isInitialized, validateMermaidContent])
+  }, [content, isInitialized, validateMermaidContent, setError, setValidation, setLastErrorContent])
 
-  const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 2))
-  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.5))
-  const handleResetZoom = () => setZoom(1)
+  const handleZoomIn = () => zoomIn()
+  const handleZoomOut = () => zoomOut()
+  const handleResetZoom = () => {
+    resetZoom()
+    resetPan()
+  }
 
   const handleDownload = () => {
     if (!containerRef.current) return
@@ -522,12 +597,18 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         </div>
       )}
       
-      {/* Zoom Controls */}
+      {/* Zoom & Pan Controls */}
       <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-card/90 backdrop-blur-sm border border-border rounded-lg shadow-lg p-2">
+        {/* Drag hint */}
+        <div className="flex items-center gap-1 px-2 text-muted-foreground" title="Drag to pan the diagram">
+          <Move className="w-3 h-3" />
+          <span className="text-xs hidden sm:inline">Drag</span>
+        </div>
+        <div className="w-px h-6 bg-border mx-1"></div>
         <button
           onClick={handleZoomOut}
           className="p-2 hover:bg-secondary rounded transition-colors"
-          title="Zoom Out"
+          title="Zoom Out (or scroll)"
         >
           <ZoomOut className="w-4 h-4" />
         </button>
@@ -537,7 +618,7 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         <button
           onClick={handleZoomIn}
           className="p-2 hover:bg-secondary rounded transition-colors"
-          title="Zoom In"
+          title="Zoom In (or scroll)"
         >
           <ZoomIn className="w-4 h-4" />
         </button>
@@ -545,7 +626,7 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         <button
           onClick={handleResetZoom}
           className="p-2 hover:bg-secondary rounded transition-colors"
-          title="Reset Zoom"
+          title="Reset View (zoom + position)"
         >
           <Maximize2 className="w-4 h-4" />
         </button>
@@ -571,13 +652,27 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         </button>
       </div>
 
-      {/* Diagram Container */}
-      <div className="flex-1 overflow-auto custom-scrollbar p-8 flex items-center justify-center">
+      {/* Diagram Container with Pan/Drag Support */}
+      <div 
+        ref={diagramWrapperRef}
+        className="flex-1 overflow-hidden p-4 flex items-center justify-center"
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        style={{ 
+          cursor: pan.isDragging ? 'grabbing' : 'grab',
+          userSelect: 'none'
+        }}
+      >
         <div 
           ref={containerRef}
           className="mermaid-container"
           style={{ 
-            minWidth: '100%',
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: 'center center',
+            transition: pan.isDragging ? 'none' : 'transform 0.2s ease',
+            minWidth: 'fit-content',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center'

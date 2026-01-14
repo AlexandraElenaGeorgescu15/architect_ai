@@ -19,10 +19,12 @@ if sys.platform == 'win32':
 
 import streamlit as st
 import asyncio
+import subprocess
 from typing import Dict, List, Tuple, Optional, Any
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 from collections import deque
 from pathlib import Path
+from enum import Enum
 import json
 import time
 import math
@@ -38,6 +40,14 @@ from .finetuning_feedback import feedback_store, FeedbackEntry
 import shutil
 
 
+class ModelFormat(str, Enum):
+    """Model format types for download routing"""
+    GGUF = "gguf"           # Quantized models for Ollama (llama.cpp)
+    OLLAMA = "ollama"       # Native Ollama models (use ollama pull)
+    PYTORCH = "pytorch"     # Full PyTorch models from HuggingFace
+    LORA = "lora"           # LoRA adapters from HuggingFace
+
+
 @dataclass
 class ModelInfo:
     """Information about a local model"""
@@ -49,6 +59,7 @@ class ModelInfo:
     is_downloaded: bool
     is_loaded: bool
     fine_tuned_versions: List[str]
+    model_format: ModelFormat = ModelFormat.PYTORCH  # Default to PyTorch for HuggingFace models
 
 
 @dataclass
@@ -94,7 +105,12 @@ class LocalFineTuningSystem:
     """Local fine-tuning system with LoRA/QLoRA support"""
     
     def __init__(self):
+        # Define adapters directory for LoRA downloads
+        self.adapters_dir = Path("data/adapters")
+        self.adapters_dir.mkdir(parents=True, exist_ok=True)
+        
         self.available_models = {
+            # === PyTorch Models (HuggingFace full models) ===
             "codellama-7b": ModelInfo(
                 name="CodeLlama 7B",
                 size="13GB",
@@ -103,7 +119,8 @@ class LocalFineTuningSystem:
                 download_url="codellama/CodeLlama-7b-Instruct-hf",
                 is_downloaded=False,
                 is_loaded=False,
-                fine_tuned_versions=[]
+                fine_tuned_versions=[],
+                model_format=ModelFormat.PYTORCH
             ),
             "llama3-8b": ModelInfo(
                 name="Llama 3 8B",
@@ -113,7 +130,8 @@ class LocalFineTuningSystem:
                 download_url="meta-llama/Meta-Llama-3-8B-Instruct",
                 is_downloaded=False,
                 is_loaded=False,
-                fine_tuned_versions=[]
+                fine_tuned_versions=[],
+                model_format=ModelFormat.PYTORCH
             ),
             "mistral-7b": ModelInfo(
                 name="Mistral 7B",
@@ -123,7 +141,8 @@ class LocalFineTuningSystem:
                 download_url="mistralai/Mistral-7B-Instruct-v0.2",
                 is_downloaded=False,
                 is_loaded=False,
-                fine_tuned_versions=[]
+                fine_tuned_versions=[],
+                model_format=ModelFormat.PYTORCH
             ),
             "deepseek-coder-6.7b": ModelInfo(
                 name="DeepSeek Coder 6.7B",
@@ -133,17 +152,87 @@ class LocalFineTuningSystem:
                 download_url="deepseek-ai/deepseek-coder-6.7b-instruct",
                 is_downloaded=False,
                 is_loaded=False,
-                fine_tuned_versions=[]
+                fine_tuned_versions=[],
+                model_format=ModelFormat.PYTORCH
             ),
             "mermaid-mistral-7b": ModelInfo(
                 name="MermaidMistral 7B",
                 size="13GB",
                 capability="Specialized for Mermaid diagram generation (ERD, Flowcharts, Sequence)",
                 ram_required=16,
-                download_url="TroyDoesAI/MermaidMistral",  # Fixed: removed _v2 suffix
+                download_url="TroyDoesAI/MermaidMistral",
                 is_downloaded=False,
                 is_loaded=False,
-                fine_tuned_versions=[]
+                fine_tuned_versions=[],
+                model_format=ModelFormat.PYTORCH
+            ),
+            # === Ollama Models (use ollama pull) ===
+            "deepseek-coder-ollama": ModelInfo(
+                name="DeepSeek Coder (Ollama)",
+                size="4GB",
+                capability="Quantized coding model via Ollama",
+                ram_required=8,
+                download_url="deepseek-coder:6.7b-instruct-q4_K_M",
+                is_downloaded=False,
+                is_loaded=False,
+                fine_tuned_versions=[],
+                model_format=ModelFormat.OLLAMA
+            ),
+            "llama3-ollama": ModelInfo(
+                name="Llama 3.2 (Ollama)",
+                size="2GB",
+                capability="Fast general model via Ollama",
+                ram_required=6,
+                download_url="llama3.2:3b",
+                is_downloaded=False,
+                is_loaded=False,
+                fine_tuned_versions=[],
+                model_format=ModelFormat.OLLAMA
+            ),
+            "mistral-ollama": ModelInfo(
+                name="Mistral (Ollama)",
+                size="4GB",
+                capability="Efficient quantized Mistral via Ollama",
+                ram_required=8,
+                download_url="mistral:7b-instruct-q4_K_M",
+                is_downloaded=False,
+                is_loaded=False,
+                fine_tuned_versions=[],
+                model_format=ModelFormat.OLLAMA
+            ),
+            "qwen-coder-ollama": ModelInfo(
+                name="Qwen 2.5 Coder (Ollama)",
+                size="4GB",
+                capability="Strong coding model via Ollama",
+                ram_required=8,
+                download_url="qwen2.5-coder:7b-instruct-q4_K_M",
+                is_downloaded=False,
+                is_loaded=False,
+                fine_tuned_versions=[],
+                model_format=ModelFormat.OLLAMA
+            ),
+            # === LoRA Adapters (HuggingFace adapters) ===
+            "code-llama-lora-sql": ModelInfo(
+                name="CodeLlama SQL LoRA",
+                size="50MB",
+                capability="LoRA adapter for SQL generation",
+                ram_required=1,
+                download_url="predibase/codellama-sql",
+                is_downloaded=False,
+                is_loaded=False,
+                fine_tuned_versions=[],
+                model_format=ModelFormat.LORA
+            ),
+            "mistral-lora-instruct": ModelInfo(
+                name="Mistral Instruct LoRA",
+                size="100MB",
+                capability="LoRA adapter for instruction following",
+                ram_required=1,
+                download_url="teknium/OpenHermes-2.5-Mistral-7B",
+                is_downloaded=False,
+                is_loaded=False,
+                fine_tuned_versions=[],
+                model_format=ModelFormat.LORA
             )
         }
         
@@ -166,20 +255,66 @@ class LocalFineTuningSystem:
         self.check_environment()
     
     def _scan_downloaded_models(self):
-        """Scan for downloaded models"""
+        """Scan for downloaded models across all formats.
+        
+        Checks:
+        - models/ for PyTorch models
+        - data/adapters/ for LoRA adapters
+        - Ollama for GGUF/Ollama models
+        """
         models_dir = Path("models")
-        if models_dir.exists():
-            for model_key, model_info in self.available_models.items():
-                model_path = models_dir / model_key
-                if model_path.exists():
-                    model_info.is_downloaded = True
+        
+        for model_key, model_info in self.available_models.items():
+            model_format = model_info.model_format
+            
+            if model_format in (ModelFormat.GGUF, ModelFormat.OLLAMA):
+                # Check if Ollama has the model
+                model_info.is_downloaded = self._check_ollama_model_exists(model_info.download_url)
+                
+            elif model_format == ModelFormat.LORA:
+                # Check data/adapters/ directory for LoRA adapters
+                adapter_path = self.adapters_dir / model_key
+                if adapter_path.exists():
+                    # Verify it has adapter files
+                    has_config = (adapter_path / "adapter_config.json").exists()
+                    has_adapter = bool(list(adapter_path.glob("adapter_model.*")))
+                    model_info.is_downloaded = has_config or has_adapter
                     
-                    # Check for fine-tuned versions
-                    finetuned_dir = Path("finetuned_models") / model_key
-                    if finetuned_dir.exists():
-                        model_info.fine_tuned_versions = [
-                            d.name for d in finetuned_dir.iterdir() if d.is_dir()
-                        ]
+            else:
+                # PyTorch models in models/ directory
+                if models_dir.exists():
+                    model_path = models_dir / model_key
+                    if model_path.exists():
+                        model_info.is_downloaded = True
+                        
+                        # Check for fine-tuned versions
+                        finetuned_dir = Path("finetuned_models") / model_key
+                        if finetuned_dir.exists():
+                            model_info.fine_tuned_versions = [
+                                d.name for d in finetuned_dir.iterdir() if d.is_dir()
+                            ]
+    
+    def _check_ollama_model_exists(self, model_name: str) -> bool:
+        """Check if a model exists in Ollama.
+        
+        Runs 'ollama list' and checks if the model is present.
+        """
+        try:
+            result = subprocess.run(
+                ["ollama", "list"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            if result.returncode == 0:
+                # Parse output to find model
+                # Format: NAME                    ID              SIZE      MODIFIED
+                for line in result.stdout.split('\n'):
+                    if model_name in line:
+                        return True
+            return False
+        except (subprocess.TimeoutExpired, FileNotFoundError, Exception):
+            return False
     
     def check_environment(self) -> Dict[str, Any]:
         """Assess local environment readiness for GPU fine-tuning."""
@@ -275,7 +410,13 @@ class LocalFineTuningSystem:
         return True, "Model can be downloaded"
     
     async def download_model(self, model_key: str, progress_callback=None) -> bool:
-        """Download a model with progress tracking"""
+        """Download a model with progress tracking.
+        
+        Routes to appropriate download method based on model_format:
+        - GGUF/OLLAMA: Uses `ollama pull`
+        - PYTORCH: Uses huggingface_hub snapshot_download for full models
+        - LORA: Uses huggingface_hub snapshot_download to data/adapters/
+        """
         try:
             model_info = self.available_models[model_key]
             
@@ -288,39 +429,28 @@ class LocalFineTuningSystem:
             if not can_download:
                 raise Exception(reason)
             
-            # Download using huggingface_hub
-            from huggingface_hub import snapshot_download
+            # Route to appropriate download method based on model format
+            model_format = model_info.model_format
             
-            models_dir = Path("models")
-            models_dir.mkdir(exist_ok=True)
-            
-            # snapshot_download doesn't support progress_callback in older versions
-            # Just download without callback
-            snapshot_download(
-                repo_id=model_info.download_url,
-                local_dir=str(models_dir / model_key),
-                allow_patterns=["*.safetensors", "*.bin", "*.json", "*.model"],
-                ignore_patterns=["*.msgpack", "*.h5"]
-            )
+            if model_format in (ModelFormat.GGUF, ModelFormat.OLLAMA):
+                # Use ollama pull for GGUF and Ollama models
+                await self._download_ollama_model(model_key, model_info, progress_callback)
+            elif model_format == ModelFormat.LORA:
+                # Use huggingface_hub for LoRA adapters, save to data/adapters/
+                await self._download_lora_adapter(model_key, model_info, progress_callback)
+            else:
+                # Default: PyTorch full models via huggingface_hub
+                await self._download_pytorch_model(model_key, model_info, progress_callback)
             
             # Update model info
             model_info.is_downloaded = True
             self._scan_downloaded_models()
 
             # 🚀 REGISTER MODEL: Add to registry so it appears in AI provider dropdown
-            try:
-                from components.model_registry import model_registry
-                model_path_str = str(models_dir / model_key)
-                model_registry.register_downloaded_model(
-                    base_model=model_key,
-                    model_path=model_path_str
-                )
-                print(f"[REGISTRY] ✅ Model registered in dropdown: {model_key}")
-            except Exception as e:
-                print(f"[REGISTRY] ⚠️ Failed to register model: {e}")
+            self._register_downloaded_model(model_key, model_info)
 
             env_status = self.check_environment()
-            if not env_status["ready"]:
+            if not env_status["ready"] and model_format in (ModelFormat.PYTORCH, ModelFormat.LORA):
                 warning = (
                     "Model downloaded successfully, but the local environment is not ready: "
                     f"{env_status['message']}"
@@ -332,6 +462,165 @@ class LocalFineTuningSystem:
             
         except Exception as e:
             raise Exception(f"Failed to download model: {str(e)}")
+    
+    async def _download_ollama_model(self, model_key: str, model_info: ModelInfo, progress_callback=None) -> None:
+        """Download model using ollama pull command.
+        
+        Used for GGUF and Ollama format models.
+        """
+        print(f"[OLLAMA] Downloading {model_info.name} via ollama pull...")
+        
+        if progress_callback:
+            try:
+                await progress_callback(0.1, f"Starting ollama pull for {model_info.download_url}...")
+            except Exception:
+                pass
+        
+        try:
+            # Run ollama pull command
+            process = await asyncio.create_subprocess_exec(
+                "ollama", "pull", model_info.download_url,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            
+            stdout, stderr = await asyncio.wait_for(
+                process.communicate(),
+                timeout=1800  # 30 minutes timeout for large models
+            )
+            
+            if process.returncode != 0:
+                error_msg = stderr.decode() if stderr else "Unknown error"
+                raise Exception(f"ollama pull failed: {error_msg}")
+            
+            print(f"[OLLAMA] ✅ Successfully pulled {model_info.download_url}")
+            
+            if progress_callback:
+                try:
+                    await progress_callback(1.0, f"Successfully downloaded {model_info.name}")
+                except Exception:
+                    pass
+                    
+        except asyncio.TimeoutError:
+            raise Exception(f"Timeout while pulling {model_info.download_url} (30 min limit)")
+        except FileNotFoundError:
+            raise Exception(
+                "Ollama not found. Please install Ollama first: https://ollama.ai/download"
+            )
+    
+    async def _download_pytorch_model(self, model_key: str, model_info: ModelInfo, progress_callback=None) -> None:
+        """Download full PyTorch model from HuggingFace.
+        
+        Downloads to models/<model_key>/ directory.
+        """
+        from huggingface_hub import snapshot_download
+        
+        print(f"[PYTORCH] Downloading {model_info.name} from HuggingFace...")
+        
+        if progress_callback:
+            try:
+                await progress_callback(0.1, f"Downloading {model_info.download_url} from HuggingFace...")
+            except Exception:
+                pass
+        
+        models_dir = Path("models")
+        models_dir.mkdir(exist_ok=True)
+        
+        # Run in executor to not block event loop
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(
+            None,
+            lambda: snapshot_download(
+                repo_id=model_info.download_url,
+                local_dir=str(models_dir / model_key),
+                allow_patterns=["*.safetensors", "*.bin", "*.json", "*.model", "*.txt"],
+                ignore_patterns=["*.msgpack", "*.h5", "*.ot"]
+            )
+        )
+        
+        print(f"[PYTORCH] ✅ Successfully downloaded {model_info.name} to models/{model_key}")
+        
+        if progress_callback:
+            try:
+                await progress_callback(1.0, f"Successfully downloaded {model_info.name}")
+            except Exception:
+                pass
+    
+    async def _download_lora_adapter(self, model_key: str, model_info: ModelInfo, progress_callback=None) -> None:
+        """Download LoRA adapter from HuggingFace.
+        
+        Downloads to data/adapters/<model_key>/ directory.
+        LoRA adapters are small and should be kept separate from full models.
+        """
+        from huggingface_hub import snapshot_download
+        
+        print(f"[LORA] Downloading LoRA adapter {model_info.name} from HuggingFace...")
+        
+        if progress_callback:
+            try:
+                await progress_callback(0.1, f"Downloading LoRA adapter {model_info.download_url}...")
+            except Exception:
+                pass
+        
+        # LoRA adapters go to data/adapters/ directory
+        adapter_path = self.adapters_dir / model_key
+        adapter_path.mkdir(parents=True, exist_ok=True)
+        
+        # Run in executor to not block event loop
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(
+            None,
+            lambda: snapshot_download(
+                repo_id=model_info.download_url,
+                local_dir=str(adapter_path),
+                # LoRA adapters typically have these files
+                allow_patterns=[
+                    "*.safetensors", "*.bin", "*.json", 
+                    "adapter_config.json", "adapter_model.*"
+                ],
+                ignore_patterns=["*.msgpack", "*.h5", "*.ot", "*.gguf"]
+            )
+        )
+        
+        print(f"[LORA] ✅ Successfully downloaded LoRA adapter to {adapter_path}")
+        
+        if progress_callback:
+            try:
+                await progress_callback(1.0, f"Successfully downloaded {model_info.name}")
+            except Exception:
+                pass
+    
+    def _register_downloaded_model(self, model_key: str, model_info: ModelInfo) -> None:
+        """Register downloaded model in the model registry."""
+        try:
+            from components.model_registry import model_registry
+            
+            if model_info.model_format in (ModelFormat.GGUF, ModelFormat.OLLAMA):
+                # Ollama models are registered with their ollama name
+                model_registry.register_downloaded_model(
+                    base_model=model_info.download_url,
+                    model_path=f"ollama:{model_info.download_url}"
+                )
+                print(f"[REGISTRY] ✅ Ollama model registered: {model_info.download_url}")
+            elif model_info.model_format == ModelFormat.LORA:
+                # LoRA adapters registered with path to adapters directory
+                adapter_path = str(self.adapters_dir / model_key)
+                model_registry.register_downloaded_model(
+                    base_model=model_key,
+                    model_path=adapter_path,
+                    is_lora_adapter=True
+                )
+                print(f"[REGISTRY] ✅ LoRA adapter registered: {model_key} at {adapter_path}")
+            else:
+                # PyTorch models registered with path to models directory
+                model_path_str = str(Path("models") / model_key)
+                model_registry.register_downloaded_model(
+                    base_model=model_key,
+                    model_path=model_path_str
+                )
+                print(f"[REGISTRY] ✅ Model registered in dropdown: {model_key}")
+        except Exception as e:
+            print(f"[REGISTRY] ⚠️ Failed to register model: {e}")
     
     def load_model(self, model_key: str, incremental: bool = True) -> bool:
         """Load a model for inference/fine-tuning

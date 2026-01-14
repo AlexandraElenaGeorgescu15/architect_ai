@@ -145,8 +145,8 @@ Score (0.0-1.0):"""
             response = await self.llm_client._call_ai(prompt, "Provide only a number between 0 and 1.")
             score = float(response.strip().split()[0])
             return max(0.0, min(1.0, score))
-        except:
-            return 0.7  # Default score
+        except (ValueError, IndexError, AttributeError):
+            return 0.7  # Default score when parsing fails
     
     def _generate_feedback(self, *scores) -> List[str]:
         """Generate actionable feedback"""

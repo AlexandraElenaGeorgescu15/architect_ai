@@ -172,8 +172,8 @@ Score (0.0-1.0):"""
         try:
             score = float(response.strip().split()[0])
             return max(0.0, min(1.0, score))
-        except:
-            return 0.5  # Default
+        except (ValueError, IndexError):
+            return 0.5  # Default when parsing fails
     
     async def _select_best_path(self, tree: ThoughtTree) -> str:
         """Select and execute best reasoning path"""

@@ -252,11 +252,12 @@ class ModelService:
     
     def _create_default_routing(self):
         """Create default model routing configuration for all artifact types."""
-        # Default models for different artifact categories
-        mermaid_models = ["llama3", "codellama", "gemini-2.0-flash-exp"]
-        html_models = ["llama3", "gemini-2.0-flash-exp", "gpt-4-turbo"]
-        code_models = ["codellama", "llama3", "gemini-2.0-flash-exp"]
-        pm_models = ["llama3", "gemini-2.0-flash-exp", "gpt-4-turbo"]
+        # Use centralized config for default models (avoids magic strings)
+        from backend.core.config import settings
+        mermaid_models = settings.default_mermaid_models
+        html_models = settings.default_html_models
+        code_models = settings.default_code_models
+        pm_models = settings.default_pm_models
         
         default_routing = {}
         
@@ -869,8 +870,8 @@ class ModelService:
                                         data = json.loads(line)
                                         if "status" in data:
                                             logger.debug(f"Download progress: {data.get('status', '')}")
-                                    except:
-                                        pass
+                                    except json.JSONDecodeError:
+                                        pass  # Progress lines may not always be valid JSON
                             
                             # Update registry after successful download
                             if model_id not in self.models:

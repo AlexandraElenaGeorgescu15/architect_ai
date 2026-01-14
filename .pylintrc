@@ -1,0 +1,259 @@
+[MAIN]
+# Specify a configuration file.
+# rcfile=
+
+# Python code to execute
+init-hook='import sys; sys.path.insert(0, ".")'
+
+# Files or directories to be skipped (comma separated)
+ignore=
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    node_modules,
+    archive,
+    .pytest_cache
+
+# Files or directories matching regex to be skipped
+ignore-patterns=
+    test_.*\.py$,
+    conftest\.py$
+
+# Use multiple processes (0 = auto-detect)
+jobs=0
+
+# When enabled, pylint will restrict itself to the imports defined in the user file.
+limit-inference-results=100
+
+# Pickle collected data for later comparisons.
+persistent=yes
+
+# Python version (major.minor)
+py-version=3.11
+
+# Control the amount of potential inferred values when inferring a single object.
+max-inferred-members=100
+
+
+[MESSAGES CONTROL]
+# Disable specific messages (use sparingly)
+disable=
+    # Too noisy for rapid development
+    missing-docstring,
+    missing-module-docstring,
+    missing-function-docstring,
+    missing-class-docstring,
+    # FastAPI/Pydantic patterns
+    too-few-public-methods,
+    # Line length handled by formatter
+    line-too-long,
+    # Import checks done by isort/ruff
+    wrong-import-order,
+    ungrouped-imports,
+    # Allow dynamic attrs for SQLAlchemy/Pydantic
+    no-member
+
+# Enable specific messages for strict checking
+enable=
+    # ========================================================================
+    # CRITICAL: Unused arguments (detect dead code)
+    # ========================================================================
+    unused-argument,
+    unused-variable,
+    unused-import,
+    
+    # ========================================================================
+    # CRITICAL: Variable shadowing (prevent subtle bugs)
+    # ========================================================================
+    redefined-outer-name,
+    redefined-builtin,
+    redefined-argument-from-local,
+    
+    # ========================================================================
+    # Code Quality
+    # ========================================================================
+    dangerous-default-value,
+    global-statement,
+    broad-except,
+    bare-except,
+    duplicate-key,
+    unreachable,
+    pointless-statement,
+    
+    # ========================================================================
+    # Type Safety
+    # ========================================================================
+    assignment-from-none,
+    unsubscriptable-object,
+    
+    # ========================================================================
+    # Best Practices
+    # ========================================================================
+    consider-using-enumerate,
+    consider-using-f-string,
+    unnecessary-pass,
+    unnecessary-comprehension
+
+
+[BASIC]
+# Good variable names to accept (short names for lambdas, loops, etc.)
+good-names=i,j,k,n,x,y,_,ex,db,id,pk,fk,fd,fn
+
+# Bad variable names to reject
+bad-names=foo,bar,baz,temp,tmp,data
+
+# Naming styles
+argument-naming-style=snake_case
+attr-naming-style=snake_case
+class-naming-style=PascalCase
+const-naming-style=UPPER_CASE
+function-naming-style=snake_case
+method-naming-style=snake_case
+module-naming-style=snake_case
+variable-naming-style=snake_case
+
+
+[DESIGN]
+# Maximum number of arguments for a function/method
+max-args=10
+
+# Maximum number of attributes for a class
+max-attributes=15
+
+# Maximum number of boolean expressions in an if statement
+max-bool-expr=5
+
+# Maximum number of branch for function / method body
+max-branches=15
+
+# Maximum number of locals for function / method body
+max-locals=20
+
+# Maximum number of parents for a class
+max-parents=10
+
+# Maximum number of public methods for a class
+max-public-methods=30
+
+# Maximum number of return statements in function/method body
+max-returns=8
+
+# Maximum number of statements in function/method body
+max-statements=60
+
+
+[FORMAT]
+# Number of spaces of indent
+indent-string='    '
+
+# Maximum number of characters on a single line (120 for modern screens)
+max-line-length=120
+
+# Maximum number of lines in a module
+max-module-lines=2000
+
+
+[IMPORTS]
+# Force import order (use isort for this)
+known-standard-library=collections,datetime,functools,itertools,json,logging,os,pathlib,re,sys,typing
+
+# Known third party modules
+known-third-party=fastapi,pydantic,sqlalchemy,chromadb,networkx,numpy,pandas,rich
+
+
+[LOGGING]
+# Logging format style
+logging-format-style=new
+
+# Logging modules to check
+logging-modules=logging
+
+
+[MISCELLANEOUS]
+# List of note tags to take in consideration
+notes=FIXME,XXX,TODO,HACK,BUG,SECURITY
+
+
+[REFACTORING]
+# Maximum number of nested blocks for function/method body
+max-nested-blocks=4
+
+# Complete name of functions that never return
+never-returning-functions=sys.exit,argparse.parse_error
+
+
+[REPORTS]
+# Set the output format (text, parseable, colorized, json, msvs)
+output-format=colorized
+
+# Display a full report or only the messages
+reports=no
+
+# Score below which exit with error (0-10)
+score=yes
+
+# Threshold below which to fail (0-10)
+fail-under=7.0
+
+
+[SIMILARITIES]
+# Ignore comments when computing similarities
+ignore-comments=yes
+
+# Ignore docstrings when computing similarities
+ignore-docstrings=yes
+
+# Ignore imports when computing similarities
+ignore-imports=yes
+
+# Minimum lines number of a similarity (detect copy-paste)
+min-similarity-lines=6
+
+
+[TYPECHECK]
+# List of decorators that produce context managers
+contextmanager-decorators=contextlib.contextmanager
+
+# List of members which are set dynamically (avoid false positives)
+generated-members=
+    numpy.*,
+    torch.*,
+    cv2.*
+
+# Ignore mixin classes (no false positives for mixins)
+ignored-classes=
+    optparse.Values,
+    thread._local,
+    _thread._local
+
+# Show hints for missing members
+missing-member-hint=yes
+missing-member-hint-distance=2
+missing-member-max-choices=2
+
+
+[VARIABLES]
+# ========================================================================
+# STRICT: Variable shadowing detection
+# ========================================================================
+
+# Allow redefinition of builtins (set to empty for strict mode)
+additional-builtins=
+
+# Tells whether we should check for unused import in __init__ files
+init-import=no
+
+# List of names allowed to shadow builtins (use sparingly)
+redefining-builtins-modules=
+
+# List of qualified module names which can have objects that shadow builtins
+allowed-redefined-builtins=
+
+
+[EXCEPTIONS]
+# Exceptions that will raise a warning when caught
+overgeneral-exceptions=
+    builtins.BaseException,
+    builtins.Exception
+

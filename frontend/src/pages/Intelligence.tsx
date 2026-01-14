@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useModelStore } from '../stores/modelStore'
 import { useTrainingStore } from '../stores/trainingStore'
 import { useTraining } from '../hooks/useTraining'
+import { useAutoRefreshModels } from '../hooks/useAutoRefreshModels'
 import { listModels } from '../services/modelService'
 import { listTrainingJobs, triggerTraining, getTrainingStats } from '../services/trainingService'
 import { ArtifactType } from '../services/generationService'
@@ -46,6 +47,17 @@ export default function Intelligence() {
     loadFeedbackCounts()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // Cleanup: Reset stores on unmount to prevent stale state leaks
+  useEffect(() => {
+    return () => {
+      useModelStore.getState().reset()
+      useTrainingStore.getState().reset()
+    }
+  }, [])
+
+  // Auto-refresh models with proper cleanup (replaces leaky module-level interval)
+  useAutoRefreshModels(30000, !isLoading)
   
   const loadUniversalContext = async () => {
     setIsLoadingUniversalContext(true)
@@ -729,15 +741,15 @@ export default function Intelligence() {
                     {selectedArtifactType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </span>
                   <span className={`text-sm font-bold ${
-                    (syntheticStats[selectedArtifactType]?.total_examples ?? 0) >= 10 
+                    (syntheticStats?.[selectedArtifactType]?.total_examples ?? 0) >= 10 
                       ? 'text-green-500' 
                       : 'text-yellow-500'
                   }`}>
-                    {(syntheticStats[selectedArtifactType]?.total_examples ?? 0) >= 10 ? '✅ Ready' : '⚠️ Need More'}
+                    {(syntheticStats?.[selectedArtifactType]?.total_examples ?? 0) >= 10 ? '✅ Ready' : '⚠️ Need More'}
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  {(syntheticStats[selectedArtifactType]?.total_examples ?? 0)} training examples available
+                  {(syntheticStats?.[selectedArtifactType]?.total_examples ?? 0)} training examples available
                 </div>
               </div>
             )}

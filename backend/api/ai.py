@@ -138,26 +138,19 @@ def extract_mermaid_diagram(content: str) -> str:
     Extract Mermaid diagram code from markdown code blocks or plain text.
     Removes any surrounding text and returns only the diagram code.
     
-    Uses the shared extraction logic from ValidationService for consistency.
+    Handles common LLM output patterns:
+    - ```mermaid\n...\n``` 
+    - ```\n...\n```
+    - Plain text starting with diagram type
+    - Text with AI explanations before/after
     """
-    try:
-        from backend.services.validation_service import get_service as get_validation_service
-        validator = get_validation_service()
-        extracted = validator._extract_mermaid_diagram(content)
-        # Apply additional cleaning for AI explanatory text
-        return _clean_ai_explanations(extracted)
-    except ImportError:
-        # Fallback if validation service not available
-        pass
+    if not content:
+        return content
     
-    # Fallback: Basic extraction
-    # Try to extract from markdown code blocks first
-    mermaid_pattern = r'```(?:mermaid)?\s*\n(.*?)```'
-    matches = re.findall(mermaid_pattern, content, re.DOTALL | re.IGNORECASE)
-    if matches:
-        return _clean_ai_explanations(matches[0].strip())
+    # Step 1: Strip markdown code fences aggressively
+    result = _strip_markdown_fences(content)
     
-    # Check for diagram type declarations
+    # Step 2: Find diagram start and extract from there
     diagram_types = [
         "erDiagram", "flowchart", "graph", "sequenceDiagram",
         "classDiagram", "stateDiagram", "gantt", "pie", "journey",
@@ -166,15 +159,70 @@ def extract_mermaid_diagram(content: str) -> str:
     ]
     
     for dt in diagram_types:
-        if dt.lower() in content.lower():
-            idx = content.lower().find(dt.lower())
+        if dt.lower() in result.lower():
+            idx = result.lower().find(dt.lower())
             if idx != -1:
-                diagram = content[idx:].strip()
-                diagram = _clean_ai_explanations(diagram)
-                if diagram:
-                    return diagram
+                result = result[idx:].strip()
+                break
     
-    return _clean_ai_explanations(content)
+    # Step 3: Clean AI explanatory text
+    result = _clean_ai_explanations(result)
+    
+    # Step 4: Final fence cleanup (in case AI still included them)
+    result = _strip_markdown_fences(result)
+    
+    return result.strip()
+
+
+def _strip_markdown_fences(content: str) -> str:
+    """
+    Remove markdown code fences from content.
+    Handles: ```mermaid, ```Mermaid, ```, etc.
+    """
+    if not content:
+        return content
+    
+    result = content.strip()
+    
+    # Pattern 1: Full fenced block ```mermaid\n...\n``` or ```\n...\n```
+    # This handles variations: ```mermaid, ``` mermaid, ```Mermaid, etc.
+    fenced_patterns = [
+        r'^```\s*mermaid\s*\n(.*?)\n?```\s*$',  # ```mermaid\n...\n```
+        r'^```\s*\n(.*?)\n?```\s*$',             # ```\n...\n```
+        r'^```mermaid\s*\n?(.*?)\n?```',         # Anywhere in text
+        r'^```\s*\n?(.*?)\n?```',                # Generic fences
+    ]
+    
+    for pattern in fenced_patterns:
+        match = re.search(pattern, result, re.DOTALL | re.IGNORECASE)
+        if match:
+            result = match.group(1).strip()
+            break
+    
+    # Pattern 2: Leading fence without closing (LLM forgot to close)
+    if result.startswith('```'):
+        lines = result.split('\n')
+        # Remove first line if it's just the fence
+        if lines[0].strip().lower() in ['```', '```mermaid', '``` mermaid']:
+            result = '\n'.join(lines[1:]).strip()
+        # Also check for fence with diagram type on same line: ```mermaid erDiagram
+        elif lines[0].strip().lower().startswith('```'):
+            first_line = lines[0].strip()
+            # Extract content after fence marker
+            for dt in ['erdiagram', 'flowchart', 'graph', 'sequencediagram', 
+                       'classdiagram', 'statediagram', 'gantt', 'pie', 'journey']:
+                if dt in first_line.lower():
+                    idx = first_line.lower().find(dt)
+                    # Keep from diagram type onwards
+                    result = first_line[idx:] + '\n' + '\n'.join(lines[1:])
+                    result = result.strip()
+                    break
+    
+    # Pattern 3: Trailing fence
+    if result.rstrip().endswith('```'):
+        result = result.rstrip()[:-3].strip()
+    
+    return result
 
 
 def _clean_ai_explanations(content: str) -> str:
@@ -278,6 +326,7 @@ class DiagramImproveRequest(BaseModel):
     """Request to improve a diagram."""
     mermaid_code: str = Field(..., description="Current Mermaid diagram code")
     diagram_type: ArtifactType = Field(..., description="Type of diagram")
+    error_message: Optional[str] = Field(None, description="The specific error message from rendering failure")
     improvement_focus: Optional[List[str]] = Field(
         default_factory=lambda: ["syntax", "colors", "layout", "relationships"],
         description="Areas to improve: syntax, colors, layout, relationships, flow"
@@ -635,8 +684,8 @@ async def repair_diagram(
                 try:
                     fixer = UniversalDiagramFixer()
                     ai_result, _ = fixer.fix_diagram(ai_result, max_passes=3)
-                except:
-                    pass
+                except Exception as fixer_error:
+                    logger.warning(f"Diagram fixer failed during AI-local repair: {fixer_error}")
                 
                 is_valid, reason = validate_mermaid(ai_result)
                 attempts.append(f"AI-local: {is_valid} ({reason})")
@@ -666,8 +715,8 @@ async def repair_diagram(
                 try:
                     fixer = UniversalDiagramFixer()
                     ai_result, _ = fixer.fix_diagram(ai_result, max_passes=3)
-                except:
-                    pass
+                except Exception as fixer_error:
+                    logger.warning(f"Diagram fixer failed during AI-cloud repair: {fixer_error}")
                 
                 is_valid, reason = validate_mermaid(ai_result)
                 attempts.append(f"AI-cloud: {is_valid} ({reason})")
@@ -697,8 +746,8 @@ async def repair_diagram(
                 try:
                     fixer = UniversalDiagramFixer()
                     regenerated, _ = fixer.fix_diagram(regenerated, max_passes=3)
-                except:
-                    pass
+                except Exception as fixer_error:
+                    logger.warning(f"Diagram fixer failed during regeneration: {fixer_error}")
                 
                 is_valid, reason = validate_mermaid(regenerated)
                 attempts.append(f"Regenerate: {is_valid} ({reason})")
@@ -724,7 +773,8 @@ async def repair_diagram(
         try:
             fixer = UniversalDiagramFixer()
             best_effort, _ = fixer.fix_diagram(original_code, max_passes=5)
-        except:
+        except Exception as fixer_error:
+            logger.warning(f"Diagram fixer failed during best-effort cleanup: {fixer_error}")
             best_effort = original_code
         
         return DiagramImproveResponse(
@@ -776,22 +826,30 @@ async def _ai_repair_diagram(request: DiagramImproveRequest, use_cloud: bool = F
         elif code_lower.startswith("journey"):
             diagram_type = "journey"
         
-        # Build strict prompt
-        prompt = f"""Fix this Mermaid {diagram_type} diagram. It has syntax errors and won't render.
+        # Build strict prompt with error context
+        error_context = ""
+        if request.error_message:
+            error_context = f"""
+ERROR MESSAGE FROM RENDERER:
+{request.error_message}
+"""
+        
+        prompt = f"""Fix this broken Mermaid {diagram_type} diagram.
 
-BROKEN DIAGRAM:
+BROKEN CODE:
+```
 {request.mermaid_code}
+```
+{error_context}
+YOUR TASK:
+1. Analyze the syntax error based on the error message above
+2. Fix ONLY the syntax errors - preserve the diagram's meaning
+3. Output ONLY the corrected {diagram_type} code
+4. NO markdown code blocks (no ```mermaid or ```)
+5. NO explanations, NO "Here is", NO commentary
+6. Start your response directly with "{diagram_type}"
 
-REQUIREMENTS:
-1. Fix ALL syntax errors
-2. Keep the same structure and meaning
-3. Output ONLY the fixed Mermaid code
-4. Start directly with "{diagram_type}" (NO explanations)
-5. Do NOT include markdown code blocks
-6. Do NOT say "Here is" or any other text
-7. JUST the raw Mermaid code, nothing else
-
-VALID {diagram_type.upper()} SYNTAX:"""
+OUTPUT THE CORRECTED CODE ONLY:"""
 
         # Get model routing - force cloud if requested
         model_service = get_model_service()
@@ -811,12 +869,16 @@ VALID {diagram_type.upper()} SYNTAX:"""
             model_routing=routing,
             temperature=0.1,  # Very low temperature for consistent syntax
             max_local_attempts=0,  # enforce cloud-only models for repair
-            system_instruction=f"""You are a Mermaid diagram syntax expert. You ONLY output valid Mermaid code.
-CRITICAL: 
-- Output ONLY the Mermaid diagram code
-- Start with "{diagram_type}" keyword
-- NO explanations, NO markdown, NO comments
-- Just the raw diagram code"""
+            system_instruction=f"""You are a Mermaid diagram syntax repair tool. You output ONLY valid Mermaid code.
+
+ABSOLUTE RULES:
+1. Output starts with "{diagram_type}" - nothing before it
+2. NO markdown fences (``` or ```mermaid)
+3. NO explanatory text ("Here is", "I've fixed", "The corrected", etc.)
+4. NO comments about changes made
+5. ONLY raw Mermaid syntax
+
+If you include ANY text besides the diagram code, the repair will fail."""
         )
         
         if result.success and result.content:

@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
-import { Loader2, MessageSquare, Code, Eye, Send, Sparkles, RefreshCw } from 'lucide-react'
+import { Loader2, MessageSquare, Code, Eye, Send, Sparkles, RefreshCw, PanelRightClose, PanelRightOpen } from 'lucide-react'
 import { useArtifactStore } from '../stores/artifactStore'
 import { useUIStore } from '../stores/uiStore'
 import { sendChatMessage } from '../services/chatService'
@@ -14,8 +14,47 @@ interface InteractivePrototypeEditorProps {
   artifactType?: string  // Optional: specific artifact type to filter by
 }
 
+// Skeleton loader for HTML prototype viewer
+function PrototypeSkeleton() {
+  return (
+    <div className="h-full flex items-center justify-center p-8 animate-pulse">
+      <div className="text-center max-w-md w-full">
+        {/* Browser window placeholder */}
+        <div className="mx-auto mb-6 w-full max-w-lg">
+          <div className="bg-muted/40 rounded-xl overflow-hidden">
+            {/* Browser chrome */}
+            <div className="bg-muted/60 px-4 py-2 flex items-center gap-2">
+              <div className="flex gap-1.5">
+                <div className="w-3 h-3 rounded-full bg-muted/80" />
+                <div className="w-3 h-3 rounded-full bg-muted/80" />
+                <div className="w-3 h-3 rounded-full bg-muted/80" />
+              </div>
+              <div className="flex-1 h-5 bg-muted/80 rounded mx-4" />
+            </div>
+            {/* Content area */}
+            <div className="p-6 space-y-4">
+              <div className="h-8 bg-muted/50 rounded w-3/4" />
+              <div className="h-4 bg-muted/50 rounded w-full" />
+              <div className="h-4 bg-muted/50 rounded w-5/6" />
+              <div className="h-32 bg-muted/50 rounded" />
+              <div className="flex gap-2">
+                <div className="h-10 bg-muted/50 rounded flex-1" />
+                <div className="h-10 bg-muted/50 rounded flex-1" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center justify-center gap-2">
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground font-medium">Loading prototype...</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function InteractivePrototypeEditor({ artifactType }: InteractivePrototypeEditorProps) {
-  const { artifacts, updateArtifact } = useArtifactStore()
+  const { artifacts, updateArtifact, isLoading } = useArtifactStore()
   const { addNotification } = useUIStore()
 
   // Get HTML artifacts - filter by specific type if provided, otherwise get all HTML types
@@ -37,6 +76,7 @@ export default function InteractivePrototypeEditor({ artifactType }: Interactive
   const [isModifying, setIsModifying] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [chatHistoryByArtifact, setChatHistoryByArtifact] = useState<Record<string, Array<{ role: 'user' | 'assistant'; content: string }>>>({})
+  const [isAIPanelOpen, setIsAIPanelOpen] = useState(true)  // Collapsible AI panel
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
@@ -454,7 +494,13 @@ Return ONLY the HTML code, no explanations or markdown code blocks.
     return 'HTML Artifact'
   }
 
-  // Empty state
+  // CRITICAL: Show skeleton while loading to prevent race condition
+  // This fixes the bug where "No artifact" shows before data loads
+  if (isLoading && prototypeArtifacts.length === 0) {
+    return <PrototypeSkeleton />
+  }
+
+  // Empty state - only show after loading is complete
   if (prototypeArtifacts.length === 0) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -471,8 +517,8 @@ Return ONLY the HTML code, no explanations or markdown code blocks.
 
   return (
     <div className="h-full w-full flex flex-col lg:flex-row gap-3 overflow-visible min-h-0 interactive-prototype-container" style={{ contain: 'layout style paint', isolation: 'isolate', height: '100%', minHeight: '500px' }}>
-      {/* Left: Preview/Code View */}
-      <div className="flex-[2] min-h-[200px] lg:min-h-0 min-w-0 flex flex-col bg-card border border-border rounded-xl overflow-auto shadow-lg" style={{ maxHeight: '100%' }}>
+      {/* Left: Preview/Code View - Full width when AI panel is closed */}
+      <div className={`${isAIPanelOpen ? 'flex-[2]' : 'flex-1'} min-h-[200px] lg:min-h-0 min-w-0 flex flex-col bg-card border border-border rounded-xl overflow-auto shadow-lg transition-all duration-300`} style={{ maxHeight: '100%' }}>
         {/* Toolbar */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-secondary/20 flex-shrink-0">
           <div className="flex items-center gap-2">
@@ -513,6 +559,23 @@ Return ONLY the HTML code, no explanations or markdown code blocks.
                 <RefreshCw size={16} className="animate-spin" />
               ) : (
                 <RefreshCw size={16} />
+              )}
+            </button>
+            <div className="w-px h-6 bg-border mx-2"></div>
+            {/* Toggle AI Panel Button */}
+            <button
+              onClick={() => setIsAIPanelOpen(!isAIPanelOpen)}
+              className={`p-2 rounded-lg transition-colors ${
+                isAIPanelOpen 
+                  ? 'hover:bg-accent text-muted-foreground' 
+                  : 'bg-primary/10 text-primary hover:bg-primary/20'
+              }`}
+              title={isAIPanelOpen ? 'Hide AI Panel' : 'Show AI Panel'}
+            >
+              {isAIPanelOpen ? (
+                <PanelRightClose size={16} />
+              ) : (
+                <PanelRightOpen size={16} />
               )}
             </button>
           </div>
@@ -594,8 +657,8 @@ Return ONLY the HTML code, no explanations or markdown code blocks.
         </div>
       </div>
 
-      {/* Right: AI Chat Panel */}
-      <div className="flex-1 lg:flex-none lg:w-80 xl:w-96 flex-shrink-0 flex flex-col bg-card border border-border rounded-xl overflow-hidden shadow-lg min-h-[200px] lg:min-h-0" style={{ maxHeight: '100%', height: '100%' }}>
+      {/* Right: AI Chat Panel - Collapsible */}
+      <div className={`${isAIPanelOpen ? 'flex-1 lg:flex-none lg:w-80 xl:w-96' : 'hidden'} flex-shrink-0 flex flex-col bg-card border border-border rounded-xl overflow-hidden shadow-lg min-h-[200px] lg:min-h-0 transition-all duration-300`} style={{ maxHeight: '100%', height: '100%' }}>
         {/* Chat Header */}
         <div className="px-4 py-3 border-b border-border bg-secondary/20 flex-shrink-0">
           <div className="flex items-center gap-2">

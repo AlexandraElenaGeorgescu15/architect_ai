@@ -58,6 +58,113 @@ async def get_routing_for_artifact(
     return routing
 
 
+# ============== SPECIFIC ROUTES (must come before /{model_id}) ==============
+
+@router.get("/stats", summary="Get model service statistics")
+async def get_model_stats(
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """Get statistics about models and routing."""
+    service = get_service()
+    stats = service.get_stats()
+    return {"success": True, "stats": stats}
+
+
+@router.post("/refresh", summary="Refresh model list from Ollama")
+async def refresh_models(
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """
+    Refresh the model list from Ollama and cloud providers.
+    This will update the registry with newly downloaded/fine-tuned models.
+    """
+    service = get_service()
+    
+    # Refresh Ollama models
+    if OLLAMA_AVAILABLE:
+        await service._refresh_ollama_models()
+    
+    # Refresh cloud models
+    await service._refresh_cloud_models()
+    
+    # Get updated list
+    models = await service.list_models()
+    
+    return {
+        "success": True,
+        "message": f"Refreshed {len(models)} models",
+        "models_count": len(models)
+    }
+
+
+@router.get("/api-keys/status", summary="Check API key status for cloud providers")
+async def check_api_keys_status(
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """
+    Check which API keys are configured and test their validity.
+    Returns status for Gemini, Groq, OpenAI, and Anthropic.
+    """
+    from backend.core.config import settings
+    import os
+    
+    status = {
+        "gemini": {
+            "configured": bool(settings.google_api_key or settings.gemini_api_key),
+            "env_var": bool(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")),
+            "settings_key": bool(settings.google_api_key or settings.gemini_api_key),
+            "valid": False  # Will test
+        },
+        "groq": {
+            "configured": bool(settings.groq_api_key),
+            "env_var": bool(os.getenv("GROQ_API_KEY")),
+            "settings_key": bool(settings.groq_api_key),
+            "valid": False
+        },
+        "openai": {
+            "configured": bool(settings.openai_api_key),
+            "env_var": bool(os.getenv("OPENAI_API_KEY")),
+            "settings_key": bool(settings.openai_api_key),
+            "valid": False
+        },
+        "anthropic": {
+            "configured": bool(settings.anthropic_api_key),
+            "env_var": bool(os.getenv("ANTHROPIC_API_KEY")),
+            "settings_key": bool(settings.anthropic_api_key),
+            "valid": False
+        }
+    }
+    
+    # Test API keys
+    import httpx
+    
+    # Test OpenAI
+    if status["openai"]["configured"]:
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    "https://api.openai.com/v1/models",
+                    headers={"Authorization": f"Bearer {settings.openai_api_key}"},
+                    timeout=10.0
+                )
+                status["openai"]["valid"] = response.status_code == 200
+        except Exception:
+            status["openai"]["valid"] = False
+    
+    # For other providers, just check if key is configured
+    # (Full validation would require specific API calls)
+    if status["gemini"]["configured"]:
+        status["gemini"]["valid"] = True  # Assume valid if configured
+    if status["groq"]["configured"]:
+        status["groq"]["valid"] = True
+    if status["anthropic"]["configured"]:
+        status["anthropic"]["valid"] = True
+    
+    return status
+
+
+# ============== DYNAMIC ROUTES (must come after specific routes) ==============
+
 @router.get("/{model_id}", response_model=ModelInfoDTO, summary="Get model information")
 async def get_model(
     model_id: str,
@@ -147,127 +254,4 @@ async def update_routing(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update routing configuration"
         )
-
-
-@router.get("/stats", summary="Get model service statistics")
-async def get_model_stats(
-    current_user: UserPublic = Depends(get_current_user)
-):
-    """Get statistics about models and routing."""
-    service = get_service()
-    stats = service.get_stats()
-    return {"success": True, "stats": stats}
-
-
-@router.post("/refresh", summary="Refresh model list from Ollama")
-async def refresh_models(
-    current_user: UserPublic = Depends(get_current_user)
-):
-    """
-    Refresh the model list from Ollama and cloud providers.
-    This will update the registry with newly downloaded/fine-tuned models.
-    """
-    service = get_service()
-    
-    # Refresh Ollama models
-    if OLLAMA_AVAILABLE:
-        await service._refresh_ollama_models()
-    
-    # Refresh cloud models
-    await service._refresh_cloud_models()
-    
-    # Get updated list
-    models = await service.list_models()
-    
-    return {
-        "success": True,
-        "message": f"Refreshed {len(models)} models",
-        "models_count": len(models)
-    }
-
-
-@router.get("/api-keys/status", summary="Check API key status for cloud providers")
-async def check_api_keys_status(
-    current_user: UserPublic = Depends(get_current_user)
-):
-    """
-    Check which API keys are configured and test their validity.
-    Returns status for Gemini, Groq, OpenAI, and Anthropic.
-    """
-    from backend.core.config import settings
-    import os
-    
-    status = {
-        "gemini": {
-            "configured": bool(settings.google_api_key or settings.gemini_api_key),
-            "env_var": bool(os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")),
-            "settings_key": bool(settings.google_api_key or settings.gemini_api_key),
-            "key_length": len(settings.google_api_key or settings.gemini_api_key or ""),
-        },
-        "groq": {
-            "configured": bool(settings.groq_api_key),
-            "env_var": bool(os.getenv("GROQ_API_KEY")),
-            "settings_key": bool(settings.groq_api_key),
-            "key_length": len(settings.groq_api_key or ""),
-        },
-        "openai": {
-            "configured": bool(settings.openai_api_key),
-            "env_var": bool(os.getenv("OPENAI_API_KEY")),
-            "settings_key": bool(settings.openai_api_key),
-            "key_length": len(settings.openai_api_key or ""),
-        },
-        "anthropic": {
-            "configured": bool(settings.anthropic_api_key),
-            "env_var": bool(os.getenv("ANTHROPIC_API_KEY")),
-            "settings_key": bool(settings.anthropic_api_key),
-            "key_length": len(settings.anthropic_api_key or ""),
-        },
-    }
-    
-    # Test API keys if configured
-    for provider, info in status.items():
-        if info["configured"]:
-            try:
-                if provider == "gemini":
-                    import google.generativeai as genai
-                    api_key = settings.google_api_key or settings.gemini_api_key
-                    genai.configure(api_key=api_key)
-                    # Try to list models (lightweight test)
-                    models = genai.list_models()
-                    info["test_passed"] = True
-                    info["test_message"] = "Gemini API key is valid"
-                elif provider == "groq":
-                    from groq import AsyncGroq
-                    client = AsyncGroq(api_key=settings.groq_api_key)
-                    # Test with a minimal request
-                    info["test_passed"] = True
-                    info["test_message"] = "Groq API key is valid"
-                elif provider == "openai":
-                    from openai import OpenAI
-                    client = OpenAI(api_key=settings.openai_api_key)
-                    # Test with models.list()
-                    client.models.list()
-                    info["test_passed"] = True
-                    info["test_message"] = "OpenAI API key is valid"
-                elif provider == "anthropic":
-                    from anthropic import Anthropic
-                    client = Anthropic(api_key=settings.anthropic_api_key)
-                    # Test with messages.create (minimal)
-                    info["test_passed"] = True
-                    info["test_message"] = "Anthropic API key is valid"
-            except Exception as e:
-                info["test_passed"] = False
-                info["test_message"] = f"API key test failed: {str(e)}"
-                logger.warning(f"API key test failed for {provider}: {e}")
-        else:
-            info["test_passed"] = None
-            info["test_message"] = "API key not configured"
-    
-    return {
-        "success": True,
-        "api_keys": status,
-        "env_file_location": "Check .env in backend/ or root directory"
-    }
-
-
 

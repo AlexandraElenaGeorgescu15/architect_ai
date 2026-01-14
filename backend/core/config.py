@@ -46,6 +46,15 @@ class Settings(BaseSettings):
     # Ollama
     ollama_base_url: str = "http://localhost:11434"
     
+    # Model Routing Defaults (centralized to avoid magic strings scattered in code)
+    # These are used as fallbacks when no fine-tuned or configured model is available
+    default_mermaid_models: list[str] = ["llama3", "codellama", "gemini-2.0-flash-exp"]
+    default_html_models: list[str] = ["llama3", "gemini-2.0-flash-exp", "gpt-4-turbo"]
+    default_code_models: list[str] = ["codellama", "llama3", "gemini-2.0-flash-exp"]
+    default_pm_models: list[str] = ["llama3", "gemini-2.0-flash-exp", "gpt-4-turbo"]
+    default_fallback_models: list[str] = ["ollama:llama3", "gemini:gemini-2.0-flash-exp"]
+    default_chat_model: str = "gemini-2.0-flash-exp"  # Default model for chat/conversational AI
+    
     # RAG
     rag_index_path: str = str(Path(__file__).parent.parent.parent / "rag" / "index")
     rag_max_chunks: int = 18
@@ -54,6 +63,9 @@ class Settings(BaseSettings):
     training_threshold: int = 50  # Examples needed to trigger training
     training_batch_size: int = 4
     training_epochs: int = 3
+    
+    # Data directories (centralized to avoid circular imports)
+    meeting_notes_dir: Path = Path(__file__).parent.parent.parent / "data" / "meeting_notes"
     
     # Logging
     log_level: str = "INFO"
@@ -67,6 +79,11 @@ class Settings(BaseSettings):
     # Performance
     enable_lazy_loading: bool = True
     cache_default_ttl: int = 3600  # Default cache TTL in seconds
+    
+    # Generation Timeouts (in seconds)
+    generation_timeout: int = 120  # Total timeout for artifact generation
+    model_attempt_timeout: int = 60  # Timeout per model attempt
+    cloud_fallback_timeout: int = 90  # Timeout for cloud API calls
     
     class Config:
         env_file = [".env", "../.env", "../../.env"]  # Try multiple locations

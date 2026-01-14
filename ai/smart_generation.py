@@ -1071,8 +1071,8 @@ class SmartGenerationOrchestrator:
             if lock_file.exists():
                 try:
                     lock_file.unlink()
-                except:
-                    pass
+                except OSError:
+                    pass  # File lock may already be removed by another process
 
 
 # Global instance

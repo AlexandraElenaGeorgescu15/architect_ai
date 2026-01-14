@@ -178,7 +178,7 @@ class QdrantStore(VectorStore):
             # Create collection if it doesn't exist
             try:
                 self.client.get_collection(collection_name)
-            except:
+            except Exception:  # Qdrant throws generic Exception when collection doesn't exist
                 self.client.create_collection(
                     collection_name=collection_name,
                     vectors_config=VectorParams(size=384, distance=Distance.COSINE)

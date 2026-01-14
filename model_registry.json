@@ -350,7 +350,72 @@
     "metadata": {
       "huggingface_id": "zai-org/GLM-4.6",
       "path": "models\\huggingface\\zai-org_GLM-4.6",
-      "source": "huggingface"
+      "actual_file_path": "models\\huggingface\\zai-org_GLM-4.6\\models--zai-org--GLM-4.6\\snapshots\\be72194883d968d7923a07e2f61681ea9a2826d1\\config.json",
+      "usable_via_transformers": true
+    }
+  },
+  "huggingface:microsoft-Phi-3.5-mini-instruct": {
+    "id": "huggingface:microsoft-Phi-3.5-mini-instruct",
+    "name": "microsoft/Phi-3.5-mini-instruct (HuggingFace)",
+    "provider": "huggingface",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "downloaded",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "huggingface_id": "microsoft/Phi-3.5-mini-instruct",
+      "path": "models\\huggingface\\microsoft_Phi-3.5-mini-instruct",
+      "actual_file_path": null,
+      "usable_via_transformers": true
+    }
+  },
+  "huggingface:microsoft-Phi-3-mini-4k-instruct": {
+    "id": "huggingface:microsoft-Phi-3-mini-4k-instruct",
+    "name": "microsoft/Phi-3-mini-4k-instruct (HuggingFace)",
+    "provider": "huggingface",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "downloaded",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "huggingface_id": "microsoft/Phi-3-mini-4k-instruct",
+      "path": "models\\huggingface\\microsoft_Phi-3-mini-4k-instruct",
+      "actual_file_path": null,
+      "usable_via_transformers": true
+    }
+  },
+  "huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF": {
+    "id": "huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF",
+    "name": "mradermacher/BlackSheep-MermaidMistral-22B-i1-GGUF (HuggingFace)",
+    "provider": "huggingface",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "downloaded",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "huggingface_id": "mradermacher/BlackSheep-MermaidMistral-22B-i1-GGUF",
+      "path": "models\\huggingface\\mradermacher_BlackSheep-MermaidMistral-22B-i1-GGUF",
+      "actual_file_path": null,
+      "usable_via_transformers": true
+    }
+  },
+  "huggingface:microsoft-Phi-4-mini-instruct": {
+    "id": "huggingface:microsoft-Phi-4-mini-instruct",
+    "name": "microsoft/Phi-4-mini-instruct (HuggingFace)",
+    "provider": "huggingface",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "downloaded",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "huggingface_id": "microsoft/Phi-4-mini-instruct",
+      "path": "models\\huggingface\\microsoft_Phi-4-mini-instruct",
+      "actual_file_path": null,
+      "usable_via_transformers": true
     }
   }
 }

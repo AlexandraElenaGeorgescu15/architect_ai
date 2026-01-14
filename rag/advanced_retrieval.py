@@ -6,6 +6,7 @@ Implements HyDE, query decomposition, multi-hop reasoning, and more
 from typing import List, Dict, Tuple, Optional
 import asyncio
 from dataclasses import dataclass
+from rag.filters import sanitize_prompt_input
 
 @dataclass
 class QueryPlan:
@@ -26,11 +27,14 @@ class HyDERetrieval:
     
     async def generate_hypothetical_document(self, query: str) -> str:
         """Generate a hypothetical answer to embed"""
+        # Sanitize user query to prevent prompt injection
+        safe_query = sanitize_prompt_input(query, max_length=2000)
+        
         prompt = f"""
 Given this query, write a hypothetical perfect answer that would satisfy it.
 Be specific, detailed, and technical.
 
-Query: {query}
+Query: {safe_query}
 
 Hypothetical Answer:"""
         
@@ -66,10 +70,13 @@ class QueryDecomposition:
     
     async def decompose_query(self, query: str) -> QueryPlan:
         """Decompose complex query into sub-queries"""
+        # Sanitize user query to prevent prompt injection
+        safe_query = sanitize_prompt_input(query, max_length=2000)
+        
         prompt = f"""
 You are a query planning expert. Break this complex query into simpler sub-queries.
 
-Query: {query}
+Query: {safe_query}
 
 Provide:
 1. List of 2-4 sub-queries (simpler, focused questions)
@@ -99,8 +106,10 @@ Format as JSON:
                 reasoning=data.get("reasoning", ""),
                 execution_order=data.get("execution_order", list(range(len(data.get("sub_queries", [])))))
             )
-        except:
-            # Fallback: use original query
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            # Fallback: use original query when LLM response is not valid JSON
+            import logging
+            logging.getLogger(__name__).debug(f"Query decomposition parsing failed: {e}")
             return QueryPlan(
                 original_query=query,
                 sub_queries=[query],
@@ -130,14 +139,18 @@ class MultiHopReasoning:
     
     async def identify_reasoning_chain(self, query: str, initial_context: str) -> List[str]:
         """Identify what additional information is needed"""
+        # Sanitize inputs to prevent prompt injection
+        safe_query = sanitize_prompt_input(query, max_length=2000)
+        safe_context = sanitize_prompt_input(initial_context, max_length=6000)
+        
         prompt = f"""
 Given this query and initial context, what additional information do we need?
 Generate follow-up queries to gather missing information.
 
-Original Query: {query}
+Original Query: {safe_query}
 
 Initial Context:
-{initial_context}
+{safe_context}
 
 Generate 1-3 follow-up queries to fill knowledge gaps:"""
         

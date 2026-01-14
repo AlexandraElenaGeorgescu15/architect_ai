@@ -203,31 +203,40 @@ function getDisplayedArtifact(selectedArtifactType: ArtifactType, progress: any,
 }
 
 // Edit in Canvas button component that uses the same artifact as MermaidDiagramViewer
+// FIXED: Uses reactive selector to ensure fresh data and proper navigation
 const EditInCanvasButton = memo(function EditInCanvasButton({
   selectedArtifactType,
   progress,
-  getArtifactsByType,
   navigate
 }: {
   selectedArtifactType: ArtifactType
   progress: any
-  getArtifactsByType: (type: ArtifactType) => any[]
   navigate: (path: string, state?: any) => void
 }) {
+  // Use reactive selector pattern (same as MermaidDiagramViewer)
+  const latestArtifact = useArtifactStore(
+    useCallback(state => state.artifacts
+      .filter(a => a.type === selectedArtifactType)
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))[0],
+    [selectedArtifactType])
+  )
+  
+  const displayedArtifact = latestArtifact || progress?.artifact || null
+  
   const handleEditInCanvas = useCallback(() => {
-    const displayedArtifact = getDisplayedArtifact(selectedArtifactType, progress, getArtifactsByType)
     if (displayedArtifact) {
+      // FIXED: Pass both artifactId AND diagramId for backward compatibility
+      // Canvas.tsx checks for both keys
       navigate('/canvas', { 
         state: { 
           artifactId: displayedArtifact.id,
+          diagramId: displayedArtifact.id,  // Canvas also checks this key
           artifactType: displayedArtifact.type
         } 
       })
     }
-  }, [selectedArtifactType, progress, getArtifactsByType, navigate])
+  }, [displayedArtifact, navigate])
 
-  const displayedArtifact = getDisplayedArtifact(selectedArtifactType, progress, getArtifactsByType)
-  
   if (!displayedArtifact) {
     return null
   }
@@ -243,27 +252,79 @@ const EditInCanvasButton = memo(function EditInCanvasButton({
   )
 })
 
+// Skeleton loader for diagram viewer - prevents flash of "no content" during load
+const DiagramSkeleton = memo(function DiagramSkeleton() {
+  return (
+    <div className="h-full flex items-center justify-center p-8 animate-pulse">
+      <div className="text-center max-w-md w-full">
+        {/* Diagram placeholder */}
+        <div className="mx-auto mb-6 w-full max-w-lg">
+          <div className="bg-muted/40 rounded-xl p-6 space-y-4">
+            {/* Entity boxes */}
+            <div className="flex justify-between gap-4">
+              <div className="flex-1 h-24 bg-muted/60 rounded-lg" />
+              <div className="flex-1 h-24 bg-muted/60 rounded-lg" />
+            </div>
+            {/* Connecting lines placeholder */}
+            <div className="flex justify-center">
+              <div className="w-32 h-2 bg-muted/50 rounded" />
+            </div>
+            <div className="flex justify-between gap-4">
+              <div className="flex-1 h-20 bg-muted/60 rounded-lg" />
+              <div className="flex-1 h-20 bg-muted/60 rounded-lg" />
+              <div className="flex-1 h-20 bg-muted/60 rounded-lg" />
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center justify-center gap-2">
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          <span className="text-sm text-muted-foreground font-medium">Loading diagram...</span>
+        </div>
+      </div>
+    </div>
+  )
+})
+
 // MermaidDiagramViewer component that uses store directly for reactivity
 const MermaidDiagramViewer = memo(function MermaidDiagramViewer({
   selectedArtifactType,
   progress,
   artifactTypes,
-  onContentUpdate
+  onContentUpdate,
+  isGenerating = false
 }: {
   selectedArtifactType: ArtifactType
   progress: any
   artifactTypes: { value: ArtifactType; label: string; category: string }[]
   onContentUpdate: (artifact: any, newContent: string) => Promise<void>
+  isGenerating?: boolean
 }) {
-  // Use store directly to ensure reactivity
-  const { getArtifactsByType } = useArtifactStore()
-  const latestArtifact = getArtifactsByType(selectedArtifactType)?.[0]
+  // CRITICAL FIX: Use reactive selector pattern to ensure re-render on artifact updates
+  // This fixes the bug where AI Repair succeeds but component doesn't re-render
+  const { isLoading } = useArtifactStore()
+  const latestArtifact = useArtifactStore(
+    useCallback(state => state.artifacts
+      .filter(a => a.type === selectedArtifactType)
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))[0],
+    [selectedArtifactType])
+  )
 
   const handleDiagramContentUpdate = useCallback(async (newContent: string) => {
     const artifact = latestArtifact || progress?.artifact
     if (!artifact) return
     await onContentUpdate(artifact, newContent)
   }, [latestArtifact, progress?.artifact, onContentUpdate])
+
+  // CRITICAL: Show skeleton while loading to prevent race condition
+  // This fixes the bug where "No Diagram Generated Yet" flashes before data loads
+  if (isLoading && !latestArtifact?.content && !progress?.artifact?.content) {
+    return <DiagramSkeleton />
+  }
+
+  // Show skeleton during generation (before artifact is ready)
+  if (isGenerating && !progress?.artifact?.content && !latestArtifact?.content) {
+    return <DiagramSkeleton />
+  }
 
   if (latestArtifact?.content) {
     return (
@@ -704,6 +765,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                               selectedArtifactType={props.selectedArtifactType}
                               progress={props.progress}
                               artifactTypes={props.artifactTypes}
+                              isGenerating={props.isGenerating}
                               onContentUpdate={async (artifact, newContent) => {
                                 // Update local store (prefer update to avoid duplicates)
                                 updateArtifact(artifact.id, {
@@ -733,7 +795,6 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                           <EditInCanvasButton 
                             selectedArtifactType={props.selectedArtifactType}
                             progress={props.progress}
-                            getArtifactsByType={getArtifactsByType}
                             navigate={navigate}
                           />
                         </div>
