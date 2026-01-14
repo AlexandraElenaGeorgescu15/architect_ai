@@ -31,15 +31,8 @@ export default defineConfig({
   build: {
     // Enable source maps for debugging in production (optional, set to false for smaller builds)
     sourcemap: false,
-    // Minimize output for smaller bundle size
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        // Remove console.log in production
-        drop_console: true,
-        drop_debugger: true,
-      },
-    },
+    // Minimize output for smaller bundle size (esbuild is built-in and faster)
+    minify: 'esbuild',
     // Split chunks for better caching
     rollupOptions: {
       output: {

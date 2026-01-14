@@ -47,7 +47,7 @@ export interface Model {
   id: string
   name: string
   provider: 'ollama' | 'huggingface' | 'cloud'
-  status: 'available' | 'downloading' | 'unavailable'
+  status: 'available' | 'downloading' | 'unavailable' | 'downloaded' | 'no_api_key'
   created_at: string
 }
 
@@ -59,6 +59,11 @@ export interface TrainingJob {
   artifact_type?: string
   created_at: string
   completed_at?: string
+  metrics?: {
+    loss?: number
+    accuracy?: number
+    [key: string]: number | undefined
+  }
 }
 
 // WebSocket Event Types

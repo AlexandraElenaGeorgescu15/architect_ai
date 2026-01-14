@@ -154,9 +154,10 @@ export default api
 // Helper function to extract data from API response
 export function extractData<T>(response: { data: ApiResponse<T> | T }): T {
   // Check if response has nested data structure
-  if ('data' in response.data && typeof response.data === 'object' && 'data' in response.data) {
-    return (response.data as ApiResponse<T>).data
+  const data = response.data
+  if (data && typeof data === 'object' && 'data' in data) {
+    return (data as ApiResponse<T>).data
   }
-  return response.data as T
+  return data as T
 }
 

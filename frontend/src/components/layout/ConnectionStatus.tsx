@@ -5,11 +5,11 @@ export default function ConnectionStatus() {
   const { isConnected } = useWebSocketStatus()
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2" title={isConnected ? "Connected" : "Disconnected"}>
       {isConnected ? (
-        <Wifi className="w-4 h-4 text-green-500" title="Connected" />
+        <Wifi className="w-4 h-4 text-green-500" />
       ) : (
-        <WifiOff className="w-4 h-4 text-red-500" title="Disconnected" />
+        <WifiOff className="w-4 h-4 text-red-500" />
       )}
     </div>
   )

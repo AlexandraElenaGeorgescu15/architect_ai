@@ -153,7 +153,7 @@ export default function MeetingNotesManager() {
         }
         return null
       })
-      .filter((item): item is { folder: string; score: number } => Boolean(item && item.folder))
+      .filter((item: { folder: string; score: number } | null): item is { folder: string; score: number } => Boolean(item && item.folder))
 
     return {
       suggested_folder: suggestedFolder,

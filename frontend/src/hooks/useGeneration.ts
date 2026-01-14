@@ -35,8 +35,8 @@ export function useGeneration() {
   const { addNotification } = useUIStore()
   
   // Refs to track timeouts and last activity
-  const generationTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const inactivityTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const generationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const inactivityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastActivityRef = useRef<number>(Date.now())
   
   // Clear all timeouts

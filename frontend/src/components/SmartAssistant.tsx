@@ -5,22 +5,15 @@ import {
   Package,
   FileText,
   Database,
-  FolderGit2,
-  Shield,
-  MessageSquareText,
-  ChevronDown,
-  ChevronRight,
   Sparkles,
   AlertTriangle,
   CheckCircle2,
-  Clock,
   Zap,
   ArrowRight,
   RefreshCw,
   Loader2,
   Copy,
-  Download,
-  ExternalLink
+  Download
 } from 'lucide-react'
 import api from '../services/api'
 

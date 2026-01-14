@@ -5,8 +5,8 @@ import {
   buildContext,
   getContext,
   ContextBuildRequest,
-  ContextResponse,
 } from '../services/contextService'
+import { ContextResponse } from '../types'
 import { Context } from '../types'
 
 export function useContext() {

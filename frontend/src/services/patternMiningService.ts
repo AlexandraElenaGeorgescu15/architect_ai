@@ -54,9 +54,9 @@ export async function analyzePatterns(request: PatternAnalysisRequest = {}): Pro
   const data = response.data as Record<string, unknown>
 
   if (data && typeof data === 'object' && 'analysis' in data) {
-    return (data.analysis ?? {}) as PatternReport
+    return (data.analysis ?? {}) as unknown as PatternReport
   }
 
-  return (data ?? {}) as PatternReport
+  return (data ?? {}) as unknown as PatternReport
 }
 

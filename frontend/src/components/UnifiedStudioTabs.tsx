@@ -130,7 +130,7 @@ interface UnifiedStudioTabsProps {
   setContextId: (id: string | null) => void
   isGenerating: boolean
   progress: any
-  generate: (params: any) => Promise<void>
+  generate: (params: any) => Promise<any>
   clearProgress: () => void
   cancelGeneration?: () => void
   isBuilding: boolean
