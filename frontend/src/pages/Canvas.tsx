@@ -68,16 +68,30 @@ export default function Canvas() {
     // Only use artifactType from state or query - diagramId is an ID, not a type!
     const initialType = state.artifactType || queryArtifactType
     
+    console.log('[Canvas] Navigation received:', { initialId, initialType, state, diagramArtifacts: diagramArtifacts.map(a => a.id) })
+    
     if (initialId) {
-      setSelectedArtifactId(initialId)
+      // Verify the artifact exists before setting
+      const exists = artifacts.find(a => a.id === initialId)
+      if (exists) {
+        console.log('[Canvas] Setting artifact ID:', initialId)
+        setSelectedArtifactId(initialId)
+      } else {
+        console.warn('[Canvas] Artifact not found by ID, trying type:', initialType)
+        // Try to find by type instead
+        if (initialType) {
+          const byType = diagramArtifacts.find(a => a.type === initialType)
+          if (byType) {
+            console.log('[Canvas] Found artifact by type:', byType.id)
+            setSelectedArtifactId(byType.id)
+          }
+        }
+      }
     }
     if (initialType) {
       setTargetType(initialType)
     }
-    
-    // Log for debugging
-    console.debug('[Canvas] Navigation state:', { initialId, initialType, state })
-  }, [location.state, searchParams])
+  }, [location.state, searchParams, artifacts, diagramArtifacts])
 
   useEffect(() => {
     // FIXED: Sync selectedArtifactId with actual selection to prevent stale ID issues

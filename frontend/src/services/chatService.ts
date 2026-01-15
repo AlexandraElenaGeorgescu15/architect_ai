@@ -1,8 +1,14 @@
-import api from './api'
+import api, { getBackendUrl } from './api'
 
-// Use empty string to make requests relative to the current origin
-// This allows Vite's proxy to intercept /api/* requests in development
-const API_BASE_URL = import.meta.env.VITE_API_URL || ''
+// Get the backend URL dynamically - this respects the user's custom backend setting (ngrok, etc.)
+function getApiBaseUrl(): string {
+  // First check for custom backend URL (set by user in BackendSettings)
+  const customUrl = getBackendUrl()
+  if (customUrl) return customUrl
+  
+  // Fall back to environment variable or empty string for relative URLs
+  return import.meta.env.VITE_API_URL || ''
+}
 
 export interface ChatMessage {
   role: 'user' | 'assistant'
@@ -31,10 +37,15 @@ export async function* streamChatMessage(request: ChatRequest): AsyncGenerator<s
   // Get auth token for streaming request
   const token = localStorage.getItem('access_token')
   
-  const response = await fetch(`${API_BASE_URL}/api/chat/stream`, {
+  // Get the backend URL dynamically (respects custom backend settings)
+  const baseUrl = getApiBaseUrl()
+  
+  const response = await fetch(`${baseUrl}/api/chat/stream`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+      // Required for ngrok free tier - bypasses the browser warning page
+      'ngrok-skip-browser-warning': 'true',
       ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     },
     body: JSON.stringify(request),

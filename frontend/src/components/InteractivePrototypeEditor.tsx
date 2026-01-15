@@ -54,10 +54,15 @@ function PrototypeSkeleton() {
 }
 
 export default function InteractivePrototypeEditor({ artifactType }: InteractivePrototypeEditorProps) {
-  const { artifacts, updateArtifact, isLoading } = useArtifactStore()
+  // CRITICAL: Use reactive selector pattern to ensure component re-renders when artifacts change
+  // This fixes the bug where generated content doesn't show immediately
+  const artifacts = useArtifactStore(state => state.artifacts)
+  const updateArtifact = useArtifactStore(state => state.updateArtifact)
+  const isLoading = useArtifactStore(state => state.isLoading)
   const { addNotification } = useUIStore()
 
   // Get HTML artifacts - filter by specific type if provided, otherwise get all HTML types
+  // CRITICAL: This must be computed from the reactive artifacts array
   const prototypeArtifacts = artifacts.filter((a) => {
     if (artifactType) {
       return a.type === artifactType
@@ -66,7 +71,7 @@ export default function InteractivePrototypeEditor({ artifactType }: Interactive
     return a.type === 'dev_visual_prototype' || 
            a.type === 'html_prototype' || 
            a.type.startsWith('html_')
-  })
+  }).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
 
   const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null)
   const [htmlContent, setHtmlContent] = useState('')
@@ -80,17 +85,22 @@ export default function InteractivePrototypeEditor({ artifactType }: Interactive
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
-  // Get selected artifact
+  // Get selected artifact - prefer the latest matching artifact if none selected
   const selectedArtifact = selectedArtifactId
     ? artifacts.find((a) => a.id === selectedArtifactId)
     : prototypeArtifacts[0] || null
 
-  // Initialize with first artifact
+  // Auto-select the latest artifact when a new one is generated
   useEffect(() => {
-    if (prototypeArtifacts.length > 0 && !selectedArtifactId) {
-      setSelectedArtifactId(prototypeArtifacts[0].id)
+    if (prototypeArtifacts.length > 0) {
+      const latestArtifact = prototypeArtifacts[0]
+      // Always update to latest if no selection or if a new artifact was generated
+      if (!selectedArtifactId || !artifacts.find(a => a.id === selectedArtifactId)) {
+        console.log('📦 [InteractivePrototypeEditor] Auto-selecting latest artifact:', latestArtifact.id)
+        setSelectedArtifactId(latestArtifact.id)
+      }
     }
-  }, [prototypeArtifacts.length, selectedArtifactId])
+  }, [prototypeArtifacts.length, prototypeArtifacts[0]?.id, selectedArtifactId, artifacts])
 
   // Helper function to sanitize HTML content and add viewport meta
   const sanitizeHtmlContent = (html: string): string => {

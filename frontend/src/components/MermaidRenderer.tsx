@@ -204,12 +204,16 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         improvement_focus: ['syntax', 'layout', 'relationships']
       })
       
-      if (response.data.success && response.data.improved_code) {
+      const improvedCode = response.data.improved_code?.trim()
+      
+      // Validate that we got actual content back
+      if (response.data.success && improvedCode && improvedCode.length > 10) {
         console.log('✅ [MermaidRenderer] Repair successful:', response.data.improvements_made)
+        console.log('✅ [MermaidRenderer] New content length:', improvedCode.length)
         
         // Update content
         if (onContentUpdate) {
-          onContentUpdate(response.data.improved_code)
+          onContentUpdate(improvedCode)
         }
         
         // Reset error state to trigger re-render
@@ -217,20 +221,17 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         setLastErrorContent(null)
         setMermaidErrorDetail(null)
       } else {
-        // Repair failed even after all attempts
-        console.error('❌ [MermaidRenderer] All repair attempts failed:', response.data.error)
-        console.error('Attempts made:', response.data.improvements_made)
+        // Repair failed or returned empty/invalid content
+        console.error('❌ [MermaidRenderer] Repair failed or returned invalid content')
+        console.error('Response:', { success: response.data.success, codeLength: improvedCode?.length, error: response.data.error })
         
-        // Restore original content if repair completely failed
-        if (response.data.improved_code && onContentUpdate) {
-          onContentUpdate(response.data.improved_code)
-        } else if (onContentUpdate) {
-          // No improved code, restore original
+        // ALWAYS restore original content if repair failed
+        // Never leave the user with empty content
+        if (onContentUpdate) {
           onContentUpdate(originalContent)
         }
         
-        setError(`Repair could not fully fix this diagram. ${response.data.error || 'Please try regenerating.'}`)
-      }
+        setError(`Repair could not fix this diagram. ${response.data.error || 'The diagram syntax may be too broken. Please try regenerating.'}`)
     } catch (err: any) {
       console.error('❌ [MermaidRenderer] Repair request failed:', err)
       // Restore original content on error

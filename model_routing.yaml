@@ -1,7 +1,7 @@
 api_docs:
   enabled: true
   fallback_models:
-  - ollama:llama3
+  - huggingface:zai-org-GLM-4.6
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:codellama
 backlog:
@@ -175,25 +175,25 @@ jira:
 mermaid_api_sequence:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:microsoft-Phi-4-mini-instruct
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_architecture:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_c4_component:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:microsoft-Phi-3-mini-4k-instruct
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_c4_container:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:microsoft-Phi-3-mini-4k-instruct
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_c4_context:

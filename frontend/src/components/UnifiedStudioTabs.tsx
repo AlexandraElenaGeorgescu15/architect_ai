@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense, memo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense, memo, ComponentType } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArtifactType } from '../services/generationService'
 import { useSystemStatus } from '../hooks/useSystemStatus'
@@ -14,16 +14,46 @@ import { useUIStore } from '../stores/uiStore'
 import { useDiagramStore } from '../stores/diagramStore'
 import { useKeyboardShortcuts, COMMON_SHORTCUTS } from '../hooks/useKeyboardShortcuts'
 
-// Lazy load heavy components for better initial load performance
-const ArtifactTabs = lazy(() => import('./artifacts/ArtifactTabs'))
-const CodeEditor = lazy(() => import('./CodeEditor'))
-const ExportManager = lazy(() => import('./ExportManager'))
-const SemanticSearchPanel = lazy(() => import('./SemanticSearchPanel'))
-const ApiKeysManager = lazy(() => import('./ApiKeysManager'))
-const InteractivePrototypeEditor = lazy(() => import('./InteractivePrototypeEditor'))
-const CodeWithTestsEditor = lazy(() => import('./CodeWithTestsEditor'))
-const MermaidRenderer = lazy(() => import('./MermaidRenderer'))
-const VersionControl = lazy(() => import('./VersionControl'))
+// Lazy load with retry - handles chunk loading failures after deployments
+function lazyWithRetry<T extends ComponentType<any>>(
+  importFn: () => Promise<{ default: T }>,
+  retries = 2
+): React.LazyExoticComponent<T> {
+  return lazy(() =>
+    importFn().catch((error) => {
+      const isChunkError = error.message?.includes('dynamically imported module') ||
+                          error.message?.includes('Loading chunk') ||
+                          error.message?.includes('Failed to fetch')
+      
+      if (isChunkError && retries > 0) {
+        console.warn(`Chunk loading failed, retrying... (${retries} attempts left)`)
+        return new Promise<{ default: T }>((resolve) => {
+          setTimeout(() => {
+            resolve(lazyWithRetry(importFn, retries - 1) as unknown as { default: T })
+          }, 1000)
+        })
+      }
+      
+      if (isChunkError) {
+        console.error('Chunk loading failed, reloading page...')
+        window.location.reload()
+      }
+      
+      throw error
+    })
+  )
+}
+
+// Lazy load heavy components with retry logic for deployment resilience
+const ArtifactTabs = lazyWithRetry(() => import('./artifacts/ArtifactTabs'))
+const CodeEditor = lazyWithRetry(() => import('./CodeEditor'))
+const ExportManager = lazyWithRetry(() => import('./ExportManager'))
+const SemanticSearchPanel = lazyWithRetry(() => import('./SemanticSearchPanel'))
+const ApiKeysManager = lazyWithRetry(() => import('./ApiKeysManager'))
+const InteractivePrototypeEditor = lazyWithRetry(() => import('./InteractivePrototypeEditor'))
+const CodeWithTestsEditor = lazyWithRetry(() => import('./CodeWithTestsEditor'))
+const MermaidRenderer = lazyWithRetry(() => import('./MermaidRenderer'))
+const VersionControl = lazyWithRetry(() => import('./VersionControl'))
 
 // Loading fallback component
 const LoadingFallback = memo(function LoadingFallback() {

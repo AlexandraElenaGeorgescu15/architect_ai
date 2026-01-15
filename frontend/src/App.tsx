@@ -9,31 +9,97 @@ import BackendSettings from './components/BackendSettings'
 import { useSystemStatus } from './hooks/useSystemStatus'
 import { useAppLoading } from './hooks/useAppLoading'
 
-// Lazy load pages
-const Studio = React.lazy(() => import('./pages/Studio'))
-const Intelligence = React.lazy(() => import('./pages/Intelligence'))
-const Canvas = React.lazy(() => import('./pages/Canvas'))
+// Lazy load with retry - handles chunk loading failures after deployments
+function lazyWithRetry<T extends React.ComponentType<any>>(
+  importFn: () => Promise<{ default: T }>,
+  retries = 3
+): React.LazyExoticComponent<T> {
+  return React.lazy(() =>
+    importFn().catch((error) => {
+      // Check if this is a chunk loading error
+      const isChunkError = error.message?.includes('dynamically imported module') ||
+                          error.message?.includes('Loading chunk') ||
+                          error.message?.includes('Failed to fetch')
+      
+      if (isChunkError && retries > 0) {
+        // Clear module cache and retry
+        console.warn(`Chunk loading failed, retrying... (${retries} attempts left)`)
+        return new Promise<{ default: T }>((resolve) => {
+          setTimeout(() => {
+            resolve(lazyWithRetry(importFn, retries - 1) as any)
+          }, 1000)
+        })
+      }
+      
+      // If all retries failed or not a chunk error, reload the page
+      if (isChunkError) {
+        console.error('Chunk loading failed after retries, reloading page...')
+        window.location.reload()
+      }
+      
+      throw error
+    })
+  )
+}
 
-// Simple error boundary
+// Lazy load pages with retry logic for deployment resilience
+const Studio = lazyWithRetry(() => import('./pages/Studio'))
+const Intelligence = lazyWithRetry(() => import('./pages/Intelligence'))
+const Canvas = lazyWithRetry(() => import('./pages/Canvas'))
+
+// Enhanced error boundary with chunk loading detection
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
-  { hasError: boolean; error: Error | null }
+  { hasError: boolean; error: Error | null; isChunkError: boolean }
 > {
   constructor(props: { children: React.ReactNode }) {
     super(props)
-    this.state = { hasError: false, error: null }
+    this.state = { hasError: false, error: null, isChunkError: false }
   }
 
   static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error }
+    // Detect chunk loading errors (happen after deployments with changed asset hashes)
+    const isChunkError = error.message?.includes('dynamically imported module') ||
+                        error.message?.includes('Loading chunk') ||
+                        error.message?.includes('Failed to fetch')
+    return { hasError: true, error, isChunkError }
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // React Error caught - display error boundary
+    console.error('React Error:', error, errorInfo)
+    
+    // Auto-reload for chunk errors (new deployment detected)
+    if (this.state.isChunkError) {
+      console.log('Chunk loading error detected, reloading page...')
+      // Small delay to let user see the message
+      setTimeout(() => window.location.reload(), 1500)
+    }
   }
 
   render() {
     if (this.state.hasError && this.state.error) {
+      // Special handling for chunk loading errors
+      if (this.state.isChunkError) {
+        return (
+          <div style={{ padding: '20px', fontFamily: 'sans-serif', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+            <div style={{ maxWidth: '500px', padding: '32px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', textAlign: 'center' }}>
+              <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔄</div>
+              <h1 style={{ color: '#0f172a', marginBottom: '12px', fontSize: '20px' }}>New Version Available!</h1>
+              <p style={{ marginBottom: '20px', color: '#64748b', fontSize: '14px' }}>
+                A new version of the app has been deployed. Refreshing automatically...
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                style={{ padding: '10px 24px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '500' }}
+              >
+                Refresh Now
+              </button>
+            </div>
+          </div>
+        )
+      }
+      
+      // Generic error handling
       return (
         <div style={{ padding: '20px', fontFamily: 'sans-serif', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div style={{ maxWidth: '500px', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
