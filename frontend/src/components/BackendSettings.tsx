@@ -39,19 +39,23 @@ export default function BackendSettings() {
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
-  // Check connection on mount and when dialog opens
+  // Check connection on mount
+  useEffect(() => {
+    checkConnection()
+  }, [])
+
+  // Re-check when dialog opens
   useEffect(() => {
     if (isOpen) {
       checkConnection()
     }
   }, [isOpen])
 
-  // Auto-check connection every 30 seconds when dialog is open
+  // Auto-check connection every 30 seconds (always, not just when dialog is open)
   useEffect(() => {
-    if (!isOpen) return
     const interval = setInterval(checkConnection, 30000)
     return () => clearInterval(interval)
-  }, [isOpen])
+  }, [])
 
   const checkConnection = async () => {
     setIsTesting(true)
