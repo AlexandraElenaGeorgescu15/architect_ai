@@ -12,6 +12,7 @@ import KnowledgeGraphViewer from '../components/KnowledgeGraphViewer'
 import PatternMiningResults from '../components/PatternMiningResults'
 import { generateSyntheticData, getAllStats, clearSynthetic, SyntheticStats } from '../services/syntheticDataService'
 import { useUIStore } from '../stores/uiStore'
+import { getBackendUrl } from '../services/api'
 
 export default function Intelligence() {
   const { models, setModels } = useModelStore()
@@ -62,7 +63,10 @@ export default function Intelligence() {
   const loadUniversalContext = async () => {
     setIsLoadingUniversalContext(true)
     try {
-      const response = await fetch('/api/universal-context/status')
+      const backendUrl = getBackendUrl()
+      const response = await fetch(`${backendUrl}/api/universal-context/status`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      })
       if (response.ok) {
         const data = await response.json()
         setUniversalContextStatus(data)
@@ -77,7 +81,11 @@ export default function Intelligence() {
   const rebuildUniversalContext = async () => {
     setIsLoadingUniversalContext(true)
     try {
-      const response = await fetch('/api/universal-context/rebuild', { method: 'POST' })
+      const backendUrl = getBackendUrl()
+      const response = await fetch(`${backendUrl}/api/universal-context/rebuild`, { 
+        method: 'POST',
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      })
       if (response.ok) {
         const rebuildData = await response.json()
         addNotification('success', 'Universal Context rebuild started. This will take a few moments...')
@@ -92,7 +100,9 @@ export default function Intelligence() {
           pollCount++
           
           try {
-            const status = await fetch('/api/universal-context/status')
+            const status = await fetch(`${backendUrl}/api/universal-context/status`, {
+              headers: { 'ngrok-skip-browser-warning': 'true' }
+            })
             if (status.ok) {
               const data = await status.json()
               setUniversalContextStatus(data)
@@ -156,8 +166,11 @@ export default function Intelligence() {
   const loadKnowledgeGraph = async () => {
     setIsLoadingKG(true)
     try {
+      const backendUrl = getBackendUrl()
       // Call backend API to get knowledge graph
-      const response = await fetch('/api/knowledge-graph/current')
+      const response = await fetch(`${backendUrl}/api/knowledge-graph/current`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      })
       if (response.ok) {
         const data = await response.json()
         setKgData(data)
@@ -175,8 +188,12 @@ export default function Intelligence() {
   const rebuildKnowledgeGraph = async () => {
     setIsLoadingKG(true)
     try {
+      const backendUrl = getBackendUrl()
       // First clear the cache
-      const clearResponse = await fetch('/api/project-target/clear-cache', { method: 'POST' })
+      const clearResponse = await fetch(`${backendUrl}/api/project-target/clear-cache`, { 
+        method: 'POST',
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      })
       if (clearResponse.ok) {
         const clearData = await clearResponse.json()
         console.log('Cache cleared:', clearData)
@@ -184,7 +201,10 @@ export default function Intelligence() {
       
       // Then rebuild via Universal Context (which rebuilds KG and PM)
       addNotification('info', 'Rebuilding Knowledge Graph and Pattern Mining...')
-      const rebuildResponse = await fetch('/api/universal-context/rebuild', { method: 'POST' })
+      const rebuildResponse = await fetch(`${backendUrl}/api/universal-context/rebuild`, { 
+        method: 'POST',
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      })
       if (rebuildResponse.ok) {
         // Poll for completion
         let attempts = 0
@@ -192,7 +212,9 @@ export default function Intelligence() {
         const pollInterval = setInterval(async () => {
           attempts++
           try {
-            const statusResponse = await fetch('/api/universal-context/status')
+            const statusResponse = await fetch(`${backendUrl}/api/universal-context/status`, {
+              headers: { 'ngrok-skip-browser-warning': 'true' }
+            })
             if (statusResponse.ok) {
               const status = await statusResponse.json()
               if (status.is_ready || attempts >= maxAttempts) {
@@ -226,8 +248,11 @@ export default function Intelligence() {
   const loadPatternMining = async () => {
     setIsLoadingPM(true)
     try {
+      const backendUrl = getBackendUrl()
       // Call backend API to get pattern mining results
-      const response = await fetch('/api/analysis/patterns/current')
+      const response = await fetch(`${backendUrl}/api/analysis/patterns/current`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      })
       if (response.ok) {
         const data = await response.json()
         // The API returns { success: true, analysis: { patterns: [...], summary: {...} } }
@@ -311,7 +336,10 @@ export default function Intelligence() {
 
   const loadFeedbackCounts = async () => {
     try {
-      const response = await fetch('/api/feedback/stats')
+      const backendUrl = getBackendUrl()
+      const response = await fetch(`${backendUrl}/api/feedback/stats`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      })
       if (response.ok) {
         const stats = await response.json()
         setFeedbackCounts(stats.by_artifact_type || {})

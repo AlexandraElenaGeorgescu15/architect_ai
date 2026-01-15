@@ -417,5 +417,21 @@
       "actual_file_path": null,
       "usable_via_transformers": true
     }
+  },
+  "huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF": {
+    "id": "huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF",
+    "name": "mradermacher/ViCoder-html-32B-preview-i1-GGUF (HuggingFace)",
+    "provider": "huggingface",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "downloaded",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "huggingface_id": "mradermacher/ViCoder-html-32B-preview-i1-GGUF",
+      "path": "models\\huggingface\\mradermacher_ViCoder-html-32B-preview-i1-GGUF",
+      "actual_file_path": "models\\huggingface\\mradermacher_ViCoder-html-32B-preview-i1-GGUF\\models--mradermacher--ViCoder-html-32B-preview-i1-GGUF\\snapshots\\87ddaa1b8ad1d5bacff9476e5a538d98ebdb91ec\\ViCoder-html-32B-preview.i1-IQ1_M.gguf",
+      "usable_via_transformers": true
+    }
   }
 }

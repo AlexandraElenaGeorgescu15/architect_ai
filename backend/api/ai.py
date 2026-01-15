@@ -635,15 +635,25 @@ async def repair_diagram(
     """
     AGGRESSIVE diagram repair that keeps trying until diagram renders.
     Strategy:
-    1. Rule-based repair (fast)
-    2. AI repair with local model
-    3. AI repair with cloud model (fallback)
+    1. Rule-based repair (fast) - ONLY trusted if no frontend error_message
+    2. AI repair with local model (uses configured routing)
+    3. AI repair with cloud model (fallback from routing)
     4. Full regeneration with cloud model (last resort)
     
     Does NOT stop until diagram is valid/renderable.
+    
+    CRITICAL: If request.error_message is provided, it means the frontend's
+    mermaid.parse() FAILED. In that case, we MUST use AI repair because
+    basic syntax validation cannot detect all Mermaid syntax issues.
     """
     try:
+        # Check if frontend reported a render failure - this is the GROUND TRUTH
+        frontend_reported_error = bool(request.error_message and request.error_message.strip())
+        
         logger.info(f"🔧 AGGRESSIVE REPAIR: {request.diagram_type} diagram")
+        logger.info(f"   Frontend error reported: {frontend_reported_error}")
+        if frontend_reported_error:
+            logger.info(f"   Error message: {request.error_message[:100]}...")
         
         original_code = request.mermaid_code
         attempts = []
@@ -692,23 +702,34 @@ async def repair_diagram(
         
         # ============================================================
         # ATTEMPT 1: Rule-based repair (fast, no AI)
+        # ONLY return early if NO frontend error was reported
         # ============================================================
+        rule_based_fixed_code = original_code
         try:
             from components.universal_diagram_fixer import UniversalDiagramFixer
             fixer = UniversalDiagramFixer()
-            fixed_code, fixes_applied = fixer.fix_diagram(original_code, max_passes=5)
+            rule_based_fixed_code, fixes_applied = fixer.fix_diagram(original_code, max_passes=5)
             
-            is_valid, reason = validate_mermaid(fixed_code)
+            is_valid, reason = validate_mermaid(rule_based_fixed_code)
             attempts.append(f"Rule-based: {is_valid} ({reason})")
             
-            if is_valid:
+            # CRITICAL: Only return early if BOTH conditions are true:
+            # 1. Our basic validation passes
+            # 2. Frontend did NOT report an error (meaning the diagram was rendering)
+            if is_valid and not frontend_reported_error:
                 logger.info(f"✅ Rule-based repair successful: {len(fixes_applied)} fixes")
                 return DiagramImproveResponse(
                     success=True,
-                    improved_code=fixed_code,
+                    improved_code=rule_based_fixed_code,
                     improvements_made=[f"Rule-based: {f}" for f in fixes_applied[:5]] if fixes_applied else ["Diagram validated"],
                     error=None
                 )
+            elif is_valid and frontend_reported_error:
+                # Basic validation passes BUT frontend reported error
+                # This means Mermaid.js found something our basic validation missed
+                # We MUST continue to AI repair
+                logger.warning(f"⚠️ Rule-based validation passed but frontend reported error: {request.error_message}")
+                logger.info(f"   Continuing to AI repair because frontend is ground truth")
             else:
                 logger.warning(f"Rule-based repair produced invalid diagram: {reason}")
         except Exception as e:
@@ -716,10 +737,18 @@ async def repair_diagram(
             logger.warning(f"Rule-based repair failed: {e}")
         
         # ============================================================
-        # ATTEMPT 2: AI repair with local model
+        # ATTEMPT 2: AI repair with local model (using configured routing)
+        # Pass the rule-based fixed code as input for better results
         # ============================================================
         try:
-            ai_result = await _ai_repair_diagram(request, use_cloud=False)
+            logger.info(f"🤖 [AI_REPAIR] ATTEMPT 2: AI repair with LOCAL model for {request.diagram_type}")
+            
+            # Create a modified request with rule-based fixed code as input
+            from copy import deepcopy
+            ai_request = deepcopy(request)
+            ai_request.mermaid_code = rule_based_fixed_code  # Start from partially-fixed code
+            
+            ai_result = await _ai_repair_diagram(ai_request, use_cloud=False)
             if ai_result and ai_result.strip():
                 # Always clean AI output
                 try:
@@ -736,21 +765,29 @@ async def repair_diagram(
                     return DiagramImproveResponse(
                         success=True,
                         improved_code=ai_result,
-                        improvements_made=["AI repair (local model)", "Syntax fixed"],
+                        improvements_made=["AI repair (local model)", "Syntax fixed", "Used configured routing"],
                         error=None
                     )
                 else:
                     logger.warning(f"AI (local) repair produced invalid diagram: {reason}")
+            else:
+                attempts.append(f"AI-local: No result")
+                logger.warning(f"AI (local) repair returned empty result")
         except Exception as e:
             attempts.append(f"AI-local: Failed ({e})")
             logger.warning(f"AI (local) repair failed: {e}")
         
         # ============================================================
-        # ATTEMPT 3: AI repair with CLOUD model (more capable)
+        # ATTEMPT 3: AI repair with CLOUD model (using configured fallbacks)
         # ============================================================
         try:
-            logger.info("🌐 Falling back to CLOUD model for repair")
-            ai_result = await _ai_repair_diagram(request, use_cloud=True)
+            logger.info(f"🌐 [AI_REPAIR] ATTEMPT 3: AI repair with CLOUD model for {request.diagram_type}")
+            
+            # Create a modified request with rule-based fixed code
+            ai_request = deepcopy(request)
+            ai_request.mermaid_code = rule_based_fixed_code
+            
+            ai_result = await _ai_repair_diagram(ai_request, use_cloud=True)
             if ai_result and ai_result.strip():
                 # Always clean AI output
                 try:
@@ -767,11 +804,14 @@ async def repair_diagram(
                     return DiagramImproveResponse(
                         success=True,
                         improved_code=ai_result,
-                        improvements_made=["AI repair (cloud model)", "Syntax fixed", "Full regeneration"],
+                        improvements_made=["AI repair (cloud model)", "Syntax fixed", "Used configured fallbacks"],
                         error=None
                     )
                 else:
                     logger.warning(f"AI (cloud) repair produced invalid diagram: {reason}")
+            else:
+                attempts.append(f"AI-cloud: No result")
+                logger.warning(f"AI (cloud) repair returned empty result")
         except Exception as e:
             attempts.append(f"AI-cloud: Failed ({e})")
             logger.warning(f"AI (cloud) repair failed: {e}")
@@ -780,7 +820,7 @@ async def repair_diagram(
         # ATTEMPT 4: Full REGENERATION with cloud model (last resort)
         # ============================================================
         try:
-            logger.info("🔄 Last resort: Full regeneration with cloud model")
+            logger.info(f"🔄 [AI_REPAIR] ATTEMPT 4: Full REGENERATION with cloud model for {request.diagram_type}")
             regenerated = await _regenerate_diagram_from_scratch(request)
             if regenerated and regenerated.strip():
                 # Always clean output
@@ -801,14 +841,21 @@ async def repair_diagram(
                         improvements_made=["Full regeneration (cloud)", "New diagram created"],
                         error=None
                     )
+                else:
+                    logger.warning(f"Full regeneration produced invalid diagram: {reason}")
+            else:
+                attempts.append(f"Regenerate: No result")
+                logger.warning(f"Full regeneration returned empty result")
         except Exception as e:
             attempts.append(f"Regenerate: Failed ({e})")
             logger.error(f"Full regeneration failed: {e}")
         
         # ============================================================
-        # ALL ATTEMPTS FAILED - Return best effort
+        # ALL ATTEMPTS FAILED - Return best effort with detailed error
         # ============================================================
-        logger.error(f"❌ All repair attempts failed: {attempts}")
+        logger.error(f"❌ [AI_REPAIR] All repair attempts failed for {request.diagram_type}")
+        logger.error(f"   Attempts: {attempts}")
+        logger.error(f"   Frontend error: {request.error_message}")
         
         # Return the rule-based fix even if invalid (best we have)
         try:
@@ -822,7 +869,7 @@ async def repair_diagram(
             success=False,
             improved_code=best_effort,
             improvements_made=attempts,
-            error=f"All repair attempts failed. Attempts: {', '.join(attempts)}"
+            error=f"All repair attempts failed. The diagram may have complex syntax issues. Attempts: {', '.join(attempts)}"
         )
         
     except Exception as e:
@@ -892,25 +939,47 @@ YOUR TASK:
 
 OUTPUT THE CORRECTED CODE ONLY:"""
 
-        # Get model routing - force cloud if requested
+        # Get model routing - use CONFIGURED routing for this artifact type
         model_service = get_model_service()
+        
+        # Get the configured routing for this artifact type
+        configured_routing = model_service.get_routing_for_artifact(request.diagram_type)
         
         # Create a proper routing object that generate_with_fallback expects
         # It checks for hasattr(model_routing, 'primary_model') and hasattr(model_routing, 'fallback_models')
-        class CloudRouting:
-            """Simple routing object for cloud-only repair."""
+        class FlexibleRouting:
+            """Flexible routing object that can use configured or cloud models."""
             def __init__(self, primary: str, fallbacks: List[str]):
                 self.primary_model = primary
                 self.fallback_models = fallbacks
         
         if use_cloud:
-            # Force cloud models - use proper object format
-            routing = CloudRouting(
-                primary="gemini:gemini-2.0-flash-exp",
-                fallbacks=["groq:llama-3.3-70b-versatile", "openai:gpt-4-turbo"]
+            # Force cloud models - but use configured fallbacks first, then default cloud
+            cloud_fallbacks = []
+            if configured_routing and configured_routing.fallback_models:
+                # Add cloud fallbacks from the configured routing
+                for fallback in configured_routing.fallback_models:
+                    if fallback and ':' in fallback:
+                        provider = fallback.split(':')[0].lower()
+                        if provider in ['gemini', 'openai', 'groq', 'anthropic']:
+                            cloud_fallbacks.append(fallback)
+            
+            # Add default cloud models if not already included
+            default_clouds = ["gemini:gemini-2.0-flash-exp", "groq:llama-3.3-70b-versatile", "openai:gpt-4-turbo"]
+            for dc in default_clouds:
+                if dc not in cloud_fallbacks:
+                    cloud_fallbacks.append(dc)
+            
+            routing = FlexibleRouting(
+                primary=cloud_fallbacks[0] if cloud_fallbacks else "gemini:gemini-2.0-flash-exp",
+                fallbacks=cloud_fallbacks[1:] if len(cloud_fallbacks) > 1 else default_clouds[1:]
             )
+            logger.info(f"☁️ [AI_REPAIR] Using cloud models: primary={routing.primary_model}, fallbacks={routing.fallback_models}")
         else:
-            routing = model_service.get_routing_for_artifact(request.diagram_type)
+            # Use configured routing for local models
+            routing = configured_routing
+            if routing:
+                logger.info(f"🤖 [AI_REPAIR] Using configured routing: primary={routing.primary_model}, fallbacks={routing.fallback_models}")
         
         # Call AI with EXTREMELY STRICT system prompt
         # LLMs consistently ignore instructions - use aggressive negative examples
