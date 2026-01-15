@@ -83,6 +83,20 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
   const resetPan = useCallback(() => {
     setPan({ x: 0, y: 0, isDragging: false, startX: 0, startY: 0 })
   }, [])
+  
+  // Handle scroll wheel zoom
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    // Prevent page scroll
+    e.preventDefault()
+    
+    if (e.deltaY < 0) {
+      // Scroll up = zoom in
+      zoomIn()
+    } else {
+      // Scroll down = zoom out
+      zoomOut()
+    }
+  }, [zoomIn, zoomOut])
 
   const formatMermaidError = (rawError?: string): string => {
     // Store raw error for AI repair, but show friendly message to user
@@ -598,62 +612,78 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         </div>
       )}
       
-      {/* Zoom & Pan Controls */}
-      <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-card/90 backdrop-blur-sm border border-border rounded-lg shadow-lg p-2">
-        {/* Drag hint */}
-        <div className="flex items-center gap-1 px-2 text-muted-foreground" title="Drag to pan the diagram">
-          <Move className="w-3 h-3" />
-          <span className="text-xs hidden sm:inline">Drag</span>
+      {/* Zoom & Pan Controls - Enhanced visibility */}
+      <div className="absolute top-3 right-3 z-10 flex flex-col gap-2">
+        {/* Main Controls Bar */}
+        <div className="flex items-center gap-1 bg-card/95 backdrop-blur-md border border-border/60 rounded-xl shadow-xl p-1.5">
+          {/* Pan/Drag hint */}
+          <div className="flex items-center gap-1 px-2 py-1 text-muted-foreground rounded-lg hover:bg-secondary/50" title="Drag to pan the diagram">
+            <Move className="w-4 h-4" />
+            <span className="text-xs hidden lg:inline font-medium">Drag</span>
+          </div>
+          <div className="w-px h-6 bg-border/50"></div>
+          
+          {/* Zoom Controls */}
+          <button
+            onClick={handleZoomOut}
+            className="p-2 hover:bg-secondary rounded-lg transition-all hover:scale-110"
+            title="Zoom Out (or scroll down)"
+          >
+            <ZoomOut className="w-4 h-4" />
+          </button>
+          <div className="px-2 py-1 bg-secondary/50 rounded-lg min-w-[3.5rem] text-center">
+            <span className="text-sm font-bold text-foreground">
+              {Math.round(zoom * 100)}%
+            </span>
+          </div>
+          <button
+            onClick={handleZoomIn}
+            className="p-2 hover:bg-secondary rounded-lg transition-all hover:scale-110"
+            title="Zoom In (or scroll up)"
+          >
+            <ZoomIn className="w-4 h-4" />
+          </button>
+          <div className="w-px h-6 bg-border/50"></div>
+          
+          {/* Reset & Download */}
+          <button
+            onClick={handleResetZoom}
+            className="p-2 hover:bg-secondary rounded-lg transition-all hover:scale-110"
+            title="Reset View (zoom + position)"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={handleDownload}
+            className="p-2 hover:bg-secondary rounded-lg transition-all hover:scale-110"
+            title="Download SVG"
+          >
+            <Download className="w-4 h-4" />
+          </button>
+          <div className="w-px h-6 bg-border/50"></div>
+          
+          {/* AI Repair */}
+          <button
+            onClick={handleAIRepair}
+            disabled={isRepairing}
+            className="p-2 hover:bg-primary/20 rounded-lg transition-all text-primary hover:scale-110 disabled:opacity-50 disabled:hover:scale-100"
+            title="AI Improve Diagram"
+          >
+            {isRepairing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Wand2 className="w-4 h-4" />
+            )}
+          </button>
         </div>
-        <div className="w-px h-6 bg-border mx-1"></div>
-        <button
-          onClick={handleZoomOut}
-          className="p-2 hover:bg-secondary rounded transition-colors"
-          title="Zoom Out (or scroll)"
-        >
-          <ZoomOut className="w-4 h-4" />
-        </button>
-        <span className="text-sm font-mono text-muted-foreground min-w-[3rem] text-center">
-          {Math.round(zoom * 100)}%
-        </span>
-        <button
-          onClick={handleZoomIn}
-          className="p-2 hover:bg-secondary rounded transition-colors"
-          title="Zoom In (or scroll)"
-        >
-          <ZoomIn className="w-4 h-4" />
-        </button>
-        <div className="w-px h-6 bg-border mx-1"></div>
-        <button
-          onClick={handleResetZoom}
-          className="p-2 hover:bg-secondary rounded transition-colors"
-          title="Reset View (zoom + position)"
-        >
-          <Maximize2 className="w-4 h-4" />
-        </button>
-        <button
-          onClick={handleDownload}
-          className="p-2 hover:bg-secondary rounded transition-colors"
-          title="Download SVG"
-        >
-          <Download className="w-4 h-4" />
-        </button>
-        <div className="w-px h-6 bg-border mx-1"></div>
-        <button
-          onClick={handleAIRepair}
-          disabled={isRepairing}
-          className="p-2 hover:bg-secondary rounded transition-colors text-primary"
-          title="AI Improve Diagram"
-        >
-          {isRepairing ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Wand2 className="w-4 h-4" />
-          )}
-        </button>
+        
+        {/* Scroll hint */}
+        <div className="text-[10px] text-muted-foreground/60 text-center hidden md:block">
+          Scroll to zoom • Drag to pan
+        </div>
       </div>
 
-      {/* Diagram Container with Pan/Drag Support */}
+      {/* Diagram Container with Pan/Drag + Scroll Zoom Support */}
       <div 
         ref={diagramWrapperRef}
         className="flex-1 overflow-hidden p-4 flex items-center justify-center"
@@ -661,6 +691,7 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseLeave}
+        onWheel={handleWheel}
         style={{ 
           cursor: pan.isDragging ? 'grabbing' : 'grab',
           userSelect: 'none'

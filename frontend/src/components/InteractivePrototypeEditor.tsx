@@ -81,7 +81,9 @@ export default function InteractivePrototypeEditor({ artifactType }: Interactive
   const [isModifying, setIsModifying] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [chatHistoryByArtifact, setChatHistoryByArtifact] = useState<Record<string, Array<{ role: 'user' | 'assistant'; content: string }>>>({})
-  const [isAIPanelOpen, setIsAIPanelOpen] = useState(true)  // Collapsible AI panel
+  // AI panel collapsed by default to maximize preview space
+  // Users can expand it when they want to use the AI modifier
+  const [isAIPanelOpen, setIsAIPanelOpen] = useState(false)
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
@@ -572,20 +574,24 @@ Return ONLY the HTML code, no explanations or markdown code blocks.
               )}
             </button>
             <div className="w-px h-6 bg-border mx-2"></div>
-            {/* Toggle AI Panel Button */}
+            {/* Toggle AI Panel Button - More prominent when closed */}
             <button
               onClick={() => setIsAIPanelOpen(!isAIPanelOpen)}
-              className={`p-2 rounded-lg transition-colors ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
                 isAIPanelOpen 
                   ? 'hover:bg-accent text-muted-foreground' 
-                  : 'bg-primary/10 text-primary hover:bg-primary/20'
+                  : 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105'
               }`}
-              title={isAIPanelOpen ? 'Hide AI Panel' : 'Show AI Panel'}
+              title={isAIPanelOpen ? 'Hide AI Panel' : 'Open AI Modifier'}
             >
               {isAIPanelOpen ? (
                 <PanelRightClose size={16} />
               ) : (
-                <PanelRightOpen size={16} />
+                <>
+                  <Sparkles size={14} className="animate-pulse" />
+                  <span className="text-sm font-medium hidden sm:inline">AI Modifier</span>
+                  <PanelRightOpen size={16} />
+                </>
               )}
             </button>
           </div>
