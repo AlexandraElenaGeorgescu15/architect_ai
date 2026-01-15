@@ -19,13 +19,15 @@ import ReactFlow, {
 } from 'reactflow'
 import 'reactflow/dist/style.css'
 
-import { Wand2, Download, Eye, Code as CodeIcon, Loader2, Plus, Square, Circle, Table, Box, Save } from 'lucide-react'
+import { Wand2, Download, Eye, Code as CodeIcon, Loader2, Plus, Square, Circle, Table, Box, Save, Wrench } from 'lucide-react'
+import mermaid from 'mermaid'
 import { useArtifactStore } from '../stores/artifactStore'
 import { useUIStore } from '../stores/uiStore'
 import { nodeTypes } from './nodes'
 import CodeEditor from './CodeEditor'
 import { parseDiagram, improveDiagram } from '../services/diagramService'
 import { getAdapterForDiagramType } from '../services/diagrams'
+import api from '../services/api'
 import type { ReactFlowNode, ReactFlowEdge } from '../services/diagramService'
 
 interface EnhancedDiagramEditorProps {
@@ -42,6 +44,7 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
   const [mermaidCode, setMermaidCode] = useState('')
   const [isSyncing, setIsSyncing] = useState(false)
   const [isImproving, setIsImproving] = useState(false)
+  const [isFixing, setIsFixing] = useState(false)  // NEW: For aggressive repair
   const [isSaving, setIsSaving] = useState(false)
   const [isCodePanelCollapsed, setIsCodePanelCollapsed] = useState(() => {
     // Default to collapsed on small screens, expanded on larger screens
@@ -393,6 +396,93 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
     }
   }, [mermaidCode, selectedArtifact, addNotification, parseAndLoadDiagram])
 
+  /**
+   * Aggressive diagram repair (same as Studio's AI Repair)
+   * Uses repair endpoint and retries until diagram renders
+   */
+  const handleFix = useCallback(async () => {
+    if (!selectedArtifact) {
+      addNotification('warning', 'Please select a diagram first')
+      return
+    }
+
+    if (!mermaidCode.trim()) {
+      addNotification('warning', 'No diagram code to fix')
+      return
+    }
+
+    const MAX_ATTEMPTS = 3
+    let lastError = ''
+    let currentContent = mermaidCode
+
+    try {
+      setIsFixing(true)
+      addNotification('info', 'Attempting to fix diagram (up to 3 attempts)...')
+
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        try {
+          console.log(`🔧 [Canvas] Fix attempt ${attempt}/${MAX_ATTEMPTS}`)
+
+          // Call the repair endpoint (same as Studio)
+          const response = await api.post('/api/ai/repair-diagram', {
+            mermaid_code: currentContent,
+            diagram_type: selectedArtifact.type,
+            error_message: lastError || null,
+            improvement_focus: ['syntax', 'layout', 'relationships']
+          })
+
+          const improvedCode = response.data.improved_code?.trim()
+
+          if (response.data.success && improvedCode && improvedCode.length > 10) {
+            // Try to validate the repaired diagram
+            try {
+              await mermaid.parse(improvedCode)
+
+              // Parse succeeded! Update everything
+              console.log(`✅ [Canvas] Fix successful on attempt ${attempt}!`)
+              setMermaidCode(improvedCode)
+
+              // Update artifact
+              updateArtifact(selectedArtifact.id, {
+                content: improvedCode,
+                updated_at: new Date().toISOString(),
+              })
+
+              // Parse to canvas
+              await parseAndLoadDiagram(improvedCode, selectedArtifact.type, false)
+
+              addNotification('success', `Diagram fixed on attempt ${attempt}!`)
+              return // SUCCESS
+            } catch (parseError: any) {
+              console.warn(`⚠️ [Canvas] Attempt ${attempt} returned invalid diagram:`, parseError.message)
+              lastError = parseError.message || 'Parse error'
+              currentContent = improvedCode
+            }
+          } else {
+            console.warn(`⚠️ [Canvas] Attempt ${attempt} failed:`, response.data.error)
+            lastError = response.data.error || 'Repair returned empty content'
+          }
+        } catch (err: any) {
+          console.error(`❌ [Canvas] Attempt ${attempt} request failed:`, err)
+          lastError = err.message || 'Network error'
+        }
+
+        // Small delay between attempts
+        if (attempt < MAX_ATTEMPTS) {
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+      }
+
+      // All attempts failed
+      addNotification('error', `Could not fix diagram after ${MAX_ATTEMPTS} attempts. ${lastError}`)
+    } catch (error: any) {
+      console.error('Failed to fix diagram:', error)
+      addNotification('error', `Failed to fix: ${error.message}`)
+    } finally {
+      setIsFixing(false)
+    }
+  }, [mermaidCode, selectedArtifact, addNotification, parseAndLoadDiagram, updateArtifact])
+
 
   /**
    * Handle edge creation
@@ -658,18 +748,34 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
 
               <div className="w-px h-6 bg-gray-300"></div>
 
+              {/* Fix button - Aggressive repair */}
+              <button
+                onClick={handleFix}
+                disabled={isFixing || isImproving}
+                className="px-3 py-1.5 bg-orange-600 text-white rounded-md text-sm font-medium flex items-center gap-1.5 hover:bg-orange-700 disabled:opacity-50"
+                title="Fix: Aggressive repair for broken diagrams"
+              >
+                {isFixing ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <Wrench size={16} />
+                )}
+                Fix
+              </button>
+
+              {/* Improve button - Enhance working diagrams */}
               <button
                 onClick={handleMagicImprovement}
-                disabled={isImproving}
+                disabled={isImproving || isFixing}
                 className="px-3 py-1.5 bg-purple-600 text-white rounded-md text-sm font-medium flex items-center gap-1.5 hover:bg-purple-700 disabled:opacity-50"
-                title="AI Improvement"
+                title="Improve: Add colors, styles, and enhance layout"
               >
                 {isImproving ? (
                   <Loader2 size={16} className="animate-spin" />
                 ) : (
                   <Wand2 size={16} />
                 )}
-                AI Improve
+                Improve
               </button>
 
               <div className="w-px h-6 bg-gray-300"></div>
@@ -737,7 +843,9 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
         onCodeChange={handleCodeChange}
         onSync={handleSync}
         onMagic={handleMagicImprovement}
+        onFix={handleFix}
         isSyncing={isSyncing}
+        isFixing={isFixing}
         diagramType={selectedArtifact?.type || 'Mermaid'}
         isCollapsed={isCodePanelCollapsed}
         onToggleCollapse={toggleCodePanel}

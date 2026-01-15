@@ -87,6 +87,45 @@
       "artifact_type": "mermaid_component"
     },
     "created_at": "2026-01-15T10:29:09.439480",
+    "is_current": false
+  },
+  {
+    "version": 6,
+    "artifact_id": "mermaid_component",
+    "artifact_type": "mermaid_component",
+    "content": "classDiagram\n    class PhoneSwapRequest\n    PhoneSwapRequest --|> AvailablePhones : phone_to_request\n    Swap --> PhoneToExchange : phone_to_exchange\n    ReasonForRequest --> OptionalComments : reason_for_request\n    Actions *-->> submit_request, cancel\n    Backend --> APIEndpoint(POST /api/phone-swaps) : handle_form_submission\n    Database --> SwapRequestsTable : store_swap_requests\n    Requester'sID --> SwapRequestsTable : requester_id\n    RequestedPhone --> SwapRequestsTable : requested_phone\n    OfferedPhone --> SwapRequestsTable : offered_phone\n    Status(defaulting to 'Pending') --> SwapRequestsTable : status\n    Comment --> SwapRequestsTable : comment\n    BackendValidation --> UserMakingTheRequestIsTheActualOwnerOfThePhoneBeingOfferedInExchange : validate_user_ownership",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_component"
+    },
+    "created_at": "2026-01-15T18:17:19.917787",
+    "is_current": false
+  },
+  {
+    "version": 7,
+    "artifact_id": "mermaid_component",
+    "artifact_type": "mermaid_component",
+    "content": "graph TD\n  APIEndpoint[\"POST /api/phone-swaps\"]\n  style APIEndpoint fill:#22c55e,stroke:#333,stroke-width:2px\n\n",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit"
+    },
+    "created_at": "2026-01-15T18:28:07.121991",
+    "is_current": false
+  },
+  {
+    "version": 8,
+    "artifact_id": "mermaid_component",
+    "artifact_type": "mermaid_component",
+    "content": "graph TD\n  APIEndpoint[\"POST /api/phone-swaps\"]\n  style APIEndpoint fill:#22c55e,stroke:#333,stroke-width:2px\n\n",
+    "metadata": {
+      "source": "canvas_editor",
+      "model_used": "manual_edit",
+      "validation_score": 100,
+      "is_valid": true
+    },
+    "created_at": "2026-01-15T18:28:07.269650",
     "is_current": true
   }
 ]

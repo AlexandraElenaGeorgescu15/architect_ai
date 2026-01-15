@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react'
-import { Loader2, MessageSquare, Code, Eye, Send, Sparkles, RefreshCw, PanelRightClose, PanelRightOpen } from 'lucide-react'
+import { Loader2, MessageSquare, Code, Eye, Send, Sparkles, RefreshCw, PanelRightClose, PanelRightOpen, X } from 'lucide-react'
 import { useArtifactStore } from '../stores/artifactStore'
 import { useUIStore } from '../stores/uiStore'
 import { sendChatMessage } from '../services/chatService'
@@ -303,20 +303,32 @@ Please provide the COMPLETE modified HTML code (not just the changes). Include a
 Return ONLY the HTML code, no explanations or markdown code blocks.
 `
 
-      // Call AI to generate modified prototype with extended timeout
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 60000) // 60 second timeout
-      
-      try {
-        const response = await sendChatMessage({
+      // Call AI with timeout handling
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Request timed out after 60 seconds. Please try a simpler modification.')), 60000)
+      })
+
+      const response = await Promise.race([
+        sendChatMessage({
           message: modificationPrompt,
           conversation_history: [],
           include_project_context: false,
-        })
-        clearTimeout(timeoutId)
+        }),
+        timeoutPromise
+      ])
+
+      // Validate response
+      if (!response || !response.message) {
+        throw new Error('AI service returned empty response. Please try again.')
+      }
 
       // Extract HTML from response - improved extraction to ignore explanatory text
       let modifiedHtml = extractHtmlFromResponse(response.message)
+
+      // Validate we got actual HTML
+      if (!modifiedHtml || modifiedHtml.length < 20) {
+        throw new Error('AI could not generate valid HTML. Please try rephrasing your request.')
+      }
 
       // Sanitize and add viewport meta
       modifiedHtml = sanitizeHtmlContent(modifiedHtml)
@@ -335,32 +347,29 @@ Return ONLY the HTML code, no explanations or markdown code blocks.
         ...prev,
         {
           role: 'assistant',
-          content: `I've updated the prototype based on your request. Check the preview to see the changes!`,
+          content: `✅ I've updated the prototype based on your request. Check the preview to see the changes!`,
         },
       ])
 
-        addNotification('success', 'Prototype updated successfully!')
-      } catch (innerError: any) {
-        console.error('Failed to modify prototype:', innerError)
-        const errorMsg = innerError.name === 'AbortError' 
-          ? 'Request timed out after 60 seconds. Please try a simpler modification.'
-          : innerError.message
-        setChatHistory((prev) => [
-          ...prev,
-          {
-            role: 'assistant',
-            content: `Sorry, I encountered an error: ${errorMsg}. Please try again.`,
-          },
-        ])
-        addNotification('error', 'Failed to modify prototype')
-      }
+      addNotification('success', 'Prototype updated successfully!')
     } catch (error: any) {
       console.error('Failed to modify prototype:', error)
+      
+      // Build user-friendly error message
+      let errorMsg = error.message || 'Unknown error occurred'
+      if (error.message?.includes('timeout')) {
+        errorMsg = 'Request timed out. The AI service may be slow or unavailable. Please try again.'
+      } else if (error.message?.includes('Network') || error.message?.includes('fetch')) {
+        errorMsg = 'Network error. Please check your connection and try again.'
+      } else if (error.response?.status === 500) {
+        errorMsg = 'Server error. The AI service may be temporarily unavailable.'
+      }
+      
       setChatHistory((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: `Sorry, I encountered an error: ${error.message}. Please try again.`,
+          content: `❌ Sorry, I encountered an error: ${errorMsg}\n\nTip: Try simpler requests like "make the button blue" or "add a header".`,
         },
       ])
       addNotification('error', 'Failed to modify prototype')
@@ -677,9 +686,19 @@ Return ONLY the HTML code, no explanations or markdown code blocks.
       <div className={`${isAIPanelOpen ? 'flex-1 lg:flex-none lg:w-80 xl:w-96' : 'hidden'} flex-shrink-0 flex flex-col bg-card border border-border rounded-xl overflow-hidden shadow-lg min-h-[200px] lg:min-h-0 transition-all duration-300`} style={{ maxHeight: '100%', height: '100%' }}>
         {/* Chat Header */}
         <div className="px-4 py-3 border-b border-border bg-secondary/20 flex-shrink-0">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="w-5 h-5 text-primary" />
-            <h3 className="font-bold text-foreground">AI Modifier</h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-primary" />
+              <h3 className="font-bold text-foreground">AI Modifier</h3>
+            </div>
+            {/* Close Button */}
+            <button
+              onClick={() => setIsAIPanelOpen(false)}
+              className="p-1.5 hover:bg-destructive/10 rounded-lg transition-colors text-muted-foreground hover:text-destructive"
+              title="Close AI Panel"
+            >
+              <X size={18} />
+            </button>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             Tell me what you want to change

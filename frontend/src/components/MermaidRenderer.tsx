@@ -194,7 +194,7 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
     setMermaidErrorDetail(null)
   }, [content, setError, setValidation, setLastErrorContent])
   
-  // Repair function - AGGRESSIVE: keeps trying until diagram renders
+  // Repair function - AGGRESSIVE: keeps trying until diagram renders (max 3 attempts)
   const handleAIRepair = useCallback(async () => {
     if (isRepairing) return
     
@@ -205,58 +205,83 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
     }
     
     setIsRepairing(true)
-    const originalContent = content // Save original content in case repair fails
-    try {
-      console.log('🔧 [MermaidRenderer] AGGRESSIVE REPAIR: will try until diagram renders')
-      console.log('🔧 [MermaidRenderer] Error context:', mermaidErrorDetail || error || 'No specific error captured')
-      
-      // Call the aggressive repair endpoint with error context
-      const response = await api.post('/api/ai/repair-diagram', {
-        mermaid_code: content,
-        diagram_type: artifactType,
-        error_message: mermaidErrorDetail || error || null,
-        improvement_focus: ['syntax', 'layout', 'relationships']
-      })
-      
-      const improvedCode = response.data.improved_code?.trim()
-      
-      // Validate that we got actual content back
-      if (response.data.success && improvedCode && improvedCode.length > 10) {
-        console.log('✅ [MermaidRenderer] Repair successful:', response.data.improvements_made)
-        console.log('✅ [MermaidRenderer] New content length:', improvedCode.length)
+    const originalContent = content // Save original content in case all repairs fail
+    const MAX_ATTEMPTS = 3
+    let lastError = ''
+    let currentContent = content
+    
+    console.log('🔧 [MermaidRenderer] AGGRESSIVE REPAIR: will try up to', MAX_ATTEMPTS, 'times until diagram renders')
+    
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      try {
+        console.log(`🔧 [MermaidRenderer] Repair attempt ${attempt}/${MAX_ATTEMPTS}`)
+        console.log('🔧 [MermaidRenderer] Error context:', mermaidErrorDetail || error || lastError || 'No specific error captured')
         
-        // Update content
-        if (onContentUpdate) {
-          onContentUpdate(improvedCode)
+        // Call the aggressive repair endpoint with error context
+        const response = await api.post('/api/ai/repair-diagram', {
+          mermaid_code: currentContent,
+          diagram_type: artifactType,
+          error_message: mermaidErrorDetail || error || lastError || null,
+          improvement_focus: ['syntax', 'layout', 'relationships']
+        })
+        
+        const improvedCode = response.data.improved_code?.trim()
+        
+        // Validate that we got actual content back
+        if (response.data.success && improvedCode && improvedCode.length > 10) {
+          console.log(`✅ [MermaidRenderer] Repair attempt ${attempt} returned code, testing render...`)
+          console.log('✅ [MermaidRenderer] New content length:', improvedCode.length)
+          
+          // Try to render the repaired diagram to verify it works
+          try {
+            clearMermaidErrorArtifacts()
+            await mermaid.parse(improvedCode)
+            
+            // Parse succeeded! Update content
+            console.log(`✅ [MermaidRenderer] Repair successful on attempt ${attempt}!`, response.data.improvements_made)
+            
+            if (onContentUpdate) {
+              onContentUpdate(improvedCode)
+            }
+            
+            // Reset error state to trigger re-render
+            setError(null)
+            setLastErrorContent(null)
+            setMermaidErrorDetail(null)
+            setIsRepairing(false)
+            return // SUCCESS - exit the function
+          } catch (parseError: any) {
+            // Repair returned something but it still doesn't render
+            console.warn(`⚠️ [MermaidRenderer] Attempt ${attempt} returned invalid diagram:`, parseError.message)
+            lastError = parseError.message || 'Parse error'
+            currentContent = improvedCode // Use the repaired content for next attempt
+            // Continue to next attempt
+          }
+        } else {
+          // API returned failure
+          console.warn(`⚠️ [MermaidRenderer] Attempt ${attempt} failed:`, response.data.error)
+          lastError = response.data.error || 'Repair returned empty content'
+          // Continue to next attempt with same content
         }
-        
-        // Reset error state to trigger re-render
-        setError(null)
-        setLastErrorContent(null)
-        setMermaidErrorDetail(null)
-      } else {
-        // Repair failed or returned empty/invalid content
-        console.error('❌ [MermaidRenderer] Repair failed or returned invalid content')
-        console.error('Response:', { success: response.data.success, codeLength: improvedCode?.length, error: response.data.error })
-        
-        // ALWAYS restore original content if repair failed
-        // Never leave the user with empty content
-        if (onContentUpdate) {
-          onContentUpdate(originalContent)
-        }
-        
-        setError(`Repair could not fix this diagram. ${response.data.error || 'The diagram syntax may be too broken. Please try regenerating.'}`)
+      } catch (err: any) {
+        console.error(`❌ [MermaidRenderer] Attempt ${attempt} request failed:`, err)
+        lastError = err.message || 'Network error'
+        // Continue to next attempt
       }
-    } catch (err: any) {
-      console.error('❌ [MermaidRenderer] Repair request failed:', err)
-      // Restore original content on error
-      if (onContentUpdate) {
-        onContentUpdate(originalContent)
+      
+      // Small delay between attempts to avoid overwhelming the server
+      if (attempt < MAX_ATTEMPTS) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
       }
-      setError('Repair service unavailable. Please try again or regenerate the diagram.')
-    } finally {
-      setIsRepairing(false)
     }
+    
+    // All attempts failed - restore original content
+    console.error(`❌ [MermaidRenderer] All ${MAX_ATTEMPTS} repair attempts failed`)
+    if (onContentUpdate) {
+      onContentUpdate(originalContent)
+    }
+    setError(`Repair could not fix this diagram after ${MAX_ATTEMPTS} attempts. ${lastError || 'The diagram syntax may be too broken. Please try regenerating.'}`)
+    setIsRepairing(false)
   }, [content, artifactType, onContentUpdate, isRepairing, setError, setIsRepairing, setLastErrorContent, mermaidErrorDetail, error])
 
   useEffect(() => {

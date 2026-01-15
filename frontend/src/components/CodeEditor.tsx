@@ -5,14 +5,16 @@
  */
 
 import React, { useEffect, useState } from 'react'
-import { RefreshCw, Wand2, AlertCircle, ChevronLeft, ChevronRight, Code } from 'lucide-react'
+import { RefreshCw, Wand2, AlertCircle, ChevronLeft, ChevronRight, Code, Wrench, Loader2 } from 'lucide-react'
 
 interface CodeEditorProps {
   code: string
   onCodeChange: (code: string) => void
   onSync: () => void
   onMagic: () => void
+  onFix?: () => void  // NEW: Separate repair function (aggressive fix)
   isSyncing: boolean
+  isFixing?: boolean  // NEW: Loading state for fix operation
   diagramType?: string
   isCollapsed?: boolean
   onToggleCollapse?: () => void
@@ -23,7 +25,9 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
   onCodeChange,
   onSync,
   onMagic,
+  onFix,
   isSyncing,
+  isFixing = false,
   diagramType = 'Mermaid',
   isCollapsed = false,
   onToggleCollapse,
@@ -75,18 +79,31 @@ const CodeEditor: React.FC<CodeEditorProps> = ({
           </h2>
         </div>
         <div className="flex gap-1.5">
+          {/* Fix button - Aggressive repair for broken diagrams */}
+          {onFix && (
+            <button
+              onClick={onFix}
+              disabled={isSyncing || isFixing}
+              className="p-1.5 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30 rounded-md transition-colors flex items-center gap-1 text-xs font-medium border border-transparent hover:border-orange-100 dark:hover:border-orange-800 disabled:opacity-50"
+              title="Fix: Aggressive repair for broken diagrams (retries until it works)"
+            >
+              {isFixing ? <Loader2 size={14} className="animate-spin" /> : <Wrench size={14} />}
+              <span className="hidden sm:inline">Fix</span>
+            </button>
+          )}
+          {/* Improve button - Enhance working diagrams */}
           <button
             onClick={onMagic}
-            disabled={isSyncing}
-            className="p-1.5 text-purple-600 hover:bg-purple-50 rounded-md transition-colors flex items-center gap-1 text-xs font-medium border border-transparent hover:border-purple-100 disabled:opacity-50"
-            title="AI Auto-Fix: Clean up and improve the diagram code"
+            disabled={isSyncing || isFixing}
+            className="p-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-950/30 rounded-md transition-colors flex items-center gap-1 text-xs font-medium border border-transparent hover:border-purple-100 dark:hover:border-purple-800 disabled:opacity-50"
+            title="Improve: Add colors, styles, and enhance layout"
           >
             <Wand2 size={14} />
-            <span className="hidden sm:inline">Fix</span>
+            <span className="hidden sm:inline">Improve</span>
           </button>
           <button
             onClick={onSync}
-            disabled={isSyncing}
+            disabled={isSyncing || isFixing}
             className={`
               px-2.5 py-1.5 bg-indigo-600 text-white rounded-md text-xs font-medium 
               flex items-center gap-1 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm

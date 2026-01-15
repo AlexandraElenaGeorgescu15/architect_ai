@@ -34,6 +34,15 @@ class ComponentInfo(BaseModel):
     file_path: str
 
 
+class ProjectStats(BaseModel):
+    """Stats for a single project."""
+    name: str
+    path: str
+    chunk_count: int = 0
+    file_count: int = 0
+    tech_stack: List[str] = Field(default_factory=list)
+
+
 class ProjectSummary(BaseModel):
     """Summary of project knowledge for chat context."""
     project_name: str = "Architect.AI"
@@ -45,6 +54,8 @@ class ProjectSummary(BaseModel):
     recent_files: List[str] = Field(default_factory=list)
     last_indexed: Optional[str] = None
     greeting_message: str = ""
+    # NEW: Per-project breakdown
+    projects: List[ProjectStats] = Field(default_factory=list)
 
 
 # =============================================================================
@@ -109,11 +120,12 @@ async def get_project_summary(
         
         logger.info(f"📂 [CHAT_SUMMARY] Getting summary for {len(user_project_dirs)} user projects")
         
-        # Get RAG stats
+        # Get RAG stats with PER-PROJECT BREAKDOWN
         rag_retriever = get_retriever()
         indexed_files = 0
         recent_files = []
         last_indexed = None
+        per_project_stats: List[ProjectStats] = []
         
         try:
             # Get index stats from ChromaDB
@@ -122,6 +134,66 @@ async def get_project_summary(
                 # Count files in ChromaDB collection
                 if hasattr(rag_retriever, 'collection') and rag_retriever.collection:
                     indexed_files = rag_retriever.collection.count()
+                    
+                    # =============================================================
+                    # NEW: Compute per-project chunk counts from indexed metadata
+                    # =============================================================
+                    try:
+                        # Get all metadata to analyze project distribution
+                        all_data = rag_retriever.collection.get(
+                            include=["metadatas"],
+                            limit=50000  # Get enough to analyze distribution
+                        )
+                        
+                        if all_data and all_data.get("metadatas"):
+                            # Count chunks per project directory
+                            project_chunk_counts: Dict[str, int] = {}
+                            project_files: Dict[str, set] = {}
+                            
+                            for meta in all_data["metadatas"]:
+                                if not meta:
+                                    continue
+                                # Get file path from metadata (could be 'path' or 'file_path')
+                                file_path = meta.get("file_path") or meta.get("path", "")
+                                if not file_path:
+                                    continue
+                                
+                                # Extract project name from path
+                                # Path like: C:\Users\...\final_project\src\app\...
+                                # or: /home/.../final-proj-sln/Controllers/...
+                                path_parts = Path(file_path).parts
+                                
+                                # Find which user project this belongs to
+                                for proj_dir in user_project_dirs:
+                                    proj_name = proj_dir.name
+                                    if proj_name in path_parts:
+                                        project_chunk_counts[proj_name] = project_chunk_counts.get(proj_name, 0) + 1
+                                        if proj_name not in project_files:
+                                            project_files[proj_name] = set()
+                                        project_files[proj_name].add(file_path)
+                                        break
+                            
+                            # Build per-project stats
+                            for proj_dir in user_project_dirs:
+                                proj_name = proj_dir.name
+                                chunk_count = project_chunk_counts.get(proj_name, 0)
+                                file_count = len(project_files.get(proj_name, set()))
+                                
+                                # Detect tech stack for this project
+                                from backend.utils.target_project import detect_tech_stack
+                                proj_tech = detect_tech_stack(proj_dir)
+                                
+                                per_project_stats.append(ProjectStats(
+                                    name=proj_name,
+                                    path=str(proj_dir),
+                                    chunk_count=chunk_count,
+                                    file_count=file_count,
+                                    tech_stack=proj_tech
+                                ))
+                            
+                            logger.info(f"📊 [CHAT_SUMMARY] Per-project breakdown: {project_chunk_counts}")
+                    except Exception as e:
+                        logger.warning(f"Could not compute per-project stats: {e}")
                 
                 # Get last modified time
                 try:
@@ -245,7 +317,14 @@ async def get_project_summary(
         else:
             greeting_parts.append(f"Hello! I'm Architect.AI. I've analyzed **{project_name}**:")
         
-        if indexed_files > 0:
+        # NEW: Show per-project breakdown if we have multiple projects
+        if per_project_stats and len(per_project_stats) > 1:
+            for proj_stat in per_project_stats:
+                tech_str = ', '.join(proj_stat.tech_stack[:2]) if proj_stat.tech_stack else 'Unknown'
+                greeting_parts.append(
+                    f"  • **{proj_stat.name}**: {proj_stat.chunk_count} chunks from {proj_stat.file_count} files ({tech_str})"
+                )
+        elif indexed_files > 0:
             greeting_parts.append(f"📁 **{indexed_files} chunks** indexed ({', '.join(tech_stack[:4])})")
         else:
             greeting_parts.append(f"\n⚠️ Project not indexed yet. Please run 'Index Project' first.")
@@ -279,7 +358,8 @@ async def get_project_summary(
             knowledge_graph_stats=kg_stats,
             recent_files=recent_files,
             last_indexed=last_indexed,
-            greeting_message=greeting_message
+            greeting_message=greeting_message,
+            projects=per_project_stats  # NEW: Include per-project breakdown
         )
         
     except Exception as e:

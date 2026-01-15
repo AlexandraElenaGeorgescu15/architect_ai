@@ -123,26 +123,55 @@ class ProjectAwareChatService:
                 project_context_parts = []
                 
                 if rag_results:
-                    project_context_parts.append("## Relevant Code Snippets:")
-                    # ENHANCED: Include more snippets with MUCH longer content for deep context
-                    # Sort by relevance score if available
+                    # ENHANCED: Group chunks by project for better organization
+                    from pathlib import Path
+                    from backend.utils.tool_detector import get_user_project_directories
+                    
+                    user_projects = get_user_project_directories()
+                    project_names = [p.name for p in user_projects]
+                    
+                    # Sort by relevance score
                     sorted_results = sorted(
                         rag_results,
                         key=lambda r: r.get('score', r.get('relevance', 0)),
                         reverse=True
-                    )[:self.max_rag_snippets]  # Top 12 (was 8)
+                    )[:self.max_rag_snippets]
                     
-                    for i, result in enumerate(sorted_results, 1):
-                        file_path = result.get('metadata', {}).get('file_path', 'unknown')
+                    # Group by project
+                    by_project: dict = {}
+                    for result in sorted_results:
+                        file_path = result.get('metadata', {}).get('file_path') or result.get('metadata', {}).get('path', 'unknown')
                         content = result.get('content', '')
-                        score = result.get('score', result.get('relevance', 'N/A'))
                         
-                        # ENHANCED: Include much more content per snippet (was 800)
-                        # Plus show relevance score to help AI prioritize
-                        project_context_parts.append(
-                            f"\n### Snippet {i} (from {file_path}, relevance: {score}):\n"
-                            f"```\n{content[:self.max_snippet_length]}\n```"
-                        )
+                        # Determine which project this file belongs to
+                        proj_name = "Other"
+                        for pname in project_names:
+                            if pname in file_path:
+                                proj_name = pname
+                                break
+                        
+                        if proj_name not in by_project:
+                            by_project[proj_name] = []
+                        by_project[proj_name].append((file_path, content))
+                    
+                    # Build context grouped by project
+                    if len(by_project) > 1:
+                        project_context_parts.append("## Code from Your Projects:")
+                        project_context_parts.append(f"*I have code from {len(by_project)} projects: {', '.join(by_project.keys())}*\n")
+                    else:
+                        project_context_parts.append("## Code from Your Project:")
+                    
+                    for proj_name, files in by_project.items():
+                        if len(by_project) > 1:
+                            project_context_parts.append(f"\n### Project: {proj_name}")
+                        
+                        for file_path, content in files:
+                            filename = Path(file_path).name if file_path != 'unknown' else 'unknown'
+                            # Use natural file-based labeling
+                            project_context_parts.append(
+                                f"\n#### {filename}\n**Path:** `{file_path}`\n"
+                                f"```\n{content[:self.max_snippet_length]}\n```"
+                            )
                 
                 if kg_context:
                     project_context_parts.append(f"\n## Knowledge Graph Insights:\n{kg_context}")
@@ -467,46 +496,62 @@ Your primary purpose is to help users understand THIS SPECIFIC project codebase 
 
 Your role:
 - Help users understand the {project_name} codebase structure and architecture
-- Provide intelligent, specific answers about code, patterns, and design decisions in {project_name}
+- Provide intelligent, specific answers about code, patterns, and design decisions
 - Suggest improvements and best practices based on what you SEE in their actual code
 - Answer questions about feasibility, complexity, and implementation
-- Reference specific files, functions, and code structures from {project_name}
+- Reference specific files, functions, and code structures
 
-CRITICAL GUIDELINES:
-- ALWAYS cite specific files, function names, and code from the project context provided
-- NEVER give generic "As an AI assistant" responses - PROVE you know {project_name}
-- When answering questions about "this codebase" or "my code", reference ACTUAL files from the snippets
-- When asked "what do you do?", DEMONSTRATE knowledge by listing specific components you see in the snippets
-- Start responses with specific {project_name} knowledge, not generic capabilities
-- Reference ACTUAL class names, function names, and file paths from the snippets
-- Be concise but PROVE you know their codebase with specific references
+HOW TO RESPOND:
+1. When asked "what do you know about my project?":
+   - List the ACTUAL files you can see (by filename, e.g., "RegistrationController.cs", "user.service.ts")
+   - Describe the PURPOSE of key classes/functions you see in the code
+   - Explain the architecture patterns evident in the code (e.g., "Your API follows a controller-service pattern")
+   - Mention the tech stack based on actual file types and imports you see
 
-EXAMPLE - BAD (generic):
-"As an AI assistant, I can help you with code understanding, pattern detection, and architecture guidance..."
+2. When asked about specific functionality:
+   - Quote relevant code sections naturally ("In your UserService class, I see...")
+   - Explain how components interact based on the imports and method calls
+   - Point to specific file locations
 
-EXAMPLE - GOOD (project-specific for {project_name}):
-"Looking at {project_name}, I can see these key components in the code snippets:
-- [Name actual classes/functions from snippets]
-- [Reference actual file paths from snippets]
-What would you like to know about these?"
+3. When you don't have enough information:
+   - Say "I don't see code related to X in the context I have. Could you tell me more about where that feature is implemented?"
 
-If you don't have enough context from the snippets, say so and ask for clarification."""
+CRITICAL - NEVER DO THESE:
+- NEVER reference "Snippet 1", "Snippet 2", or any numbered snippets - these are internal labels
+- NEVER say "In the code snippets provided" or "Looking at the snippets"
+- NEVER expose internal context structure to the user
+- NEVER give generic "As an AI assistant, I can help with..." responses
+- NEVER list abstract capabilities without backing them up with specific examples from the code
+
+INSTEAD - ALWAYS DO THESE:
+- Reference files by their ACTUAL NAME: "In `RegistrationController.cs`, I can see..."
+- Reference classes/functions by their ACTUAL NAME: "Your `UserService` class handles..."
+- Speak as if you've STUDIED their codebase: "Your project uses the Observer pattern in..."
+- Be SPECIFIC: Instead of "I see services", say "I see `AuthService`, `UserService`, and `DataService`"
+
+EXAMPLE - BAD (generic, exposes internals):
+"I can see that I have a lot of information to work with! Looking at the snippets, in Snippet 1, I see CSS styles..."
+
+EXAMPLE - GOOD (natural, specific):
+"Your project has a well-structured Angular frontend with a .NET API backend. Key components I can see:
+- **Controllers:** `RegistrationController.cs` handles user registration with validation
+- **Services:** `auth.service.ts` manages authentication state
+- **Components:** `user-profile.component.ts` for the profile UI
+What aspect would you like to explore?"
+
+If no code context is available, honestly say: "I haven't indexed your project yet. Please run 'Index Project' so I can analyze your codebase." """
         
         if include_project_context:
             base_message += f"""
 
-You have access to:
-- ACTUAL CODE SNIPPETS from {project_name} (included below as "Relevant Code Snippets")
-- Knowledge Graph showing component relationships in {project_name}
-- Pattern Mining insights about design patterns detected in {project_name}
-- Project structure and file organization
+You have direct access to code from {project_name}. The code sections below are from the user's actual project files.
+Treat this as if you've read through their codebase - because you have.
 
-IMPORTANT: The code snippets provided are from {project_name}, the USER'S ACTUAL PROJECT.
-Always reference these snippets when answering questions about "my code", "this project", or "the codebase".
-If the user asks "what do you do?" or "what can you help with?", IMMEDIATELY cite specific files and components from the snippets.
-
-DO NOT say "As an AI assistant" - instead say "Looking at {project_name}, I can see..."
-DO NOT list generic capabilities - instead demonstrate specific knowledge of {project_name}."""
+When answering:
+- Reference files naturally by name (not by "snippet" numbers)
+- Describe what you ACTUALLY SEE in the code
+- Connect different files to show how you understand the architecture
+- Be conversational and helpful, like a senior developer who knows the codebase"""
         
         return base_message
     
@@ -569,7 +614,7 @@ DO NOT list generic capabilities - instead demonstrate specific knowledge of {pr
         
         parts.append(f"## Current Question:\n{message}")
         parts.append("\n## Your Response:")
-        parts.append("(Remember: Reference specific files, functions, and code from the project context above. Be specific!)")
+        parts.append("(Remember: Reference files by their actual names. Never mention 'snippets' or internal labels. Be specific and natural.)")
         
         return "\n".join(parts)
     
