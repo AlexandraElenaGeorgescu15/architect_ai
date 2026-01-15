@@ -204,7 +204,7 @@ export default function InteractivePrototypeEditor({ artifactType }: Interactive
         const initialHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [
           {
             role: 'assistant' as const,
-            content: `Hi! I can help you modify this ${typeName}. Tell me what you'd like to change:\n\n• **Styles**: colors, fonts, spacing, layout\n• **Content**: text, images, placeholders\n• **Functionality**: buttons, forms, interactions\n• **Structure**: add/remove components\n\nJust describe what you want, and I'll update the HTML!`,
+            content: `👋 Hi! I can help you modify this ${typeName}.\n\n**Quick actions above** for common changes, or describe what you want:\n\n• "Make it look more professional"\n• "Change the colors to blue and white"\n• "Add a header with a logo"\n• "Make the buttons bigger"\n\n💡 **Tip:** For big redesigns, I'll take 1-2 minutes. For small tweaks, just a few seconds!`,
           },
         ]
         setChatHistory(initialHistory)
@@ -311,25 +311,60 @@ export default function InteractivePrototypeEditor({ artifactType }: Interactive
     // Add user message to chat
     setChatHistory((prev) => [...prev, { role: 'user', content: userMessage }])
 
-    try {
-      // Build context-aware prompt
-      const modificationPrompt = `
-I have an HTML prototype that I want to modify. Here's the current code:
+    // Detect if this is a complex request (needs full redesign)
+    const complexKeywords = ['redesign', 'completely', 'entire', 'full', 'whole', 'pretty', 'beautiful', 'modern', 'professional', 'overhaul', 'rework', 'redo']
+    const isComplexRequest = complexKeywords.some(kw => userMessage.toLowerCase().includes(kw))
+    
+    // Use longer timeout for complex requests
+    const timeoutMs = isComplexRequest ? 180000 : 90000 // 3 min for complex, 90s for simple
 
+    // Add progress message for complex requests
+    if (isComplexRequest) {
+      setChatHistory((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: `🎨 This looks like a bigger change - I'm working on a complete redesign. This may take up to 2-3 minutes...`,
+        },
+      ])
+    }
+
+    try {
+      // Build context-aware prompt - optimized for efficiency
+      const modificationPrompt = isComplexRequest 
+        ? `You are a professional UI/UX designer. Transform this basic HTML prototype into a beautiful, modern, polished design.
+
+CURRENT HTML:
 \`\`\`html
 ${htmlContent}
 \`\`\`
 
-User request: "${userMessage}"
+USER REQUEST: "${userMessage}"
 
-Please provide the COMPLETE modified HTML code (not just the changes). Include all necessary HTML, CSS, and JavaScript. Make sure it's a full, working HTML document.
+REQUIREMENTS:
+1. Keep the same basic structure and functionality
+2. Add modern styling: gradients, shadows, rounded corners, smooth transitions
+3. Use a cohesive color palette (suggest using blues/purples for professional look, or warm colors for friendly feel)
+4. Add proper spacing, padding, and typography
+5. Make it responsive and visually appealing
+6. Include CSS animations/transitions where appropriate
+7. Use flexbox/grid for proper layout
 
-Return ONLY the HTML code, no explanations or markdown code blocks.
-`
+OUTPUT: Return ONLY the complete, working HTML document. No explanations.`
+        : `Modify this HTML based on the user's request.
+
+HTML:
+\`\`\`html
+${htmlContent}
+\`\`\`
+
+REQUEST: "${userMessage}"
+
+Return ONLY the complete modified HTML. No explanations or markdown.`
 
       // Call AI with timeout handling
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error('Request timed out after 60 seconds. Please try a simpler modification.')), 60000)
+        setTimeout(() => reject(new Error(`Request timed out after ${timeoutMs/1000} seconds.`)), timeoutMs)
       })
 
       const response = await Promise.race([
@@ -367,11 +402,15 @@ Return ONLY the HTML code, no explanations or markdown code blocks.
       })
 
       // Add AI response to chat
+      const successMessage = isComplexRequest
+        ? `✨ I've completely redesigned your prototype with modern styling! Check the preview to see the transformation.`
+        : `✅ Done! I've updated the prototype. Check the preview to see the changes.`
+      
       setChatHistory((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: `✅ I've updated the prototype based on your request. Check the preview to see the changes!`,
+          content: successMessage,
         },
       ])
 
@@ -381,19 +420,26 @@ Return ONLY the HTML code, no explanations or markdown code blocks.
       
       // Build user-friendly error message
       let errorMsg = error.message || 'Unknown error occurred'
+      let tip = 'Try simpler requests like "make the button blue" or "add a header".'
+      
       if (error.message?.includes('timeout')) {
-        errorMsg = 'Request timed out. The AI service may be slow or unavailable. Please try again.'
+        errorMsg = 'Request timed out. The AI service may be overloaded.'
+        tip = isComplexRequest 
+          ? 'For big redesigns, try breaking it into smaller steps: first colors, then layout, then animations.'
+          : 'Try a simpler request or wait a moment and try again.'
       } else if (error.message?.includes('Network') || error.message?.includes('fetch')) {
-        errorMsg = 'Network error. Please check your connection and try again.'
+        errorMsg = 'Network error. Please check your connection.'
+        tip = 'Check your internet connection and try again.'
       } else if (error.response?.status === 500) {
         errorMsg = 'Server error. The AI service may be temporarily unavailable.'
+        tip = 'Wait a moment and try again.'
       }
       
       setChatHistory((prev) => [
         ...prev,
         {
           role: 'assistant',
-          content: `❌ Sorry, I encountered an error: ${errorMsg}\n\nTip: Try simpler requests like "make the button blue" or "add a header".`,
+          content: `❌ ${errorMsg}\n\n💡 **Tip:** ${tip}`,
         },
       ])
       addNotification('error', 'Failed to modify prototype')
@@ -522,10 +568,10 @@ Return ONLY the HTML code, no explanations or markdown code blocks.
    */
   const handleQuickAction = (action: string) => {
     const quickPrompts: Record<string, string> = {
-      'make-responsive': 'Make this prototype fully responsive for mobile devices',
-      'improve-colors': 'Improve the color scheme and make it more modern',
-      'add-animations': 'Add smooth animations and transitions',
-      'dark-mode': 'Add dark mode support with a toggle button',
+      'make-pretty': 'Make this look professional and modern with better colors, spacing, shadows, and typography',
+      'make-responsive': 'Make this fully responsive for mobile devices',
+      'add-animations': 'Add smooth hover effects and transitions',
+      'dark-mode': 'Convert to a dark theme with good contrast',
     }
     setChatMessage(quickPrompts[action] || action)
   }
@@ -747,15 +793,16 @@ Return ONLY the HTML code, no explanations or markdown code blocks.
           <p className="text-xs font-medium text-muted-foreground mb-2">Quick Actions:</p>
           <div className="flex flex-wrap gap-2">
             {[
+              { id: 'make-pretty', label: '✨ Make Pretty' },
               { id: 'make-responsive', label: '📱 Responsive' },
-              { id: 'improve-colors', label: '🎨 Better Colors' },
-              { id: 'add-animations', label: '✨ Animations' },
-              { id: 'dark-mode', label: '🌙 Dark Mode' },
+              { id: 'add-animations', label: '🎬 Animations' },
+              { id: 'dark-mode', label: '🌙 Dark Theme' },
             ].map((action) => (
               <button
                 key={action.id}
                 onClick={() => handleQuickAction(action.id)}
-                className="px-2 py-1 rounded-md text-xs bg-secondary hover:bg-secondary/80 text-foreground transition-all"
+                disabled={isModifying}
+                className="px-2 py-1 rounded-md text-xs bg-secondary hover:bg-secondary/80 text-foreground transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {action.label}
               </button>
