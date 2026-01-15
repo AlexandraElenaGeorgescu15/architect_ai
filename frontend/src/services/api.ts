@@ -61,6 +61,10 @@ export async function testBackendConnection(url?: string): Promise<{
   try {
     const response = await axios.get(`${testUrl}/api/health`, {
       timeout: 5000, // 5 second timeout for health check
+      headers: {
+        // Required for ngrok free tier - bypasses the browser warning page
+        'ngrok-skip-browser-warning': 'true',
+      },
     })
     const latency = Date.now() - start
     
@@ -89,6 +93,8 @@ const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
+    // Required for ngrok free tier - bypasses the browser warning page
+    'ngrok-skip-browser-warning': 'true',
   },
   timeout: 60000, // 60 seconds
 })

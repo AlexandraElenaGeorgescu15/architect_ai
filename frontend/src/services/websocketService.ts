@@ -1,7 +1,21 @@
 import { WebSocketEvent } from '../types'
+import { getBackendUrl } from './api'
 
 // Get WebSocket URL from environment or derive from current location
 const getWebSocketBaseUrl = (): string => {
+  // First, check for custom backend URL configured by user (for ngrok, etc.)
+  const customBackendUrl = getBackendUrl()
+  if (customBackendUrl) {
+    try {
+      const url = new URL(customBackendUrl)
+      // Convert HTTP(S) to WS(S)
+      const wsProtocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+      return `${wsProtocol}//${url.host}`
+    } catch {
+      // Invalid URL, fall through to other options
+    }
+  }
+  
   // Check for explicit WS URL in environment
   const envWsUrl = import.meta.env.VITE_WS_URL
   if (envWsUrl) {
