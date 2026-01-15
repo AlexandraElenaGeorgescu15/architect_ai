@@ -76,13 +76,25 @@ async def get_project_summary(
         import os
         
         # =================================================================
-        # Get ALL user projects (excludes Architect.AI)
+        # Get ALL user projects (excludes Architect.AI and utility folders)
         # =================================================================
         user_project_dirs = get_user_project_directories()
         tool_dir = detect_tool_directory()
         
-        # Filter out tool directory
-        user_project_dirs = [d for d in user_project_dirs if d != tool_dir and 'architect_ai' not in str(d).lower()]
+        # Folders that should never appear as user projects
+        EXCLUDED_FOLDER_NAMES = {
+            'agents', 'components', 'utils', 'shared', 'common', 'lib', 'libs',
+            'node_modules', '__pycache__', '.git', 'dist', 'build', 'bin', 'obj',
+            'archive', 'backup', 'temp', 'tmp', 'cache', '.cache', 'logs',
+        }
+        
+        # Filter out tool directory and excluded folders
+        user_project_dirs = [
+            d for d in user_project_dirs 
+            if d != tool_dir 
+            and 'architect_ai' not in str(d).lower()
+            and d.name.lower() not in EXCLUDED_FOLDER_NAMES
+        ]
         
         # Build project name from all indexed projects
         if len(user_project_dirs) == 1:

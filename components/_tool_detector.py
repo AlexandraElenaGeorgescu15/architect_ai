@@ -187,9 +187,21 @@ def get_user_project_directories() -> list[Path]:
     """
     Get list of user project directories (siblings of tool directory).
     
+    Automatically excludes:
+    - The Architect.AI tool directory itself
+    - Hidden directories (starting with .)
+    - Common utility/internal folder names (agents, node_modules, etc.)
+    
     Returns:
         List of directories to scan
     """
+    # Folders that should never be returned as user projects
+    EXCLUDED_FOLDER_NAMES = {
+        'agents', 'components', 'utils', 'shared', 'common', 'lib', 'libs',
+        'node_modules', '__pycache__', '.git', 'dist', 'build', 'bin', 'obj',
+        'archive', 'backup', 'temp', 'tmp', 'cache', '.cache', 'logs',
+    }
+    
     tool_dir = detect_tool_directory()
     
     if not tool_dir:
@@ -202,7 +214,8 @@ def get_user_project_directories() -> list[Path]:
     for child in parent.iterdir():
         if (child.is_dir() and 
             child != tool_dir and 
-            not child.name.startswith('.')):
+            not child.name.startswith('.') and
+            child.name.lower() not in EXCLUDED_FOLDER_NAMES):
             user_dirs.append(child)
     
     return user_dirs if user_dirs else [parent]

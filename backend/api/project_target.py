@@ -54,9 +54,17 @@ def _detect_project_markers(directory: Path) -> List[str]:
         markers.append('Rust')
     if (directory / 'go.mod').exists():
         markers.append('Go')
-    if any(directory.glob('*.csproj')):
+    # .NET detection - check root, 1 level, and 2 levels deep for .csproj/.sln
+    # .NET solutions often have nested project structures
+    has_csproj = (any(directory.glob('*.csproj')) or 
+                  any(directory.glob('*/*.csproj')) or 
+                  any(directory.glob('*/*/*.csproj')))
+    has_sln = (any(directory.glob('*.sln')) or 
+               any(directory.glob('*/*.sln')) or 
+               any(directory.glob('*/*/*.sln')))
+    if has_csproj:
         markers.append('.NET')
-    if any(directory.glob('*.sln')):
+    if has_sln:
         markers.append('.NET Solution')
     if (directory / 'src').is_dir():
         markers.append('Has src/')
@@ -67,12 +75,27 @@ def _detect_project_markers(directory: Path) -> List[str]:
     return markers
 
 
+# Folders that should never appear as user projects (internal/utility folders)
+EXCLUDED_FOLDER_NAMES = {
+    'agents', 'components', 'utils', 'shared', 'common', 'lib', 'libs',
+    'node_modules', '__pycache__', '.git', 'dist', 'build', 'bin', 'obj',
+    'archive', 'backup', 'temp', 'tmp', 'cache', '.cache', 'logs',
+}
+
+
+def _is_excluded_folder(directory: Path) -> bool:
+    """Check if a folder should be excluded from the project list."""
+    name_lower = directory.name.lower()
+    return name_lower in EXCLUDED_FOLDER_NAMES
+
+
 def _score_directory(directory: Path) -> int:
     """Score a directory to determine if it's a main project."""
     score = 0
     name_lower = directory.name.lower()
     
-    if name_lower in ['agents', 'components', 'utils', 'shared', 'common', 'lib', 'libs']:
+    # Already excluded by _is_excluded_folder, but penalize just in case
+    if name_lower in EXCLUDED_FOLDER_NAMES:
         score -= 100
     
     if (directory / 'package.json').exists():
@@ -87,9 +110,10 @@ def _score_directory(directory: Path) -> int:
         score += 50
     if (directory / 'requirements.txt').exists() or (directory / 'setup.py').exists():
         score += 40
-    if any(directory.glob('*.csproj')):
+    # .NET - check recursively up to 2 levels
+    if any(directory.glob('*.csproj')) or any(directory.glob('*/*.csproj')) or any(directory.glob('*/*/*.csproj')):
         score += 50
-    if any(directory.glob('*.sln')):
+    if any(directory.glob('*.sln')) or any(directory.glob('*/*.sln')) or any(directory.glob('*/*/*.sln')):
         score += 55
     if (directory / 'src').is_dir():
         score += 30
@@ -119,7 +143,8 @@ def _get_current_target() -> Path:
     
     scored_dirs = []
     for d in user_dirs:
-        if d == tool_dir or not d.exists():
+        # Skip tool directory, non-existent, and excluded folder names
+        if d == tool_dir or not d.exists() or _is_excluded_folder(d):
             continue
         score = _score_directory(d)
         scored_dirs.append((d, score))
@@ -150,7 +175,8 @@ async def get_target_info():
     # Build list of available projects
     projects = []
     for d in user_dirs:
-        if d == tool_dir or not d.exists():
+        # Skip tool directory, non-existent, and excluded folder names (like 'agents')
+        if d == tool_dir or not d.exists() or _is_excluded_folder(d):
             continue
         
         score = _score_directory(d)
