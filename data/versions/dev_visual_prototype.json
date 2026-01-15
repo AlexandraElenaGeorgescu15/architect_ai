@@ -1,0 +1,40 @@
+[
+  {
+    "version": 1,
+    "artifact_id": "dev_visual_prototype",
+    "artifact_type": "dev_visual_prototype",
+    "content": "<!-- Main phone list page -->\n<div class=\"phone-list-page\">\n  <h1>Phone List</h1>\n  <button id=\"request-phone-swap-btn\">Request Phone Swap</button>\n  <div id=\"phone-modal\" class=\"modal\">\n    <header>\n      <h2>Request Phone Swap</h2>\n    </header>\n    <form id=\"phone-swap-form\">\n      <!-- Phone to Request dropdown -->\n      <label for=\"phone-to-request\">Phone to Request:</label>\n      <select id=\"phone-to-request\" name=\"phone-to-request\"></select>\n\n      <!-- Phone to Exchange dropdown -->\n      <label for=\"phone-to-exchange\">Phone to Exchange:</label>\n      <select id=\"phone-to-exchange\" name=\"phone-to-exchange\"></select>\n\n      <!-- Reason for Request text area (optional) -->\n      <label for=\"reason-for-request\">Reason for Request:</label>\n      <textarea id=\"reason-for-request\" name=\"reason-for-request\"></textarea>\n\n      <!-- Actions buttons -->\n      <button type=\"submit\">Submit Request</button>\n      <button type=\"cancel\">Cancel</button>\n    </form>\n  </div>\n</div>",
+    "metadata": {
+      "model_used": "gemini-2.0-flash-exp",
+      "provider": "cloud",
+      "validation_score": 100.0,
+      "is_valid": true,
+      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
+      "html_content": null,
+      "quality_prediction": {
+        "label": "high",
+        "confidence": 0.8,
+        "score": 0.8,
+        "reasons": {
+          "notes_depth": 0.2,
+          "notes_structure": 0.05,
+          "context_rag": 0.1,
+          "artifact_complexity": -0.1
+        }
+      },
+      "job_id": "gen_80711bad",
+      "attempts": [
+        {
+          "model": "gemini-2.0-flash-exp",
+          "provider": "gemini",
+          "content": "Here is a visual prototype code (HTML/CSS/JS) that demonstrates the UI/UX design for the Phone Swap Request Feature:\n\n**index.html**\n```html\n<!-- Main phone list page -->\n<div class=\"phone-list-page\">\n  <h1>Phone List</h1>\n  <button id=\"request-phone-swap-btn\">Request Phone Swap</button>\n  <div id=\"phone-modal\" class=\"modal\">\n    <header>\n      <h2>Request Phone Swap</h2>\n    </header>\n    <form id=\"phone-swap-form\">\n      <!-- Phone to Request dropdown -->\n      <label for=\"phone-to-request\">Phone to Request:</label>\n      <select id=\"phone-to-request\" name=\"phone-to-request\"></select>\n\n      <!-- Phone to Exchange dropdown -->\n      <label for=\"phone-to-exchange\">Phone to Exchange:</label>\n      <select id=\"phone-to-exchange\" name=\"phone-to-exchange\"></select>\n\n      <!-- Reason for Request text area (optional) -->\n      <label for=\"reason-for-request\">Reason for Request:</label>\n      <textarea id=\"reason-for-request\" name=\"reason-for-request\"></textarea>\n\n      <!-- Actions buttons -->\n      <button type=\"submit\">Submit Request</button>\n      <button type=\"cancel\">Cancel</button>\n    </form>\n  </div>\n</div>\n```\n**styles.css**\n```css\n/* Global styles */\n\n.phone-list-page {\n  display: flex;\n  flex-direction: column;\n  align-items: center;\n}\n\n#phone-modal {\n  position: fixed;\n  top: 0;\n  left: 0;\n  width: 100%;\n  height: 100vh;\n  background-color: rgba(0, 0, 0, 0.5);\n  display: none;\n}\n\n#phone-modal.active {\n  display: block;\n}\n\n.modal-header {\n  padding: 1rem;\n  border-bottom: 1px solid #ddd;\n}\n\n.modal-body {\n  padding: 1rem;\n}\n\n.modal-footer {\n  padding: 1rem;\n  text-align: right;\n}\n```\n**script.js**\n```javascript\n// Get the phone list page elements\nconst phoneListPage = document.getElementById('phone-list-page');\nconst requestPhoneSwapBtn = document.getElementById('request-phone-swap-btn');\nconst phoneModal = document.getElementById('phone-modal');\n\n// Add event listener to the button\nrequestPhoneSwapBtn.addEventListener('click', () => {\n  // Toggle the modal visibility\n  phoneModal.classList.toggle('active');\n});\n\n// Get the form elements\nconst phoneSwapForm = document.getElementById('phone-swap-form');\nconst phoneToRequestSelect = document.getElementById('phone-to-request');\nconst phoneToExchangeSelect = document.getElementById('phone-to-exchange');\nconst reasonForRequestTextarea = document.getElementById('reason-for-request');\n\n// Add event listener to the submit button\nphoneSwapForm.addEventListener('submit', (e) => {\n  e.preventDefault();\n  // Submit the form data to the API endpoint\n  const formData = new FormData(phoneSwapForm);\n  fetch('/api/phone-swaps', { method: 'POST', body: formData })\n    .then((response) => response.json())\n    .then((data) => {\n      console.log(data);\n      // Close the modal and display a confirmation message\n      phoneModal.classList.remove('active');\n      const confirmationMessage = document.createElement('p');\n      confirmationMessage.textContent = `Phone swap request submitted successfully!`;\n      phoneListPage.appendChild(confirmationMessage);\n    })\n    .catch((error) => {\n      console.error(error);\n      // Display an error message if the submission fails\n      const errorMessage = document.createElement('p');\n      errorMessage.textContent = `Error submitting phone swap request: ${error.message}`;\n      phoneListPage.appendChild(errorMessage);\n    });\n});\n```\nThis visual prototype code includes:\n\n1. A main phone list page with a button to trigger the modal.\n2. A modal popup with a form containing three fields: Phone to Request, Phone to Exchange, and Reason for Request (optional).\n3. Actions buttons: Submit Request and Cancel.\n4. JavaScript code to handle the form submission and API endpoint call.\n\nNote that this is just a basic implementation, and you may need to modify it based on your specific requirements and project context.",
+          "score": 100.0,
+          "is_valid": true,
+          "errors": []
+        }
+      ]
+    },
+    "created_at": "2026-01-15T18:46:45.825324",
+    "is_current": true
+  }
+]

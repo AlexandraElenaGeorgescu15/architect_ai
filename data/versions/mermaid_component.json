@@ -126,6 +126,19 @@
       "is_valid": true
     },
     "created_at": "2026-01-15T18:28:07.269650",
+    "is_current": false
+  },
+  {
+    "version": 9,
+    "artifact_id": "mermaid_component",
+    "artifact_type": "mermaid_component",
+    "content": "graph TD\n    APIEndpoint[\"POST /api/phone-swaps\"]\n    style APIEndpoint fill:#22c55e,stroke:#333,stroke-width:2px",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_component"
+    },
+    "created_at": "2026-01-15T18:43:12.855799",
     "is_current": true
   }
 ]

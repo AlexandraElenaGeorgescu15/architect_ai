@@ -3,7 +3,7 @@
  * Allows users to modify visual prototypes and ALL HTML artifacts through natural language conversation
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { Loader2, MessageSquare, Code, Eye, Send, Sparkles, RefreshCw, PanelRightClose, PanelRightOpen, X } from 'lucide-react'
 import { useArtifactStore } from '../stores/artifactStore'
 import { useUIStore } from '../stores/uiStore'
@@ -61,17 +61,32 @@ export default function InteractivePrototypeEditor({ artifactType }: Interactive
   const isLoading = useArtifactStore(state => state.isLoading)
   const { addNotification } = useUIStore()
 
+  // DEBUG: Log on mount/unmount to verify component lifecycle
+  useEffect(() => {
+    console.log(`🟢 [InteractivePrototypeEditor] MOUNTED for type: "${artifactType}"`)
+    return () => {
+      console.log(`🔴 [InteractivePrototypeEditor] UNMOUNTED for type: "${artifactType}"`)
+    }
+  }, [artifactType])
+
   // Get HTML artifacts - filter by specific type if provided, otherwise get all HTML types
   // CRITICAL: This must be computed from the reactive artifacts array
-  const prototypeArtifacts = artifacts.filter((a) => {
-    if (artifactType) {
-      return a.type === artifactType
-    }
-    // Default: get all HTML-like artifacts
-    return a.type === 'dev_visual_prototype' || 
-           a.type === 'html_prototype' || 
-           a.type.startsWith('html_')
-  }).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+  const prototypeArtifacts = useMemo(() => {
+    const filtered = artifacts.filter((a) => {
+      if (artifactType) {
+        return a.type === artifactType
+      }
+      // Default: get all HTML-like artifacts
+      return a.type === 'dev_visual_prototype' || 
+             a.type === 'html_prototype' || 
+             a.type.startsWith('html_')
+    }).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+    
+    console.log(`📦 [InteractivePrototypeEditor] Filtered for "${artifactType}": found ${filtered.length} artifacts`, 
+      filtered.map(a => ({ id: a.id, type: a.type })))
+    
+    return filtered
+  }, [artifacts, artifactType])
 
   const [selectedArtifactId, setSelectedArtifactId] = useState<string | null>(null)
   const [htmlContent, setHtmlContent] = useState('')
@@ -87,22 +102,31 @@ export default function InteractivePrototypeEditor({ artifactType }: Interactive
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
-  // Get selected artifact - prefer the latest matching artifact if none selected
+  // CRITICAL FIX: Reset selection when artifact type changes
+  // This prevents showing the wrong artifact when switching between types
+  useEffect(() => {
+    console.log('📦 [InteractivePrototypeEditor] Artifact type changed to:', artifactType, '- resetting selection')
+    setSelectedArtifactId(null)
+    setHtmlContent('')
+    setChatHistory([])
+  }, [artifactType])
+
+  // Get selected artifact - MUST search within filtered prototypeArtifacts, not ALL artifacts
   const selectedArtifact = selectedArtifactId
-    ? artifacts.find((a) => a.id === selectedArtifactId)
+    ? prototypeArtifacts.find((a) => a.id === selectedArtifactId) || prototypeArtifacts[0] || null
     : prototypeArtifacts[0] || null
 
   // Auto-select the latest artifact when a new one is generated
   useEffect(() => {
     if (prototypeArtifacts.length > 0) {
       const latestArtifact = prototypeArtifacts[0]
-      // Always update to latest if no selection or if a new artifact was generated
-      if (!selectedArtifactId || !artifacts.find(a => a.id === selectedArtifactId)) {
-        console.log('📦 [InteractivePrototypeEditor] Auto-selecting latest artifact:', latestArtifact.id)
+      // Always update to latest if no selection or if current selection is not in filtered list
+      if (!selectedArtifactId || !prototypeArtifacts.find(a => a.id === selectedArtifactId)) {
+        console.log('📦 [InteractivePrototypeEditor] Auto-selecting latest artifact:', latestArtifact.id, 'for type:', artifactType)
         setSelectedArtifactId(latestArtifact.id)
       }
     }
-  }, [prototypeArtifacts.length, prototypeArtifacts[0]?.id, selectedArtifactId, artifacts])
+  }, [prototypeArtifacts.length, prototypeArtifacts[0]?.id, selectedArtifactId, artifactType])
 
   // Helper function to sanitize HTML content and add viewport meta
   const sanitizeHtmlContent = (html: string): string => {
@@ -528,9 +552,18 @@ Return ONLY the HTML code, no explanations or markdown code blocks.
         <div className="text-center">
           <Sparkles className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
           <p className="text-lg font-medium text-muted-foreground mb-2">No {getArtifactTypeName()} available</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mb-4">
             Generate a {getArtifactTypeName().toLowerCase()} first to use this AI editor
           </p>
+          {/* Debug info */}
+          <div className="flex items-center justify-center gap-2">
+            <span className="px-2 py-1 rounded text-xs font-mono bg-green-500/20 text-green-600 dark:text-green-400">
+              InteractivePrototypeEditor
+            </span>
+            <span className="px-2 py-1 rounded text-xs font-mono bg-gray-500/20 text-gray-600 dark:text-gray-400">
+              type: {artifactType || 'none'}
+            </span>
+          </div>
         </div>
       </div>
     )
@@ -544,7 +577,11 @@ Return ONLY the HTML code, no explanations or markdown code blocks.
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-secondary/20 flex-shrink-0">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
-            <h3 className="font-bold text-foreground">Interactive Prototype</h3>
+            <h3 className="font-bold text-foreground">{getArtifactTypeName()}</h3>
+            {/* Debug badge showing actual type */}
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-green-500/20 text-green-600 dark:text-green-400">
+              {artifactType || 'html'}
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <button

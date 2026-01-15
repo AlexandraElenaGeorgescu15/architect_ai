@@ -48,6 +48,7 @@ function lazyWithRetry<T extends ComponentType<any>>(
 const ArtifactTabs = lazyWithRetry(() => import('./artifacts/ArtifactTabs'))
 const CodeEditor = lazyWithRetry(() => import('./CodeEditor'))
 const ExportManager = lazyWithRetry(() => import('./ExportManager'))
+const MarkdownArtifactViewer = lazyWithRetry(() => import('./MarkdownArtifactViewer'))
 const SemanticSearchPanel = lazyWithRetry(() => import('./SemanticSearchPanel'))
 const ApiKeysManager = lazyWithRetry(() => import('./ApiKeysManager'))
 const InteractivePrototypeEditor = lazyWithRetry(() => import('./InteractivePrototypeEditor'))
@@ -855,11 +856,19 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                       </>
                     ) : props.selectedArtifactType === 'code_prototype' ? (
                       <Suspense fallback={<LoadingFallback />}>
-                        <CodeWithTestsEditor />
+                        <CodeWithTestsEditor key="code-prototype" />
+                      </Suspense>
+                    ) : ['jira', 'backlog', 'personas', 'workflows', 'estimations', 'feature_scoring', 'api_docs'].includes(props.selectedArtifactType) ? (
+                      /* PM/Documentation artifacts - render as formatted Markdown */
+                      <Suspense fallback={<LoadingFallback />}>
+                        {/* Key forces remount when type changes to ensure clean state */}
+                        <MarkdownArtifactViewer key={`md-${props.selectedArtifactType}`} artifactType={props.selectedArtifactType} />
                       </Suspense>
                     ) : (
+                      /* HTML artifacts (visual_prototype, html_*) - render in iframe with AI modifier */
                       <Suspense fallback={<LoadingFallback />}>
-                        <InteractivePrototypeEditor artifactType={props.selectedArtifactType} />
+                        {/* Key forces remount when type changes to ensure clean state */}
+                        <InteractivePrototypeEditor key={`html-${props.selectedArtifactType}`} artifactType={props.selectedArtifactType} />
                       </Suspense>
                     )}
                  </div>
