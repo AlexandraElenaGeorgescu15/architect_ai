@@ -73,15 +73,36 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
     edgesRef.current = edges
   }, [edges])
 
-  // Get selected artifact
-  const selectedArtifact = selectedArtifactId
-    ? artifacts.find((a) => a.id === selectedArtifactId)
-    : null
-
   // Get diagram artifacts (only Mermaid, no HTML)
   const diagramArtifacts = artifacts.filter(
     (a) => a.type.startsWith('mermaid_')
   )
+
+  // Get selected artifact - try multiple lookup strategies
+  const selectedArtifact = useMemo(() => {
+    if (!selectedArtifactId) return null
+    
+    // Strategy 1: Exact ID match
+    let found = artifacts.find((a) => a.id === selectedArtifactId)
+    if (found) return found
+    
+    // Strategy 2: Match by type (IDs are often artifact types like "mermaid_erd")
+    found = artifacts.find((a) => a.type === selectedArtifactId)
+    if (found) {
+      console.debug('[EnhancedDiagramEditor] Found artifact by type match:', found.id)
+      return found
+    }
+    
+    // Strategy 3: Check if selectedArtifactId is a type-like string
+    found = diagramArtifacts.find((a) => a.type === selectedArtifactId)
+    if (found) {
+      console.debug('[EnhancedDiagramEditor] Found diagram by type:', found.id)
+      return found
+    }
+    
+    console.debug('[EnhancedDiagramEditor] Artifact not found:', selectedArtifactId)
+    return null
+  }, [selectedArtifactId, artifacts, diagramArtifacts])
 
   // Update selected artifact when prop changes
   useEffect(() => {

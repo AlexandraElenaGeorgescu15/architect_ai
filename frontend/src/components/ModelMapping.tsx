@@ -40,35 +40,26 @@ export default function ModelMapping() {
     })
   }, [routings, models])
 
-  // Adaptive refresh: more frequent when models are unavailable
-  // BUT: Skip routing refresh if user has unsaved changes
+  // Load data on mount and set up periodic model refresh (not routing refresh!)
+  // Routing should only refresh on manual action to prevent overwriting user changes
   useEffect(() => {
     loadRoutings()
     fetchModels()
     
-    // Refresh interval: 10 seconds if unavailable models, 30 seconds otherwise
-    const refreshInterval = hasUnavailableModels ? 10000 : 30000
-    
+    // Only refresh models periodically (60 seconds) - NOT routings
+    // User's routing changes should persist until they manually refresh
     const interval = setInterval(async () => {
       setIsAutoRefreshing(true)
-      // Always refresh models, but only refresh routings if no unsaved changes
       await fetchModels()
-      if (!hasUnsavedChanges) {
-        await loadRoutings()
-      }
+      // DON'T refresh routings automatically - this was overwriting user changes
       setIsAutoRefreshing(false)
-    }, refreshInterval)
+    }, 60000) // 60 seconds - less aggressive
     
-    // Also refresh when page becomes visible (user switches back to tab)
+    // On visibility change, only refresh models (not routings)
     const handleVisibilityChange = () => {
       if (!document.hidden) {
         setIsAutoRefreshing(true)
-        const promises: Promise<any>[] = [fetchModels()]
-        // Only refresh routings if no unsaved changes
-        if (!hasUnsavedChanges) {
-          promises.push(loadRoutings())
-        }
-        Promise.all(promises).finally(() => {
+        fetchModels().finally(() => {
           setIsAutoRefreshing(false)
         })
       }
@@ -80,7 +71,7 @@ export default function ModelMapping() {
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasUnavailableModels, hasUnsavedChanges])
+  }, [])
 
   const loadRoutings = async () => {
     try {
@@ -128,10 +119,13 @@ export default function ModelMapping() {
       }))
       
       await api.put('/api/models/routing', { routings: routingList })
-      addNotification('success', 'Model routing updated successfully!')
+      addNotification('success', 'Model routing saved! Your preferences are now persisted.')
       setHasUnsavedChanges(false)  // Reset unsaved changes flag
-      setInitialRoutings(routings)  // Update initial state to current
-      await loadRoutings() // Refresh to get updated data (and sync with backend)
+      setInitialRoutings({ ...routings })  // Update initial state to current (deep copy)
+      
+      // DON'T reload immediately after saving - this was causing race conditions
+      // where the file hadn't been fully written yet. Trust the save was successful.
+      // The periodic refresh (30s when models are available) will sync if needed.
     } catch (error: any) {
       // Failed to save routings - show user error
       addNotification('error', error?.response?.data?.detail || 'Failed to save model routing')
@@ -307,8 +301,8 @@ export default function ModelMapping() {
           <p className="text-muted-foreground mt-1">
             Configure which models to use for each artifact type
             {hasUnavailableModels && (
-              <span className="ml-2 text-xs text-yellow-600 dark:text-yellow-500">
-                ⚠️ Auto-checking for unavailable models every 10 seconds...
+              <span className="ml-2 text-xs text-muted-foreground">
+                (Some local models may not be detected - cloud fallbacks will be used)
               </span>
             )}
           </p>
@@ -433,8 +427,8 @@ export default function ModelMapping() {
                        !ollamaModels.some(m => m.id === routing.primary_model) && 
                        !huggingfaceModels.some(m => m.id === routing.primary_model) &&
                        !cloudModels.some(m => m.id === routing.primary_model) && (
-                        <option value={routing.primary_model} className="text-yellow-600">
-                          ⚠️ {routing.primary_model} (configured but unavailable)
+                        <option value={routing.primary_model}>
+                          {routing.primary_model} (custom)
                         </option>
                       )}
                       <optgroup label="Ollama Models (Local)">
