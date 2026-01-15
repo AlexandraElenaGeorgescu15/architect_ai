@@ -31,6 +31,36 @@ from backend.core.middleware import (
 from backend.core.config import settings
 from backend.models.errors import ErrorResponse
 
+
+# =============================================================================
+# Custom Log Filter - Exclude noisy endpoints from uvicorn access logs
+# =============================================================================
+class EndpointFilter(logging.Filter):
+    """Filter out noisy endpoints from uvicorn access logs."""
+    
+    # Endpoints to exclude from access logs (checked with 'in' for flexibility)
+    EXCLUDED_PATTERNS = [
+        "/health",
+        "/api/health", 
+        "/metrics",
+        "/favicon.ico",
+        "/api/docs",
+        "/api/redoc",
+        "/api/openapi.json",
+    ]
+    
+    def filter(self, record: logging.LogRecord) -> bool:
+        """Return False to exclude the log record, True to include it."""
+        message = record.getMessage()
+        
+        # Check if the log message contains any excluded endpoint pattern
+        for pattern in self.EXCLUDED_PATTERNS:
+            if pattern in message:
+                return False
+        
+        return True
+
+
 # Configure structured logging
 logging.basicConfig(
     level=logging.INFO,
@@ -39,6 +69,11 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout)
     ]
 )
+
+# Apply filter to uvicorn loggers to reduce noise from health checks
+_endpoint_filter = EndpointFilter()
+logging.getLogger("uvicorn.access").addFilter(_endpoint_filter)
+logging.getLogger("uvicorn").addFilter(_endpoint_filter)
 
 # Suppress ChromaDB telemetry errors (posthog API mismatch)
 # Set this before any ChromaDB imports to prevent errors during initialization
@@ -733,11 +768,16 @@ app.include_router(assistant_router.router)  # Intelligent Assistant - suggestio
 
 if __name__ == "__main__":
     import uvicorn
+    
+    # Custom uvicorn log config to apply endpoint filter
+    log_config = uvicorn.config.LOGGING_CONFIG
+    
     uvicorn.run(
         "backend.main:app",
         host="0.0.0.0",
         port=8000,
         reload=True,
-        log_level="info"
+        log_level="info",
+        log_config=log_config
     )
 
