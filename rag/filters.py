@@ -50,7 +50,7 @@ def sanitize_prompt_input(user_input: str, max_length: int = 10000) -> str:
     Sanitize user input to prevent prompt injection attacks.
     
     This function:
-    1. Truncates to max_length to prevent context window overflow
+    1. Uses SMART truncation to preserve important content (not hard cut-off)
     2. Detects and neutralizes common prompt injection patterns
     3. Removes potentially dangerous control characters
     4. Logs any sanitization that was applied
@@ -71,10 +71,41 @@ def sanitize_prompt_input(user_input: str, max_length: int = 10000) -> str:
     sanitized = user_input
     injection_detected = False
     
-    # 1. Truncate to prevent context window overflow
+    # 1. Smart truncation to prevent context window overflow
+    # Instead of hard cut-off, find natural break points
     if len(sanitized) > max_length:
-        logger.warning(f"⚠️ [PROMPT_SANITIZE] Input truncated from {len(sanitized)} to {max_length} chars")
-        sanitized = sanitized[:max_length] + "\n[... truncated ...]"
+        original_len = len(sanitized)
+        
+        # Try to truncate at natural break points
+        # Priority: paragraph breaks > sentence ends > word boundaries
+        truncation_point = max_length
+        
+        # Look for a paragraph break near the limit (within last 20%)
+        search_start = int(max_length * 0.8)
+        last_para_break = sanitized.rfind('\n\n', search_start, max_length)
+        if last_para_break > search_start:
+            truncation_point = last_para_break
+        else:
+            # Look for sentence end (. or ! or ?)
+            for punct in ['. ', '! ', '? ', '.\n', '!\n', '?\n']:
+                last_sentence = sanitized.rfind(punct, search_start, max_length)
+                if last_sentence > search_start:
+                    truncation_point = last_sentence + len(punct)
+                    break
+            else:
+                # Look for word boundary (space)
+                last_space = sanitized.rfind(' ', search_start, max_length)
+                if last_space > search_start:
+                    truncation_point = last_space
+        
+        sanitized = sanitized[:truncation_point].rstrip()
+        
+        # Add truncation indicator
+        truncated_chars = original_len - len(sanitized)
+        if truncated_chars > 100:
+            sanitized += f"\n\n[... {truncated_chars} characters truncated at natural break point ...]"
+        
+        logger.info(f"⚠️ [PROMPT_SANITIZE] Smart truncation: {original_len} → {len(sanitized)} chars (preserved: {len(sanitized)/original_len*100:.1f}%)")
     
     # 2. Detect and neutralize prompt injection patterns
     for pattern in PROMPT_INJECTION_PATTERNS:

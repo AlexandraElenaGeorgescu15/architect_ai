@@ -301,8 +301,13 @@ class HuggingFaceClient:
                 full_prompt = prompt
             
             # Generate in thread pool (blocking operation)
+            # Use larger context window to retain more context
             def generate_text():
-                inputs = tokenizer(full_prompt, return_tensors="pt", truncation=True, max_length=2048)
+                # Use model's max position embeddings or default to 8192 for larger context
+                model_max_length = getattr(model.config, 'max_position_embeddings', 8192)
+                # Use at least 8192 tokens for comprehensive context (was hardcoded 2048)
+                effective_max_length = min(max(model_max_length, 8192), 16384)
+                inputs = tokenizer(full_prompt, return_tensors="pt", truncation=True, max_length=effective_max_length)
                 inputs = {k: v.to(self.device) for k, v in inputs.items()}
                 
                 with torch.no_grad():

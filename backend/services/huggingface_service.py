@@ -498,8 +498,11 @@ class HuggingFaceService:
                         pass
                 
                 # Create a Modelfile for the GGUF (most reliable method)
-                # Use forward slashes for the path in Modelfile (works on all platforms)
-                gguf_path_str = str(gguf_path).replace("\\", "/")
+                # IMPORTANT: Use ABSOLUTE path and forward slashes for cross-platform compatibility
+                # Ollama requires absolute paths in Modelfile for GGUF references
+                gguf_absolute_path = gguf_path.resolve()  # Convert to absolute path
+                gguf_path_str = str(gguf_absolute_path).replace("\\", "/")
+                
                 modelfile_path = model_dir / f"{ollama_name}.Modelfile"
                 modelfile_content = f"""FROM "{gguf_path_str}"
 TEMPLATE \"\"\"{{{{ .Prompt }}}}\"\"\"
@@ -509,6 +512,7 @@ PARAMETER top_k 40
 """
                 modelfile_path.write_text(modelfile_content, encoding='utf-8')
                 logger.info(f"Created Modelfile at: {modelfile_path}")
+                logger.info(f"GGUF absolute path in Modelfile: {gguf_path_str}")
                 
                 # Use ollama create with Modelfile (works reliably with GGUF)
                 # Quote the path for Windows compatibility
@@ -540,38 +544,36 @@ PARAMETER top_k 40
                     # Log the error details for debugging
                     logger.error(f"Ollama create failed. stdout: {stdout}, stderr: {stderr}")
                     
-                    # Try direct import as fallback (older Ollama versions)
-                    logger.info("Modelfile approach failed, trying direct import...")
-                    if progress_callback:
-                        try:
-                            await progress_callback(0.5, "Trying direct import...")
-                        except Exception:
-                            pass
+                    # NOTE: `ollama import` command was deprecated/removed in newer Ollama versions
+                    # Instead, provide helpful error and suggest manual resolution
+                    error_details = stderr or stdout or "Unknown error"
                     
-                    result = await _run_subprocess(
-                        f'ollama import {ollama_name} "{gguf_path_str}"'
-                    )
-                    stdout = result.stdout or ""
-                    stderr = result.stderr or ""
-                    
-                    if result.returncode == 0:
-                        logger.info(f"Successfully imported {ollama_name} to Ollama")
-                        await self._register_in_model_service(ollama_name, model_id)
-                        return {
-                            "success": True,
-                            "message": f"Successfully imported {ollama_name} in Ollama",
-                            "ollama_name": ollama_name,
-                            "method": "import"
-                        }
+                    # Check for common errors and provide specific guidance
+                    if "file does not exist" in error_details.lower() or "no such file" in error_details.lower():
+                        suggestion = f"GGUF file path may be incorrect. Verify the file exists at: {gguf_path_str}"
+                    elif "invalid modelfile" in error_details.lower():
+                        suggestion = f"The Modelfile syntax may be incorrect. Check the Modelfile at: {modelfile_path}"
+                    elif "layer does not exist" in error_details.lower():
+                        suggestion = "The GGUF file may be corrupted or incompatible. Try re-downloading from HuggingFace."
                     else:
-                        error_msg = f"Failed to create Ollama model: {stderr or stdout or 'Unknown error'}"
-                        logger.error(error_msg)
-                        return {
-                            "success": False,
-                            "error": error_msg,
-                            "ollama_name": ollama_name,
-                            "suggestion": "Try running the command manually: ollama create " + ollama_name + " -f <modelfile_path>"
-                        }
+                        suggestion = (
+                            f"Try creating the model manually:\n"
+                            f"1. Open terminal\n"
+                            f"2. Run: ollama create {ollama_name} -f \"{modelfile_path_str}\"\n"
+                            f"Or use the GGUF file directly with: ollama run --modelfile \"{modelfile_path_str}\""
+                        )
+                    
+                    error_msg = f"Failed to create Ollama model: {error_details}"
+                    logger.error(f"{error_msg}\nSuggestion: {suggestion}")
+                    
+                    return {
+                        "success": False,
+                        "error": error_msg,
+                        "ollama_name": ollama_name,
+                        "suggestion": suggestion,
+                        "modelfile_path": str(modelfile_path),
+                        "gguf_path": gguf_path_str
+                    }
             else:
                 # No GGUF file found - try ollama pull if model exists on Ollama Hub
                 logger.info(f"No GGUF file found. Attempting to pull from Ollama Hub...")

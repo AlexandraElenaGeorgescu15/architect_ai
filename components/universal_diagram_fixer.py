@@ -257,7 +257,8 @@ class UniversalDiagramFixer:
         return None
     
     def _fix_erd_diagram(self, content: str) -> str:
-        """Fix ERD diagram syntax"""
+        """Fix ERD diagram syntax with comprehensive error handling"""
+        import re
         lines = content.strip().split('\n')
         fixed_lines = []
         entities = {}
@@ -265,11 +266,60 @@ class UniversalDiagramFixer:
         current_entity = None
         current_entity_fields = []
         
+        # Pre-process: Fix common ERD syntax errors
+        processed_lines = []
         for line in lines:
+            original_line = line
             line = line.strip()
             
             if not line or line.startswith('```'):
                 continue
+            
+            # Fix: Convert classDiagram-style syntax to ERD
+            # "class USER { - id (pk) }" -> "USER { int id PK }"
+            if line.lower().startswith('class ') and '{' not in line:
+                line = line.replace('class ', '').replace('CLASS ', '')
+                self.errors_fixed.append("Converted class declaration to ERD entity")
+            
+            # Fix: Convert invalid relationship markers
+            # "USER -> ORDER" should be "USER ||--o{ ORDER"
+            if ' -> ' in line and '||' not in line and '{' not in line:
+                parts = line.split(' -> ')
+                if len(parts) == 2:
+                    line = f'{parts[0].strip()} ||--o{{ {parts[1].strip()} : has'
+                    self.errors_fixed.append("Converted -> to ERD relationship")
+            
+            # Fix: ERD entities can't have quoted names
+            if '{' in line and '"' in line:
+                # Remove quotes from entity names
+                line = re.sub(r'"(\w+)"(\s*\{)', r'\1\2', line)
+                self.errors_fixed.append("Removed quotes from entity name")
+            
+            # Fix: Field type must come first in ERD
+            # "id int PK" should be "int id PK"
+            field_match = re.match(r'^(\s*)(\w+)\s+(int|string|varchar|text|date|datetime|boolean|decimal|float|timestamp)\s*(PK|FK)?', line)
+            if field_match:
+                indent = field_match.group(1)
+                field_name = field_match.group(2)
+                field_type = field_match.group(3)
+                key = field_match.group(4) or ''
+                line = f'{indent}{field_type} {field_name} {key}'.strip()
+                self.errors_fixed.append(f"Reordered field definition: {field_name}")
+            
+            # Fix: Invalid characters in entity/field names
+            if '{' in line or any(rel in line for rel in ['||', '}|', '|{', 'o{']):
+                # Clean up entity names (before {)
+                if '{' in line and '||' not in line:
+                    parts = line.split('{')
+                    entity_part = re.sub(r'[^\w\s]', '', parts[0]).strip()
+                    if entity_part:
+                        line = f'{entity_part} {{{parts[1]}' if len(parts) > 1 else f'{entity_part} {{'
+            
+            processed_lines.append(line)
+        
+        # Main processing loop
+        for line in processed_lines:
+            line = line.strip()
             
             # Ensure first line is erDiagram
             if not fixed_lines:
@@ -287,6 +337,8 @@ class UniversalDiagramFixer:
             # Detect entity definition start
             if '{' in line and not ('||' in line or '}}' in line or line.count('{') > 1):
                 entity_name = line.split('{')[0].strip()
+                # Clean entity name
+                entity_name = re.sub(r'[^\w]', '', entity_name)
                 if entity_name:
                     current_entity = entity_name
                     current_entity_fields = []
@@ -299,24 +351,66 @@ class UniversalDiagramFixer:
                 current_entity_fields = []
                 continue
             
-            # Detect field definition
-            if current_entity and any(t in line for t in ['int ', 'string ', 'date ', 'decimal ', 'boolean ', 'text ', 'varchar ', 'timestamp ']):
-                current_entity_fields.append('        ' + line)
-                continue
+            # Detect field definition (with type)
+            if current_entity:
+                # Try to parse as field: "type name KEY" or just "type name"
+                field_match = re.match(r'^(int|string|varchar|text|date|datetime|boolean|decimal|float|timestamp|uuid|bigint)\s+(\w+)\s*(PK|FK)?', line, re.IGNORECASE)
+                if field_match:
+                    field_type = field_match.group(1).lower()
+                    field_name = field_match.group(2)
+                    key = f' {field_match.group(3)}' if field_match.group(3) else ''
+                    current_entity_fields.append(f'        {field_type} {field_name}{key}')
+                    continue
+                # Also accept lines that look like fields (have underscores, typical field names)
+                elif re.match(r'^\w+(_\w+)*$', line):
+                    # Guess field type based on name
+                    field_type = 'string'
+                    if line.endswith('_id') or line == 'id':
+                        field_type = 'int'
+                    elif 'date' in line.lower() or 'time' in line.lower():
+                        field_type = 'datetime'
+                    elif line.startswith('is_') or line.startswith('has_'):
+                        field_type = 'boolean'
+                    
+                    key = ' PK' if line == 'id' else (' FK' if line.endswith('_id') else '')
+                    current_entity_fields.append(f'        {field_type} {line}{key}')
+                    self.errors_fixed.append(f"Inferred type for field: {line}")
+                    continue
             
-            # Detect relationship
-            if any(rel in line for rel in ['||--', '}}--', 'o{', '|{', '{|', 'o|']):
-                relationships.append('    ' + line)
+            # Detect relationship with more flexible matching
+            relationship_patterns = [
+                r'(\w+)\s*([\|\}o\{]+--[\|\}o\{]+)\s*(\w+)\s*:\s*(.+)',  # Full: A ||--o{ B : label
+                r'(\w+)\s*([\|\}o\{]+--[\|\}o\{]+)\s*(\w+)',  # Without label: A ||--o{ B
+            ]
+            
+            is_relationship = False
+            for pattern in relationship_patterns:
+                rel_match = re.match(pattern, line)
+                if rel_match:
+                    entity1 = rel_match.group(1)
+                    rel_type = rel_match.group(2)
+                    entity2 = rel_match.group(3)
+                    label = rel_match.group(4) if len(rel_match.groups()) > 3 else 'relates'
+                    relationships.append(f'    {entity1} {rel_type} {entity2} : {label}')
+                    is_relationship = True
+                    break
+            
+            if is_relationship:
                 continue
+        
+        # Handle case where entity wasn't closed
+        if current_entity and current_entity_fields:
+            entities[current_entity] = current_entity_fields
+            self.errors_fixed.append(f"Auto-closed entity: {current_entity}")
         
         # Build fixed ERD
         if not entities and not relationships:
             self.errors_fixed.append("ERD appears empty - added sample structure")
             return """erDiagram
-    ENTITY {{
+    ENTITY {
         int id PK
         string name
-    }}"""
+    }"""
         
         # Add entities
         for entity_name, fields in entities.items():
@@ -377,6 +471,10 @@ class UniversalDiagramFixer:
                 if line != original_line:
                     self.errors_fixed.append("Fixed invalid arrow syntax (removed trailing |>)")
             
+            # Issue 1b: Fix reversed |> arrow to proper --> syntax
+            # A|>B should become A --> B  
+            line = re.sub(r'(\w+)\s*\|>\s*(\w+)', r'\1 --> \2', line)
+            
             # Issue 2: Missing quotes in labels with spaces
             if '[' in line and ']' in line:
                 match = re.search(r'\[([^\]]+)\]', line)
@@ -386,9 +484,35 @@ class UniversalDiagramFixer:
                         line = line.replace(f'[{label}]', f'["{label}"]')
                         self.errors_fixed.append("Added quotes to labels with spaces")
             
+            # Issue 2b: Fix unbalanced quotes in labels
+            if '[' in line and ']' in line:
+                # Count quotes inside brackets
+                bracket_content = re.search(r'\[([^\]]*)\]', line)
+                if bracket_content:
+                    inside = bracket_content.group(1)
+                    quote_count = inside.count('"')
+                    if quote_count % 2 != 0:
+                        # Unbalanced quotes - remove them all
+                        fixed_inside = inside.replace('"', '')
+                        line = line.replace(f'[{inside}]', f'[{fixed_inside}]')
+                        self.errors_fixed.append("Fixed unbalanced quotes in label")
+            
             # Issue 3: Fix arrow syntax
             line = re.sub(r'--+>', '-->', line)  # Multiple dashes to standard arrow
             line = re.sub(r'==+>', '==>', line)  # Bold arrows
+            
+            # Issue 3b: Fix malformed arrows like -.- or -..- to -.->
+            line = re.sub(r'-\.-(?!>)', '-.->', line)
+            
+            # Issue 3c: Fix double arrow heads --> --> to single -->
+            line = re.sub(r'-->\s*-->', '-->', line)
+            
+            # Issue 4: Fix node definition with missing closing bracket
+            # A[Start -> B should become A[Start] --> B
+            if re.search(r'\[[^\]]*$', line):
+                # Line has unclosed bracket - try to fix
+                line = re.sub(r'\[([^\]]*?)(\s*-+>)', r'[\1]\2', line)
+                self.errors_fixed.append("Fixed unclosed bracket in node definition")
             
             # Issue 4: Remove explanatory text lines (comprehensive patterns)
             explanatory_line_patterns = [
@@ -441,9 +565,11 @@ class UniversalDiagramFixer:
         return '\n'.join(fixed_lines)
     
     def _fix_sequence_diagram(self, content: str) -> str:
-        """Fix sequence diagram syntax"""
+        """Fix sequence diagram syntax with comprehensive error handling"""
+        import re
         lines = content.strip().split('\n')
         fixed_lines = []
+        participants = set()
         
         # Ensure header
         if not lines[0].strip().lower().startswith('sequencediagram'):
@@ -452,27 +578,93 @@ class UniversalDiagramFixer:
         else:
             fixed_lines.append('sequenceDiagram')
         
+        # Pre-process to extract participants from arrows
+        for line in lines:
+            # Match arrow patterns to find participants
+            arrow_match = re.search(r'(\w+)\s*(->>|-->>|->|-->)\s*(\w+)', line)
+            if arrow_match:
+                participants.add(arrow_match.group(1))
+                participants.add(arrow_match.group(3))
+        
         # Process interactions
         for line in lines[1:] if fixed_lines else lines:
+            original_line = line
             line = line.strip()
             
             if not line or line.startswith('```') or line.lower().startswith('sequencediagram'):
                 continue
             
-            # Fix participant declarations
-            if line.lower().startswith('participant'):
+            # Fix: Invalid arrow syntax
+            # "A -> B" should be "A->>B" or "A->>B: message"
+            if ' -> ' in line and '->>' not in line and '-->' not in line:
+                line = line.replace(' -> ', '->>').replace('->> ', '->>')
+                self.errors_fixed.append("Fixed arrow syntax: -> to ->>")
+            
+            # Fix: Missing colon in message
+            # "A->>B Hello" should be "A->>B: Hello"
+            arrow_without_colon = re.match(r'^(\w+\s*->>-?\s*\w+)\s+([^:].+)$', line)
+            if arrow_without_colon:
+                line = f'{arrow_without_colon.group(1)}: {arrow_without_colon.group(2)}'
+                self.errors_fixed.append("Added missing colon after arrow")
+            
+            # Fix: Participant with unquoted alias containing spaces
+            # "participant A as User Service" -> "participant A as UserService"
+            participant_alias_match = re.match(r'^participant\s+(\w+)\s+as\s+(.+)$', line, re.IGNORECASE)
+            if participant_alias_match:
+                alias = participant_alias_match.group(2)
+                if ' ' in alias and not (alias.startswith('"') or alias.startswith("'")):
+                    # Wrap in quotes
+                    line = f'participant {participant_alias_match.group(1)} as "{alias}"'
+                    self.errors_fixed.append("Quoted participant alias with spaces")
+            
+            # Fix: Actor with spaces in name
+            actor_match = re.match(r'^actor\s+(.+)$', line, re.IGNORECASE)
+            if actor_match:
+                name = actor_match.group(1).strip()
+                if ' ' in name and not (name.startswith('"') or name.startswith("'")):
+                    line = f'actor "{name}"'
+                    self.errors_fixed.append("Quoted actor name with spaces")
+            
+            # Fix: Note syntax
+            # "Note: some text" -> "Note right of A: some text"
+            if line.lower().startswith('note:') or line.lower().startswith('note '):
+                if 'right of' not in line.lower() and 'left of' not in line.lower() and 'over' not in line.lower():
+                    # Need to add positioning - use first participant
+                    if participants:
+                        first_participant = sorted(participants)[0]
+                        note_text = re.sub(r'^note:?\s*', '', line, flags=re.IGNORECASE)
+                        line = f'Note right of {first_participant}: {note_text}'
+                        self.errors_fixed.append("Added note positioning")
+            
+            # Fix: Activate/Deactivate without participant
+            if line.lower().startswith('activate') or line.lower().startswith('deactivate'):
+                parts = line.split()
+                if len(parts) == 1:
+                    # No participant specified - skip or use first one
+                    if participants:
+                        line = f'{parts[0]} {sorted(participants)[0]}'
+                        self.errors_fixed.append(f"Added participant to {parts[0]}")
+            
+            # Fix: Loop/Alt/Opt without proper label
+            for keyword in ['loop', 'alt', 'opt', 'par']:
+                if line.lower().startswith(keyword) and ':' not in line and len(line.split()) == 1:
+                    line = f'{keyword} [condition]'
+                    self.errors_fixed.append(f"Added placeholder condition to {keyword}")
+            
+            # Add participant declarations
+            if line.lower().startswith('participant') or line.lower().startswith('actor'):
                 fixed_lines.append('    ' + line)
-            # Fix arrows (->>, ->, -->>, -->)
-            elif '->' in line or '-->>' in line:
+            # Arrows
+            elif '->' in line or '-->>' in line or '-->' in line:
                 fixed_lines.append('    ' + line)
-            # Fix notes
+            # Notes
             elif line.lower().startswith('note'):
                 fixed_lines.append('    ' + line)
-            # Fix loops, alt, opt blocks
-            elif any(kw in line.lower() for kw in ['loop', 'alt', 'opt', 'par', 'end']):
+            # Control flow
+            elif any(kw in line.lower() for kw in ['loop', 'alt', 'opt', 'par', 'end', 'activate', 'deactivate', 'rect', 'else']):
                 fixed_lines.append('    ' + line)
+            # Unknown line
             else:
-                # Unknown line, but include it
                 fixed_lines.append('    ' + line)
         
         if len(fixed_lines) <= 1:

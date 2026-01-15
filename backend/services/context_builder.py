@@ -198,8 +198,10 @@ class ContextBuilder:
             if result:
                 context["sources"][source_name] = result
         
-        # Assemble final context
-        assembled_context = self._assemble_context(context)
+        # Assemble final context (returns dict with content and truncation_info)
+        assembly_result = self._assemble_context(context)
+        assembled_context = assembly_result["content"]
+        truncation_info = assembly_result["truncation_info"]
         
         # Cache the assembled context
         if include_rag and "rag" in context["sources"]:
@@ -210,6 +212,7 @@ class ContextBuilder:
         final_context = {
             **context,
             "assembled_context": assembled_context,
+            "truncation_info": truncation_info,  # Include truncation metadata for API transparency
             "from_cache": False,
             "context_id": context.get("created_at", datetime.now().isoformat())  # Use timestamp as ID
         }
@@ -358,22 +361,70 @@ class ContextBuilder:
             return {"error": str(e)}
     
     async def _build_pattern_context(self, meeting_notes: str) -> Dict[str, Any]:
-        """Build Pattern Mining context."""
+        """Build Pattern Mining context from ACTUAL detected patterns."""
         try:
-            # Get recent pattern mining results (if available)
-            # For now, return summary of what patterns would be detected
-            # In production, this would use cached pattern mining results
+            # Get REAL pattern mining results (not hardcoded!)
+            from backend.services.analysis_service import get_service as get_analysis_service
             
+            patterns_detected = []
+            code_smells = []
+            security_issues = []
+            
+            # Try to get actual pattern mining results
+            try:
+                # First check the pattern miner's cached results
+                if self.pattern_miner.patterns_detected:
+                    for pm in self.pattern_miner.patterns_detected:
+                        patterns_detected.append({
+                            "name": pm.pattern_name,
+                            "file": pm.file_path,
+                            "confidence": pm.confidence
+                        })
+                
+                if self.pattern_miner.code_smells_detected:
+                    for smell in self.pattern_miner.code_smells_detected[:10]:  # Top 10
+                        code_smells.append({
+                            "type": smell.smell_type,
+                            "file": smell.file_path,
+                            "severity": smell.severity
+                        })
+                
+                if self.pattern_miner.security_issues_detected:
+                    for issue in self.pattern_miner.security_issues_detected[:5]:  # Top 5
+                        security_issues.append({
+                            "type": issue.issue_type,
+                            "severity": issue.severity,
+                            "file": issue.file_path
+                        })
+            except Exception as e:
+                logger.debug(f"Could not get pattern miner results: {e}")
+            
+            # Fallback to analysis service if pattern miner has no data
+            if not patterns_detected:
+                try:
+                    analysis_service = get_analysis_service()
+                    cached = analysis_service.last_analysis
+                    if cached:
+                        patterns_detected = cached.get("patterns", [])[:15]
+                        code_smells = cached.get("code_smells", [])[:10]
+                        security_issues = cached.get("security_issues", [])[:5]
+                except Exception:
+                    pass
+            
+            # Build response with actual data
             return {
-                "patterns_available": True,
-                "note": "Pattern mining analysis should be run separately via /api/analysis/patterns",
-                "suggested_patterns": [
-                    "Singleton", "Factory", "Observer"
-                ]
+                "patterns_available": len(patterns_detected) > 0,
+                "patterns_detected": patterns_detected,
+                "pattern_count": len(patterns_detected),
+                "code_smells": code_smells,
+                "code_smell_count": len(code_smells),
+                "security_issues": security_issues,
+                "security_issue_count": len(security_issues),
+                "note": "Real pattern mining data from project analysis" if patterns_detected else "No patterns detected yet - run analysis first"
             }
         except Exception as e:
             logger.error(f"Error building pattern context: {e}", exc_info=True)
-            return {"error": str(e)}
+            return {"error": str(e), "patterns_available": False}
     
     async def _build_ml_features_context(self, meeting_notes: str) -> Dict[str, Any]:
         """Build ML Features context."""
@@ -389,98 +440,243 @@ class ContextBuilder:
             logger.error(f"Error building ML features context: {e}", exc_info=True)
             return {"error": str(e)}
     
-    def _assemble_context(self, context: Dict[str, Any], max_tokens: int = 8000) -> str:
+    def _assemble_context(self, context: Dict[str, Any], max_tokens: Optional[int] = None) -> Dict[str, Any]:
         """
-        Assemble context from all sources into a single string.
+        Assemble context from all sources into a single string with smart prioritization.
+        
+        Priority order (most important first):
+        1. Key Entities (most critical for generation)
+        2. User Requirements (meeting notes)
+        3. High-relevance RAG snippets (sorted by score)
+        4. Knowledge Graph insights
+        5. Pattern Mining insights
+        6. Lower-relevance RAG snippets (only if space permits)
         
         Args:
             context: Context dictionary with sources
-            max_tokens: Maximum token limit to prevent context window overflow
+            max_tokens: Maximum token limit (defaults to settings.context_assembly_max_tokens)
         
         Returns:
-            Assembled context string (truncated if exceeds max_tokens)
+            Dictionary with:
+            - content: Assembled context string
+            - truncation_info: Metadata about what was truncated (for API transparency)
         """
-        parts = []
+        from rag.filters import estimate_tokens
         
-        # Add Universal Context Summary (The Powerhouse Baseline)
+        # Use centralized config for token limits
+        if max_tokens is None:
+            max_tokens = settings.context_assembly_max_tokens
+        
+        # Budget allocation (in tokens)
+        # Reserve tokens for different sections with priorities
+        key_entities_budget = int(max_tokens * 0.15)      # 15% for key entities
+        requirements_budget = int(max_tokens * 0.25)      # 25% for meeting notes
+        high_priority_rag_budget = int(max_tokens * 0.35) # 35% for high-score RAG
+        kg_patterns_budget = int(max_tokens * 0.10)       # 10% for KG + patterns
+        low_priority_rag_budget = int(max_tokens * 0.15)  # 15% for remaining RAG
+        
+        assembled_parts = []
+        used_tokens = 0
+        
+        # Track truncation for API transparency
+        truncation_info = {
+            "any_truncated": False,
+            "sections_truncated": [],
+            "token_budget": max_tokens,
+            "tokens_used": 0
+        }
+        
+        def _add_section(content: str, budget: int, section_name: str) -> str:
+            """Add a section if it fits within budget, with smart summarization if needed."""
+            nonlocal used_tokens
+            
+            if not content or not content.strip():
+                return ""
+            
+            content_tokens = estimate_tokens(content)
+            
+            if content_tokens <= budget:
+                # Content fits, add it fully
+                used_tokens += content_tokens
+                return content
+            
+            # Content exceeds budget - use smart truncation
+            # Track this for API transparency
+            truncation_info["any_truncated"] = True
+            truncation_info["sections_truncated"].append({
+                "section": section_name,
+                "original_tokens": content_tokens,
+                "budget_tokens": budget,
+                "reduction_percent": round((1 - budget / content_tokens) * 100, 1)
+            })
+            
+            # Find natural break points (paragraphs, sections) to truncate
+            lines = content.split('\n')
+            truncated_lines = []
+            current_tokens = 0
+            
+            for line in lines:
+                line_tokens = estimate_tokens(line + '\n')
+                if current_tokens + line_tokens <= budget:
+                    truncated_lines.append(line)
+                    current_tokens += line_tokens
+                else:
+                    # Check if we have meaningful content already
+                    if current_tokens > budget * 0.5:
+                        break
+                    # Otherwise, try to fit partial line
+                    remaining_budget = budget - current_tokens
+                    if remaining_budget > 20:  # At least 20 tokens worth
+                        char_limit = remaining_budget * 4  # Rough estimate
+                        truncated_lines.append(line[:char_limit] + "...")
+                        current_tokens += remaining_budget
+                    break
+            
+            truncated_content = '\n'.join(truncated_lines)
+            if truncated_content != content:
+                truncated_content += f"\n\n[... {section_name} truncated to preserve higher-priority context ...]"
+                logger.info(f"⚠️ [CONTEXT] {section_name} truncated from {content_tokens} to ~{current_tokens} tokens")
+            
+            used_tokens += current_tokens
+            return truncated_content
+        
+        # ============================================================
+        # PRIORITY 1: Key Entities (Critical for understanding project)
+        # ============================================================
+        key_entities_section = ""
         if "universal_context" in context:
             uc = context["universal_context"]
-            parts.append("🚀 === UNIVERSAL PROJECT CONTEXT (Knows Your Entire Project By Heart) ===\n")
-            parts.append(f"📂 Project Directories: {', '.join(uc.get('project_directories', []))}")
-            parts.append(f"📄 Total Files Indexed: {uc.get('total_files', 0)}")
-            parts.append(f"⭐ Key Entities: {len(uc.get('key_entities', []))}")
-            
-            # Add key entities if available
             key_entities = uc.get('key_entities', [])
             if key_entities:
-                parts.append("\n🔑 Most Important Entities in Your Project:")
-                for entity in key_entities[:10]:
-                    parts.append(f"  - {entity.get('name', 'unknown')} ({entity.get('type', 'unknown')})")
-            parts.append("\n")
+                entity_lines = ["🔑 === KEY PROJECT ENTITIES (Most Important) ==="]
+                # Prioritize entities by type: classes > functions > modules
+                type_priority = {"class": 0, "function": 1, "module": 2, "file": 3}
+                sorted_entities = sorted(
+                    key_entities,
+                    key=lambda e: type_priority.get(e.get('type', '').lower(), 99)
+                )
+                for entity in sorted_entities[:15]:  # Top 15 entities
+                    entity_lines.append(f"  • {entity.get('name', 'unknown')} ({entity.get('type', 'unknown')})")
+                key_entities_section = '\n'.join(entity_lines) + '\n'
         
-        # Add meeting notes
-        parts.append("=== YOUR REQUIREMENTS (Meeting Notes) ===\n")
-        parts.append(context.get("meeting_notes", ""))
-        parts.append("\n")
+        assembled_parts.append(_add_section(key_entities_section, key_entities_budget, "Key Entities"))
         
-        # Add RAG context
+        # ============================================================
+        # PRIORITY 2: User Requirements (Meeting Notes)
+        # ============================================================
+        requirements_section = "📋 === YOUR REQUIREMENTS ===\n" + context.get("meeting_notes", "")
+        assembled_parts.append(_add_section(requirements_section, requirements_budget, "Requirements"))
+        
+        # ============================================================
+        # PRIORITY 3: High-Relevance RAG Snippets
+        # ============================================================
+        high_priority_rag = ""
+        low_priority_rag = ""
+        
         if "rag" in context.get("sources", {}):
             rag_source = context["sources"]["rag"]
-            if "context" in rag_source:
-                parts.append("\n=== CODEBASE CONTEXT (RAG) ===\n")
-                parts.append(rag_source["context"])
-                parts.append(f"\n({rag_source.get('num_snippets', 0)} snippets retrieved)")
-                parts.append("\n")
+            snippets = rag_source.get("snippets", [])
+            
+            if snippets:
+                # Sort snippets by score (highest first)
+                sorted_snippets = sorted(snippets, key=lambda s: s.get("score", 0), reverse=True)
+                
+                # Split into high-priority (top 60%) and low-priority (bottom 40%)
+                split_point = max(1, int(len(sorted_snippets) * 0.6))
+                high_snippets = sorted_snippets[:split_point]
+                low_snippets = sorted_snippets[split_point:]
+                
+                # Build high-priority RAG section
+                high_lines = ["📄 === CODEBASE CONTEXT (High Relevance) ==="]
+                for i, snippet in enumerate(high_snippets, 1):
+                    score = snippet.get("score", 0)
+                    file_path = snippet.get("file_path", "unknown")
+                    content = snippet.get("content", "")
+                    high_lines.append(f"\n--- Snippet {i} (score: {score:.3f}, file: {file_path}) ---")
+                    high_lines.append(content)
+                high_priority_rag = '\n'.join(high_lines)
+                
+                # Build low-priority RAG section
+                if low_snippets:
+                    low_lines = ["📄 === ADDITIONAL CONTEXT (Lower Relevance) ==="]
+                    for i, snippet in enumerate(low_snippets, 1):
+                        score = snippet.get("score", 0)
+                        file_path = snippet.get("file_path", "unknown")
+                        content = snippet.get("content", "")
+                        low_lines.append(f"\n--- Snippet {len(high_snippets) + i} (score: {score:.3f}, file: {file_path}) ---")
+                        low_lines.append(content)
+                    low_priority_rag = '\n'.join(low_lines)
+            elif "context" in rag_source:
+                # Fallback to raw context string
+                high_priority_rag = "📄 === CODEBASE CONTEXT ===\n" + rag_source["context"]
         
-        # Add Knowledge Graph insights
+        assembled_parts.append(_add_section(high_priority_rag, high_priority_rag_budget, "High-Priority RAG"))
+        
+        # ============================================================
+        # PRIORITY 4: Knowledge Graph + Pattern Mining Insights
+        # ============================================================
+        kg_patterns_section = ""
+        
+        # Knowledge Graph
         if "kg" in context.get("sources", {}):
             kg_source = context["sources"]["kg"]
             if "graph_stats" in kg_source:
                 stats = kg_source["graph_stats"]
-                parts.append("\n=== KNOWLEDGE GRAPH INSIGHTS ===\n")
-                parts.append(f"Graph: {stats.get('node_count', 0)} nodes, {stats.get('edge_count', 0)} edges")
+                kg_lines = ["\n🧠 === KNOWLEDGE GRAPH INSIGHTS ==="]
+                kg_lines.append(f"Graph: {stats.get('node_count', 0)} nodes, {stats.get('edge_count', 0)} edges")
                 
                 if "most_connected" in kg_source:
-                    parts.append("\nMost Connected Components:")
-                    for node in kg_source["most_connected"][:5]:
-                        parts.append(f"  - {node['node_id']} (degree: {node['degree']})")
-                parts.append("\n")
+                    kg_lines.append("Most Connected:")
+                    for node in kg_source["most_connected"][:3]:
+                        kg_lines.append(f"  • {node['node_id']} (degree: {node['degree']})")
+                kg_patterns_section += '\n'.join(kg_lines) + '\n'
         
-        # Add Pattern Mining insights
+        # Pattern Mining (uses real data from _build_pattern_context)
         if "patterns" in context.get("sources", {}):
             pattern_source = context["sources"]["patterns"]
-            if "suggested_patterns" in pattern_source:
-                parts.append("\n=== DESIGN PATTERNS DETECTED ===\n")
-                parts.append(", ".join(pattern_source["suggested_patterns"]))
-                parts.append("\n")
+            if pattern_source.get("patterns_available"):
+                patterns_detected = pattern_source.get("patterns_detected", [])
+                if patterns_detected:
+                    pattern_names = [p.get("name", "Unknown") if isinstance(p, dict) else str(p) for p in patterns_detected[:10]]
+                    kg_patterns_section += f"\n🔍 === DESIGN PATTERNS DETECTED ({len(patterns_detected)}) ===\n{', '.join(pattern_names)}\n"
+                
+                code_smells = pattern_source.get("code_smells", [])
+                if code_smells:
+                    kg_patterns_section += f"⚠️ Code smells: {len(code_smells)} detected\n"
+                
+                security_issues = pattern_source.get("security_issues", [])
+                if security_issues:
+                    kg_patterns_section += f"🔒 Security issues: {len(security_issues)} detected\n"
         
-        # Add ML Features (if available)
-        if "ml_features" in context.get("sources", {}):
-            ml_source = context["sources"]["ml_features"]
-            if "meeting_notes_features" in ml_source:
-                features = ml_source["meeting_notes_features"]
-                parts.append("\n=== ML FEATURES ===\n")
-                parts.append(f"Complexity: {features.get('cyclomatic_complexity_estimate', 0)}")
-                parts.append(f"Lines: {features.get('lines_of_code', 0)}")
-                parts.append("\n")
+        assembled_parts.append(_add_section(kg_patterns_section, kg_patterns_budget, "KG/Patterns"))
         
-        assembled = "\n".join(parts)
+        # ============================================================
+        # PRIORITY 5: Low-Priority RAG (only if space permits)
+        # ============================================================
+        remaining_budget = max_tokens - used_tokens
+        if remaining_budget > 100 and low_priority_rag:  # Only add if > 100 tokens left
+            assembled_parts.append(_add_section(low_priority_rag, min(remaining_budget, low_priority_rag_budget), "Low-Priority RAG"))
         
-        # Safety check: Ensure context doesn't overflow model's context window
-        try:
-            from rag.filters import estimate_tokens, truncate_to_token_limit
-            token_count = estimate_tokens(assembled)
-            if token_count > max_tokens:
-                logger.warning(f"⚠️ Context {token_count} tokens exceeds limit {max_tokens}, truncating")
-                assembled = truncate_to_token_limit(assembled, max_tokens)
-        except ImportError:
-            # Fallback: simple character-based truncation (rough estimate: 4 chars per token)
-            char_limit = max_tokens * 4
-            if len(assembled) > char_limit:
-                logger.warning(f"⚠️ Context length {len(assembled)} chars exceeds estimate, truncating")
-                assembled = assembled[:char_limit] + "\n\n[... content truncated to fit context window ...]"
+        # Final assembly
+        assembled = "\n".join([p for p in assembled_parts if p])
         
-        return assembled
+        # Final safety check
+        final_tokens = estimate_tokens(assembled)
+        truncation_info["tokens_used"] = final_tokens
+        
+        if final_tokens > max_tokens * 1.1:  # Allow 10% overflow
+            logger.warning(f"⚠️ [CONTEXT] Final context {final_tokens} tokens slightly exceeds limit {max_tokens}")
+        else:
+            logger.info(f"✅ [CONTEXT] Context assembled: {final_tokens} tokens (budget: {max_tokens})")
+        
+        if truncation_info["any_truncated"]:
+            logger.info(f"⚠️ [CONTEXT] Truncation applied to sections: {[s['section'] for s in truncation_info['sections_truncated']]}")
+        
+        # Return both content and truncation metadata for API transparency
+        return {
+            "content": assembled,
+            "truncation_info": truncation_info
+        }
     
     def _extract_key_terms(self, text: str) -> List[str]:
         """Extract key terms from text for graph queries."""

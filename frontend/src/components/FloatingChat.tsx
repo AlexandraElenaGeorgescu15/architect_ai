@@ -1,7 +1,17 @@
 import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { createPortal } from 'react-dom'
-import { MessageSquare, X, Send, Bot, Minimize2, Maximize2 } from 'lucide-react'
-import { sendChatMessage, streamChatMessage } from '../services/chatService'
+import { MessageSquare, X, Send, Bot, FileCode, GitBranch, Sparkles, Trash2 } from 'lucide-react'
+import { 
+  sendChatMessage, 
+  streamChatMessage, 
+  getProjectSummary, 
+  ProjectSummary,
+  getOrCreateSessionId,
+  saveConversationToStorage,
+  loadConversationFromStorage,
+  clearChatSession,
+  ChatMessage as ServiceChatMessage
+} from '../services/chatService'
 
 interface Message {
   id: string
@@ -9,6 +19,8 @@ interface Message {
   content: string
   timestamp: Date
 }
+
+const DEFAULT_GREETING = "Hello! I'm Architect.AI. Ask me anything about your codebase, architecture, or requirements!"
 
 // Memoized message component to prevent re-renders
 const ChatMessage = memo(function ChatMessage({ message }: { message: Message }) {
@@ -47,18 +59,72 @@ const ChatMessage = memo(function ChatMessage({ message }: { message: Message })
 function FloatingChat() {
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null)
   const [isOpen, setIsOpen] = useState(false)
-  const [isMinimized, setIsMinimized] = useState(true)
+  const [projectSummary, setProjectSummary] = useState<ProjectSummary | null>(null)
+  const [summaryLoaded, setSummaryLoaded] = useState(false)
+  const [sessionId] = useState<string>(() => getOrCreateSessionId())
+  const [messagesLoaded, setMessagesLoaded] = useState(false)
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: 'Hello! I\'m Architect.AI. Ask me anything about your codebase, architecture, or requirements!',
+      content: DEFAULT_GREETING,
       timestamp: new Date(),
     },
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Load conversation from storage on mount (session persistence)
+  useEffect(() => {
+    if (!messagesLoaded) {
+      const savedMessages = loadConversationFromStorage()
+      if (savedMessages.length > 0) {
+        // Convert saved format to our Message format
+        const restored: Message[] = savedMessages.map((msg, idx) => ({
+          id: `restored_${idx}`,
+          role: msg.role,
+          content: msg.content,
+          timestamp: new Date()
+        }))
+        // Add greeting if first message isn't from assistant
+        // Note: restored.length > 0 is guaranteed since savedMessages.length > 0
+        if (restored[0].role !== 'assistant') {
+          restored.unshift({
+            id: '1',
+            role: 'assistant',
+            content: DEFAULT_GREETING,
+            timestamp: new Date()
+          })
+        }
+        setMessages(restored)
+        console.log(`[FloatingChat] Restored ${savedMessages.length} messages from session ${sessionId}`)
+      }
+      setMessagesLoaded(true)
+    }
+  }, [messagesLoaded, sessionId])
+
+  // Save conversation to storage whenever messages change
+  useEffect(() => {
+    if (messagesLoaded && messages.length > 1) {
+      const toSave: ServiceChatMessage[] = messages
+        .filter(m => m.role === 'user' || (m.role === 'assistant' && m.content !== DEFAULT_GREETING))
+        .map(m => ({ role: m.role, content: m.content }))
+      saveConversationToStorage(toSave)
+    }
+  }, [messages, messagesLoaded])
+
+  // Handler to clear conversation
+  const handleClearConversation = useCallback(() => {
+    clearChatSession()
+    setMessages([{
+      id: '1',
+      role: 'assistant',
+      content: DEFAULT_GREETING,
+      timestamp: new Date()
+    }])
+    setSummaryLoaded(false) // Re-fetch summary for fresh greeting
+  }, [])
 
   // Mount a portal so chat always sits above page content
   useEffect(() => {
@@ -81,15 +147,47 @@ function FloatingChat() {
     }
   }, [])
 
+  // Fetch project summary when chat is first opened
+  useEffect(() => {
+    if (isOpen && !summaryLoaded) {
+      const fetchSummary = async () => {
+        try {
+          const summary = await getProjectSummary()
+          setProjectSummary(summary)
+          
+          // Update the greeting message with project-specific info
+          if (summary.greeting_message) {
+            setMessages(prev => {
+              const newMessages = [...prev]
+              if (newMessages.length > 0 && newMessages[0].role === 'assistant') {
+                newMessages[0] = {
+                  ...newMessages[0],
+                  content: summary.greeting_message
+                }
+              }
+              return newMessages
+            })
+          }
+        } catch (error) {
+          console.warn('Could not fetch project summary:', error)
+          // Keep default greeting on error
+        } finally {
+          setSummaryLoaded(true)
+        }
+      }
+      fetchSummary()
+    }
+  }, [isOpen, summaryLoaded])
+
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [])
 
   useEffect(() => {
-    if (isOpen && !isMinimized) {
+    if (isOpen) {
       scrollToBottom()
     }
-  }, [messages, isOpen, isMinimized, scrollToBottom])
+  }, [messages, isOpen, scrollToBottom])
 
   const handleSend = useCallback(async () => {
     if (!input.trim() || isLoading) return
@@ -116,6 +214,7 @@ function FloatingChat() {
     setMessages((prev) => [...prev, assistantMessage])
 
     try {
+      // Build conversation history for context
       const conversationHistory = messages.map(msg => ({
         role: msg.role,
         content: msg.content
@@ -123,10 +222,12 @@ function FloatingChat() {
 
       try {
         let fullResponse = ''
+        // Pass session_id for persistent context across messages
         for await (const chunk of streamChatMessage({
           message: currentInput,
           conversation_history: conversationHistory,
-          include_project_context: true
+          include_project_context: true,
+          session_id: sessionId
         })) {
           fullResponse += chunk
           setMessages((prev) => prev.map(msg =>
@@ -136,11 +237,12 @@ function FloatingChat() {
           ))
         }
       } catch (streamError) {
-        // Streaming failed, using non-streaming
+        // Streaming failed, using non-streaming fallback
         const response = await sendChatMessage({
           message: currentInput,
           conversation_history: conversationHistory,
-          include_project_context: true
+          include_project_context: true,
+          session_id: sessionId
         })
         setMessages((prev) => prev.map(msg =>
           msg.id === assistantMessageId
@@ -171,10 +273,7 @@ function FloatingChat() {
   if (!portalEl) {
     return (
       <button
-        onClick={() => {
-          setIsOpen(true)
-          setIsMinimized(false)
-        }}
+        onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 z-[2100] w-16 h-16 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-full shadow-[0_8px_32px_rgba(37,99,235,0.4)] hover:shadow-[0_16px_48px_rgba(37,99,235,0.6)] flex items-center justify-center transition-all duration-500 hover:scale-110 hover:rotate-12 group border border-primary/20 animate-pulse"
         aria-label="Open chat"
       >
@@ -186,10 +285,7 @@ function FloatingChat() {
 
   const launcher = (
     <button
-      onClick={() => {
-        setIsOpen(true)
-        setIsMinimized(false)
-      }}
+      onClick={() => setIsOpen(true)}
       className="pointer-events-auto fixed bottom-6 right-6 z-[2100] w-16 h-16 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-full shadow-[0_8px_32px_rgba(37,99,235,0.4)] hover:shadow-[0_16px_48px_rgba(37,99,235,0.6)] flex items-center justify-center transition-all duration-500 hover:scale-110 hover:rotate-12 group border border-primary/20 animate-pulse"
       aria-label="Open chat"
     >
@@ -200,11 +296,7 @@ function FloatingChat() {
 
   const chatWindow = (
     <div
-      className={`pointer-events-auto fixed bottom-6 right-6 z-[2100] transition-all duration-500 ease-out ${
-        isMinimized
-          ? 'w-80 h-16'
-          : 'w-[420px] h-[650px]'
-      } animate-in slide-in-from-bottom-8 fade-in duration-700`}
+      className="pointer-events-auto fixed bottom-6 right-6 z-[2100] transition-all duration-500 ease-out w-[420px] h-[650px] animate-in slide-in-from-bottom-8 fade-in duration-700"
     >
       <div className="h-full glass-panel border border-primary/30 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.3)] hover:shadow-[0_24px_72px_rgba(0,0,0,0.4)] flex flex-col overflow-hidden backdrop-blur-xl bg-card/95 dark:bg-card/95 transition-shadow duration-300">
         {/* Header */}
@@ -214,30 +306,42 @@ function FloatingChat() {
               <Bot className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h3 className="font-black text-foreground text-lg">Architect.AI</h3>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-                Always Online
-              </p>
+              <h3 className="font-black text-foreground text-lg">
+                {projectSummary?.project_name || 'Architect.AI'}
+              </h3>
+              {projectSummary && projectSummary.indexed_files > 0 ? (
+                <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                  <span className="flex items-center gap-1 bg-primary/10 px-1.5 py-0.5 rounded-full">
+                    <FileCode className="w-3 h-3 text-primary" />
+                    <span className="font-bold text-primary">{projectSummary.indexed_files}</span> files
+                  </span>
+                  {projectSummary.knowledge_graph_stats.nodes > 0 && (
+                    <span className="flex items-center gap-1 bg-green-500/10 px-1.5 py-0.5 rounded-full">
+                      <GitBranch className="w-3 h-3 text-green-500" />
+                      <span className="font-bold text-green-500">{projectSummary.knowledge_graph_stats.nodes}</span> nodes
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                  Always Online
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Clear conversation button */}
             <button
-              onClick={() => setIsMinimized(!isMinimized)}
-              className="p-2.5 hover:bg-primary/10 rounded-xl transition-all duration-300 text-muted-foreground hover:text-primary shadow-sm hover:shadow-md group"
-              aria-label={isMinimized ? 'Maximize' : 'Minimize'}
+              onClick={handleClearConversation}
+              className="p-2.5 hover:bg-orange-500/20 rounded-xl transition-all duration-300 text-muted-foreground hover:text-orange-500 shadow-sm hover:shadow-md group"
+              aria-label="Clear conversation"
+              title="Clear conversation and start fresh"
             >
-              {isMinimized ? (
-                <Maximize2 className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
-              ) : (
-                <Minimize2 className="w-4 h-4 group-hover:scale-110 transition-transform duration-300" />
-              )}
+              <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
             </button>
             <button
-              onClick={() => {
-                setIsOpen(false)
-                setIsMinimized(false)
-              }}
+              onClick={() => setIsOpen(false)}
               className="p-2.5 hover:bg-destructive/20 rounded-xl transition-all duration-300 text-muted-foreground hover:text-destructive shadow-sm hover:shadow-md group"
               aria-label="Close chat"
             >
@@ -246,9 +350,7 @@ function FloatingChat() {
           </div>
         </div>
 
-        {!isMinimized && (
-          <>
-            {/* Messages */}
+        {/* Messages */}
             <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar bg-gradient-to-b from-background/10 to-background/5">
               {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
@@ -294,8 +396,6 @@ function FloatingChat() {
                 </button>
               </div>
             </div>
-          </>
-        )}
       </div>
     </div>
   )

@@ -259,6 +259,7 @@ class OllamaClient:
         system_message: Optional[str] = None,  # Alias for system (compatibility)
         temperature: float = 0.0,
         max_tokens: Optional[int] = None,
+        num_ctx: int = 16384,  # CRITICAL: Context window size (default 16K tokens for ~64K chars)
         **kwargs
     ) -> GenerationResponse:
         """
@@ -273,6 +274,11 @@ class OllamaClient:
             system_message: Alias for system (for compatibility with enhanced_generation)
             temperature: Sampling temperature (0.0 = deterministic)
             max_tokens: Maximum tokens to generate (optional)
+            num_ctx: Context window size in tokens (default 16384 for comprehensive context)
+                     - 4096 = ~16K chars (basic)
+                     - 8192 = ~32K chars (standard)
+                     - 16384 = ~64K chars (comprehensive - RECOMMENDED for chat)
+                     - 32768 = ~128K chars (maximum, requires more VRAM)
             **kwargs: Additional generation parameters
             
         Returns:
@@ -304,13 +310,14 @@ class OllamaClient:
         try:
             client = self._get_http_client()
             
-            # Build request
+            # Build request with expanded context window
             request_data = {
                 "model": model_name,
                 "prompt": prompt,
                 "stream": False,
                 "options": {
-                    "temperature": temperature
+                    "temperature": temperature,
+                    "num_ctx": num_ctx  # CRITICAL: Expand context window for full context retention
                 }
             }
             
@@ -320,8 +327,10 @@ class OllamaClient:
             if max_tokens:
                 request_data["options"]["num_predict"] = max_tokens
             
-            # Merge additional options
-            request_data["options"].update(kwargs)
+            # Merge additional options (but don't override num_ctx)
+            for k, v in kwargs.items():
+                if k != "num_ctx":  # Preserve explicit num_ctx
+                    request_data["options"][k] = v
             
             # Send request
             response = await client.post(

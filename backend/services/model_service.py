@@ -6,9 +6,10 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import yaml
+import asyncio
 
 # Add parent directory for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -19,6 +20,60 @@ from backend.models.dto import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+# =============================================================================
+# In-Memory Cache for Model Lists (Performance Fix)
+# =============================================================================
+class ModelListCache:
+    """
+    Simple in-memory cache for model list queries.
+    
+    The /api/models/ endpoint was taking 4-7 seconds because it polls
+    Ollama, cloud providers, and HuggingFace on every request.
+    This cache reduces that to ~0ms for cached responses.
+    """
+    
+    def __init__(self, ttl_seconds: int = 60):
+        """
+        Initialize cache with TTL.
+        
+        Args:
+            ttl_seconds: Cache time-to-live (default: 60 seconds)
+        """
+        self.ttl_seconds = ttl_seconds
+        self._cache: Optional[List[ModelInfoDTO]] = None
+        self._cache_time: Optional[datetime] = None
+        self._lock = asyncio.Lock()
+    
+    def is_valid(self) -> bool:
+        """Check if cache is still valid."""
+        if self._cache is None or self._cache_time is None:
+            return False
+        return datetime.now() - self._cache_time < timedelta(seconds=self.ttl_seconds)
+    
+    def get(self) -> Optional[List[ModelInfoDTO]]:
+        """Get cached model list if valid."""
+        if self.is_valid():
+            logger.debug(f"📦 [CACHE] Model list cache HIT (age: {(datetime.now() - self._cache_time).seconds}s)")
+            return self._cache
+        return None
+    
+    def set(self, models: List[ModelInfoDTO]) -> None:
+        """Set cache with model list."""
+        self._cache = models
+        self._cache_time = datetime.now()
+        logger.debug(f"📦 [CACHE] Model list cached ({len(models)} models)")
+    
+    def invalidate(self) -> None:
+        """Invalidate the cache."""
+        self._cache = None
+        self._cache_time = None
+        logger.debug("📦 [CACHE] Model list cache invalidated")
+
+
+# Global cache instance
+_model_list_cache = ModelListCache(ttl_seconds=60)
 
 # Optional imports for Ollama (graceful degradation)
 try:
@@ -387,13 +442,29 @@ class ModelService:
         self._save_routing()
         logger.info(f"Created default model routing configuration for {len(default_routing)} artifact types")
     
-    async def list_models(self) -> List[ModelInfoDTO]:
+    async def list_models(self, force_refresh: bool = False) -> List[ModelInfoDTO]:
         """
-        List all registered models.
+        List all registered models with caching.
+        
+        Performance optimization: Model list is cached for 60 seconds to avoid
+        polling Ollama, cloud providers, and HuggingFace on every request.
+        The /api/models/ endpoint was taking 4-7 seconds without caching.
+        
+        Args:
+            force_refresh: If True, bypass cache and refresh from all providers
         
         Returns:
             List of model information
         """
+        # Check cache first (unless force_refresh)
+        if not force_refresh:
+            cached = _model_list_cache.get()
+            if cached is not None:
+                return cached
+        
+        logger.info("🔄 [MODEL_SERVICE] Refreshing model list from all providers...")
+        start_time = datetime.now()
+        
         # Load fine-tuned models from registry first
         self._load_finetuned_models_from_registry()
         
@@ -407,7 +478,19 @@ class ModelService:
         # Register cloud models if API keys are available
         await self._refresh_cloud_models()
         
-        return list(self.models.values())
+        models = list(self.models.values())
+        
+        # Update cache
+        _model_list_cache.set(models)
+        
+        duration = (datetime.now() - start_time).total_seconds()
+        logger.info(f"✅ [MODEL_SERVICE] Model list refreshed: {len(models)} models in {duration:.2f}s")
+        
+        return models
+    
+    def invalidate_model_cache(self) -> None:
+        """Invalidate the model list cache (call after model changes)."""
+        _model_list_cache.invalidate()
     
     async def _refresh_cloud_models(self):
         """Register cloud models based on available API keys."""
@@ -918,6 +1001,9 @@ class ModelService:
                             
                             # Refresh Ollama models to ensure it's in the list
                             await self._refresh_ollama_models()
+                            
+                            # Invalidate cache so next list_models() picks up the new model
+                            self.invalidate_model_cache()
                             
                             return True
                         else:

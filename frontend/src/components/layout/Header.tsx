@@ -3,6 +3,7 @@ import { Bell, Menu, X, Sparkles, Trash2, ChevronRight, ChevronLeft, Loader2, La
 import { useUIStore } from '../../stores/uiStore'
 import { useState, useRef, useEffect } from 'react'
 import { Template, listTemplates, applyTemplate } from '../../services/templateService'
+import ProjectIndicator from './ProjectIndicator'
 
 export default function Header() {
   const location = useLocation()
@@ -95,6 +96,11 @@ export default function Header() {
           )}
         </button>
         <h1 className="text-base font-bold text-foreground">{getPageTitle()}</h1>
+      </div>
+
+      {/* Center: Project Indicator - Shows all indexed projects */}
+      <div className="hidden md:block mx-4">
+        <ProjectIndicator />
       </div>
 
       <div className="flex-1" />

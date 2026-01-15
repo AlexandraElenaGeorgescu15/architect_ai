@@ -310,13 +310,14 @@ class EnhancedGenerationService:
                         await self.ollama_client.ensure_model_available(model_name)
                         logger.debug(f"✅ [ENHANCED_GEN] Model {model_name} is available")
                         
-                        # Generate
+                        # Generate with context window from centralized config
                         logger.info(f"⚡ [ENHANCED_GEN] Generating with {model_name}...")
                         response = await self.ollama_client.generate(
                             model_name=model_name,
                             prompt=prompt,
                             system_message=self._get_system_message(artifact_type),
-                            temperature=opts["temperature"]
+                            temperature=opts["temperature"],
+                            num_ctx=settings.local_model_context_window  # From centralized config
                         )
                     elif provider == "huggingface":
                         # Use HuggingFace client
@@ -1207,107 +1208,198 @@ Follow the repository's coding style and test patterns. Make tests realistic and
         provider: str,
         model_name: str,
         prompt: str,
+        system_message: str,
+        max_retries: int = 3,
+        base_delay: float = 1.0
+    ) -> Optional[str]:
+        """
+        Direct cloud API calls with retry logic and exponential backoff.
+        
+        Features:
+        - Exponential backoff for rate limit errors (429)
+        - Automatic retry on transient failures
+        - Proper error classification and logging
+        
+        Args:
+            provider: Cloud provider name
+            model_name: Model name to use
+            prompt: User prompt
+            system_message: System instruction
+            max_retries: Maximum retry attempts (default: 3)
+            base_delay: Base delay in seconds for exponential backoff (default: 1.0)
+        
+        Returns:
+            Generated content or None on failure
+        """
+        last_error = None
+        
+        for attempt in range(max_retries + 1):
+            try:
+                return await self._execute_cloud_api_call(provider, model_name, prompt, system_message)
+                
+            except Exception as e:
+                last_error = e
+                error_str = str(e).lower()
+                
+                # Check if this is a rate limit error (429)
+                is_rate_limit = (
+                    "429" in error_str or 
+                    "rate limit" in error_str or 
+                    "quota exceeded" in error_str or
+                    "resource exhausted" in error_str or
+                    "too many requests" in error_str
+                )
+                
+                # Check if this is a transient error worth retrying
+                is_transient = (
+                    is_rate_limit or
+                    "timeout" in error_str or
+                    "connection" in error_str or
+                    "503" in error_str or
+                    "502" in error_str
+                )
+                
+                if is_rate_limit:
+                    logger.warning(f"⚠️ [CLOUD_API] Rate limit hit for {provider}:{model_name} (attempt {attempt + 1}/{max_retries + 1})")
+                    metrics.increment("cloud_api_rate_limits", tags={"provider": provider})
+                
+                if is_transient and attempt < max_retries:
+                    # Calculate exponential backoff delay
+                    delay = base_delay * (2 ** attempt)  # 1s, 2s, 4s, 8s...
+                    
+                    # Add jitter to prevent thundering herd
+                    import random
+                    jitter = random.uniform(0, delay * 0.1)
+                    delay += jitter
+                    
+                    logger.info(f"🔄 [CLOUD_API] Retrying {provider}:{model_name} in {delay:.1f}s (attempt {attempt + 1}/{max_retries + 1})")
+                    await asyncio.sleep(delay)
+                    continue
+                else:
+                    # Non-transient error or max retries exceeded
+                    logger.error(f"❌ [CLOUD_API] {provider}:{model_name} failed after {attempt + 1} attempts: {e}")
+                    
+                    # Log error details for debugging
+                    log_error_to_file(
+                        error=e,
+                        context={
+                            "provider": provider,
+                            "model_name": model_name,
+                            "attempt": attempt + 1,
+                            "is_rate_limit": is_rate_limit,
+                            "operation": "cloud_api_call"
+                        },
+                        module="enhanced_generation",
+                        function="_call_cloud_api_direct"
+                    )
+                    break
+        
+        # All retries exhausted - return None to trigger failover to next provider
+        if last_error:
+            logger.warning(f"⚠️ [CLOUD_API] All retries exhausted for {provider}:{model_name}, will failover to next provider")
+        
+        return None
+    
+    async def _execute_cloud_api_call(
+        self,
+        provider: str,
+        model_name: str,
+        prompt: str,
         system_message: str
     ) -> Optional[str]:
-        """Direct cloud API calls as final fallback."""
-        try:
-            if provider == "gemini" and (settings.google_api_key or settings.gemini_api_key):
-                import google.generativeai as genai
-                api_key = settings.google_api_key or settings.gemini_api_key
-                if not api_key:
-                    logger.warning("Gemini API key not found in settings")
-                    return None
-                
-                genai.configure(api_key=api_key)
-                # Extract model name if it includes provider prefix (e.g., "gemini-2.0-flash-exp" from "gemini:gemini-2.0-flash-exp")
-                actual_model_name = model_name.split(":")[-1] if ":" in model_name else model_name
-                # Map model names to actual Gemini model IDs
-                model_mapping = {
-                    "gemini-2.0-flash-exp": "gemini-2.0-flash-exp",
-                    "gemini-1.5-pro": "gemini-1.5-pro",
-                    "gemini-1.5-flash": "gemini-1.5-flash",
-                }
-                actual_model_name = model_mapping.get(actual_model_name, actual_model_name)
-                
-                logger.info(f"Calling Gemini API with model: {actual_model_name}")
-                model = genai.GenerativeModel(actual_model_name)
-                
-                # Build full prompt with system message
-                full_prompt = f"{system_message}\n\n{prompt}"
-                
-                response = await asyncio.to_thread(
-                    model.generate_content,
-                    full_prompt
-                )
-                result = response.text if response and response.text else None
-                if result:
-                    logger.info(f"Gemini API call successful, response length: {len(result)}")
-                else:
-                    logger.warning("Gemini API returned empty response")
-                return result
-                
-            elif provider == "openai" and settings.openai_api_key:
-                from openai import AsyncOpenAI
-                client = AsyncOpenAI(api_key=settings.openai_api_key)
-                response = await client.chat.completions.create(
-                    model=model_name,
-                    messages=[
-                        {"role": "system", "content": system_message},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.2
-                )
-                return response.choices[0].message.content if response.choices else None
-                
-            elif provider == "anthropic" and settings.anthropic_api_key:
-                from anthropic import AsyncAnthropic
-                client = AsyncAnthropic(api_key=settings.anthropic_api_key)
-                response = await client.messages.create(
-                    model=model_name,
-                    max_tokens=4096,
-                    system=system_message,
-                    messages=[{"role": "user", "content": prompt}]
-                )
-                return response.content[0].text if response.content else None
-                
-            elif provider == "groq" and settings.groq_api_key:
-                from groq import AsyncGroq
-                if not settings.groq_api_key:
-                    logger.warning("Groq API key not found in settings")
-                    return None
-                
-                client = AsyncGroq(api_key=settings.groq_api_key)
-                # Extract model name if it includes provider prefix
-                actual_model_name = model_name.split(":")[-1] if ":" in model_name else model_name
-                # Map Groq model names
-                model_mapping = {
-                    "llama-3.3-70b-versatile": "llama-3.3-70b-versatile",
-                    "llama-3.1-70b-versatile": "llama-3.1-70b-versatile",
-                    "llama-3.1-8b-instant": "llama-3.1-8b-instant",
-                    "mixtral-8x7b-32768": "mixtral-8x7b-32768",
-                }
-                actual_model_name = model_mapping.get(actual_model_name, actual_model_name)
-                
-                logger.info(f"Calling Groq API with model: {actual_model_name}")
-                response = await client.chat.completions.create(
-                    model=actual_model_name,
-                    messages=[
-                        {"role": "system", "content": system_message},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0.2
-                )
-                result = response.choices[0].message.content if response.choices else None
-                if result:
-                    logger.info(f"Groq API call successful, response length: {len(result)}")
-                else:
-                    logger.warning("Groq API returned empty response")
-                return result
-                
-        except ImportError as e:
-            logger.warning(f"Required library for {provider} not installed: {e}")
-        except Exception as e:
-            logger.error(f"Direct API call to {provider} failed: {e}", exc_info=True)
+        """Execute a single cloud API call without retry logic."""
+        if provider == "gemini" and (settings.google_api_key or settings.gemini_api_key):
+            import google.generativeai as genai
+            api_key = settings.google_api_key or settings.gemini_api_key
+            if not api_key:
+                logger.warning("Gemini API key not found in settings")
+                return None
+            
+            genai.configure(api_key=api_key)
+            # Extract model name if it includes provider prefix (e.g., "gemini-2.0-flash-exp" from "gemini:gemini-2.0-flash-exp")
+            actual_model_name = model_name.split(":")[-1] if ":" in model_name else model_name
+            # Map model names to actual Gemini model IDs
+            model_mapping = {
+                "gemini-2.0-flash-exp": "gemini-2.0-flash-exp",
+                "gemini-1.5-pro": "gemini-1.5-pro",
+                "gemini-1.5-flash": "gemini-1.5-flash",
+            }
+            actual_model_name = model_mapping.get(actual_model_name, actual_model_name)
+            
+            logger.info(f"Calling Gemini API with model: {actual_model_name}")
+            model = genai.GenerativeModel(actual_model_name)
+            
+            # Build full prompt with system message
+            full_prompt = f"{system_message}\n\n{prompt}"
+            
+            response = await asyncio.to_thread(
+                model.generate_content,
+                full_prompt
+            )
+            result = response.text if response and response.text else None
+            if result:
+                logger.info(f"Gemini API call successful, response length: {len(result)}")
+            else:
+                logger.warning("Gemini API returned empty response")
+            return result
+            
+        elif provider == "openai" and settings.openai_api_key:
+            from openai import AsyncOpenAI
+            client = AsyncOpenAI(api_key=settings.openai_api_key)
+            response = await client.chat.completions.create(
+                model=model_name,
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.2
+            )
+            return response.choices[0].message.content if response.choices else None
+            
+        elif provider == "anthropic" and settings.anthropic_api_key:
+            from anthropic import AsyncAnthropic
+            client = AsyncAnthropic(api_key=settings.anthropic_api_key)
+            response = await client.messages.create(
+                model=model_name,
+                max_tokens=settings.cloud_api_max_tokens,
+                system=system_message,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.content[0].text if response.content else None
+            
+        elif provider == "groq" and settings.groq_api_key:
+            from groq import AsyncGroq
+            if not settings.groq_api_key:
+                logger.warning("Groq API key not found in settings")
+                return None
+            
+            client = AsyncGroq(api_key=settings.groq_api_key)
+            # Extract model name if it includes provider prefix
+            actual_model_name = model_name.split(":")[-1] if ":" in model_name else model_name
+            # Map Groq model names
+            model_mapping = {
+                "llama-3.3-70b-versatile": "llama-3.3-70b-versatile",
+                "llama-3.1-70b-versatile": "llama-3.1-70b-versatile",
+                "llama-3.1-8b-instant": "llama-3.1-8b-instant",
+                "mixtral-8x7b-32768": "mixtral-8x7b-32768",
+            }
+            actual_model_name = model_mapping.get(actual_model_name, actual_model_name)
+            
+            logger.info(f"Calling Groq API with model: {actual_model_name}")
+            response = await client.chat.completions.create(
+                model=actual_model_name,
+                messages=[
+                    {"role": "system", "content": system_message},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.2
+            )
+            result = response.choices[0].message.content if response.choices else None
+            if result:
+                logger.info(f"Groq API call successful, response length: {len(result)}")
+            else:
+                logger.warning("Groq API returned empty response")
+            return result
         
         return None
 
@@ -1409,7 +1501,7 @@ async def _generate_with_fallback(
                 # Ensure model is available
                 await self.ollama_client.ensure_model_available(model_name)
                 
-                # Generate with timeout
+                # Generate with timeout and context window from config
                 try:
                     import asyncio
                     response = await asyncio.wait_for(
@@ -1417,7 +1509,8 @@ async def _generate_with_fallback(
                             model_name=model_name,
                             prompt=prompt,
                             system_message=system_instruction,
-                            temperature=temperature
+                            temperature=temperature,
+                            num_ctx=settings.local_model_context_window  # From centralized config
                         ),
                         timeout=timeout_seconds
                     )

@@ -99,6 +99,107 @@ class GenerationService:
         if jobs_to_remove:
             logger.info(f"🧹 [GEN_SERVICE] Cleaned up {len(jobs_to_remove)} old jobs, {len(self.active_jobs)} jobs remain")
     
+    def _apply_targeted_mermaid_fixes(self, content: str, errors: List[str]) -> str:
+        """
+        Apply targeted fixes based on specific validation errors.
+        
+        This is called when the universal fixer hasn't fully resolved all issues.
+        It analyzes the specific errors and applies additional targeted patches.
+        
+        Args:
+            content: The Mermaid diagram content
+            errors: List of validation errors from _validate_mermaid()
+        
+        Returns:
+            Fixed content
+        """
+        import re
+        
+        for error in errors:
+            error_lower = error.lower()
+            
+            # CRITICAL: Unbalanced curly braces
+            if "unbalanced curly braces" in error_lower:
+                # Count braces and try to fix
+                open_count = content.count('{')
+                close_count = content.count('}')
+                if open_count > close_count:
+                    # Missing closing braces - add them at end of each entity
+                    content = re.sub(r'(\n\s*\w+\s+\{[^}]*?)(\n\s*\w+\s+\{)', r'\1}\2', content)
+                    # Add final closing brace if still unbalanced
+                    if content.count('{') > content.count('}'):
+                        content = content.rstrip() + '\n}'
+                elif close_count > open_count:
+                    # Extra closing braces - remove orphaned ones
+                    lines = content.split('\n')
+                    fixed_lines = []
+                    brace_depth = 0
+                    for line in lines:
+                        brace_depth += line.count('{') - line.count('}')
+                        if brace_depth >= 0:
+                            fixed_lines.append(line)
+                        else:
+                            # This line has orphan closing brace
+                            line = line.replace('}', '', -brace_depth)
+                            fixed_lines.append(line)
+                            brace_depth = 0
+                    content = '\n'.join(fixed_lines)
+            
+            # CRITICAL: Unbalanced square brackets
+            if "unbalanced square brackets" in error_lower:
+                open_count = content.count('[')
+                close_count = content.count(']')
+                if open_count > close_count:
+                    # Find unclosed brackets and close them
+                    content = re.sub(r'\[([^\]]{0,50})(\s*-->|\s*---|\s*$)', r'[\1]\2', content)
+                elif close_count > open_count:
+                    # Remove orphan closing brackets
+                    content = re.sub(r'^\s*\]\s*$', '', content, flags=re.MULTILINE)
+            
+            # CRITICAL: Unbalanced parentheses
+            if "unbalanced parentheses" in error_lower:
+                open_count = content.count('(')
+                close_count = content.count(')')
+                if open_count > close_count:
+                    content = re.sub(r'\(([^)]{0,50})(\s*-->|\s*---|\s*$)', r'(\1)\2', content)
+                elif close_count > open_count:
+                    content = re.sub(r'^\s*\)\s*$', '', content, flags=re.MULTILINE)
+            
+            # CRITICAL: Unbalanced quotes
+            if "unbalanced quotes" in error_lower:
+                # Count double quotes
+                quote_count = content.count('"')
+                if quote_count % 2 != 0:
+                    # Find and fix unbalanced quotes in labels
+                    # Pattern: [text with "partial quote] should become [text with partial quote]
+                    content = re.sub(r'\[([^"\]]*)"([^"\]]*)\]', r'[\1\2]', content)
+                    # Or just remove all quotes if still unbalanced
+                    if content.count('"') % 2 != 0:
+                        content = content.replace('"', '')
+            
+            # SYNTAX: Arrow pointing to nothing
+            if "arrow pointing to nothing" in error_lower:
+                # Remove dangling arrows at end of lines
+                content = re.sub(r'-->\s*$', '', content, flags=re.MULTILINE)
+                content = re.sub(r'---\s*$', '', content, flags=re.MULTILINE)
+            
+            # SYNTAX: Arrow with no source
+            if "arrow with no source" in error_lower:
+                # Remove arrows at start of lines
+                content = re.sub(r'^\s*-->', '', content, flags=re.MULTILINE)
+            
+            # ERD: Using classDiagram syntax
+            if "using classdiagram syntax" in error_lower:
+                # Convert class X to X (for ERD)
+                content = re.sub(r'\bclass\s+(\w+)', r'\1', content)
+        
+        # Final cleanup: remove empty lines at start/end
+        content = content.strip()
+        
+        # Remove consecutive empty lines
+        content = re.sub(r'\n\s*\n\s*\n', '\n\n', content)
+        
+        return content
     
     async def generate_artifact(
         self,
@@ -281,19 +382,49 @@ class GenerationService:
                     except Exception as e:
                         logger.warning(f"⚠️ [GEN_SERVICE] Failed to clean artifact: {e} (job_id={job_id})")
                     
-                    # For Mermaid diagrams, ALSO run the universal diagram fixer
-                    # to handle syntax issues and aggressive AI text cleanup
+                    # For Mermaid diagrams, run comprehensive repair pipeline:
+                    # 1. Universal diagram fixer (removes AI text, fixes structure)
+                    # 2. Validation service auto-repair (fixes syntax errors)
+                    # 3. Re-validation loop until diagram is valid or max attempts reached
                     if artifact_type.value.startswith("mermaid_"):
                         try:
                             from components.universal_diagram_fixer import fix_any_diagram
+                            from backend.services.validation_service import get_service as get_validator
+                            
+                            validator = get_validator()
                             pre_fix_length = len(artifact_content)
-                            artifact_content, fixes_applied = fix_any_diagram(artifact_content, max_passes=5)
-                            if fixes_applied:
-                                logger.info(f"🔧 [GEN_SERVICE] Mermaid fixer applied {len(fixes_applied)} fixes to {artifact_type.value} (job_id={job_id}): {fixes_applied[:3]}")
-                            if len(artifact_content) < pre_fix_length:
-                                logger.info(f"🔧 [GEN_SERVICE] Mermaid fixer removed {pre_fix_length - len(artifact_content)} chars from {artifact_type.value} (job_id={job_id})")
+                            
+                            # Step 1: Universal fixer (removes AI explanatory text, fixes basic structure)
+                            artifact_content, fixer_fixes = fix_any_diagram(artifact_content, max_passes=5)
+                            if fixer_fixes:
+                                logger.info(f"🔧 [GEN_SERVICE] Universal fixer applied {len(fixer_fixes)} fixes (job_id={job_id})")
+                            
+                            # Step 2: Validation service auto-repair (targeted syntax fixes)
+                            artifact_content, is_valid, repair_fixes = validator.auto_repair_mermaid(artifact_content, max_attempts=3)
+                            if repair_fixes:
+                                logger.info(f"🔧 [GEN_SERVICE] Auto-repair applied {len(repair_fixes)} fixes (job_id={job_id}): {repair_fixes[:3]}")
+                            
+                            # Step 3: Final targeted fixes if still not valid
+                            if not is_valid:
+                                mermaid_errors = validator._validate_mermaid(artifact_content)
+                                artifact_content = self._apply_targeted_mermaid_fixes(artifact_content, mermaid_errors)
+                                
+                                # Re-check validity
+                                final_errors = validator._validate_mermaid(artifact_content)
+                                critical_errors = [e for e in final_errors if e.startswith("CRITICAL:")]
+                                
+                                if critical_errors:
+                                    logger.warning(f"⚠️ [GEN_SERVICE] Mermaid diagram still has {len(critical_errors)} critical errors after all repairs (job_id={job_id}): {critical_errors[:2]}")
+                                else:
+                                    logger.info(f"✅ [GEN_SERVICE] Mermaid diagram repaired successfully (job_id={job_id})")
+                            else:
+                                logger.info(f"✅ [GEN_SERVICE] Mermaid diagram is valid (job_id={job_id})")
+                            
+                            chars_removed = pre_fix_length - len(artifact_content)
+                            if chars_removed > 10:
+                                logger.info(f"🔧 [GEN_SERVICE] Total cleanup: removed {chars_removed} chars from {artifact_type.value} (job_id={job_id})")
                         except Exception as e:
-                            logger.warning(f"⚠️ [GEN_SERVICE] Mermaid fixer failed: {e} (job_id={job_id})")
+                            logger.warning(f"⚠️ [GEN_SERVICE] Mermaid repair pipeline failed: {e} (job_id={job_id})")
                 
                 validation_score = result.get("validation_score", 0.0)
                 model_used = result.get("model_used", "unknown")

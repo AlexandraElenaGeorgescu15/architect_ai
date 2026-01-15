@@ -85,6 +85,29 @@ class Settings(BaseSettings):
     model_attempt_timeout: int = 60  # Timeout per model attempt
     cloud_fallback_timeout: int = 90  # Timeout for cloud API calls
     
+    # ==========================================================================
+    # Token/Context Window Limits (CENTRALIZED - use these everywhere!)
+    # ==========================================================================
+    # These limits prevent context overflow and ensure consistent behavior
+    # across all services that interact with LLMs.
+    
+    # Context assembly budget (for building RAG context)
+    context_assembly_max_tokens: int = 8000
+    
+    # Local model context window (Ollama num_ctx)
+    local_model_context_window: int = 16384
+    
+    # Cloud API max output tokens
+    cloud_api_max_tokens: int = 4096
+    
+    # Prompt sanitization max length (characters, not tokens)
+    prompt_sanitize_max_length: int = 32000
+    
+    # Chat-specific limits
+    chat_max_conversation_messages: int = 15
+    chat_max_snippet_length: int = 2500
+    chat_max_rag_snippets: int = 12
+    
     class Config:
         env_file = [".env", "../.env", "../../.env"]  # Try multiple locations
         env_file_encoding = "utf-8"

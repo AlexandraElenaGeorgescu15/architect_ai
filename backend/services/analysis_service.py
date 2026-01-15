@@ -103,12 +103,15 @@ class AnalysisService:
                 logger.info(f"Returning cached analysis for {cache_key}")
                 return cached
         
-        # Get project directories
+        # Get project directories - use centralized target project helper
         if project_root:
             project_path = Path(project_root)
         else:
-            user_dirs = get_user_project_directories()
-            project_path = user_dirs[0] if user_dirs else Path.cwd()
+            from backend.utils.target_project import get_target_project_path
+            project_path = get_target_project_path()
+            if not project_path:
+                user_dirs = get_user_project_directories()
+                project_path = user_dirs[0] if user_dirs else Path.cwd()
         
         # Run pattern mining
         analysis = await asyncio.to_thread(
@@ -182,9 +185,12 @@ class AnalysisService:
         }
         
         try:
-            # Get project root
-            user_dirs = get_user_project_directories()
-            project_root = user_dirs[0] if user_dirs else Path.cwd()
+            # Get project root - use centralized target project helper
+            from backend.utils.target_project import get_target_project_path
+            project_root = get_target_project_path()
+            if not project_root:
+                user_dirs = get_user_project_directories()
+                project_root = user_dirs[0] if user_dirs else Path.cwd()
             
             # Build dataset
             dataset = await asyncio.to_thread(

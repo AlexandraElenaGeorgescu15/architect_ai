@@ -1,0 +1,40 @@
+[
+  {
+    "version": 1,
+    "artifact_id": "backlog",
+    "artifact_type": "backlog",
+    "content": "Here is a prioritized product backlog in Markdown format:\n\n**Phone Swap Request Feature**\n=============================\n\n### User Stories\n\n* As a user, I want to request a phone from the available list and offer one of my current phones in exchange, so I can easily manage my device swaps. (Priority: High)\n\t+ Acceptance Criteria:\n\t\t- The feature is implemented as a modal pop-up on the main phone list page.\n\t\t- The modal contains a form with fields for \"Phone to Request\" and \"Phone to Exchange\".\n\t\t- The form also includes an optional \"Reason for Request\" text area and two action buttons: \"Submit Request\" and \"Cancel\".\n\t\t- Upon successful submission, the modal closes, and a confirmation message is displayed.\n* As a user, I want to be able to select my current phone from the available list of phones in exchange. (Priority: Medium)\n\t+ Acceptance Criteria:\n\t\t- The form includes a dropdown list showing only the phones currently owned by the logged-in user.\n\n### Priorities\n\n1. User Story 1 (High)\n2. User Story 2 (Medium)\n\n### Dependencies\n\n* Frontend Team: Create wireframes of the modal and form by EOD, October 17.\n* Backend Team: Develop the new API endpoint and database schema. Target completion: October 21.\n* Frontend Team: Build the \"Request Phone Swap\" button and the basic modal structure. Begin implementation once wireframes are approved.\n\n### Notes\n\n* The feature will be implemented as a modal pop-up on the main phone list page.\n* The form includes an optional \"Reason for Request\" text area and two action buttons: \"Submit Request\" and \"Cancel\".\n* Upon successful submission, the modal closes, and a confirmation message is displayed.\n* Backend validation will ensure that the user making the request is the actual owner of the phone being offered in exchange.\n\nI hope this helps! Let me know if you have any further questions.",
+    "metadata": {
+      "model_used": "llama3",
+      "provider": "cloud",
+      "validation_score": 100.0,
+      "is_valid": true,
+      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
+      "html_content": null,
+      "quality_prediction": {
+        "label": "high",
+        "confidence": 0.9,
+        "score": 0.9,
+        "reasons": {
+          "notes_depth": 0.2,
+          "notes_structure": 0.05,
+          "context_rag": 0.1
+        }
+      },
+      "job_id": "gen_82f61d30",
+      "attempts": [
+        {
+          "model": "llama3",
+          "provider": "ollama",
+          "content": "Here is a prioritized product backlog in Markdown format:\n\n**Phone Swap Request Feature**\n=============================\n\n### User Stories\n\n* As a user, I want to request a phone from the available list and offer one of my current phones in exchange, so I can easily manage my device swaps. (Priority: High)\n\t+ Acceptance Criteria:\n\t\t- The feature is implemented as a modal pop-up on the main phone list page.\n\t\t- The modal contains a form with fields for \"Phone to Request\" and \"Phone to Exchange\".\n\t\t- The form also includes an optional \"Reason for Request\" text area and two action buttons: \"Submit Request\" and \"Cancel\".\n\t\t- Upon successful submission, the modal closes, and a confirmation message is displayed.\n* As a user, I want to be able to select my current phone from the available list of phones in exchange. (Priority: Medium)\n\t+ Acceptance Criteria:\n\t\t- The form includes a dropdown list showing only the phones currently owned by the logged-in user.\n\n### Priorities\n\n1. User Story 1 (High)\n2. User Story 2 (Medium)\n\n### Dependencies\n\n* Frontend Team: Create wireframes of the modal and form by EOD, October 17.\n* Backend Team: Develop the new API endpoint and database schema. Target completion: October 21.\n* Frontend Team: Build the \"Request Phone Swap\" button and the basic modal structure. Begin implementation once wireframes are approved.\n\n### Notes\n\n* The feature will be implemented as a modal pop-up on the main phone list page.\n* The form includes an optional \"Reason for Request\" text area and two action buttons: \"Submit Request\" and \"Cancel\".\n* Upon successful submission, the modal closes, and a confirmation message is displayed.\n* Backend validation will ensure that the user making the request is the actual owner of the phone being offered in exchange.\n\nI hope this helps! Let me know if you have any further questions.",
+          "score": 100.0,
+          "is_valid": true,
+          "errors": [],
+          "retry": 0
+        }
+      ]
+    },
+    "created_at": "2026-01-15T10:16:47.537246",
+    "is_current": true
+  }
+]

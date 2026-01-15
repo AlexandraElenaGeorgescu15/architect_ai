@@ -26,7 +26,9 @@ from backend.core.middleware import (
     RequestIDMiddleware,
     TimingMiddleware,
     StructuredLoggingMiddleware,
-    setup_rate_limiting
+    setup_rate_limiting,
+    setup_security_middleware,
+    get_ip_ban_stats
 )
 from backend.core.config import settings
 from backend.models.errors import ErrorResponse
@@ -290,6 +292,11 @@ app.add_middleware(RequestIDMiddleware)
 # Setup rate limiting
 limiter = setup_rate_limiting(app)
 
+# Setup security middleware (IP banning, trusted hosts)
+# This adds protection against vulnerability scanners and ensures
+# requests only come from trusted hosts (localhost, frontend, ngrok)
+ip_ban_manager = setup_security_middleware(app)
+
 # Global exception handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
@@ -455,15 +462,24 @@ async def startup_event():
             update_phase_status("model_registry", "error", f"Model refresh failed: {e}")
         
         # Start RAG auto-refresh using new RAGIngester service
+        # CRITICAL: Index ALL user projects EXCEPT Architect.AI itself
         try:
             from backend.services.rag_ingester import RAGIngester
-            from backend.utils.tool_detector import get_user_project_directories
+            from backend.utils.tool_detector import get_user_project_directories, detect_tool_directory
             
             rag_ingester = RAGIngester()
+            
+            # Get ALL user project directories (already excludes Architect.AI tool)
             user_project_dirs = get_user_project_directories()
+            tool_dir = detect_tool_directory()
+            
+            # Double-check: Filter out tool directory just in case
+            user_project_dirs = [d for d in user_project_dirs if d != tool_dir and 'architect_ai' not in str(d).lower()]
             
             if user_project_dirs:
-                logger.info(f"Found {len(user_project_dirs)} user project directories")
+                logger.info(f"🎯 [STARTUP] Found {len(user_project_dirs)} user projects to index (excluding Architect.AI)")
+                for d in user_project_dirs:
+                    logger.info(f"   📂 {d.name}: {d}")
                 update_phase_status(
                     "rag_indexing",
                     "running",
@@ -698,20 +714,19 @@ from backend.api import auth as auth_router
 from backend.api import rag as rag_router
 from backend.api import knowledge_graph as kg_router
 from backend.api import pattern_mining as pm_router
-# ML features router temporarily disabled - missing DTOs
-# from backend.api import ml_features as ml_router
 from backend.api import context as context_router
 from backend.api import analysis as analysis_router
 from backend.api import chat as chat_router
 from backend.api import code_search as code_search_router
 from backend.api import universal_context as universal_context_router
+from backend.api import ml_features as ml_router  # ML Feature Engineering endpoints
 
 app.include_router(ws_router.router, tags=["websocket"])
 app.include_router(auth_router.router)
 app.include_router(rag_router.router)
 app.include_router(kg_router.router)
 app.include_router(pm_router.router)
-# app.include_router(ml_router.router)
+app.include_router(ml_router.router)  # ML Feature Engineering (re-enabled)
 app.include_router(context_router.router)
 app.include_router(analysis_router.router)
 app.include_router(universal_context_router.router)  # 🚀 Universal Context - The RAG Powerhouse!

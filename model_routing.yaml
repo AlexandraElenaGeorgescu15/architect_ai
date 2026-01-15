@@ -13,13 +13,13 @@ backlog:
 code_prototype:
   enabled: true
   fallback_models:
-  - ollama:llama3
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:codellama
 dev_visual_prototype:
   enabled: true
   fallback_models:
-  - ollama:llama3
+  - huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:codellama
 estimations:
@@ -199,110 +199,110 @@ mermaid_c4_container:
 mermaid_c4_context:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_c4_deployment:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - ollama:mistral:7b
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_class:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - ollama:mistral:7b-instruct-q4_K_M
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_component:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - ollama:mistral-nemo:12b-instruct-2407-q4_K_M
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_data_flow:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_erd:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_flowchart:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_gantt:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_git_graph:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_journey:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
   - groq:llama-3.3-70b-versatile
   primary_model: ollama:llama3
 mermaid_mindmap:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_pie:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_sequence:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_state:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
   - gemini:gemini-2.0-flash-exp
   - groq:mixtral-8x7b-32768
   primary_model: ollama:llama3
 mermaid_system_overview:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_timeline:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_uml:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 mermaid_user_flow:
   enabled: true
   fallback_models:
-  - ollama:codellama
+  - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
   - gemini:gemini-2.0-flash-exp
   primary_model: ollama:llama3
 personas:

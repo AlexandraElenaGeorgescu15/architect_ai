@@ -78,7 +78,7 @@ class TrainingService:
         logger.info("Training Service initialized")
     
     def _load_jobs(self):
-        """Load training jobs from file."""
+        """Load training jobs from file (sync version for init)."""
         if self.jobs_file.exists():
             try:
                 with open(self.jobs_file, 'r', encoding='utf-8') as f:
@@ -95,7 +95,7 @@ class TrainingService:
                 logger.error(f"Error loading training jobs: {e}")
     
     def _save_jobs(self):
-        """Save training jobs to file."""
+        """Save training jobs to file (sync version)."""
         try:
             data = {
                 job_id: {
@@ -109,6 +109,59 @@ class TrainingService:
                 json.dump(data, f, indent=2, default=str)
         except Exception as e:
             logger.error(f"Error saving training jobs: {e}")
+    
+    async def _load_jobs_async(self):
+        """
+        Load training jobs from file asynchronously.
+        
+        Performance optimization: Use asyncio.to_thread to avoid blocking
+        the main event loop during file I/O.
+        """
+        import asyncio
+        
+        def _sync_load():
+            if not self.jobs_file.exists():
+                return {}
+            
+            with open(self.jobs_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        
+        try:
+            data = await asyncio.to_thread(_sync_load)
+            for job_id, job_data in data.items():
+                job_data['status'] = TrainingStatus(job_data.get('status', 'queued'))
+                if 'artifact_type' in job_data:
+                    job_data['artifact_type'] = ArtifactType(job_data['artifact_type'])
+                self.jobs[job_id] = TrainingJobDTO(**job_data)
+            logger.debug(f"Async loaded {len(self.jobs)} training jobs")
+        except Exception as e:
+            logger.error(f"Error async loading training jobs: {e}")
+    
+    async def _save_jobs_async(self):
+        """
+        Save training jobs to file asynchronously.
+        
+        Performance optimization: Use asyncio.to_thread to avoid blocking
+        the main event loop during file I/O.
+        """
+        import asyncio
+        
+        def _sync_save():
+            data = {
+                job_id: {
+                    **job.model_dump(),
+                    'status': job.status.value,
+                    'artifact_type': job.artifact_type.value
+                }
+                for job_id, job in self.jobs.items()
+            }
+            with open(self.jobs_file, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=2, default=str)
+        
+        try:
+            await asyncio.to_thread(_sync_save)
+        except Exception as e:
+            logger.error(f"Error async saving training jobs: {e}")
     
     async def create_training_job(
         self,
@@ -188,6 +241,9 @@ class TrainingService:
         """
         List training jobs with optional filtering.
         
+        Performance optimization: Refresh from disk asynchronously to ensure
+        we have the latest state without blocking.
+        
         Args:
             status: Optional status filter
             artifact_type: Optional artifact type filter
@@ -195,6 +251,9 @@ class TrainingService:
         Returns:
             List of training jobs
         """
+        # Refresh from disk asynchronously
+        await self._load_jobs_async()
+        
         jobs = list(self.jobs.values())
         
         if status:

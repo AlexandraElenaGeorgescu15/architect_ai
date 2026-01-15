@@ -48,6 +48,19 @@
       "artifact_type": "mermaid_uml"
     },
     "created_at": "2026-01-15T07:50:06.033250",
+    "is_current": false
+  },
+  {
+    "version": 3,
+    "artifact_id": "mermaid_uml",
+    "artifact_type": "mermaid_uml",
+    "content": "erDiagram\n    ENTITY {\n        int id PK\n        string name\n    }",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_uml"
+    },
+    "created_at": "2026-01-15T10:27:38.652955",
     "is_current": true
   }
 ]

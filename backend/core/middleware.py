@@ -1,14 +1,17 @@
 """
 Custom middleware for FastAPI.
-Includes rate limiting, request ID tracking, and timing.
+Includes rate limiting, request ID tracking, timing, trusted hosts, and IP banning.
 """
 
 import time
 import uuid
 import logging
-from typing import Callable
+from typing import Callable, Dict, Set
+from collections import defaultdict
+from datetime import datetime, timedelta
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -18,6 +21,100 @@ logger = logging.getLogger(__name__)
 
 # Rate limiter (in-memory, can be upgraded to Redis)
 limiter = Limiter(key_func=get_remote_address)
+
+
+# =============================================================================
+# IP Ban Manager - Tracks repeated 404s and bans suspicious IPs
+# =============================================================================
+class IPBanManager:
+    """
+    Manages IP banning based on repeated 404 errors (vulnerability scanning detection).
+    
+    Strategy:
+    - Track 404 counts per IP within a time window
+    - Ban IPs that exceed threshold
+    - Auto-expire bans after a configurable duration
+    """
+    
+    def __init__(
+        self,
+        ban_threshold: int = 10,       # 404s before ban
+        window_seconds: int = 60,       # Time window for counting 404s
+        ban_duration_seconds: int = 300 # 5 minute ban
+    ):
+        self.ban_threshold = ban_threshold
+        self.window_seconds = window_seconds
+        self.ban_duration_seconds = ban_duration_seconds
+        
+        # Track 404 counts: ip -> list of timestamps
+        self._404_counts: Dict[str, list] = defaultdict(list)
+        # Banned IPs: ip -> ban expiry time
+        self._banned_ips: Dict[str, datetime] = {}
+        
+        # Suspicious path patterns (vulnerability scanning indicators)
+        self.suspicious_patterns = [
+            "/cgi-bin/", "/.asp", "/.php", "/.env", 
+            "/wp-admin", "/wp-content", "/phpmyadmin",
+            "../", "..\\", "/etc/passwd", "/win.ini",
+            ".git/", ".svn/", "/.htaccess", "/xmlrpc.php",
+            "/admin/", "/administrator/", "/config/", "/backup/"
+        ]
+    
+    def is_banned(self, ip: str) -> bool:
+        """Check if an IP is currently banned."""
+        if ip in self._banned_ips:
+            if datetime.now() < self._banned_ips[ip]:
+                return True
+            else:
+                # Ban expired, remove it
+                del self._banned_ips[ip]
+                logger.info(f"🔓 [IP_BAN] Ban expired for {ip}")
+        return False
+    
+    def record_404(self, ip: str, path: str) -> bool:
+        """
+        Record a 404 error for an IP.
+        
+        Returns:
+            True if IP should now be banned
+        """
+        now = datetime.now()
+        
+        # Check if path matches suspicious patterns (more severe)
+        is_suspicious = any(pattern in path.lower() for pattern in self.suspicious_patterns)
+        
+        # Clean old entries outside the window
+        cutoff = now - timedelta(seconds=self.window_seconds)
+        self._404_counts[ip] = [ts for ts in self._404_counts[ip] if ts > cutoff]
+        
+        # Add current 404
+        # Suspicious paths count more heavily
+        if is_suspicious:
+            self._404_counts[ip].extend([now] * 3)  # Count as 3 404s
+            logger.warning(f"🚨 [SECURITY] Suspicious path accessed: {path} from {ip}")
+        else:
+            self._404_counts[ip].append(now)
+        
+        # Check if threshold exceeded
+        if len(self._404_counts[ip]) >= self.ban_threshold:
+            self._banned_ips[ip] = now + timedelta(seconds=self.ban_duration_seconds)
+            self._404_counts[ip] = []  # Clear counter
+            logger.warning(f"🔒 [IP_BAN] Banned IP {ip} for {self.ban_duration_seconds}s (too many 404s)")
+            return True
+        
+        return False
+    
+    def get_stats(self) -> Dict:
+        """Get current ban statistics."""
+        return {
+            "banned_ips_count": len(self._banned_ips),
+            "tracked_ips_count": len(self._404_counts),
+            "banned_ips": list(self._banned_ips.keys())
+        }
+
+
+# Global IP ban manager
+ip_ban_manager = IPBanManager()
 
 
 class RequestIDMiddleware(BaseHTTPMiddleware):
@@ -100,6 +197,42 @@ class TimingMiddleware(BaseHTTPMiddleware):
                         "path": request.url.path
                     }
                 )
+        
+        return response
+
+
+class IPBanMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware to block banned IPs from accessing the API.
+    
+    Works with IPBanManager to detect and block vulnerability scanners.
+    """
+    
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        """Check if IP is banned before processing request."""
+        client_ip = request.client.host if request.client else "unknown"
+        
+        # Check if IP is banned
+        if ip_ban_manager.is_banned(client_ip):
+            logger.warning(f"🚫 [IP_BAN] Blocked request from banned IP: {client_ip}")
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "error": "Forbidden",
+                    "message": "Your IP has been temporarily blocked due to suspicious activity.",
+                    "type": "ip_banned"
+                }
+            )
+        
+        # Process the request
+        response = await call_next(request)
+        
+        # Track 404s for potential banning
+        if response.status_code == 404:
+            path = request.url.path
+            if ip_ban_manager.record_404(client_ip, path):
+                # IP just got banned, but let this request complete
+                logger.warning(f"🔒 [IP_BAN] IP {client_ip} banned after excessive 404s")
         
         return response
 
@@ -204,4 +337,64 @@ def setup_rate_limiting(app):
     return limiter
 
 
+def setup_security_middleware(app, allowed_hosts: list = None):
+    """
+    Setup comprehensive security middleware for FastAPI app.
+    
+    This includes:
+    - TrustedHostMiddleware: Only accept requests from allowed hosts
+    - IPBanMiddleware: Block IPs with suspicious behavior (repeated 404s)
+    
+    Args:
+        app: FastAPI application instance
+        allowed_hosts: List of allowed hostnames (default: localhost + ngrok patterns)
+    """
+    from backend.core.config import settings
+    
+    # Default allowed hosts: localhost, 127.0.0.1, and ngrok tunnels
+    if allowed_hosts is None:
+        allowed_hosts = [
+            "localhost",
+            "127.0.0.1",
+            "0.0.0.0",
+            # Allow any ngrok subdomain
+            "*.ngrok.io",
+            "*.ngrok-free.app",
+            "*.ngrok.app",
+            # Frontend origins (extracted from CORS settings)
+            "localhost:3000",
+            "127.0.0.1:3000",
+        ]
+        
+        # Add configured CORS origins
+        if hasattr(settings, 'cors_origins'):
+            for origin in settings.cors_origins:
+                # Extract host from URL
+                if origin.startswith("http://") or origin.startswith("https://"):
+                    from urllib.parse import urlparse
+                    parsed = urlparse(origin)
+                    if parsed.netloc:
+                        allowed_hosts.append(parsed.netloc)
+                else:
+                    allowed_hosts.append(origin)
+    
+    # Add TrustedHostMiddleware (validates Host header)
+    # Note: This must be added after CORS middleware
+    app.add_middleware(
+        TrustedHostMiddleware,
+        allowed_hosts=allowed_hosts
+    )
+    
+    # Add IP Ban Middleware (blocks banned IPs)
+    app.add_middleware(IPBanMiddleware)
+    
+    logger.info(f"🔒 [SECURITY] Security middleware configured with {len(allowed_hosts)} allowed hosts")
+    logger.info(f"🔒 [SECURITY] IP ban threshold: {ip_ban_manager.ban_threshold} 404s in {ip_ban_manager.window_seconds}s")
+    
+    return ip_ban_manager
+
+
+def get_ip_ban_stats() -> Dict:
+    """Get current IP ban statistics."""
+    return ip_ban_manager.get_stats()
 

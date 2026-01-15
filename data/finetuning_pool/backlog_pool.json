@@ -1,0 +1,743 @@
+[
+  {
+    "artifact_type": "backlog",
+    "content": "Here is a prioritized product backlog in Markdown format:\n\n**Phone Swap Request Feature**\n=============================\n\n### User Stories\n\n* As a user, I want to request a phone from the available list and offer one of my current phones in exchange, so I can easily manage my device swaps. (Priority: High)\n\t+ Acceptance Criteria:\n\t\t- The feature is implemented as a modal pop-up on the main phone list page.\n\t\t- The modal contains a form with fields for \"Phone to Request\" and \"Phone to Exchange\".\n\t\t- The form also includes an optional \"Reason for Request\" text area and two action buttons: \"Submit Request\" and \"Cancel\".\n\t\t- Upon successful submission, the modal closes, and a confirmation message is displayed.\n* As a user, I want to be able to select my current phone from the available list of phones in exchange. (Priority: Medium)\n\t+ Acceptance Criteria:\n\t\t- The form includes a dropdown list showing only the phones currently owned by the logged-in user.\n\n### Priorities\n\n1. User Story 1 (High)\n2. User Story 2 (Medium)\n\n### Dependencies\n\n* Frontend Team: Create wireframes of the modal and form by EOD, October 17.\n* Backend Team: Develop the new API endpoint and database schema. Target completion: October 21.\n* Frontend Team: Build the \"Request Phone Swap\" button and the basic modal structure. Begin implementation once wireframes are approved.\n\n### Notes\n\n* The feature will be implemented as a modal pop-up on the main phone list page.\n* The form includes an optional \"Reason for Request\" text area and two action buttons: \"Submit Request\" and \"Cancel\".\n* Upon successful submission, the modal closes, and a confirmation message is displayed.\n* Backend validation will ensure that the user making the request is the actual owner of the phone being offered in exchange.\n\nI hope this helps! Let me know if you have any further questions.",
+    "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan for the new phone swap request feature.\n\nBackground\nUsers currently lack a formal way to request an exchange of their current phone for another one available in our inventory. This new feature aims to create a streamlined, in-app workflow to manage these requests efficiently.\n\nFeature Overview\nThe team agreed on the following user story: \"As a user, I want to request a phone from the available list and offer one of my current phones in exchange, so I can easily manage my device swaps.\"\n\nThe feature will be implemented as a modal pop-up on the main phone list page.\n\nImplementation Details\nFrontend (UI/UX)\nA new button, labeled \"Request Phone Swap,\" will be added to the main phone page.\n\nClicking this button will trigger a modal (pop-up) that overlays the current view.\n\nThe modal will contain a form with the following fields:\n\nPhone to Request: A dropdown list populated with all available phones from the main list.\n\nPhone to Exchange: A dropdown list showing only the phones currently owned by the logged-in user.\n\nReason for Request (Optional): A text area for any additional comments.\n\nActions: \"Submit Request\" and \"Cancel\" buttons.\n\nUpon successful submission, the modal will close, and a confirmation message will be displayed.\n\nBackend (Logic)\nA new API endpoint (POST /api/phone-swaps) will be created to handle form submissions.\n\nA new table will be created in the database to store swap requests. It will include columns for the requester's ID, the requested phone, the offered phone, a status (defaulting to 'Pending'), and the comment.\n\nBackend validation will ensure that the user making the request is the actual owner of the phone being offered in exchange.\n\nAction Items\nUX Team: Create a wireframe of the modal and form by EOD, October 17.\n\nBackend Team: Develop the new API endpoint and database schema. Target completion: October 21.\n\nFrontend Team: Build the \"Request Phone Swap\" button and the basic modal structure. Begin implementation once wireframes are approved.\n\nProduct Manager: Create the formal Jira ticket with the defined user story and acceptance criteria.",
+    "validation_score": 100.0,
+    "model_used": "llama3",
+    "context": {
+      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan for the new phone swap request feature.\n\nBackground\nUsers currently lack a formal way to request an exchange of their current phone for another one available in our inventory. This new feature aims to create a streamlined, in-app workflow to manage these requests efficiently.\n\nFeature Overview\nThe team agreed on the following user story: \"As a user, I want to request a phone from the available list and offer one of my current phones in exchange, so I can easily manage my device swaps.\"\n\nThe feature will be implemented as a modal pop-up on the main phone list page.\n\nImplementation Details\nFrontend (UI/UX)\nA new button, labeled \"Request Phone Swap,\" will be added to the main phone page.\n\nClicking this button will trigger a modal (pop-up) that overlays the current view.\n\nThe modal will contain a form with the following fields:\n\nPhone to Request: A dropdown list populated with all available phones from the main list.\n\nPhone to Exchange: A dropdown list showing only the phones currently owned by the logged-in user.\n\nReason for Request (Optional): A text area for any additional comments.\n\nActions: \"Submit Request\" and \"Cancel\" buttons.\n\nUpon successful submission, the modal will close, and a confirmation message will be displayed.\n\nBackend (Logic)\nA new API endpoint (POST /api/phone-swaps) will be created to handle form submissions.\n\nA new table will be created in the database to store swap requests. It will include columns for the requester's ID, the requested phone, the offered phone, a status (defaulting to 'Pending'), and the comment.\n\nBackend validation will ensure that the user making the request is the actual owner of the phone being offered in exchange.\n\nAction Items\nUX Team: Create a wireframe of the modal and form by EOD, October 17.\n\nBackend Team: Develop the new API endpoint and database schema. Target completion: October 21.\n\nFrontend Team: Build the \"Request Phone Swap\" button and the basic modal structure. Begin implementation once wireframes are approved.\n\nProduct Manager: Create the formal Jira ticket with the defined user story and acceptance criteria.",
+      "repo_id": null,
+      "created_at": "2026-01-15T10:15:59.214279",
+      "universal_context": {
+        "project_directories": [
+          "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\agents",
+          "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln",
+          "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project"
+        ],
+        "total_files": 70,
+        "key_entities": [
+          {
+            "name": "UserDto",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs"
+          },
+          {
+            "name": "WeatherForecast",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\WeatherForecast.cs"
+          },
+          {
+            "name": "UsersController",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs"
+          },
+          {
+            "name": "WeatherForecastController",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs"
+          },
+          {
+            "name": "IUserService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs"
+          },
+          {
+            "name": "UserService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs"
+          },
+          {
+            "name": "IMongoDBSettings",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\IMongoDBSettings.cs"
+          },
+          {
+            "name": "MongoDBSettings",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\MongoDBSettings.cs"
+          },
+          {
+            "name": "AppRoutingModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts"
+          },
+          {
+            "name": "AppComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.ts"
+          },
+          {
+            "name": "AppModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts"
+          },
+          {
+            "name": "AuthenticationModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts"
+          },
+          {
+            "name": "LoginComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts"
+          },
+          {
+            "name": "RegisterComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts"
+          },
+          {
+            "name": "NameUppercasePipe",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\pipes\\name-uppercase.pipe.ts"
+          },
+          {
+            "name": "AuthenticationService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts"
+          },
+          {
+            "name": "PhoneService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts"
+          },
+          {
+            "name": "TableRoutingModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table-routing.module.ts"
+          },
+          {
+            "name": "TableModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts"
+          },
+          {
+            "name": "EntryDetailsModalComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\entry-details-modal\\entry-details-modal.component.ts"
+          },
+          {
+            "name": "PhoneComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts"
+          },
+          {
+            "name": "TablePageComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts"
+          },
+          {
+            "name": "Phone",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts"
+          },
+          {
+            "name": "User",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts"
+          }
+        ],
+        "project_map": {
+          "directories": {
+            "agents": {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\agents",
+              "file_count": 1,
+              "subdirectories": []
+            },
+            "final-proj-sln": {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln",
+              "file_count": 14,
+              "subdirectories": []
+            },
+            "final_project": {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project",
+              "file_count": 55,
+              "subdirectories": []
+            }
+          },
+          "file_types": {
+            ".py": 1,
+            ".sln": 1,
+            ".json": 9,
+            ".cs": 9,
+            ".csproj": 1,
+            ".md": 1,
+            ".ico": 1,
+            ".html": 7,
+            ".ts": 27,
+            ".scss": 7,
+            ".less": 1,
+            ".jpg": 2
+          },
+          "key_files": [
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Program.cs",
+              "name": "Program.cs",
+              "importance": 1.0
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs",
+              "name": "Controller.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs",
+              "name": "WeatherForecastController.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs",
+              "name": "IUserService.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+              "name": "UserService.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.spec.ts",
+              "name": "authentication.service.spec.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts",
+              "name": "authentication.service.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.spec.ts",
+              "name": "phone.service.spec.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts",
+              "name": "phone.service.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs",
+              "name": "UserDto.cs",
+              "importance": 0.8
+            }
+          ]
+        }
+      },
+      "sources": {
+        "rag": {
+          "context": "=== PROJECT CONTEXT (Universal Knowledge + Targeted Retrieval) ===\n\n\ud83d\udd11 KEY PROJECT ENTITIES:\n  - UserDto (class)\n  - WeatherForecast (class)\n  - UsersController (class)\n  - WeatherForecastController (class)\n  - IUserService (class)\n  - UserService (class)\n  - IMongoDBSettings (class)\n  - MongoDBSettings (class)\n  - AppRoutingModule (class)\n  - AppComponent (class)\n\n\ud83d\udcc4 RELEVANT CODE SNIPPETS (ranked by importance + relevance):\n\n\n--- Snippet 1 \u2b50\u2b50\u2b50\u2b50\u2b50 (score: 0.324) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Program.cs\n});\n\nbuilder.Services.AddSignalR();\nbuilder.Services.AddControllers();\n// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle\nbuilder.Services.AddEndpointsApiExplorer();\nbuilder.Services.AddSwaggerGen(c => {\n});\n\nvar app = builder.Build();\n\n// Configure the HTTP request pipeline.\nif (app.Environment.IsDevelopment())\n{\n    app.UseSwagger();\n    app.UseSwaggerUI();\n}\n\napp.UseHttpsRedirection();\n\napp.UseCors(\"CorsPolicy\");\n\napp.UseWebSockets(new WebSocketOptions\n{\n    KeepAliveInterval = TimeSpan.Zero,\n});\n\napp.UseRouting();\n\napp.UseAuthorization();\n\napp.MapControllers();\napp.Run();\n\n--- Snippet 2 \u2b50\u2b50 (score: 0.314) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\nSECTION: 0\nimport { Component, EventEmitter, OnInit, Output } from '@angular/core';\nimport { Observable, of } from 'rxjs';\nimport { Phone } from 'src/models/phone';\nimport { PhoneService } from 'src/app/services/phone.service';\nimport { NzModalService } from 'ng-zorro-antd/modal';\nimport { PhoneComponent } from '../phone/phone.component';\nimport { EntryDetailsModalComponent } from '../entry-details-modal/entry-details-modal.component';\nimport { AuthenticationService } from 'src/app/services/authentication.service';\n\n@Component({\n  selector: 'app-table-page',\n  templateUrl: './table-page.component.html',\n  styleUrls: ['./table-page.component.scss']\n})\n\n\n--- Snippet 3 \u2b50\u2b50\u2b50\u2b50 (score: 0.290) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts\n    { id: 9, brand: 'Motorola', model: 'x', storage: 64, price: 199 },\n  ];\n\n  getPhones(): Observable<Phone[]> {\n    // simulate delay of fetching data from API\n    return of(this.phones).pipe(delay(1000));\n  }\n\n  addPhone(phone: Phone): void {\n    phone.id = this.phones.length + 1;\n    this.phones.push(phone);\n  }\n\n  updatePhone(phone: Phone): void {\n    const index = this.phones.findIndex((p) => p.id === phone.id);\n    if (index !== -1) {\n      this.phones[index] = phone;\n    }\n  }\n\n  deletePhone(phoneId: number): void {\n    const index = this.phones.findIndex(p => p.id === phoneId);\n    if (index !== -1) {\n      this.phones.splice(index, 1);\n    }\n  }\n}\n\n\n--- Snippet 4 \u2b50\u2b50 (score: 0.239) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\components\\UnifiedStudioTabs.tsx\nimport { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense, memo } from 'react'\nimport { ArtifactType } from '../services/generationService'\nimport { useSystemStatus } from '../hooks/useSystemStatus'\nimport { \n  Loader2, Sparkles, FileText, CheckCircle2, Folder, Code, FileCode, \n  Download, Key, Settings, Search, Network, ListTodo, Sliders, Edit3, GitBranch\n} from 'lucide-react'\nimport MeetingNotesManager from './MeetingNotesManager'\nimport BulkGenerationDialog from './BulkGenerationDialog'\nimport { bulkGenerate } from '../services/generationService'\nimport { useArtifactStore } from '../stores/artifactStore'\nimport { useUIStore } from '../stores/uiStore'\nimport { useKeyboardShortcuts, COMMON_SHORTCUTS } from '../hooks/useKeyboardShortcuts'\n\n// Lazy load heavy components for better initial load performance\nconst ArtifactTabs = lazy(() => import('./artifacts/ArtifactTabs'))\nconst CodeEditor = lazy(() => import('./CodeEditor'))\n\n--- Snippet 5 \u2b50\u2b50 (score: 0.238) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\n  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload the phones after deletion\n    this.loadPhones();\n  }  \n\n  sortPhones(column: string): void {\n      // Implement the sorting logic based on the selected column\n      switch (column) {\n        case 'id':\n          this.phones.sort((a, b) => a.id - b.id);\n          break;\n        case 'brand':\n          this.phones.sort((a, b) => a.brand.localeCompare(b.brand));\n          break;\n        case 'model':\n          this.phones.sort((a, b) => a.model.localeCompare(b.model));\n          break;\n        case 'storage':\n          this.phones.sort((a, b) => a.storage - b.storage);\n          break;\n        case 'price':\n          this.phones.sort((a, b) => a.price - b.price);\n          break;\n        default:\n          break;\n      }\n    }\n\n  openDetailsModal(phone: Phone): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Phone Details',\n      nzContent: EntryDetailsModalComponent,\n\n--- Snippet 6 \u2b50\u2b50 (score: 0.227) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\UnifiedStudioTabs.tsx\n  const [isBulkDialogOpen, setBulkDialogOpen] = useState(false)\n  const [isBulkGenerating, setIsBulkGenerating] = useState(false)\n  \n  // Meeting notes folder selection state\n  const [folders, setFolders] = useState<Array<{ id: string; name: string; notes_count: number }>>([])\n  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)\n  \n  // Import useSystemStatus to check backend readiness\n  const { isReady: backendReady } = useSystemStatus()\n  \n  // Load folders when generate tab is active and backend is ready\n  useEffect(() => {\n    if (backendReady) {\n      loadFolders()\n    }\n  }, [backendReady])\n  \n  const loadFolders = async () => {\n    try {\n      const { default: api } = await import('../services/api')\n      const response = await api.get('/api/meeting-notes/folders')\n      setFolders(response.data.folders || [])\n    } catch (error) {\n      // Failed to load folders - handle in UI\n      console.error('Failed to load folders:', error)\n    }\n  }\n\n\n--- Snippet 7 \u2b50\u2b50 (score: 0.213) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\backend\\api\\versions.py\n    \"\"\"Get all versions for all artifacts of a given type.\"\"\"\n    service = get_version_service()\n    all_versions = []\n    \n    logger.info(f\"\ud83d\udccb [VERSIONS] Loading versions for artifact_type: {artifact_type}\")\n    logger.info(f\"\ud83d\udccb [VERSIONS] Total artifact_ids in service: {len(service.versions)}\")\n    \n    # Normalize artifact_type for matching (handle case and format variations)\n    artifact_type_normalized = artifact_type.lower().replace(\"-\", \"_\").replace(\" \", \"_\")\n    \n    # Iterate through all artifact_ids in the version service\n    matching_artifact_ids = []\n    for artifact_id, versions in service.versions.items():\n        # Normalize artifact_id for matching\n        artifact_id_normalized = artifact_id.lower().replace(\"-\", \"_\").replace(\" \", \"_\")\n        \n        # Check if this artifact_id matches the type (starts with artifact_type)\n        # This handles cases like \"mermaid_erd_20251126_200400\" matching \"mermaid_erd\"\n\n--- Snippet 8 \u2b50\u2b50 (score: 0.199) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\VersionControl.tsx\n                }))\n                versionsByType[artifactType].push(...versionsWithId)\n              }\n            } catch (err) {\n              // Artifact has no versions yet\n              continue\n            }\n          }\n        }\n      }\n      \n      // Convert to artifact_id-based map for compatibility with existing UI\n      // Group by artifact_type, but use artifact_type as the key\n      const versionsMap: Record<string, any[]> = {}\n      for (const [artifactType, versions] of Object.entries(versionsByType)) {\n        // Use artifact_type as key, but we'll need to update the UI to handle this\n        // For now, also create entries for each artifact_id\n        for (const version of versions) {\n          const artifactId = version.artifact_id || artifactType\n          if (!versionsMap[artifactId]) {\n            versionsMap[artifactId] = []\n          }\n          versionsMap[artifactId].push(version)\n        }\n      }\n      \n\n--- Snippet 9 \u2b50\u2b50 (score: 0.188) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\index.css\n    transition: opacity 0.35s ease;\n  }\n  \n  .interactive-card:hover {\n    transform: translateY(-3px) scale(1.01);\n    box-shadow: \n      0 24px 40px -10px rgba(0, 0, 0, 0.5),\n      0 12px 20px -8px rgba(0, 0, 0, 0.4),\n      0 0 40px -10px hsl(var(--primary) / 0.3);\n  }\n  \n  .interactive-card:hover::before {\n    opacity: 1;\n  }\n  \n  .interactive-card:active {\n    transform: translateY(-1px) scale(0.99);\n    transition-duration: 0.1s;\n  }\n  \n  /* Subtle lift effect for buttons/links */\n  .interactive-lift {\n    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);\n  }\n  \n  .interactive-lift:hover {\n    transform: translateY(-1px);\n    box-shadow: 0 4px 12px -2px hsl(var(--primary) / 0.25);\n  }\n  \n  .interactive-lift:active {\n    transform: translateY(0);\n    transition-duration: 0.1s;\n  }\n  \n  /* Premium Notification Badge - Blends with dark theme */\n  .badge,\n  [class*=\"badge\"],\n  [class*=\"notification\"] {\n\n--- Snippet 10 \u2b50\u2b50 (score: 0.187) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"edit\" (click)=\"editPhone(phone)\">Edit</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"info-circle\" (click)=\"openDetailsModal(phone)\">Details</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"delete\" (click)=\"deletePhone(phone.id)\">Delete</button>\n          </td>\n        </tr>\n      </tbody>\n    </nz-table>\n  \n  <div class=\"add-button-container\">\n    <button nz-button nzType=\"primary\" nzSize=\"large\" nzShape=\"round\" (click)=\"addPhone()\">Add</button>\n  </div>\n  \n\n--- Snippet 11 \u2b50\u2b50 (score: 0.181) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\components\\feedback_models.py\n    validation_score: float = 0.0\n    artifact_type: str = \"\"\n    model_used: str = \"\"\n    reward_signal: float = 0.0\n    metadata: Dict[str, Any] = field(default_factory=dict)\n\n    def to_training_example(self) -> Dict[str, Any]:\n        \"\"\"Convert the event into a generic fine-tuning example payload.\"\"\"\n        target = self.corrected_output if self.corrected_output else self.ai_output\n        return {\n            \"instruction\": f\"Generate {self.artifact_type}\",\n            \"input\": self.input_data,\n            \"output\": target,\n            \"context\": json.dumps(self.context),\n            \"quality_score\": self.validation_score,\n        }\n\n\n@dataclass\nclass TrainingBatch:\n    \"\"\"Bundle of curated training examples ready for downstream fine-tuning.\"\"\"\n\n    batch_id: str\n    created_at: float\n    examples: List[Dict[str, Any]]\n    priority: int\n    metadata: Dict[str, Any] = field(default_factory=dict)\n    hyperparameters: Optional[Any] = None\n\"\"\"\n\n--- Snippet 12 \u2b50\u2b50 (score: 0.180) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\nSECTION: 1.1\n {\n        const phoneComponent = modalRef.getContentComponent() as PhoneComponent;\n        phoneComponent.submitForm();\n        const newPhone = phoneComponent.newPhone;\n        if (newPhone) {\n          this.phoneService.updatePhone(newPhone);\n          this.loadPhones();\n        }\n      }\n      \n    });    \n  \n    modalRef.afterClose.subscribe((result: Phone) => {\n      if (result) {\n        this.phoneService.updatePhone(result);\n        this.loadPhones();\n        console.log(this.phones$)\n      }\n    });\n    \n  }\n  currentPage: number = 1;\n  pageSize: number = 8;\n  @Output() phones! : Phone[];\n\n  getPhones(): void {\n    this.phoneService.getPhones().subscribe((phones) => {\n      this.phones = phones;\n    });\n  }\n\n  getPaginatedPhones(): Phone[] {\n    const startIndex = (this.currentPage - 1) * this.pageSize;\n    const endIndex = startIndex + this.pageSize;\n    return this.phones.slice(startIndex, endIndex);\n  }\n\n  onPageChange(page: number): void {\n    this.currentPage = page;\n  }\n\n  getFilteredPhones(): Phone[] {\n    if (!this.searchQuery) {\n      return this.getPaginatedPhones();\n    }\n    \n    const filteredPhones = this.getPaginatedPhones().filter(phone => {\n      // Modify the condition based on your specific search requirements\n      return phone.brand.toLowerCase().includes(this.searchQuery.toLowerCase()) ||\n             phone.model.toLowerCase().includes(this.searchQuery.toLowerCase()) ||\n             phone.storage.toString().includes(this.searchQuery.toLowerCase()) ||\n             phone.price.toString().includes(this.searchQuery.toLowerCase());\n    });\n  \n    return filteredPhones;\n\n  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload\n\n--- Snippet 13 \u2b50\u2b50 (score: 0.179) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.html\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Storage (GB)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"storage\" placeholder=\"Enter phone storage\">\n  </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Price (\u20ac)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"price\" placeholder=\"Enter phone price\">\n  </nz-form-control>\n</nz-form-item>\n</form>\n\n\n\n--- Snippet 14 \u2b50\u2b50 (score: 0.177) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\App.tsx\n  }\n}\n\nfunction App() {\n  // Get auth token from localStorage for WebSocket connection\n  const token = localStorage.getItem('access_token') || undefined\n  // Use a default room ID (could be user-specific in production)\n  const defaultRoomId = 'main'\n  const { status: systemStatus, isReady: backendReady, isChecking, error: systemError, retry } = useSystemStatus()\n  const { isFullyLoaded, loadingProgress, loadingMessage } = useAppLoading()\n\n  // Memoize system status to prevent unnecessary re-renders\n  const memoizedSystemStatus = React.useMemo(() => ({\n    ...systemStatus,\n    message: loadingMessage || systemStatus?.message || 'Loading...',\n    ready: isFullyLoaded,\n    overall_status: isFullyLoaded ? 'ready' : 'loading',\n  }), [systemStatus, loadingMessage, isFullyLoaded])\n\n  return (\n    <ErrorBoundary>\n      <WebSocketProvider defaultRoomId={defaultRoomId} token={token}>\n        {/* Only show main UI when everything is fully loaded */}\n        {isFullyLoaded ? (\n          <Router \n\n--- Snippet 15 \u2b50\u2b50 (score: 0.172) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md\n# FinalProject\n\nThis project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 15.2.4.\n\n## Development server\n\nRun `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.\n\n## Code scaffolding\n\nRun `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.\n\n## Build\n\nRun `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.\n\n## Running unit tests\n\nRun `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).\n\n## Running end-to-end tests\n\nRun `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.\n\n## Further help\n\n\n--- Snippet 16 \u2b50\u2b50 (score: 0.170) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\nSECTION: 1.2\n.searchQuery.toLowerCase()) ||\n             phone.storage.toString().includes(this.searchQuery.toLowerCase()) ||\n             phone.price.toString().includes(this.searchQuery.toLowerCase());\n    });\n  \n    return filteredPhones;\n\n  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload the phones after deletion\n    this.loadPhones();\n  }  \n\n  sortPhones(column: string): void {\n      // Implement the sorting logic based on the selected column\n      switch (column) {\n        case 'id':\n          this.phones.sort((a, b) => a.id - b.id);\n          break;\n        case 'brand':\n          this.phones.sort((a, b) => a.brand.localeCompare(b.brand));\n          break;\n        case 'model':\n          this.phones.sort((a, b) => a.model.localeCompare(b.model));\n          break;\n        case 'storage':\n          this.phones.sort((a, b) => a.storage - b.storage);\n          break;\n        case 'price':\n          this.phones.sort((a, b) => a.price - b.price);\n          break;\n        default:\n          break;\n      }\n    }\n\n  openDetailsModal(phone: Phone): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Phone Details',\n      nzContent: EntryDetailsModalComponent,\n      nzComponentParams: {\n        phone: phone\n      }\n    });\n  }\n\n  logout(): void {\n    this.authService.logout();\n  }\n  \n}\n\n\n--- Snippet 17 \u2b50\u2b50 (score: 0.169) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts\n    this.phoneForm = this.fb.group({\n      brand: [this.phone?.brand, [Validators.required],],\n      model: [this.phone?.model, [Validators.required]],\n      storage: [this.phone?.storage, [Validators.required, Validators.min(1)]],\n      price: [this.phone?.price, [Validators.required, Validators.min(1)]],\n      id: [this.phone?.id, [Validators.required, Validators.min(1)]]\n    });\n  }\n\n  submitForm(): void {\n    if (this.phoneForm.invalid) {\n      for (const i in this.phoneForm.controls) {\n        if (this.phoneForm.controls.hasOwnProperty(i)) {\n          this.phoneForm.controls[i].markAsDirty();\n          this.phoneForm.controls[i].updateValueAndValidity();\n        }\n      }\n      return;\n    }\n\n    this.newPhone = {\n      brand: this.phoneForm.value.brand,\n      model: this.phoneForm.value.model,\n      storage: this.phoneForm.value.storage,\n      price: this.phoneForm.value.price,\n      id: this.phoneForm.value.id\n    };\n\n  }\n\n}\n\n--- Snippet 18 \u2b50\u2b50 (score: 0.169) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\layout\\Sidebar.tsx\n    setRagStatus('indexed')\n  }, [])\n\n  const handleReplayTour = () => {\n    localStorage.removeItem('architect_ai_onboarding_complete')\n    window.dispatchEvent(new CustomEvent('replay-onboarding'))\n  }\n\n  return (\n    <>\n      {/* Mobile Overlay */}\n      <div \n        className={`fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${\n          sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'\n        }`}\n        onClick={() => setSidebarOpen(false)}\n      />\n\n      <aside \n        className={`\n          fixed lg:relative inset-y-0 left-0 z-50\n          h-full glass-panel rounded-r-2xl lg:rounded-2xl flex flex-col border-r border-border shadow-2xl bg-card\n          transition-all duration-500 ease-in-out\n          ${sidebarOpen ? 'w-72 translate-x-0 opacity-100' : 'w-0 -translate-x-full lg:w-72 lg:translate-x-0 lg:opacity-100 pointer-events-none lg:pointer-events-auto'}\n        `}\n      >",
+          "snippets": [
+            {
+              "content": "});\n\nbuilder.Services.AddSignalR();\nbuilder.Services.AddControllers();\n// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle\nbuilder.Services.AddEndpointsApiExplorer();\nbuilder.Services.AddSwaggerGen(c => {\n});\n\nvar app = builder.Build();\n\n// Configure the HTTP request pipeline.\nif (app.Environment.IsDevelopment())\n{\n    app.UseSwagger();\n    app.UseSwaggerUI();\n}\n\napp.UseHttpsRedirection();\n\napp.UseCors(\"CorsPolicy\");\n\napp.UseWebSockets(new WebSocketOptions\n{\n    KeepAliveInterval = TimeSpan.Zero,\n});\n\napp.UseRouting();\n\napp.UseAuthorization();\n\napp.MapControllers();\napp.Run();",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Program.cs",
+              "score": 0.323620242434972,
+              "importance": 1.0,
+              "metadata": {
+                "end_line": 833,
+                "file_hash": "5a5d8a7091d91677e754c6cfba9ff3215ff6129f",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Program.cs",
+                "indexed_at": "2025-11-20T15:11:10.659901",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "FILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\nSECTION: 0\nimport { Component, EventEmitter, OnInit, Output } from '@angular/core';\nimport { Observable, of } from 'rxjs';\nimport { Phone } from 'src/models/phone';\nimport { PhoneService } from 'src/app/services/phone.service';\nimport { NzModalService } from 'ng-zorro-antd/modal';\nimport { PhoneComponent } from '../phone/phone.component';\nimport { EntryDetailsModalComponent } from '../entry-details-modal/entry-details-modal.component';\nimport { AuthenticationService } from 'src/app/services/authentication.service';\n\n@Component({\n  selector: 'app-table-page',\n  templateUrl: './table-page.component.html',\n  styleUrls: ['./table-page.component.scss']\n})\n",
+              "file_path": "unknown",
+              "score": 0.31413904261110404,
+              "importance": 0.5,
+              "metadata": {
+                "chunk": 0,
+                "complexity_score": 0.01,
+                "file_type": ".ts",
+                "has_documentation": false,
+                "has_tests": true,
+                "importance_score": 0.7,
+                "is_config": false,
+                "kind": "code",
+                "language": "typescript",
+                "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts"
+              }
+            },
+            {
+              "content": "    { id: 9, brand: 'Motorola', model: 'x', storage: 64, price: 199 },\n  ];\n\n  getPhones(): Observable<Phone[]> {\n    // simulate delay of fetching data from API\n    return of(this.phones).pipe(delay(1000));\n  }\n\n  addPhone(phone: Phone): void {\n    phone.id = this.phones.length + 1;\n    this.phones.push(phone);\n  }\n\n  updatePhone(phone: Phone): void {\n    const index = this.phones.findIndex((p) => p.id === phone.id);\n    if (index !== -1) {\n      this.phones[index] = phone;\n    }\n  }\n\n  deletePhone(phoneId: number): void {\n    const index = this.phones.findIndex(p => p.id === phoneId);\n    if (index !== -1) {\n      this.phones.splice(index, 1);\n    }\n  }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts",
+              "score": 0.2900040824658094,
+              "importance": 0.9,
+              "metadata": {
+                "end_line": 828,
+                "file_hash": "612c0daa5990048ba403946925cbdf83b3bea490",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts",
+                "indexed_at": "2025-11-20T15:11:27.762001",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense, memo } from 'react'\nimport { ArtifactType } from '../services/generationService'\nimport { useSystemStatus } from '../hooks/useSystemStatus'\nimport { \n  Loader2, Sparkles, FileText, CheckCircle2, Folder, Code, FileCode, \n  Download, Key, Settings, Search, Network, ListTodo, Sliders, Edit3, GitBranch\n} from 'lucide-react'\nimport MeetingNotesManager from './MeetingNotesManager'\nimport BulkGenerationDialog from './BulkGenerationDialog'\nimport { bulkGenerate } from '../services/generationService'\nimport { useArtifactStore } from '../stores/artifactStore'\nimport { useUIStore } from '../stores/uiStore'\nimport { useKeyboardShortcuts, COMMON_SHORTCUTS } from '../hooks/useKeyboardShortcuts'\n\n// Lazy load heavy components for better initial load performance\nconst ArtifactTabs = lazy(() => import('./artifacts/ArtifactTabs'))\nconst CodeEditor = lazy(() => import('./CodeEditor'))",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\components\\UnifiedStudioTabs.tsx",
+              "score": 0.23858160995094177,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 17,
+                "file_hash": "a220811bbbce6d5fceb23e441dcce9736d592e8f",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\components\\UnifiedStudioTabs.tsx",
+                "indexed_at": "2025-12-08T13:21:50.851083",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload the phones after deletion\n    this.loadPhones();\n  }  \n\n  sortPhones(column: string): void {\n      // Implement the sorting logic based on the selected column\n      switch (column) {\n        case 'id':\n          this.phones.sort((a, b) => a.id - b.id);\n          break;\n        case 'brand':\n          this.phones.sort((a, b) => a.brand.localeCompare(b.brand));\n          break;\n        case 'model':\n          this.phones.sort((a, b) => a.model.localeCompare(b.model));\n          break;\n        case 'storage':\n          this.phones.sort((a, b) => a.storage - b.storage);\n          break;\n        case 'price':\n          this.phones.sort((a, b) => a.price - b.price);\n          break;\n        default:\n          break;\n      }\n    }\n\n  openDetailsModal(phone: Phone): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Phone Details',\n      nzContent: EntryDetailsModalComponent,",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts",
+              "score": 0.23798587554728384,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 3235,
+                "file_hash": "33520ad0f26dd0d060a5511b75fce2257a02db5d",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts",
+                "indexed_at": "2025-11-20T15:11:28.613131",
+                "start_line": 3201
+              }
+            },
+            {
+              "content": "  const [isBulkDialogOpen, setBulkDialogOpen] = useState(false)\n  const [isBulkGenerating, setIsBulkGenerating] = useState(false)\n  \n  // Meeting notes folder selection state\n  const [folders, setFolders] = useState<Array<{ id: string; name: string; notes_count: number }>>([])\n  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)\n  \n  // Import useSystemStatus to check backend readiness\n  const { isReady: backendReady } = useSystemStatus()\n  \n  // Load folders when generate tab is active and backend is ready\n  useEffect(() => {\n    if (backendReady) {\n      loadFolders()\n    }\n  }, [backendReady])\n  \n  const loadFolders = async () => {\n    try {\n      const { default: api } = await import('../services/api')\n      const response = await api.get('/api/meeting-notes/folders')\n      setFolders(response.data.folders || [])\n    } catch (error) {\n      // Failed to load folders - handle in UI\n      console.error('Failed to load folders:', error)\n    }\n  }\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\UnifiedStudioTabs.tsx",
+              "score": 0.22708031874576523,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 3228,
+                "file_hash": "25a86b62f765ad5739e27e5d548b97d51114aded",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\UnifiedStudioTabs.tsx",
+                "indexed_at": "2025-12-08T12:31:21.083585",
+                "start_line": 3201
+              }
+            },
+            {
+              "content": "    \"\"\"Get all versions for all artifacts of a given type.\"\"\"\n    service = get_version_service()\n    all_versions = []\n    \n    logger.info(f\"\ud83d\udccb [VERSIONS] Loading versions for artifact_type: {artifact_type}\")\n    logger.info(f\"\ud83d\udccb [VERSIONS] Total artifact_ids in service: {len(service.versions)}\")\n    \n    # Normalize artifact_type for matching (handle case and format variations)\n    artifact_type_normalized = artifact_type.lower().replace(\"-\", \"_\").replace(\" \", \"_\")\n    \n    # Iterate through all artifact_ids in the version service\n    matching_artifact_ids = []\n    for artifact_id, versions in service.versions.items():\n        # Normalize artifact_id for matching\n        artifact_id_normalized = artifact_id.lower().replace(\"-\", \"_\").replace(\" \", \"_\")\n        \n        # Check if this artifact_id matches the type (starts with artifact_type)\n        # This handles cases like \"mermaid_erd_20251126_200400\" matching \"mermaid_erd\"",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\backend\\api\\versions.py",
+              "score": 0.21285152732808477,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 3218,
+                "file_hash": "fc7ea93990b3503dfee38dc73bc1727dca6afa95",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\backend\\api\\versions.py",
+                "indexed_at": "2025-12-08T13:21:58.526435",
+                "start_line": 3201
+              }
+            },
+            {
+              "content": "                }))\n                versionsByType[artifactType].push(...versionsWithId)\n              }\n            } catch (err) {\n              // Artifact has no versions yet\n              continue\n            }\n          }\n        }\n      }\n      \n      // Convert to artifact_id-based map for compatibility with existing UI\n      // Group by artifact_type, but use artifact_type as the key\n      const versionsMap: Record<string, any[]> = {}\n      for (const [artifactType, versions] of Object.entries(versionsByType)) {\n        // Use artifact_type as key, but we'll need to update the UI to handle this\n        // For now, also create entries for each artifact_id\n        for (const version of versions) {\n          const artifactId = version.artifact_id || artifactType\n          if (!versionsMap[artifactId]) {\n            versionsMap[artifactId] = []\n          }\n          versionsMap[artifactId].push(version)\n        }\n      }\n      ",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\VersionControl.tsx",
+              "score": 0.1994018873671254,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 4826,
+                "file_hash": "ee7657c0a25fcf9affb073dd03dd86bdb4e28d39",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\VersionControl.tsx",
+                "indexed_at": "2025-12-08T13:22:00.288564",
+                "start_line": 4801
+              }
+            },
+            {
+              "content": "    transition: opacity 0.35s ease;\n  }\n  \n  .interactive-card:hover {\n    transform: translateY(-3px) scale(1.01);\n    box-shadow: \n      0 24px 40px -10px rgba(0, 0, 0, 0.5),\n      0 12px 20px -8px rgba(0, 0, 0, 0.4),\n      0 0 40px -10px hsl(var(--primary) / 0.3);\n  }\n  \n  .interactive-card:hover::before {\n    opacity: 1;\n  }\n  \n  .interactive-card:active {\n    transform: translateY(-1px) scale(0.99);\n    transition-duration: 0.1s;\n  }\n  \n  /* Subtle lift effect for buttons/links */\n  .interactive-lift {\n    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);\n  }\n  \n  .interactive-lift:hover {\n    transform: translateY(-1px);\n    box-shadow: 0 4px 12px -2px hsl(var(--primary) / 0.25);\n  }\n  \n  .interactive-lift:active {\n    transform: translateY(0);\n    transition-duration: 0.1s;\n  }\n  \n  /* Premium Notification Badge - Blends with dark theme */\n  .badge,\n  [class*=\"badge\"],\n  [class*=\"notification\"] {",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\index.css",
+              "score": 0.1883356610060624,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 20839,
+                "file_hash": "0943d728ea8498500c23f5c7643b689696762347",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\index.css",
+                "indexed_at": "2025-12-08T12:31:17.775862",
+                "start_line": 20801
+              }
+            },
+            {
+              "content": "          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"edit\" (click)=\"editPhone(phone)\">Edit</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"info-circle\" (click)=\"openDetailsModal(phone)\">Details</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"delete\" (click)=\"deletePhone(phone.id)\">Delete</button>\n          </td>\n        </tr>\n      </tbody>\n    </nz-table>\n  \n  <div class=\"add-button-container\">\n    <button nz-button nzType=\"primary\" nzSize=\"large\" nzShape=\"round\" (click)=\"addPhone()\">Add</button>\n  </div>\n  ",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html",
+              "score": 0.1866108767736661,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 1617,
+                "file_hash": "9c379e06d25408857a72df401bf552f0e767bea7",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html",
+                "indexed_at": "2025-11-20T15:11:28.411131",
+                "start_line": 1601
+              }
+            },
+            {
+              "content": "    validation_score: float = 0.0\n    artifact_type: str = \"\"\n    model_used: str = \"\"\n    reward_signal: float = 0.0\n    metadata: Dict[str, Any] = field(default_factory=dict)\n\n    def to_training_example(self) -> Dict[str, Any]:\n        \"\"\"Convert the event into a generic fine-tuning example payload.\"\"\"\n        target = self.corrected_output if self.corrected_output else self.ai_output\n        return {\n            \"instruction\": f\"Generate {self.artifact_type}\",\n            \"input\": self.input_data,\n            \"output\": target,\n            \"context\": json.dumps(self.context),\n            \"quality_score\": self.validation_score,\n        }\n\n\n@dataclass\nclass TrainingBatch:\n    \"\"\"Bundle of curated training examples ready for downstream fine-tuning.\"\"\"\n\n    batch_id: str\n    created_at: float\n    examples: List[Dict[str, Any]]\n    priority: int\n    metadata: Dict[str, Any] = field(default_factory=dict)\n    hyperparameters: Optional[Any] = None\n\"\"\"",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\components\\feedback_models.py",
+              "score": 0.18119552984069112,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 829,
+                "file_hash": "ad202010160af75087b9fd24e6f23c7a7ae84037",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\components\\feedback_models.py",
+                "indexed_at": "2025-11-20T15:11:10.374896",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "FILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\nSECTION: 1.1\n {\n        const phoneComponent = modalRef.getContentComponent() as PhoneComponent;\n        phoneComponent.submitForm();\n        const newPhone = phoneComponent.newPhone;\n        if (newPhone) {\n          this.phoneService.updatePhone(newPhone);\n          this.loadPhones();\n        }\n      }\n      \n    });    \n  \n    modalRef.afterClose.subscribe((result: Phone) => {\n      if (result) {\n        this.phoneService.updatePhone(result);\n        this.loadPhones();\n        console.log(this.phones$)\n      }\n    });\n    \n  }\n  currentPage: number = 1;\n  pageSize: number = 8;\n  @Output() phones! : Phone[];\n\n  getPhones(): void {\n    this.phoneService.getPhones().subscribe((phones) => {\n      this.phones = phones;\n    });\n  }\n\n  getPaginatedPhones(): Phone[] {\n    const startIndex = (this.currentPage - 1) * this.pageSize;\n    const endIndex = startIndex + this.pageSize;\n    return this.phones.slice(startIndex, endIndex);\n  }\n\n  onPageChange(page: number): void {\n    this.currentPage = page;\n  }\n\n  getFilteredPhones(): Phone[] {\n    if (!this.searchQuery) {\n      return this.getPaginatedPhones();\n    }\n    \n    const filteredPhones = this.getPaginatedPhones().filter(phone => {\n      // Modify the condition based on your specific search requirements\n      return phone.brand.toLowerCase().includes(this.searchQuery.toLowerCase()) ||\n             phone.model.toLowerCase().includes(this.searchQuery.toLowerCase()) ||\n             phone.storage.toString().includes(this.searchQuery.toLowerCase()) ||\n             phone.price.toString().includes(this.searchQuery.toLowerCase());\n    });\n  \n    return filteredPhones;\n\n  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload",
+              "file_path": "unknown",
+              "score": 0.1796631432213544,
+              "importance": 0.5,
+              "metadata": {
+                "chunk": "1.1",
+                "complexity_score": 0.01,
+                "file_type": ".ts",
+                "has_documentation": false,
+                "has_tests": true,
+                "importance_score": 0.7,
+                "is_config": false,
+                "kind": "code",
+                "language": "typescript",
+                "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts"
+              }
+            },
+            {
+              "content": "</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Storage (GB)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"storage\" placeholder=\"Enter phone storage\">\n  </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Price (\u20ac)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"price\" placeholder=\"Enter phone price\">\n  </nz-form-control>\n</nz-form-item>\n</form>\n\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.html",
+              "score": 0.17885969222396694,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 818,
+                "file_hash": "e741613976ad4e674a08696d6d00f976a726f997",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.html",
+                "indexed_at": "2025-11-20T15:11:28.166487",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "  }\n}\n\nfunction App() {\n  // Get auth token from localStorage for WebSocket connection\n  const token = localStorage.getItem('access_token') || undefined\n  // Use a default room ID (could be user-specific in production)\n  const defaultRoomId = 'main'\n  const { status: systemStatus, isReady: backendReady, isChecking, error: systemError, retry } = useSystemStatus()\n  const { isFullyLoaded, loadingProgress, loadingMessage } = useAppLoading()\n\n  // Memoize system status to prevent unnecessary re-renders\n  const memoizedSystemStatus = React.useMemo(() => ({\n    ...systemStatus,\n    message: loadingMessage || systemStatus?.message || 'Loading...',\n    ready: isFullyLoaded,\n    overall_status: isFullyLoaded ? 'ready' : 'loading',\n  }), [systemStatus, loadingMessage, isFullyLoaded])\n\n  return (\n    <ErrorBoundary>\n      <WebSocketProvider defaultRoomId={defaultRoomId} token={token}>\n        {/* Only show main UI when everything is fully loaded */}\n        {isFullyLoaded ? (\n          <Router ",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\App.tsx",
+              "score": 0.17673640098058702,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 2425,
+                "file_hash": "c802aa6bda25211f8775ee0015a26b5a0899b13b",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\App.tsx",
+                "indexed_at": "2025-12-08T12:31:16.605492",
+                "start_line": 2401
+              }
+            },
+            {
+              "content": "# FinalProject\n\nThis project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 15.2.4.\n\n## Development server\n\nRun `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.\n\n## Code scaffolding\n\nRun `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.\n\n## Build\n\nRun `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.\n\n## Running unit tests\n\nRun `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).\n\n## Running end-to-end tests\n\nRun `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.\n\n## Further help\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md",
+              "score": 0.17240143369175626,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 26,
+                "file_hash": "f1c79a135116c7cb7e7bbee8627b3c7bbd843075",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md",
+                "indexed_at": "2025-11-20T15:11:25.887818",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "FILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\nSECTION: 1.2\n.searchQuery.toLowerCase()) ||\n             phone.storage.toString().includes(this.searchQuery.toLowerCase()) ||\n             phone.price.toString().includes(this.searchQuery.toLowerCase());\n    });\n  \n    return filteredPhones;\n\n  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload the phones after deletion\n    this.loadPhones();\n  }  \n\n  sortPhones(column: string): void {\n      // Implement the sorting logic based on the selected column\n      switch (column) {\n        case 'id':\n          this.phones.sort((a, b) => a.id - b.id);\n          break;\n        case 'brand':\n          this.phones.sort((a, b) => a.brand.localeCompare(b.brand));\n          break;\n        case 'model':\n          this.phones.sort((a, b) => a.model.localeCompare(b.model));\n          break;\n        case 'storage':\n          this.phones.sort((a, b) => a.storage - b.storage);\n          break;\n        case 'price':\n          this.phones.sort((a, b) => a.price - b.price);\n          break;\n        default:\n          break;\n      }\n    }\n\n  openDetailsModal(phone: Phone): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Phone Details',\n      nzContent: EntryDetailsModalComponent,\n      nzComponentParams: {\n        phone: phone\n      }\n    });\n  }\n\n  logout(): void {\n    this.authService.logout();\n  }\n  \n}\n",
+              "file_path": "unknown",
+              "score": 0.1695813771517997,
+              "importance": 0.5,
+              "metadata": {
+                "chunk": "1.2",
+                "complexity_score": 0.01,
+                "file_type": ".ts",
+                "has_documentation": false,
+                "has_tests": true,
+                "importance_score": 0.7,
+                "is_config": false,
+                "kind": "code",
+                "language": "typescript",
+                "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts"
+              }
+            },
+            {
+              "content": "    this.phoneForm = this.fb.group({\n      brand: [this.phone?.brand, [Validators.required],],\n      model: [this.phone?.model, [Validators.required]],\n      storage: [this.phone?.storage, [Validators.required, Validators.min(1)]],\n      price: [this.phone?.price, [Validators.required, Validators.min(1)]],\n      id: [this.phone?.id, [Validators.required, Validators.min(1)]]\n    });\n  }\n\n  submitForm(): void {\n    if (this.phoneForm.invalid) {\n      for (const i in this.phoneForm.controls) {\n        if (this.phoneForm.controls.hasOwnProperty(i)) {\n          this.phoneForm.controls[i].markAsDirty();\n          this.phoneForm.controls[i].updateValueAndValidity();\n        }\n      }\n      return;\n    }\n\n    this.newPhone = {\n      brand: this.phoneForm.value.brand,\n      model: this.phoneForm.value.model,\n      storage: this.phoneForm.value.storage,\n      price: this.phoneForm.value.price,\n      id: this.phoneForm.value.id\n    };\n\n  }\n\n}",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts",
+              "score": 0.1692029657089898,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 831,
+                "file_hash": "287036664b71903508f067a4c732ccc3e55ff1e8",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts",
+                "indexed_at": "2025-11-20T15:11:28.351763",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "    setRagStatus('indexed')\n  }, [])\n\n  const handleReplayTour = () => {\n    localStorage.removeItem('architect_ai_onboarding_complete')\n    window.dispatchEvent(new CustomEvent('replay-onboarding'))\n  }\n\n  return (\n    <>\n      {/* Mobile Overlay */}\n      <div \n        className={`fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${\n          sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'\n        }`}\n        onClick={() => setSidebarOpen(false)}\n      />\n\n      <aside \n        className={`\n          fixed lg:relative inset-y-0 left-0 z-50\n          h-full glass-panel rounded-r-2xl lg:rounded-2xl flex flex-col border-r border-border shadow-2xl bg-card\n          transition-all duration-500 ease-in-out\n          ${sidebarOpen ? 'w-72 translate-x-0 opacity-100' : 'w-0 -translate-x-full lg:w-72 lg:translate-x-0 lg:opacity-100 pointer-events-none lg:pointer-events-auto'}\n        `}\n      >",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\layout\\Sidebar.tsx",
+              "score": 0.16897119875454072,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 1626,
+                "file_hash": "62082494d876769881aa4c7439482db51319c778",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\layout\\Sidebar.tsx",
+                "indexed_at": "2025-12-08T12:31:26.490958",
+                "start_line": 1601
+              }
+            }
+          ],
+          "num_snippets": 18,
+          "avg_score": 0.21195682587802783,
+          "key_entities": [
+            {
+              "name": "UserDto",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs"
+            },
+            {
+              "name": "WeatherForecast",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\WeatherForecast.cs"
+            },
+            {
+              "name": "UsersController",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs"
+            },
+            {
+              "name": "WeatherForecastController",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs"
+            },
+            {
+              "name": "IUserService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs"
+            },
+            {
+              "name": "UserService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs"
+            },
+            {
+              "name": "IMongoDBSettings",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\IMongoDBSettings.cs"
+            },
+            {
+              "name": "MongoDBSettings",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\MongoDBSettings.cs"
+            },
+            {
+              "name": "AppRoutingModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts"
+            },
+            {
+              "name": "AppComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.ts"
+            },
+            {
+              "name": "AppModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts"
+            },
+            {
+              "name": "AuthenticationModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts"
+            },
+            {
+              "name": "LoginComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts"
+            },
+            {
+              "name": "RegisterComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts"
+            },
+            {
+              "name": "NameUppercasePipe",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\pipes\\name-uppercase.pipe.ts"
+            },
+            {
+              "name": "AuthenticationService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts"
+            },
+            {
+              "name": "PhoneService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts"
+            },
+            {
+              "name": "TableRoutingModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table-routing.module.ts"
+            },
+            {
+              "name": "TableModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts"
+            },
+            {
+              "name": "EntryDetailsModalComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\entry-details-modal\\entry-details-modal.component.ts"
+            },
+            {
+              "name": "PhoneComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts"
+            },
+            {
+              "name": "TablePageComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts"
+            },
+            {
+              "name": "Phone",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts"
+            },
+            {
+              "name": "User",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts"
+            }
+          ],
+          "uses_universal_context": true
+        },
+        "kg": {
+          "graph_stats": {
+            "node_count": 104,
+            "edge_count": 127,
+            "file_count": 27,
+            "class_count": 16,
+            "function_count": 3,
+            "total_classes": 16,
+            "total_functions": 3,
+            "total_files": 27,
+            "is_connected": false,
+            "component_count": 5
+          },
+          "relevant_nodes": [],
+          "most_connected": [
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts",
+              "degree": 22
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts",
+              "degree": 15
+            },
+            {
+              "node_id": "module:@angular/core",
+              "degree": 14
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts:table-page.component.ts",
+              "degree": 10
+            },
+            {
+              "node_id": "module:@angular/core/testing",
+              "degree": 8
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts:authentication.module.ts",
+              "degree": 8
+            },
+            {
+              "node_id": "module:@angular/forms",
+              "degree": 7
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts:register.component.ts",
+              "degree": 7
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts:app-routing.module.ts",
+              "degree": 6
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts:login.component.ts",
+              "degree": 6
+            }
+          ],
+          "top_central_nodes": [
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts",
+              "centrality": 0.21359223300970873
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts",
+              "centrality": 0.14563106796116504
+            },
+            {
+              "node_id": "module:@angular/core",
+              "centrality": 0.13592233009708737
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts:table-page.component.ts",
+              "centrality": 0.09708737864077668
+            },
+            {
+              "node_id": "module:@angular/core/testing",
+              "centrality": 0.07766990291262135
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts:authentication.module.ts",
+              "centrality": 0.07766990291262135
+            },
+            {
+              "node_id": "module:@angular/forms",
+              "centrality": 0.06796116504854369
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts:register.component.ts",
+              "centrality": 0.06796116504854369
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts:app-routing.module.ts",
+              "centrality": 0.058252427184466014
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts:login.component.ts",
+              "centrality": 0.058252427184466014
+            }
+          ],
+          "key_terms_searched": [
+            "phone",
+            "swap",
+            "request",
+            "feature",
+            "date",
+            "october",
+            "attendees",
+            "product",
+            "manager",
+            "designer"
+          ]
+        },
+        "patterns": {
+          "patterns_available": true,
+          "note": "Pattern mining analysis should be run separately via /api/analysis/patterns",
+          "suggested_patterns": [
+            "Singleton",
+            "Factory",
+            "Observer"
+          ]
+        }
+      },
+      "assembled_context": "\ud83d\ude80 === UNIVERSAL PROJECT CONTEXT (Knows Your Entire Project By Heart) ===\n\n\ud83d\udcc2 Project Directories: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\agents, C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln, C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\n\ud83d\udcc4 Total Files Indexed: 70\n\u2b50 Key Entities: 24\n\n\ud83d\udd11 Most Important Entities in Your Project:\n  - UserDto (class)\n  - WeatherForecast (class)\n  - UsersController (class)\n  - WeatherForecastController (class)\n  - IUserService (class)\n  - UserService (class)\n  - IMongoDBSettings (class)\n  - MongoDBSettings (class)\n  - AppRoutingModule (class)\n  - AppComponent (class)\n\n\n=== YOUR REQUIREMENTS (Meeting Notes) ===\n\nPhone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan for the new phone swap request feature.\n\nBackground\nUsers currently lack a formal way to request an exchange of their current phone for another one available in our inventory. This new feature aims to create a streamlined, in-app workflow to manage these requests efficiently.\n\nFeature Overview\nThe team agreed on the following user story: \"As a user, I want to request a phone from the available list and offer one of my current phones in exchange, so I can easily manage my device swaps.\"\n\nThe feature will be implemented as a modal pop-up on the main phone list page.\n\nImplementation Details\nFrontend (UI/UX)\nA new button, labeled \"Request Phone Swap,\" will be added to the main phone page.\n\nClicking this button will trigger a modal (pop-up) that overlays the current view.\n\nThe modal will contain a form with the following fields:\n\nPhone to Request: A dropdown list populated with all available phones from the main list.\n\nPhone to Exchange: A dropdown list showing only the phones currently owned by the logged-in user.\n\nReason for Request (Optional): A text area for any additional comments.\n\nActions: \"Submit Request\" and \"Cancel\" buttons.\n\nUpon successful submission, the modal will close, and a confirmation message will be displayed.\n\nBackend (Logic)\nA new API endpoint (POST /api/phone-swaps) will be created to handle form submissions.\n\nA new table will be created in the database to store swap requests. It will include columns for the requester's ID, the requested phone, the offered phone, a status (defaulting to 'Pending'), and the comment.\n\nBackend validation will ensure that the user making the request is the actual owner of the phone being offered in exchange.\n\nAction Items\nUX Team: Create a wireframe of the modal and form by EOD, October 17.\n\nBackend Team: Develop the new API endpoint and database schema. Target completion: October 21.\n\nFrontend Team: Build the \"Request Phone Swap\" button and the basic modal structure. Begin implementation once wireframes are approved.\n\nProduct Manager: Create the formal Jira ticket with the defined user story and acceptance criteria.\n\n\n\n=== CODEBASE CONTEXT (RAG) ===\n\n=== PROJECT CONTEXT (Universal Knowledge + Targeted Retrieval) ===\n\n\ud83d\udd11 KEY PROJECT ENTITIES:\n  - UserDto (class)\n  - WeatherForecast (class)\n  - UsersController (class)\n  - WeatherForecastController (class)\n  - IUserService (class)\n  - UserService (class)\n  - IMongoDBSettings (class)\n  - MongoDBSettings (class)\n  - AppRoutingModule (class)\n  - AppComponent (class)\n\n\ud83d\udcc4 RELEVANT CODE SNIPPETS (ranked by importance + relevance):\n\n\n--- Snippet 1 \u2b50\u2b50\u2b50\u2b50\u2b50 (score: 0.324) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Program.cs\n});\n\nbuilder.Services.AddSignalR();\nbuilder.Services.AddControllers();\n// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle\nbuilder.Services.AddEndpointsApiExplorer();\nbuilder.Services.AddSwaggerGen(c => {\n});\n\nvar app = builder.Build();\n\n// Configure the HTTP request pipeline.\nif (app.Environment.IsDevelopment())\n{\n    app.UseSwagger();\n    app.UseSwaggerUI();\n}\n\napp.UseHttpsRedirection();\n\napp.UseCors(\"CorsPolicy\");\n\napp.UseWebSockets(new WebSocketOptions\n{\n    KeepAliveInterval = TimeSpan.Zero,\n});\n\napp.UseRouting();\n\napp.UseAuthorization();\n\napp.MapControllers();\napp.Run();\n\n--- Snippet 2 \u2b50\u2b50 (score: 0.314) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\nSECTION: 0\nimport { Component, EventEmitter, OnInit, Output } from '@angular/core';\nimport { Observable, of } from 'rxjs';\nimport { Phone } from 'src/models/phone';\nimport { PhoneService } from 'src/app/services/phone.service';\nimport { NzModalService } from 'ng-zorro-antd/modal';\nimport { PhoneComponent } from '../phone/phone.component';\nimport { EntryDetailsModalComponent } from '../entry-details-modal/entry-details-modal.component';\nimport { AuthenticationService } from 'src/app/services/authentication.service';\n\n@Component({\n  selector: 'app-table-page',\n  templateUrl: './table-page.component.html',\n  styleUrls: ['./table-page.component.scss']\n})\n\n\n--- Snippet 3 \u2b50\u2b50\u2b50\u2b50 (score: 0.290) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts\n    { id: 9, brand: 'Motorola', model: 'x', storage: 64, price: 199 },\n  ];\n\n  getPhones(): Observable<Phone[]> {\n    // simulate delay of fetching data from API\n    return of(this.phones).pipe(delay(1000));\n  }\n\n  addPhone(phone: Phone): void {\n    phone.id = this.phones.length + 1;\n    this.phones.push(phone);\n  }\n\n  updatePhone(phone: Phone): void {\n    const index = this.phones.findIndex((p) => p.id === phone.id);\n    if (index !== -1) {\n      this.phones[index] = phone;\n    }\n  }\n\n  deletePhone(phoneId: number): void {\n    const index = this.phones.findIndex(p => p.id === phoneId);\n    if (index !== -1) {\n      this.phones.splice(index, 1);\n    }\n  }\n}\n\n\n--- Snippet 4 \u2b50\u2b50 (score: 0.239) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\components\\UnifiedStudioTabs.tsx\nimport { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense, memo } from 'react'\nimport { ArtifactType } from '../services/generationService'\nimport { useSystemStatus } from '../hooks/useSystemStatus'\nimport { \n  Loader2, Sparkles, FileText, CheckCircle2, Folder, Code, FileCode, \n  Download, Key, Settings, Search, Network, ListTodo, Sliders, Edit3, GitBranch\n} from 'lucide-react'\nimport MeetingNotesManager from './MeetingNotesManager'\nimport BulkGenerationDialog from './BulkGenerationDialog'\nimport { bulkGenerate } from '../services/generationService'\nimport { useArtifactStore } from '../stores/artifactStore'\nimport { useUIStore } from '../stores/uiStore'\nimport { useKeyboardShortcuts, COMMON_SHORTCUTS } from '../hooks/useKeyboardShortcuts'\n\n// Lazy load heavy components for better initial load performance\nconst ArtifactTabs = lazy(() => import('./artifacts/ArtifactTabs'))\nconst CodeEditor = lazy(() => import('./CodeEditor'))\n\n--- Snippet 5 \u2b50\u2b50 (score: 0.238) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\n  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload the phones after deletion\n    this.loadPhones();\n  }  \n\n  sortPhones(column: string): void {\n      // Implement the sorting logic based on the selected column\n      switch (column) {\n        case 'id':\n          this.phones.sort((a, b) => a.id - b.id);\n          break;\n        case 'brand':\n          this.phones.sort((a, b) => a.brand.localeCompare(b.brand));\n          break;\n        case 'model':\n          this.phones.sort((a, b) => a.model.localeCompare(b.model));\n          break;\n        case 'storage':\n          this.phones.sort((a, b) => a.storage - b.storage);\n          break;\n        case 'price':\n          this.phones.sort((a, b) => a.price - b.price);\n          break;\n        default:\n          break;\n      }\n    }\n\n  openDetailsModal(phone: Phone): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Phone Details',\n      nzContent: EntryDetailsModalComponent,\n\n--- Snippet 6 \u2b50\u2b50 (score: 0.227) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\UnifiedStudioTabs.tsx\n  const [isBulkDialogOpen, setBulkDialogOpen] = useState(false)\n  const [isBulkGenerating, setIsBulkGenerating] = useState(false)\n  \n  // Meeting notes folder selection state\n  const [folders, setFolders] = useState<Array<{ id: string; name: string; notes_count: number }>>([])\n  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)\n  \n  // Import useSystemStatus to check backend readiness\n  const { isReady: backendReady } = useSystemStatus()\n  \n  // Load folders when generate tab is active and backend is ready\n  useEffect(() => {\n    if (backendReady) {\n      loadFolders()\n    }\n  }, [backendReady])\n  \n  const loadFolders = async () => {\n    try {\n      const { default: api } = await import('../services/api')\n      const response = await api.get('/api/meeting-notes/folders')\n      setFolders(response.data.folders || [])\n    } catch (error) {\n      // Failed to load folders - handle in UI\n      console.error('Failed to load folders:', error)\n    }\n  }\n\n\n--- Snippet 7 \u2b50\u2b50 (score: 0.213) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\backend\\api\\versions.py\n    \"\"\"Get all versions for all artifacts of a given type.\"\"\"\n    service = get_version_service()\n    all_versions = []\n    \n    logger.info(f\"\ud83d\udccb [VERSIONS] Loading versions for artifact_type: {artifact_type}\")\n    logger.info(f\"\ud83d\udccb [VERSIONS] Total artifact_ids in service: {len(service.versions)}\")\n    \n    # Normalize artifact_type for matching (handle case and format variations)\n    artifact_type_normalized = artifact_type.lower().replace(\"-\", \"_\").replace(\" \", \"_\")\n    \n    # Iterate through all artifact_ids in the version service\n    matching_artifact_ids = []\n    for artifact_id, versions in service.versions.items():\n        # Normalize artifact_id for matching\n        artifact_id_normalized = artifact_id.lower().replace(\"-\", \"_\").replace(\" \", \"_\")\n        \n        # Check if this artifact_id matches the type (starts with artifact_type)\n        # This handles cases like \"mermaid_erd_20251126_200400\" matching \"mermaid_erd\"\n\n--- Snippet 8 \u2b50\u2b50 (score: 0.199) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\VersionControl.tsx\n                }))\n                versionsByType[artifactType].push(...versionsWithId)\n              }\n            } catch (err) {\n              // Artifact has no versions yet\n              continue\n            }\n          }\n        }\n      }\n      \n      // Convert to artifact_id-based map for compatibility with existing UI\n      // Group by artifact_type, but use artifact_type as the key\n      const versionsMap: Record<string, any[]> = {}\n      for (const [artifactType, versions] of Object.entries(versionsByType)) {\n        // Use artifact_type as key, but we'll need to update the UI to handle this\n        // For now, also create entries for each artifact_id\n        for (const version of versions) {\n          const artifactId = version.artifact_id || artifactType\n          if (!versionsMap[artifactId]) {\n            versionsMap[artifactId] = []\n          }\n          versionsMap[artifactId].push(version)\n        }\n      }\n      \n\n--- Snippet 9 \u2b50\u2b50 (score: 0.188) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\index.css\n    transition: opacity 0.35s ease;\n  }\n  \n  .interactive-card:hover {\n    transform: translateY(-3px) scale(1.01);\n    box-shadow: \n      0 24px 40px -10px rgba(0, 0, 0, 0.5),\n      0 12px 20px -8px rgba(0, 0, 0, 0.4),\n      0 0 40px -10px hsl(var(--primary) / 0.3);\n  }\n  \n  .interactive-card:hover::before {\n    opacity: 1;\n  }\n  \n  .interactive-card:active {\n    transform: translateY(-1px) scale(0.99);\n    transition-duration: 0.1s;\n  }\n  \n  /* Subtle lift effect for buttons/links */\n  .interactive-lift {\n    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);\n  }\n  \n  .interactive-lift:hover {\n    transform: translateY(-1px);\n    box-shadow: 0 4px 12px -2px hsl(var(--primary) / 0.25);\n  }\n  \n  .interactive-lift:active {\n    transform: translateY(0);\n    transition-duration: 0.1s;\n  }\n  \n  /* Premium Notification Badge - Blends with dark theme */\n  .badge,\n  [class*=\"badge\"],\n  [class*=\"notification\"] {\n\n--- Snippet 10 \u2b50\u2b50 (score: 0.187) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"edit\" (click)=\"editPhone(phone)\">Edit</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"info-circle\" (click)=\"openDetailsModal(phone)\">Details</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"delete\" (click)=\"deletePhone(phone.id)\">Delete</button>\n          </td>\n        </tr>\n      </tbody>\n    </nz-table>\n  \n  <div class=\"add-button-container\">\n    <button nz-button nzType=\"primary\" nzSize=\"large\" nzShape=\"round\" (click)=\"addPhone()\">Add</button>\n  </div>\n  \n\n--- Snippet 11 \u2b50\u2b50 (score: 0.181) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\components\\feedback_models.py\n    validation_score: float = 0.0\n    artifact_type: str = \"\"\n    model_used: str = \"\"\n    reward_signal: float = 0.0\n    metadata: Dict[str, Any] = field(default_factory=dict)\n\n    def to_training_example(self) -> Dict[str, Any]:\n        \"\"\"Convert the event into a generic fine-tuning example payload.\"\"\"\n        target = self.corrected_output if self.corrected_output else self.ai_output\n        return {\n            \"instruction\": f\"Generate {self.artifact_type}\",\n            \"input\": self.input_data,\n            \"output\": target,\n            \"context\": json.dumps(self.context),\n            \"quality_score\": self.validation_score,\n        }\n\n\n@dataclass\nclass TrainingBatch:\n    \"\"\"Bundle of curated training examples ready for downstream fine-tuning.\"\"\"\n\n    batch_id: str\n    created_at: float\n    examples: List[Dict[str, Any]]\n    priority: int\n    metadata: Dict[str, Any] = field(default_factory=dict)\n    hyperparameters: Optional[Any] = None\n\"\"\"\n\n--- Snippet 12 \u2b50\u2b50 (score: 0.180) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\nSECTION: 1.1\n {\n        const phoneComponent = modalRef.getContentComponent() as PhoneComponent;\n        phoneComponent.submitForm();\n        const newPhone = phoneComponent.newPhone;\n        if (newPhone) {\n          this.phoneService.updatePhone(newPhone);\n          this.loadPhones();\n        }\n      }\n      \n    });    \n  \n    modalRef.afterClose.subscribe((result: Phone) => {\n      if (result) {\n        this.phoneService.updatePhone(result);\n        this.loadPhones();\n        console.log(this.phones$)\n      }\n    });\n    \n  }\n  currentPage: number = 1;\n  pageSize: number = 8;\n  @Output() phones! : Phone[];\n\n  getPhones(): void {\n    this.phoneService.getPhones().subscribe((phones) => {\n      this.phones = phones;\n    });\n  }\n\n  getPaginatedPhones(): Phone[] {\n    const startIndex = (this.currentPage - 1) * this.pageSize;\n    const endIndex = startIndex + this.pageSize;\n    return this.phones.slice(startIndex, endIndex);\n  }\n\n  onPageChange(page: number): void {\n    this.currentPage = page;\n  }\n\n  getFilteredPhones(): Phone[] {\n    if (!this.searchQuery) {\n      return this.getPaginatedPhones();\n    }\n    \n    const filteredPhones = this.getPaginatedPhones().filter(phone => {\n      // Modify the condition based on your specific search requirements\n      return phone.brand.toLowerCase().includes(this.searchQuery.toLowerCase()) ||\n             phone.model.toLowerCase().includes(this.searchQuery.toLowerCase()) ||\n             phone.storage.toString().includes(this.searchQuery.toLowerCase()) ||\n             phone.price.toString().includes(this.searchQuery.toLowerCase());\n    });\n  \n    return filteredPhones;\n\n  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload\n\n--- Snippet 13 \u2b50\u2b50 (score: 0.179) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.html\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Storage (GB)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"storage\" placeholder=\"Enter phone storage\">\n  </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Price (\u20ac)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"price\" placeholder=\"Enter phone price\">\n  </nz-form-control>\n</nz-form-item>\n</form>\n\n\n\n--- Snippet 14 \u2b50\u2b50 (score: 0.177) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\App.tsx\n  }\n}\n\nfunction App() {\n  // Get auth token from localStorage for WebSocket connection\n  const token = localStorage.getItem('access_token') || undefined\n  // Use a default room ID (could be user-specific in production)\n  const defaultRoomId = 'main'\n  const { status: systemStatus, isReady: backendReady, isChecking, error: systemError, retry } = useSystemStatus()\n  const { isFullyLoaded, loadingProgress, loadingMessage } = useAppLoading()\n\n  // Memoize system status to prevent unnecessary re-renders\n  const memoizedSystemStatus = React.useMemo(() => ({\n    ...systemStatus,\n    message: loadingMessage || systemStatus?.message || 'Loading...',\n    ready: isFullyLoaded,\n    overall_status: isFullyLoaded ? 'ready' : 'loading',\n  }), [systemStatus, loadingMessage, isFullyLoaded])\n\n  return (\n    <ErrorBoundary>\n      <WebSocketProvider defaultRoomId={defaultRoomId} token={token}>\n        {/* Only show main UI when everything is fully loaded */}\n        {isFullyLoaded ? (\n          <Router \n\n--- Snippet 15 \u2b50\u2b50 (score: 0.172) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md\n# FinalProject\n\nThis project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 15.2.4.\n\n## Development server\n\nRun `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.\n\n## Code scaffolding\n\nRun `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.\n\n## Build\n\nRun `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.\n\n## Running unit tests\n\nRun `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).\n\n## Running end-to-end tests\n\nRun `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.\n\n## Further help\n\n\n--- Snippet 16 \u2b50\u2b50 (score: 0.170) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\nSECTION: 1.2\n.searchQuery.toLowerCase()) ||\n             phone.storage.toString().includes(this.searchQuery.toLowerCase()) ||\n             phone.price.toString().includes(this.searchQuery.toLowerCase());\n    });\n  \n    return filteredPhones;\n\n  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload the phones after deletion\n    this.loadPhones();\n  }  \n\n  sortPhones(column: string): void {\n      // Implement the sorting logic based on the selected column\n      switch (column) {\n        case 'id':\n          this.phones.sort((a, b) => a.id - b.id);\n          break;\n        case 'brand':\n          this.phones.sort((a, b) => a.brand.localeCompare(b.brand));\n          break;\n        case 'model':\n          this.phones.sort((a, b) => a.model.localeCompare(b.model));\n          break;\n        case 'storage':\n          this.phones.sort((a, b) => a.storage - b.storage);\n          break;\n        case 'price':\n          this.phones.sort((a, b) => a.price - b.price);\n          break;\n        default:\n          break;\n      }\n    }\n\n  openDetailsModal(phone: Phone): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Phone Details',\n      nzContent: EntryDetailsModalComponent,\n      nzComponentParams: {\n        phone: phone\n      }\n    });\n  }\n\n  logout(): void {\n    this.authService.logout();\n  }\n  \n}\n\n\n--- Snippet 17 \u2b50\u2b50 (score: 0.169) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts\n    this.phoneForm = this.fb.group({\n      brand: [this.phone?.brand, [Validators.required],],\n      model: [this.phone?.model, [Validators.required]],\n      storage: [this.phone?.storage, [Validators.required, Validators.min(1)]],\n      price: [this.phone?.price, [Validators.required, Validators.min(1)]],\n      id: [this.phone?.id, [Validators.required, Validators.min(1)]]\n    });\n  }\n\n  submitForm(): void {\n    if (this.phoneForm.invalid) {\n      for (const i in this.phoneForm.controls) {\n        if (this.phoneForm.controls.hasOwnProperty(i)) {\n          this.phoneForm.controls[i].markAsDirty();\n          this.phoneForm.controls[i].updateValueAndValidity();\n        }\n      }\n      return;\n    }\n\n    this.newPhone = {\n      brand: this.phoneForm.value.brand,\n      model: this.phoneForm.value.model,\n      storage: this.phoneForm.value.storage,\n      price: this.phoneForm.value.price,\n      id: this.phoneForm.value.id\n    };\n\n  }\n\n}\n\n--- Snippet 18 \u2b50\u2b50 (score: 0.169) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\layout\\Sidebar.tsx\n    setRagStatus('indexed')\n  }, [])\n\n  const handleReplayTour = () => {\n    localStorage.removeItem('architect_ai_onboarding_complete')\n    window.dispatchEvent(new CustomEvent('replay-onboarding'))\n  }\n\n  return (\n    <>\n      {/* Mobile Overlay */}\n      <div \n        className={`fixed inset-0 bg-background/80 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300 ${\n          sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'\n        }`}\n        onClick={() => setSidebarOpen(false)}\n      />\n\n      <aside \n        className={`\n          fixed lg:relative inset-y-0 left-0 z-50\n          h-full glass-panel rounded-r-2xl lg:rounded-2xl flex flex-col border-r border-border shadow-2xl bg-card\n          transition-all duration-500 ease-in-out\n          ${sidebarOpen ? 'w-72 translate-x-0 opacity-100' : 'w-0 -translate-x-full lg:w-72 lg:translate-x-0 lg:opacity-100 pointer-events-none lg:pointer-events-auto'}\n        `}\n      >\n\n(18 snippets retrieved)\n\n\n\n=== KNOWLEDGE GRAPH INSIGHTS ===\n\nGraph: 104 nodes, 127 edges\n\nMost Connected Components:\n  - file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts (degree: 22)\n  - file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts (degree: 15)\n  - module:@angular/core (degree: 14)\n  - file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts:table-page.component.ts (degree: 10)\n  - module:@angular/core/testing (degree: 8)\n\n\n\n=== DESIGN PATTERNS DETECTED ===\n\nSingleton, Factory, Observer\n\n",
+      "from_cache": false,
+      "context_id": "2026-01-15T10:15:59.214279"
+    },
+    "added_at": "2026-01-15T10:16:47.502984"
+  },
+  {
+    "artifact_type": "backlog",
+    "content": "Here is a prioritized product backlog in Markdown format:\n\n**Phone Swap Request Feature**\n=============================\n\n### User Stories\n\n* As a user, I want to request a phone from the available list and offer one of my current phones in exchange, so I can easily manage my device swaps. (Priority: High)\n\t+ Acceptance Criteria:\n\t\t- The feature is implemented as a modal pop-up on the main phone list page.\n\t\t- The modal contains a form with fields for \"Phone to Request\" and \"Phone to Exchange\".\n\t\t- The form also includes an optional \"Reason for Request\" text area and two action buttons: \"Submit Request\" and \"Cancel\".\n\t\t- Upon successful submission, the modal closes, and a confirmation message is displayed.\n* As a user, I want to be able to select my current phone from the available list of phones in exchange. (Priority: Medium)\n\t+ Acceptance Criteria:\n\t\t- The form includes a dropdown list showing only the phones currently owned by the logged-in user.\n\n### Priorities\n\n1. User Story 1 (High)\n2. User Story 2 (Medium)\n\n### Dependencies\n\n* Frontend Team: Create wireframes of the modal and form by EOD, October 17.\n* Backend Team: Develop the new API endpoint and database schema. Target completion: October 21.\n* Frontend Team: Build the \"Request Phone Swap\" button and the basic modal structure. Begin implementation once wireframes are approved.\n\n### Notes\n\n* The feature will be implemented as a modal pop-up on the main phone list page.\n* The form includes an optional \"Reason for Request\" text area and two action buttons: \"Submit Request\" and \"Cancel\".\n* Upon successful submission, the modal closes, and a confirmation message is displayed.\n* Backend validation will ensure that the user making the request is the actual owner of the phone being offered in exchange.\n\nI hope this helps! Let me know if you have any further questions.",
+    "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan for the new phone swap request feature.\n\nBackground\nUsers currently lack a formal way to request an exchange of their current phone for another one available in our inventory. This new feature aims to create a streamlined, in-app workflow to manage these requests efficiently.\n\nFeature Overview\nThe team agreed on the following user story: \"As a user, I want to request a phone from the available list and offer one of my current phones in exchange, so I can easily manage my device swaps.\"\n\nThe feature will be implemented as a modal pop-up on the main phone list page.\n\nImplementation Details\nFrontend (UI/UX)\nA new button, labeled \"Request Phone Swap,\" will be added to the main phone page.\n\nClicking this button will trigger a modal (pop-up) that overlays the current view.\n\nThe modal will contain a form with the following fields:\n\nPhone to Request: A dropdown list populated with all available phones from the main list.\n\nPhone to Exchange: A dropdown list showing only the phones currently owned by the logged-in user.\n\nReason for Request (Optional): A text area for any additional comments.\n\nActions: \"Submit Request\" and \"Cancel\" buttons.\n\nUpon successful submission, the modal will close, and a confirmation message will be displayed.\n\nBackend (Logic)\nA new API endpoint (POST /api/phone-swaps) will be created to handle form submissions.\n\nA new table will be created in the database to store swap requests. It will include columns for the requester's ID, the requested phone, the offered phone, a status (defaulting to 'Pending'), and the comment.\n\nBackend validation will ensure that the user making the request is the actual owner of the phone being offered in exchange.\n\nAction Items\nUX Team: Create a wireframe of the modal and form by EOD, October 17.\n\nBackend Team: Develop the new API endpoint and database schema. Target completion: October 21.\n\nFrontend Team: Build the \"Request Phone Swap\" button and the basic modal structure. Begin implementation once wireframes are approved.\n\nProduct Manager: Create the formal Jira ticket with the defined user story and acceptance criteria.",
+    "validation_score": 100.0,
+    "model_used": "llama3",
+    "context": {},
+    "added_at": "2026-01-15T10:16:47.519336"
+  }
+]

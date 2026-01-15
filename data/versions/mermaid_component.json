@@ -48,6 +48,45 @@
       "artifact_type": "mermaid_component"
     },
     "created_at": "2026-01-14T14:46:10.223158",
+    "is_current": false
+  },
+  {
+    "version": 3,
+    "artifact_id": "mermaid_component",
+    "artifact_type": "mermaid_component",
+    "content": "classDiagram\n    class PhoneSwapRequest\n    PhoneSwapRequest --|> AvailablePhones : phone_to_request\n    Swap --> PhoneToExchange : phone_to_exchange\n    ReasonForRequest --> OptionalComments : reason_for_request\n    Actions -->* : submit_request, cancel\n    Backend --> APIEndpoint(POST /api/phone-swaps) : handle_form_submission\n    Database --> SwapRequestsTable : store_swap_requests\n    Requester'sID --> SwapRequestsTable : requester_id\n    RequestedPhone --> SwapRequestsTable : requested_phone\n    OfferedPhone --> SwapRequestsTable : offered_phone\n    Status(defaulting to 'Pending') --> SwapRequestsTable : status\n    Comment --> SwapRequestsTable : comment\n    BackendValidation --> UserMakingTheRequestIsTheActualOwnerOfThePhoneBeingOfferedInExchange : validate_user_ownership",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_component"
+    },
+    "created_at": "2026-01-15T10:25:14.154005",
+    "is_current": false
+  },
+  {
+    "version": 4,
+    "artifact_id": "mermaid_component",
+    "artifact_type": "mermaid_component",
+    "content": "classDiagram\n    class PhoneSwapRequest\n    PhoneSwapRequest --|> AvailablePhones : phone_to_request\n    Swap --> PhoneToExchange : phone_to_exchange\n    ReasonForRequest --> OptionalComments : reason_for_request\n    Actions *-->> submit_request, cancel\n    Backend --> APIEndpoint(POST /api/phone-swaps) : handle_form_submission\n    Database --> SwapRequestsTable : store_swap_requests\n    Requester'sID --> SwapRequestsTable : requester_id\n    RequestedPhone --> SwapRequestsTable : requested_phone\n    OfferedPhone --> SwapRequestsTable : offered_phone\n    Status(defaulting to 'Pending') --> SwapRequestsTable : status\n    Comment --> SwapRequestsTable : comment\n    BackendValidation --> UserMakingTheRequestIsTheActualOwnerOfThePhoneBeingOfferedInExchange : validate_user_ownership",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_component"
+    },
+    "created_at": "2026-01-15T10:26:06.591874",
+    "is_current": false
+  },
+  {
+    "version": 5,
+    "artifact_id": "mermaid_component",
+    "artifact_type": "mermaid_component",
+    "content": "classDiagram\n    class PhoneSwapRequest\n    PhoneSwapRequest --|> AvailablePhones : phone_to_request\n    Swap --> PhoneToExchange : phone_to_exchange\n    ReasonForRequest --> OptionalComments : reason_for_request\n    Actions *-->> submit_request, cancel\n    Backend --> APIEndpoint(POST /api/phone-swaps) : handle_form_submission\n    Database --> SwapRequestsTable : store_swap_requests\n    Requester'sID --> SwapRequestsTable : requester_id\n    RequestedPhone --> SwapRequestsTable : requested_phone\n    OfferedPhone --> SwapRequestsTable : offered_phone\n    Status(defaulting to 'Pending') --> SwapRequestsTable : status\n    Comment --> SwapRequestsTable : comment\n    BackendValidation --> UserMakingTheRequestIsTheActualOwnerOfThePhoneBeingOfferedInExchange : validate_user_ownership",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_component"
+    },
+    "created_at": "2026-01-15T10:29:09.439480",
     "is_current": true
   }
 ]

@@ -70,6 +70,19 @@
       "artifact_type": "mermaid_system_overview"
     },
     "created_at": "2026-01-15T08:51:45.817502",
+    "is_current": false
+  },
+  {
+    "version": 4,
+    "artifact_id": "mermaid_system_overview",
+    "artifact_type": "mermaid_system_overview",
+    "content": "sequenceDiagram\n    participant Phone Swap Request Feature\n    participant Backend (Logic)\n    participant Frontend (UI/UX)\n    note \"Request Phone Swap\" as \"Start\"\n    Phone Swap Request Feature->>Backend (Logic): Request phone swap\n    alt Successful submission\n    note \"Modal closed, confirmation message displayed\" as \"Success\"\n    Backend (Logic)->>Frontend (UI/UX): Confirmation message\n    else Failure\n    note \"Error handling\" as \"Failure\"\n    Phone Swap Request Feature->>Backend (Logic): Error handling\n    end\n    note \"Cancel button clicked\" as \"Cancel\"\n    Phone Swap Request Feature->>Frontend (UI/UX): Cancel request\n    note \"Modal closed, no confirmation message displayed\" as \"Cancel\"\n    note \"Request phone swap feature implemented\" as \"End\"",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_system_overview"
+    },
+    "created_at": "2026-01-15T10:28:01.004111",
     "is_current": true
   }
 ]

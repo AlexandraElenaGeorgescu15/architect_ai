@@ -338,12 +338,17 @@ class RAGIngester:
             "errors": 0
         }
         
-        # Get user project directories (excludes tool)
-        user_dirs = get_user_project_directories()
-        
-        if directory not in user_dirs:
-            logger.warning(f"Directory {directory} not in user project directories, skipping")
+        # Accept any directory that is NOT the Architect.AI tool itself
+        # This allows indexing ALL user projects in the root directory
+        if should_exclude_path(directory):
+            logger.warning(f"❌ Directory {directory} is excluded (tool directory), skipping")
             return stats
+        
+        if not directory.exists():
+            logger.warning(f"❌ Directory {directory} does not exist, skipping")
+            return stats
+        
+        logger.info(f"📂 [RAG_INGEST] Indexing directory: {directory}")
         
         # Find all files
         pattern = "**/*" if recursive else "*"

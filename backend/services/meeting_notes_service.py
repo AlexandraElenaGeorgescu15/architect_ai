@@ -79,7 +79,8 @@ Folder name:"""
                         model_name="llama3:8b-instruct-q4_K_M",
                         prompt=prompt,
                         system_message="You are a helpful assistant that categorizes meeting notes into appropriate folders. Respond with only the folder name.",
-                        temperature=0.1
+                        temperature=0.1,
+                        num_ctx=4096  # Small context OK for simple categorization task
                     )
                     if response.success and response.content:
                         suggested_folder = response.content.strip().lower().replace(" ", "_")

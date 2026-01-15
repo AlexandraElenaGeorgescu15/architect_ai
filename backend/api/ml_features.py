@@ -3,8 +3,7 @@ ML Feature Engineering API endpoints.
 """
 
 from fastapi import APIRouter, HTTPException, status, Request
-from typing import List, Dict, Any, Optional
-from backend.models.dto import MLFeatureRequest, MLFeatureResponse
+from typing import Dict, Any
 from backend.services.ml_features import get_engineer
 from backend.core.middleware import limiter
 import logging

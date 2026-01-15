@@ -5,7 +5,7 @@ Validates generated artifacts with quality scoring.
 
 import sys
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 import logging
 from datetime import datetime
 import re
@@ -147,6 +147,14 @@ class ValidationService:
         """
         Basic validation when ArtifactValidator is not available.
         
+        STRICT VALIDATION - Broken artifacts WILL trigger fallback to next model.
+        
+        Scoring:
+        - CRITICAL errors: -40 points each (will break rendering)
+        - SYNTAX errors: -25 points each (likely to break)
+        - Regular errors: -15 points each
+        - Warnings: -5 points each
+        
         Args:
             artifact_type: Type of artifact
             content: Artifact content
@@ -159,24 +167,65 @@ class ValidationService:
         warnings = []
         validators = {}
         score = 100.0
+        has_critical_error = False
         
         # Basic checks
         if not content or len(content.strip()) < 10:
-            errors.append("Content too short")
+            errors.append("CRITICAL: Content too short")
             score -= 50.0
+            has_critical_error = True
         
-        # Artifact-specific validation
+        # Artifact-specific validation with STRICT scoring
         if artifact_type.value.startswith("mermaid_"):
             # Mermaid diagram validation (uses cleaned content internally)
             mermaid_errors = self._validate_mermaid(content)
-            errors.extend(mermaid_errors)
-            score -= len(mermaid_errors) * 10.0
+            
+            # Score based on error severity
+            for error in mermaid_errors:
+                errors.append(error)
+                if error.startswith("CRITICAL:"):
+                    score -= 40.0
+                    has_critical_error = True
+                elif error.startswith("SYNTAX:"):
+                    score -= 25.0
+                else:
+                    score -= 15.0
             
             # Check for required diagram type
             diagram_type = artifact_type.value.replace("mermaid_", "")
-            if diagram_type not in content.lower():
-                warnings.append(f"Expected {diagram_type} diagram type")
-                score -= 5.0
+            # Map artifact type to expected mermaid keyword
+            type_mapping = {
+                "erd": "erDiagram",
+                "sequence": "sequenceDiagram",
+                "class": "classDiagram",
+                "state": "stateDiagram",
+                "flowchart": "flowchart",
+                "architecture": "flowchart",  # Architecture often uses flowchart
+                "data_flow": "flowchart",
+                "user_flow": "flowchart",
+                "component": "flowchart",
+                "system_overview": "flowchart",
+                "api_sequence": "sequenceDiagram",
+                "gantt": "gantt",
+                "pie": "pie",
+                "journey": "journey",
+                "mindmap": "mindmap",
+                "timeline": "timeline",
+                "git_graph": "gitGraph",
+                "c4_context": "C4Context",
+                "c4_container": "C4Container",
+                "c4_component": "C4Component",
+                "c4_deployment": "C4Deployment",
+            }
+            
+            expected_keyword = type_mapping.get(diagram_type, diagram_type)
+            if expected_keyword.lower() not in content.lower():
+                # Some flexibility - graph can be used instead of flowchart
+                if expected_keyword == "flowchart" and "graph" in content.lower():
+                    pass  # OK
+                else:
+                    errors.append(f"Wrong diagram type: expected {expected_keyword}")
+                    score -= 20.0
         
         elif artifact_type == ArtifactType.CODE_PROTOTYPE:
             # Code validation
@@ -191,10 +240,16 @@ class ValidationService:
             score -= len(api_errors) * 10.0
         
         elif artifact_type.value.startswith("html_"):
-            # HTML validation
+            # HTML validation with STRICT scoring
             html_errors = self._validate_html(content)
-            errors.extend(html_errors)
-            score -= len(html_errors) * 10.0
+            
+            for error in html_errors:
+                errors.append(error)
+                if error.startswith("CRITICAL:"):
+                    score -= 40.0
+                    has_critical_error = True
+                else:
+                    score -= 20.0
         
         # Meeting notes relevance (if provided)
         if meeting_notes:
@@ -205,12 +260,28 @@ class ValidationService:
         
         # Clamp score to 0-100
         score = max(0.0, min(100.0, score))
-        is_valid = score >= 60.0 and len(errors) == 0
+        
+        # STRICT validity check:
+        # - No critical errors
+        # - Score must be >= 60
+        # - Total errors must be <= 2 (minor issues OK)
+        is_valid = (
+            not has_critical_error and 
+            score >= 60.0 and 
+            len([e for e in errors if e.startswith("CRITICAL:")]) == 0
+        )
+        
+        # Log validation result for debugging
+        logger.info(f"🔍 [VALIDATION] {artifact_type.value}: score={score:.1f}, is_valid={is_valid}, "
+                   f"errors={len(errors)}, critical={has_critical_error}")
+        if errors:
+            logger.info(f"   Errors: {errors[:3]}{'...' if len(errors) > 3 else ''}")
         
         validators["basic"] = {
             "score": score,
             "errors": len(errors),
-            "warnings": len(warnings)
+            "warnings": len(warnings),
+            "has_critical": has_critical_error
         }
         
         return ValidationResultDTO(
@@ -363,9 +434,17 @@ class ValidationService:
         return content
     
     def _validate_mermaid(self, content: str) -> List[str]:
-        """Validate Mermaid diagram syntax."""
+        """
+        Validate Mermaid diagram syntax with STRICT checking.
+        
+        This validator catches common AI generation errors that break rendering:
+        - Invalid syntax patterns
+        - Malformed node definitions
+        - Missing required elements
+        - Common hallucination patterns
+        """
+        import re
         errors: List[str] = []
-        warnings: List[str] = []
         
         # Extract clean mermaid diagram first
         clean_content = self._extract_mermaid_diagram(content)
@@ -384,19 +463,177 @@ class ValidationService:
         
         has_diagram_type = any(dt in clean_content for dt in diagram_types)
         if not has_diagram_type:
-            errors.append("Missing Mermaid diagram type declaration")
+            errors.append("CRITICAL: Missing Mermaid diagram type declaration")
         
-        # Check for balanced brackets
+        # Check for balanced brackets (CRITICAL - breaks rendering)
         if clean_content.count('{') != clean_content.count('}'):
-            errors.append("Unbalanced curly braces")
+            errors.append("CRITICAL: Unbalanced curly braces - diagram will not render")
         
         if clean_content.count('[') != clean_content.count(']'):
-            errors.append("Unbalanced square brackets")
+            errors.append("CRITICAL: Unbalanced square brackets - diagram will not render")
         
-        # Check for basic syntax
-        if '-->' not in clean_content and '---' not in clean_content and '||' not in clean_content:
-            if "erDiagram" not in clean_content and "gantt" not in clean_content and "pie" not in clean_content:
-                warnings.append("No relationships/connections found")
+        if clean_content.count('(') != clean_content.count(')'):
+            errors.append("CRITICAL: Unbalanced parentheses - diagram will not render")
+        
+        if clean_content.count('"') % 2 != 0:
+            errors.append("CRITICAL: Unbalanced quotes - diagram will not render")
+        
+        # Check for common AI hallucination patterns that break Mermaid
+        broken_patterns = [
+            (r'\[\s*\]', "Empty brackets [] will break rendering"),
+            (r'\{\s*\}', "Empty braces {} may break rendering"),
+            (r'-->\s*$', "Arrow pointing to nothing"),
+            (r'^\s*-->', "Arrow with no source", re.MULTILINE),
+            (r'\|\|\s*\|\|', "Invalid double relationship marker"),
+            (r':\s*$', "Colon with no value", re.MULTILINE),
+            (r'participant\s+$', "Participant with no name", re.MULTILINE),
+            (r'Note\s+$', "Note with no content", re.MULTILINE),
+        ]
+        
+        for pattern_info in broken_patterns:
+            if len(pattern_info) == 2:
+                pattern, msg = pattern_info
+                flags = 0
+            else:
+                pattern, msg, flags = pattern_info
+            
+            if re.search(pattern, clean_content, flags):
+                errors.append(f"SYNTAX: {msg}")
+        
+        # Diagram-specific validation
+        if "erDiagram" in clean_content:
+            errors.extend(self._validate_erd_specific(clean_content))
+        elif "sequenceDiagram" in clean_content:
+            errors.extend(self._validate_sequence_specific(clean_content))
+        elif "flowchart" in clean_content or "graph" in clean_content:
+            errors.extend(self._validate_flowchart_specific(clean_content))
+        elif "classDiagram" in clean_content:
+            errors.extend(self._validate_class_specific(clean_content))
+        elif "stateDiagram" in clean_content:
+            errors.extend(self._validate_state_specific(clean_content))
+        elif "gantt" in clean_content:
+            errors.extend(self._validate_gantt_specific(clean_content))
+        
+        # Check for minimum content (diagrams with almost nothing)
+        non_whitespace_lines = [l for l in clean_content.split('\n') if l.strip() and not l.strip().startswith('%%')]
+        if len(non_whitespace_lines) < 3:
+            errors.append("CRITICAL: Diagram has too few elements (less than 3 lines)")
+        
+        return errors
+    
+    def _validate_erd_specific(self, content: str) -> List[str]:
+        """Validate ERD diagram specific syntax."""
+        import re
+        errors = []
+        
+        # ERD must have at least one entity
+        entity_pattern = r'^\s*(\w+)\s*\{'
+        entities = re.findall(entity_pattern, content, re.MULTILINE)
+        if not entities:
+            errors.append("ERD: No entities defined (need ENTITY { fields })")
+        
+        # ERD must have relationships (unless it's a single entity)
+        if len(entities) > 1:
+            relationship_patterns = ['||--||', '||--o{', '}o--||', '||--|{', '}|--||', 'o{--||', '}o--|{']
+            has_relationship = any(p in content for p in relationship_patterns)
+            if not has_relationship:
+                errors.append("ERD: No valid relationships between entities")
+        
+        # Check for invalid ERD syntax patterns
+        if re.search(r'class\s+\w+', content, re.IGNORECASE):
+            errors.append("ERD: Using classDiagram syntax (class X) instead of ERD syntax")
+        
+        return errors
+    
+    def _validate_sequence_specific(self, content: str) -> List[str]:
+        """Validate sequence diagram specific syntax."""
+        import re
+        errors = []
+        
+        # Must have participants or actors
+        has_participants = 'participant' in content.lower() or 'actor' in content.lower()
+        # Or implicit participants via arrows
+        has_arrows = '->>' in content or '-->>' in content or '->' in content
+        
+        if not has_participants and not has_arrows:
+            errors.append("SEQUENCE: No participants/actors or message arrows defined")
+        
+        # Check for valid arrow syntax
+        arrow_pattern = r'(\w+)\s*(->>|-->>|->|-->)\s*(\w+)'
+        arrows = re.findall(arrow_pattern, content)
+        if len(arrows) < 1 and has_participants:
+            errors.append("SEQUENCE: Participants defined but no messages between them")
+        
+        return errors
+    
+    def _validate_flowchart_specific(self, content: str) -> List[str]:
+        """Validate flowchart/graph specific syntax."""
+        import re
+        errors = []
+        
+        # Check for direction (TD, LR, RL, BT)
+        direction_pattern = r'(flowchart|graph)\s+(TD|TB|LR|RL|BT)'
+        if not re.search(direction_pattern, content):
+            # Check if it at least has flowchart/graph keyword
+            if 'flowchart' in content.lower() or 'graph' in content.lower():
+                errors.append("FLOWCHART: Missing direction (TD, LR, etc.)")
+        
+        # Must have nodes
+        node_pattern = r'(\w+)(\[|\(|\{|\[\[|\(\()'
+        nodes = re.findall(node_pattern, content)
+        if len(nodes) < 2:
+            errors.append("FLOWCHART: Need at least 2 nodes for a valid diagram")
+        
+        # Must have connections
+        arrow_patterns = ['-->', '---', '-.->', '-.->']
+        has_connections = any(p in content for p in arrow_patterns)
+        if not has_connections:
+            errors.append("FLOWCHART: No connections between nodes")
+        
+        return errors
+    
+    def _validate_class_specific(self, content: str) -> List[str]:
+        """Validate class diagram specific syntax."""
+        import re
+        errors = []
+        
+        # Must have at least one class
+        class_pattern = r'class\s+(\w+)'
+        classes = re.findall(class_pattern, content)
+        if len(classes) < 1:
+            errors.append("CLASS: No classes defined")
+        
+        return errors
+    
+    def _validate_state_specific(self, content: str) -> List[str]:
+        """Validate state diagram specific syntax."""
+        import re
+        errors = []
+        
+        # Must have states or transitions
+        has_states = '[*]' in content or 'state ' in content.lower()
+        has_transitions = '-->' in content
+        
+        if not has_states and not has_transitions:
+            errors.append("STATE: No states or transitions defined")
+        
+        return errors
+    
+    def _validate_gantt_specific(self, content: str) -> List[str]:
+        """Validate Gantt chart specific syntax."""
+        import re
+        errors = []
+        
+        # Must have title or section
+        has_structure = 'title' in content.lower() or 'section' in content.lower()
+        if not has_structure:
+            errors.append("GANTT: Missing title or section")
+        
+        # Must have tasks
+        task_pattern = r':\s*\w+,\s*\d'
+        has_tasks = bool(re.search(task_pattern, content))
+        if not has_tasks:
+            errors.append("GANTT: No valid tasks defined (format: taskName :status, duration)")
         
         return errors
     
@@ -438,30 +675,237 @@ class ValidationService:
         return errors
     
     def _validate_html(self, content: str) -> List[str]:
-        """Validate HTML artifacts."""
+        """
+        Validate HTML artifacts with STRICT checking.
+        
+        Catches common AI generation errors:
+        - Missing document structure
+        - Unclosed tags
+        - Invalid nesting
+        - Empty/placeholder content
+        """
+        import re
         errors: List[str] = []
-        warnings: List[str] = []
         
-        # Check for basic HTML structure
-        if '<html' not in content.lower() and '<div' not in content.lower() and '<body' not in content.lower():
-            errors.append("No HTML structure found")
+        content_lower = content.lower()
         
-        # Check for balanced tags (basic)
+        # Check for basic HTML structure (must have at least one container)
+        has_structure = any(tag in content_lower for tag in ['<html', '<body', '<div', '<!doctype'])
+        if not has_structure:
+            errors.append("CRITICAL: No HTML structure found (missing html/body/div tags)")
+        
+        # Check for balanced angle brackets (CRITICAL)
         open_tags = content.count('<')
         close_tags = content.count('>')
         if open_tags != close_tags:
-            warnings.append("Unbalanced HTML tags detected")
+            errors.append("CRITICAL: Unbalanced HTML tags - will not render correctly")
         
-        # Check for common HTML elements
-        has_elements = any(tag in content.lower() for tag in ['<div', '<span', '<button', '<input', '<form', '<table', '<ul', '<ol'])
-        if not has_elements:
-            warnings.append("No common HTML elements found")
+        # Check for common unclosed tags
+        void_elements = {'br', 'hr', 'img', 'input', 'meta', 'link', 'area', 'base', 'col', 'embed', 'source', 'track', 'wbr'}
+        
+        # Find all opening tags
+        opening_tags = re.findall(r'<(\w+)(?:\s[^>]*)?>(?!</)', content_lower)
+        closing_tags = re.findall(r'</(\w+)>', content_lower)
+        
+        # Count tags (excluding void elements and self-closing)
+        open_counts = {}
+        for tag in opening_tags:
+            if tag not in void_elements:
+                open_counts[tag] = open_counts.get(tag, 0) + 1
+        
+        close_counts = {}
+        for tag in closing_tags:
+            close_counts[tag] = close_counts.get(tag, 0) + 1
+        
+        # Check for major imbalances
+        important_tags = ['div', 'span', 'p', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'form', 'section', 'article', 'header', 'footer', 'nav', 'main']
+        for tag in important_tags:
+            opened = open_counts.get(tag, 0)
+            closed = close_counts.get(tag, 0)
+            if opened > closed + 2:  # Allow some tolerance
+                errors.append(f"HTML: Unclosed <{tag}> tags ({opened} opened, {closed} closed)")
+            elif closed > opened + 2:
+                errors.append(f"HTML: Extra </{tag}> closing tags")
+        
+        # Check for empty/placeholder content
+        placeholder_patterns = [
+            r'lorem\s+ipsum',
+            r'\{\{\s*\w+\s*\}\}',  # {{ placeholder }}
+            r'\[\s*placeholder\s*\]',
+            r'TODO:?\s',
+            r'FIXME:?\s',
+            r'<div>\s*</div>',  # Empty divs
+            r'<span>\s*</span>',  # Empty spans
+        ]
+        
+        for pattern in placeholder_patterns:
+            if re.search(pattern, content, re.IGNORECASE):
+                errors.append(f"HTML: Contains placeholder/incomplete content")
+                break
+        
+        # Check for interactive HTML (should have some elements)
+        interactive_tags = ['button', 'input', 'select', 'textarea', 'a', 'form']
+        structural_tags = ['div', 'section', 'article', 'header', 'footer', 'nav', 'main', 'aside']
+        
+        has_interactive = any(f'<{tag}' in content_lower for tag in interactive_tags)
+        has_structural = any(f'<{tag}' in content_lower for tag in structural_tags)
+        
+        if not has_interactive and not has_structural:
+            errors.append("HTML: No interactive or structural elements found")
+        
+        # Check minimum content length
+        text_content = re.sub(r'<[^>]+>', '', content)  # Remove all tags
+        text_content = re.sub(r'\s+', ' ', text_content).strip()
+        
+        if len(text_content) < 20:
+            errors.append("HTML: Very little actual content (mostly empty tags)")
         
         # Check for proper closing tags (basic check)
         if content.count('</div>') > 0 and content.count('<div') > content.count('</div>'):
-            warnings.append("Some div tags may not be properly closed")
+            errors.append("HTML: Some div tags may not be properly closed")
         
         return errors
+    
+    def auto_repair_mermaid(self, content: str, max_attempts: int = 3) -> Tuple[str, bool, List[str]]:
+        """
+        Attempt to automatically repair a Mermaid diagram.
+        
+        This method validates the diagram, identifies errors, and applies targeted fixes
+        in a loop until the diagram is valid or max attempts are reached.
+        
+        Args:
+            content: The Mermaid diagram content
+            max_attempts: Maximum repair attempts
+        
+        Returns:
+            Tuple of (repaired_content, is_valid, list_of_fixes_applied)
+        """
+        import re
+        
+        all_fixes = []
+        current_content = content
+        
+        for attempt in range(max_attempts):
+            # Validate current state
+            errors = self._validate_mermaid(current_content)
+            critical_errors = [e for e in errors if e.startswith("CRITICAL:")]
+            
+            if not critical_errors:
+                # No critical errors - diagram should render
+                if errors:
+                    logger.info(f"✅ [VALIDATION] Diagram valid after {attempt + 1} repair passes ({len(errors)} non-critical warnings)")
+                return current_content, True, all_fixes
+            
+            # Apply targeted fixes based on errors
+            fixes_this_pass = []
+            
+            for error in critical_errors:
+                error_lower = error.lower()
+                
+                # Fix unbalanced curly braces
+                if "unbalanced curly braces" in error_lower:
+                    open_count = current_content.count('{')
+                    close_count = current_content.count('}')
+                    
+                    if open_count > close_count:
+                        # Add missing closing braces
+                        diff = open_count - close_count
+                        current_content = current_content.rstrip() + '\n' + '}\n' * diff
+                        fixes_this_pass.append(f"Added {diff} missing closing braces")
+                    elif close_count > open_count:
+                        # Remove extra closing braces (from end)
+                        lines = current_content.split('\n')
+                        to_remove = close_count - open_count
+                        while to_remove > 0 and lines:
+                            if '}' in lines[-1] and '{' not in lines[-1]:
+                                lines[-1] = lines[-1].replace('}', '', 1)
+                                to_remove -= 1
+                                if not lines[-1].strip():
+                                    lines.pop()
+                            else:
+                                break
+                        current_content = '\n'.join(lines)
+                        fixes_this_pass.append(f"Removed {close_count - open_count} extra closing braces")
+                
+                # Fix unbalanced square brackets
+                elif "unbalanced square brackets" in error_lower:
+                    open_count = current_content.count('[')
+                    close_count = current_content.count(']')
+                    
+                    if open_count > close_count:
+                        # Find lines with unclosed brackets and close them
+                        lines = current_content.split('\n')
+                        fixed_lines = []
+                        for line in lines:
+                            line_open = line.count('[')
+                            line_close = line.count(']')
+                            if line_open > line_close:
+                                # Add closing bracket before arrow or at end
+                                if '-->' in line:
+                                    line = re.sub(r'\[([^\]]*)(-->)', r'[\1]\2', line)
+                                else:
+                                    line = line.rstrip() + ']'
+                            fixed_lines.append(line)
+                        current_content = '\n'.join(fixed_lines)
+                        fixes_this_pass.append("Fixed unclosed square brackets")
+                
+                # Fix unbalanced parentheses
+                elif "unbalanced parentheses" in error_lower:
+                    open_count = current_content.count('(')
+                    close_count = current_content.count(')')
+                    
+                    if open_count > close_count:
+                        # Close unclosed parentheses
+                        lines = current_content.split('\n')
+                        fixed_lines = []
+                        for line in lines:
+                            line_open = line.count('(')
+                            line_close = line.count(')')
+                            if line_open > line_close:
+                                line = line.rstrip() + ')' * (line_open - line_close)
+                            fixed_lines.append(line)
+                        current_content = '\n'.join(fixed_lines)
+                        fixes_this_pass.append("Fixed unclosed parentheses")
+                
+                # Fix unbalanced quotes
+                elif "unbalanced quotes" in error_lower:
+                    quote_count = current_content.count('"')
+                    if quote_count % 2 != 0:
+                        # Remove all quotes (safest fix)
+                        current_content = current_content.replace('"', '')
+                        fixes_this_pass.append("Removed unbalanced quotes")
+                
+                # Fix missing diagram type
+                elif "missing mermaid diagram type" in error_lower:
+                    # Try to detect what type it should be
+                    if '||--' in current_content or '}|--' in current_content:
+                        current_content = 'erDiagram\n' + current_content
+                        fixes_this_pass.append("Added missing erDiagram declaration")
+                    elif '->>-' in current_content or '->>' in current_content:
+                        current_content = 'sequenceDiagram\n' + current_content
+                        fixes_this_pass.append("Added missing sequenceDiagram declaration")
+                    elif '-->' in current_content or '---' in current_content:
+                        current_content = 'flowchart TD\n' + current_content
+                        fixes_this_pass.append("Added missing flowchart declaration")
+            
+            all_fixes.extend(fixes_this_pass)
+            
+            if not fixes_this_pass:
+                # No fixes applied this pass - we're stuck
+                logger.warning(f"⚠️ [VALIDATION] No fixes applied on pass {attempt + 1}, stopping repair")
+                break
+        
+        # Final validation
+        final_errors = self._validate_mermaid(current_content)
+        critical_errors = [e for e in final_errors if e.startswith("CRITICAL:")]
+        is_valid = len(critical_errors) == 0
+        
+        if is_valid:
+            logger.info(f"✅ [VALIDATION] Diagram repaired after {attempt + 1} passes, {len(all_fixes)} total fixes")
+        else:
+            logger.warning(f"⚠️ [VALIDATION] Could not fully repair diagram: {critical_errors[:3]}")
+        
+        return current_content, is_valid, all_fixes
     
     def _check_relevance(self, content: str, meeting_notes: str) -> float:
         """

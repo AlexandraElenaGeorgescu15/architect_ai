@@ -19,6 +19,47 @@ export interface ChatRequest {
   message: string
   conversation_history?: ChatMessage[]
   include_project_context?: boolean
+  session_id?: string  // For persistent context across messages
+}
+
+// Session management for conversation persistence
+const CHAT_SESSION_KEY = 'architect_ai_chat_session'
+const CHAT_MESSAGES_KEY = 'architect_ai_chat_messages'
+
+export function getOrCreateSessionId(): string {
+  let sessionId = localStorage.getItem(CHAT_SESSION_KEY)
+  if (!sessionId) {
+    sessionId = `chat_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
+    localStorage.setItem(CHAT_SESSION_KEY, sessionId)
+  }
+  return sessionId
+}
+
+export function clearChatSession(): void {
+  localStorage.removeItem(CHAT_SESSION_KEY)
+  localStorage.removeItem(CHAT_MESSAGES_KEY)
+}
+
+export function saveConversationToStorage(messages: ChatMessage[]): void {
+  try {
+    // Keep last 50 messages in storage
+    const toSave = messages.slice(-50)
+    localStorage.setItem(CHAT_MESSAGES_KEY, JSON.stringify(toSave))
+  } catch (e) {
+    console.warn('Could not save chat messages to storage:', e)
+  }
+}
+
+export function loadConversationFromStorage(): ChatMessage[] {
+  try {
+    const saved = localStorage.getItem(CHAT_MESSAGES_KEY)
+    if (saved) {
+      return JSON.parse(saved)
+    }
+  } catch (e) {
+    console.warn('Could not load chat messages from storage:', e)
+  }
+  return []
 }
 
 export interface ChatResponse {
@@ -28,8 +69,40 @@ export interface ChatResponse {
   timestamp: string
 }
 
+export interface ComponentInfo {
+  name: string
+  type: string
+  description: string
+  file_path: string
+}
+
+export interface ProjectSummary {
+  project_name: string
+  indexed_files: number
+  tech_stack: string[]
+  main_components: ComponentInfo[]
+  patterns_detected: string[]
+  knowledge_graph_stats: {
+    nodes: number
+    edges: number
+    components: number
+  }
+  recent_files: string[]
+  last_indexed: string | null
+  greeting_message: string
+}
+
 export async function sendChatMessage(request: ChatRequest): Promise<ChatResponse> {
   const response = await api.post<ChatResponse>('/api/chat/message', request)
+  return response.data
+}
+
+/**
+ * Fetch project summary for contextual chat greeting.
+ * Returns information about indexed files, components, patterns, and KG stats.
+ */
+export async function getProjectSummary(): Promise<ProjectSummary> {
+  const response = await api.get<ProjectSummary>('/api/chat/summary')
   return response.data
 }
 
