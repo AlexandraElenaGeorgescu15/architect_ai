@@ -6,15 +6,12 @@
 
 import { useState, useEffect } from 'react'
 import { 
-  Settings, 
   Server, 
   CheckCircle2, 
   XCircle, 
   Loader2, 
   RefreshCw,
-  ExternalLink,
-  Wifi,
-  WifiOff
+  ExternalLink
 } from 'lucide-react'
 import { 
   getBackendUrl, 
@@ -102,28 +99,20 @@ export default function BackendSettings() {
 
   return (
     <>
-      {/* Floating indicator button - z-[1100] to be above loading overlay (z-[1000]) */}
+      {/* Minimal connection indicator - small dot that shows status */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-4 left-4 z-[1100] flex items-center gap-2 px-3 py-2 rounded-full shadow-lg transition-all duration-200 ${
+        className={`fixed bottom-3 left-3 z-[1100] w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 opacity-50 hover:opacity-100 hover:scale-110 ${
           status?.connected 
-            ? 'bg-green-500/10 border border-green-500/30 text-green-600 hover:bg-green-500/20' 
-            : 'bg-red-500/10 border border-red-500/30 text-red-600 hover:bg-red-500/20'
+            ? 'bg-green-500/20 border border-green-500/40 hover:bg-green-500/30' 
+            : 'bg-red-500/20 border border-red-500/40 hover:bg-red-500/30 animate-pulse'
         }`}
-        title="Backend connection settings"
+        title={status?.connected ? `Connected${isCustomBackend ? ' (Custom)' : ''}` : 'Disconnected - Click to configure'}
       >
         {status?.connected ? (
-          <Wifi className="w-4 h-4" />
+          <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.6)]" />
         ) : (
-          <WifiOff className="w-4 h-4" />
-        )}
-        <span className="text-xs font-medium hidden sm:inline">
-          {status?.connected ? 'Connected' : 'Disconnected'}
-        </span>
-        {isCustomBackend && (
-          <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full">
-            Custom
-          </span>
+          <div className="w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_rgba(239,68,68,0.6)]" />
         )}
       </button>
 
