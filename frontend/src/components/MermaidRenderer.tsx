@@ -246,6 +246,7 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         }
         
         setError(`Repair could not fix this diagram. ${response.data.error || 'The diagram syntax may be too broken. Please try regenerating.'}`)
+      }
     } catch (err: any) {
       console.error('❌ [MermaidRenderer] Repair request failed:', err)
       // Restore original content on error
