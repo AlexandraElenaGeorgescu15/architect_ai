@@ -514,3 +514,69 @@ async def send_message_stream(
         }
     )
 
+
+# =============================================================================
+# AGENTIC CHAT - AI that can autonomously search the codebase
+# =============================================================================
+
+@router.post("/agent/stream")
+@limiter.limit("20/minute")
+async def stream_agentic_chat(
+    request: Request,
+    body: ChatRequest,
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """
+    Agentic chat with streaming response.
+    
+    The AI can autonomously use tools to:
+    - Search the codebase
+    - Read specific files
+    - Query the knowledge graph
+    - Explore project structure
+    
+    It will iterate until it has enough information to answer.
+    """
+    from backend.services.agentic_chat_service import get_agentic_chat_service
+    
+    service = get_agentic_chat_service()
+    
+    async def generate_stream():
+        """Stream agentic chat response with tool status updates."""
+        try:
+            async for chunk in service.chat(
+                message=body.message,
+                conversation_history=body.conversation_history,
+                session_id=body.session_id
+            ):
+                yield f"data: {json.dumps(chunk)}\n\n"
+        except Exception as e:
+            logger.error(f"Error in agentic chat: {e}", exc_info=True)
+            error_chunk = {
+                "type": "error",
+                "content": f"Error: {str(e)}",
+                "error": str(e)
+            }
+            yield f"data: {json.dumps(error_chunk)}\n\n"
+    
+    return StreamingResponse(
+        generate_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
+
+
+@router.get("/agent/tools")
+async def get_agent_tools():
+    """Get list of tools available to the agentic chat."""
+    from backend.services.agentic_chat_service import AGENT_TOOLS
+    
+    return {
+        "tools": AGENT_TOOLS,
+        "description": "The AI agent can use these tools to explore your codebase autonomously"
+    }
+

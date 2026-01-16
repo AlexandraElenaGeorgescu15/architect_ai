@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { createPortal } from 'react-dom'
-import { MessageSquare, X, Send, Bot, FileCode, GitBranch, Sparkles, Trash2 } from 'lucide-react'
+import { MessageSquare, X, Send, Bot, FileCode, GitBranch, Sparkles, Trash2, Zap, Search } from 'lucide-react'
 import { 
   sendChatMessage, 
   streamChatMessage, 
@@ -73,6 +73,8 @@ function FloatingChat() {
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [agenticMode, setAgenticMode] = useState(true)  // Agentic mode ON by default
+  const [currentToolStatus, setCurrentToolStatus] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Load conversation from storage on mount (session persistence)
@@ -222,22 +224,34 @@ function FloatingChat() {
 
       try {
         let fullResponse = ''
+        setCurrentToolStatus(null)
+        
         // Pass session_id for persistent context across messages
+        // Use agentic mode if enabled
         for await (const chunk of streamChatMessage({
           message: currentInput,
           conversation_history: conversationHistory,
           include_project_context: true,
           session_id: sessionId
-        })) {
-          fullResponse += chunk
-          setMessages((prev) => prev.map(msg =>
-            msg.id === assistantMessageId
-              ? { ...msg, content: fullResponse }
-              : msg
-          ))
+        }, agenticMode)) {
+          if (chunk.type === 'status') {
+            // Tool status update - show what the agent is doing
+            setCurrentToolStatus(chunk.content)
+          } else if (chunk.type === 'chunk') {
+            // Clear tool status when content starts flowing
+            setCurrentToolStatus(null)
+            fullResponse += chunk.content
+            setMessages((prev) => prev.map(msg =>
+              msg.id === assistantMessageId
+                ? { ...msg, content: fullResponse }
+                : msg
+            ))
+          }
         }
+        setCurrentToolStatus(null)
       } catch (streamError) {
         // Streaming failed, using non-streaming fallback
+        setCurrentToolStatus(null)
         const response = await sendChatMessage({
           message: currentInput,
           conversation_history: conversationHistory,
@@ -361,11 +375,20 @@ function FloatingChat() {
                     <Bot className="w-5 h-5 text-primary animate-pulse" />
                   </div>
                   <div className="bg-card/80 rounded-2xl p-4 border border-border/50 shadow-md">
-                    <div className="flex gap-2">
-                      <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce shadow-sm" style={{ animationDelay: '0ms' }} />
-                      <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce shadow-sm" style={{ animationDelay: '150ms' }} />
-                      <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce shadow-sm" style={{ animationDelay: '300ms' }} />
-                    </div>
+                    {currentToolStatus ? (
+                      // Show what the agent is doing
+                      <div className="flex items-center gap-2 text-sm text-primary">
+                        <Search className="w-4 h-4 animate-pulse" />
+                        <span className="font-medium">{currentToolStatus}</span>
+                      </div>
+                    ) : (
+                      // Default typing indicator
+                      <div className="flex gap-2">
+                        <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce shadow-sm" style={{ animationDelay: '0ms' }} />
+                        <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce shadow-sm" style={{ animationDelay: '150ms' }} />
+                        <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce shadow-sm" style={{ animationDelay: '300ms' }} />
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -374,12 +397,31 @@ function FloatingChat() {
 
             {/* Input */}
             <div className="p-5 border-t border-border/30 bg-gradient-to-r from-background/30 to-background/10 backdrop-blur-md">
+              {/* Agentic Mode Toggle */}
+              <div className="flex items-center justify-between mb-3 px-1">
+                <button
+                  onClick={() => setAgenticMode(!agenticMode)}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    agenticMode 
+                      ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-500 border border-amber-500/30 shadow-sm' 
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                  }`}
+                  title={agenticMode ? 'Agent mode: AI will search codebase when needed' : 'Basic mode: Uses pre-loaded context only'}
+                >
+                  <Zap className={`w-3.5 h-3.5 ${agenticMode ? 'animate-pulse' : ''}`} />
+                  {agenticMode ? 'Agent Mode' : 'Basic Mode'}
+                </button>
+                <span className="text-[10px] text-muted-foreground">
+                  {agenticMode ? '🔍 Can search & explore' : '📄 Pre-loaded context'}
+                </span>
+              </div>
+              
               <div className="flex gap-3">
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Ask me anything..."
+                  placeholder={agenticMode ? "Ask anything - I'll search the codebase if needed..." : "Ask me anything..."}
                   className="flex-1 p-4 text-sm border border-border/50 rounded-xl bg-card/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-300 shadow-sm focus:shadow-md placeholder:text-muted-foreground/70"
                   rows={1}
                 />
