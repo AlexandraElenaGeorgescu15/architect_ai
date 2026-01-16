@@ -954,15 +954,16 @@ Follow the repository's coding style and test patterns. Make tests realistic and
                         _add_cloud_provider_if_valid(model_id)
         
         # Add default cloud models if routing didn't provide any
+        # Updated Jan 2026 - Use latest stable models (Official Google AI)
         if not cloud_providers:
             if settings.google_api_key or settings.gemini_api_key:
-                cloud_providers.append(("gemini", "gemini-2.0-flash-exp"))
+                cloud_providers.append(("gemini", "gemini-2.5-flash"))  # Best price-performance
             if settings.groq_api_key:
                 cloud_providers.append(("groq", "llama-3.3-70b-versatile"))
             if settings.openai_api_key:
-                cloud_providers.append(("openai", "gpt-4-turbo"))
+                cloud_providers.append(("openai", "gpt-4o"))  # Latest GPT-4o
             if settings.anthropic_api_key:
-                cloud_providers.append(("anthropic", "claude-3-5-sonnet-20241022"))
+                cloud_providers.append(("anthropic", "claude-sonnet-4-20250514"))  # Claude 4
         
         for idx, (provider, model_name) in enumerate(cloud_providers):
             try:
@@ -1318,11 +1319,22 @@ Follow the repository's coding style and test patterns. Make tests realistic and
             genai.configure(api_key=api_key)
             # Extract model name if it includes provider prefix (e.g., "gemini-2.0-flash-exp" from "gemini:gemini-2.0-flash-exp")
             actual_model_name = model_name.split(":")[-1] if ":" in model_name else model_name
-            # Map model names to actual Gemini model IDs
+            # Map model names to actual Gemini model IDs (Updated Jan 2026 - Official Google AI)
             model_mapping = {
-                "gemini-2.0-flash-exp": "gemini-2.0-flash-exp",
-                "gemini-1.5-pro": "gemini-1.5-pro",
-                "gemini-1.5-flash": "gemini-1.5-flash",
+                # Gemini 3 (Latest Preview - Nov/Dec 2025)
+                "gemini-3-pro-preview": "gemini-3-pro-preview",
+                "gemini-3-flash-preview": "gemini-3-flash-preview",
+                # Gemini 2.5 (Stable - June/July 2025)
+                "gemini-2.5-pro": "gemini-2.5-pro",
+                "gemini-2.5-flash": "gemini-2.5-flash",
+                "gemini-2.5-flash-lite": "gemini-2.5-flash-lite",
+                # Gemini 2.0 (Previous Gen)
+                "gemini-2.0-flash": "gemini-2.0-flash",
+                "gemini-2.0-flash-lite": "gemini-2.0-flash-lite",
+                # Legacy aliases (redirect to current stable)
+                "gemini-2.0-flash-exp": "gemini-2.5-flash",  # Redirect to 2.5
+                "gemini-1.5-pro": "gemini-2.5-pro",  # Deprecated → 2.5 Pro
+                "gemini-1.5-flash": "gemini-2.5-flash",  # Deprecated → 2.5 Flash
             }
             actual_model_name = model_mapping.get(actual_model_name, actual_model_name)
             
@@ -1376,12 +1388,19 @@ Follow the repository's coding style and test patterns. Make tests realistic and
             client = AsyncGroq(api_key=settings.groq_api_key)
             # Extract model name if it includes provider prefix
             actual_model_name = model_name.split(":")[-1] if ":" in model_name else model_name
-            # Map Groq model names
+            # Map Groq model names (Updated Jan 2026)
             model_mapping = {
+                # Llama 3.3 (Latest)
                 "llama-3.3-70b-versatile": "llama-3.3-70b-versatile",
-                "llama-3.1-70b-versatile": "llama-3.1-70b-versatile",
-                "llama-3.1-8b-instant": "llama-3.1-8b-instant",
+                "llama-3.3-70b-specdec": "llama-3.3-70b-specdec",
+                # Llama 3.2 (Multimodal)
+                "llama-3.2-90b-vision-preview": "llama-3.2-90b-vision-preview",
+                "llama-3.2-11b-vision-preview": "llama-3.2-11b-vision-preview",
+                # Mixtral
                 "mixtral-8x7b-32768": "mixtral-8x7b-32768",
+                # Legacy aliases
+                "llama-3.1-70b-versatile": "llama-3.3-70b-versatile",  # Redirect to 3.3
+                "llama-3.1-8b-instant": "llama-3.3-70b-specdec",  # Redirect to 3.3 fast
             }
             actual_model_name = model_mapping.get(actual_model_name, actual_model_name)
             
@@ -1562,12 +1581,12 @@ async def _generate_with_fallback(
             continue
     
     # Try cloud models as fallback
-    # Prioritize cloud models from routing, then default providers
+    # Prioritize cloud models from routing, then default providers (Updated Jan 2026 - Official)
     default_cloud_providers = [
-        ("gemini", "gemini-2.0-flash-exp"),
-        ("groq", "llama-3.3-70b-versatile"),
-        ("openai", "gpt-4-turbo"),
-        ("anthropic", "claude-3-5-sonnet-20241022"),
+        ("gemini", "gemini-2.5-flash"),  # Best price-performance (stable)
+        ("groq", "llama-3.3-70b-versatile"),  # Latest Llama
+        ("openai", "gpt-4o"),  # Latest GPT-4o
+        ("anthropic", "claude-sonnet-4-20250514"),  # Claude 4
     ]
     
     # Combine routing cloud models (first) with defaults (skip duplicates)

@@ -53,28 +53,45 @@ class ModelRouter:
         'repository_analysis': TaskComplexity.COMPLEX,
     }
     
-    # Model selection based on complexity
+    # Model selection based on complexity (Updated Jan 2026 - Official Google AI)
     MODEL_SELECTION = {
         TaskComplexity.SIMPLE: {
-            'primary': ('gemini', 'gemini-2.0-flash-exp'),
-            'fallback': ('openai', 'gpt-3.5-turbo')
+            'primary': ('gemini', 'gemini-2.5-flash-lite'),  # Ultra fast, cost-efficient
+            'fallback': ('openai', 'gpt-4o-mini')  # Fast GPT-4o Mini
         },
         TaskComplexity.MEDIUM: {
-            'primary': ('openai', 'gpt-3.5-turbo'),
-            'fallback': ('gemini', 'gemini-2.0-flash-exp')
+            'primary': ('gemini', 'gemini-2.5-flash'),  # Best price-performance
+            'fallback': ('openai', 'gpt-4o-mini')
         },
         TaskComplexity.COMPLEX: {
-            'primary': ('openai', 'gpt-4'),
-            'fallback': ('openai', 'gpt-3.5-turbo')
+            'primary': ('gemini', 'gemini-2.5-pro'),  # Advanced thinking
+            'fallback': ('openai', 'gpt-4o')  # Latest GPT-4o
         }
     }
     
-    # Cost per 1K tokens (approximate)
+    # Cost per 1K tokens (approximate, Updated Jan 2026 - Official Google AI)
     MODEL_COSTS = {
-        'gemini-2.0-flash-exp': {'input': 0.0, 'output': 0.0},  # Free
-        'gpt-3.5-turbo': {'input': 0.0015, 'output': 0.002},
-        'gpt-4': {'input': 0.03, 'output': 0.06},
-        'gpt-4-turbo': {'input': 0.01, 'output': 0.03},
+        # Gemini 3 (Preview)
+        'gemini-3-pro-preview': {'input': 0.00125, 'output': 0.005},
+        'gemini-3-flash-preview': {'input': 0.000075, 'output': 0.0003},
+        # Gemini 2.5 (Stable - Free tier available)
+        'gemini-2.5-pro': {'input': 0.00125, 'output': 0.005},
+        'gemini-2.5-flash': {'input': 0.0, 'output': 0.0},  # Free tier
+        'gemini-2.5-flash-lite': {'input': 0.0, 'output': 0.0},  # Free tier
+        # Gemini 2.0 (Legacy)
+        'gemini-2.0-flash': {'input': 0.0, 'output': 0.0},  # Free tier
+        # OpenAI
+        'gpt-4o': {'input': 0.005, 'output': 0.015},
+        'gpt-4o-mini': {'input': 0.00015, 'output': 0.0006},
+        'o1': {'input': 0.015, 'output': 0.06},
+        'o1-mini': {'input': 0.003, 'output': 0.012},
+        'gpt-4-turbo': {'input': 0.01, 'output': 0.03},  # Legacy
+        # Anthropic Claude
+        'claude-sonnet-4-20250514': {'input': 0.003, 'output': 0.015},
+        'claude-opus-4-20250514': {'input': 0.015, 'output': 0.075},
+        'claude-3-5-sonnet-20241022': {'input': 0.003, 'output': 0.015},
+        # Groq (Free/Cheap)
+        'llama-3.3-70b-versatile': {'input': 0.0, 'output': 0.0},
     }
     
     def __init__(self, config: Dict[str, Any] = None, ollama_client: Optional['OllamaClient'] = None):

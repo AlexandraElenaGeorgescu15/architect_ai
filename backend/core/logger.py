@@ -48,26 +48,33 @@ _file_lock = threading.Lock()
 
 # Cost per 1K tokens (USD) - Updated Jan 2026
 MODEL_COSTS = {
-    # OpenAI
-    "gpt-4": {"input": 0.03, "output": 0.06},
-    "gpt-4-turbo": {"input": 0.01, "output": 0.03},
-    "gpt-4o": {"input": 0.005, "output": 0.015},
-    "gpt-3.5-turbo": {"input": 0.0005, "output": 0.0015},
+    # OpenAI (Updated Jan 2026)
+    "gpt-4o": {"input": 0.005, "output": 0.015},  # Latest flagship
+    "gpt-4o-mini": {"input": 0.00015, "output": 0.0006},  # Fast & cheap
+    "o1": {"input": 0.015, "output": 0.06},  # Reasoning model
+    "o1-mini": {"input": 0.003, "output": 0.012},  # Reasoning fast
+    "gpt-4-turbo": {"input": 0.01, "output": 0.03},  # Legacy
+    "gpt-4": {"input": 0.03, "output": 0.06},  # Legacy
     
-    # Anthropic Claude
-    "claude-3-opus": {"input": 0.015, "output": 0.075},
-    "claude-3-sonnet": {"input": 0.003, "output": 0.015},
+    # Anthropic Claude (Updated Jan 2026)
+    "claude-sonnet-4-20250514": {"input": 0.003, "output": 0.015},  # Claude 4
+    "claude-opus-4-20250514": {"input": 0.015, "output": 0.075},  # Claude 4 Opus
     "claude-3-5-sonnet-20241022": {"input": 0.003, "output": 0.015},
-    "claude-3-haiku": {"input": 0.00025, "output": 0.00125},
+    "claude-3-5-haiku-20241022": {"input": 0.00025, "output": 0.00125},
+    "claude-3-opus-20240229": {"input": 0.015, "output": 0.075},  # Legacy
     
-    # Google Gemini
-    "gemini-2.0-flash-exp": {"input": 0.0, "output": 0.0},  # Free tier
-    "gemini-1.5-pro": {"input": 0.00125, "output": 0.005},
-    "gemini-1.5-flash": {"input": 0.000075, "output": 0.0003},
+    # Google Gemini (Updated Jan 2026 - Official Google AI docs)
+    "gemini-3-pro-preview": {"input": 0.00125, "output": 0.005},  # Most intelligent
+    "gemini-3-flash-preview": {"input": 0.000075, "output": 0.0003},  # Balanced
+    "gemini-2.5-pro": {"input": 0.00125, "output": 0.005},  # Advanced thinking (stable)
+    "gemini-2.5-flash": {"input": 0.0, "output": 0.0},  # Best price-performance (free tier)
+    "gemini-2.5-flash-lite": {"input": 0.0, "output": 0.0},  # Ultra fast (free tier)
+    "gemini-2.0-flash": {"input": 0.0, "output": 0.0},  # Legacy (free tier)
     
     # Groq (free/cheap)
     "llama-3.3-70b-versatile": {"input": 0.0, "output": 0.0},
-    "llama-3.1-70b-versatile": {"input": 0.0, "output": 0.0},
+    "llama-3.3-70b-specdec": {"input": 0.0, "output": 0.0},
+    "llama-3.2-90b-vision-preview": {"input": 0.0, "output": 0.0},
     "mixtral-8x7b-32768": {"input": 0.0, "output": 0.0},
     
     # Ollama (local - free)

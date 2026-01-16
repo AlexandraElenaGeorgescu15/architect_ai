@@ -64,11 +64,14 @@ class EnhancedRAGSystem:
     """Enhanced RAG system with 100 chunks and flexible context window"""
     
     def __init__(self):
+        # Updated Jan 2026 - Official model names
         self.model_limits = {
-            'gpt-4': ModelContextLimits('gpt-4', 8192, 6000, 'fixed'),
-            'gpt-4-turbo': ModelContextLimits('gpt-4-turbo', 128000, 100000, 'flexible'),
-            'gpt-3.5-turbo': ModelContextLimits('gpt-3.5-turbo', 4096, 3000, 'fixed'),
-            'claude-3-opus': ModelContextLimits('claude-3-opus', 200000, 150000, 'flexible'),
+            'gpt-4o': ModelContextLimits('gpt-4o', 128000, 100000, 'flexible'),
+            'gpt-4o-mini': ModelContextLimits('gpt-4o-mini', 128000, 100000, 'flexible'),
+            'o1': ModelContextLimits('o1', 200000, 150000, 'flexible'),
+            'gpt-4-turbo': ModelContextLimits('gpt-4-turbo', 128000, 100000, 'flexible'),  # Legacy
+            'claude-sonnet-4': ModelContextLimits('claude-sonnet-4', 200000, 150000, 'flexible'),
+            'claude-3-5-sonnet': ModelContextLimits('claude-3-5-sonnet', 200000, 150000, 'flexible'),
             'claude-3-sonnet': ModelContextLimits('claude-3-sonnet', 200000, 150000, 'flexible'),
             'claude-3-haiku': ModelContextLimits('claude-3-haiku', 200000, 150000, 'flexible'),
             'gemini-pro': ModelContextLimits('gemini-pro', 32000, 25000, 'flexible'),
@@ -87,11 +90,14 @@ class EnhancedRAGSystem:
         }
         
         # Model-specific recommended chunks for generation tasks
+        # Updated Jan 2026
         self.model_recommended_chunks = {
-            'gpt-4': 18,
-            'gpt-4-turbo': 100,
-            'gpt-3.5-turbo': 15,
-            'claude-3-opus': 100,
+            'gpt-4o': 100,
+            'gpt-4o-mini': 100,
+            'o1': 100,
+            'gpt-4-turbo': 100,  # Legacy
+            'claude-sonnet-4': 100,
+            'claude-3-5-sonnet': 100,
             'claude-3-sonnet': 100,
             'claude-3-haiku': 80,
             'gemini-pro': 100,
@@ -101,7 +107,8 @@ class EnhancedRAGSystem:
             'mistral-7b': 40,
             'codellama-7b': 60,
             'mixtral-8x7b': 40,
-            'gemini-1.5-flash': 100
+            'gemini-2.5-flash': 100,  # Updated Jan 2026
+            'gemini-2.5-pro': 150
         }
     
         self.user_project_dirs = [p.resolve() for p in get_user_project_directories()]
@@ -125,21 +132,22 @@ class EnhancedRAGSystem:
         }
 
         self.provider_aliases = {
-            'groq (free & fast)': 'mixtral-8x7b',
-            'groq': 'mixtral-8x7b',
-            'google gemini (free)': 'gemini-1.5-flash',
-            'google gemini': 'gemini-1.5-flash',
-            'openai gpt-4': 'gpt-4',
-            'openai': 'gpt-4',
+            'groq (free & fast)': 'llama-3.3-70b-versatile',
+            'groq': 'llama-3.3-70b-versatile',
+            'google gemini (free)': 'gemini-2.5-flash',
+            'google gemini': 'gemini-2.5-flash',
+            'openai gpt-4': 'gpt-4o',
+            'openai': 'gpt-4o',
             'anthropic claude 3 opus': 'claude-3-opus',
             'anthropic claude 3 sonnet': 'claude-3-sonnet'
         }
 
+        # Updated Jan 2026
         self.config_key_aliases = {
-            'groq_api_key': 'mixtral-8x7b',
-            'gemini_api_key': 'gemini-1.5-flash',
-            'api_key': 'gpt-4',
-            'anthropic_api_key': 'claude-3-sonnet'
+            'groq_api_key': 'llama-3.3-70b-versatile',
+            'gemini_api_key': 'gemini-2.5-flash',
+            'api_key': 'gpt-4o',
+            'anthropic_api_key': 'claude-sonnet-4'
         }
     
     def get_optimal_config(self, model_name: str, task_type: TaskType,

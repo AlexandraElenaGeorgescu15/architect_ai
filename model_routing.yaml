@@ -2,318 +2,318 @@ api_docs:
   enabled: true
   fallback_models:
   - huggingface:zai-org-GLM-4.6
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:codellama
+  - gemini:gemini-2.5-flash
+  primary_model: ollama:dolphin-llama3:latest
 backlog:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: ollama:dolphin-llama3:latest
 code_prototype:
   enabled: true
   fallback_models:
   - ollama:deepseek-coder:6.7b-instruct-q4_K_M
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:codellama
+  - gemini:gemini-2.5-flash
+  primary_model: ollama:deepseek-coder:6.7b-instruct-q4_K_M
 dev_visual_prototype:
   enabled: true
   fallback_models:
   - huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:codellama
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 estimations:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:microsoft-Phi-4-mini-instruct
 feature_scoring:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:microsoft-Phi-4-mini-instruct
 html_api_sequence:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_architecture:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_c4_component:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_c4_container:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_c4_context:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_c4_deployment:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_class:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_component:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_data_flow:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_erd:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_flowchart:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_gantt:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_git_graph:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_journey:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_mindmap:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_pie:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_sequence:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_state:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_system_overview:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_timeline:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_uml:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 html_user_flow:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
 jira:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: ollama:dolphin-llama3:latest
 mermaid_api_sequence:
   enabled: true
   fallback_models:
   - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_architecture:
   enabled: true
   fallback_models:
   - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_c4_component:
   enabled: true
   fallback_models:
   - huggingface:microsoft-Phi-3-mini-4k-instruct
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_c4_container:
   enabled: true
   fallback_models:
   - huggingface:microsoft-Phi-3-mini-4k-instruct
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_c4_context:
   enabled: true
   fallback_models:
   - ollama:deepseek-coder:6.7b-instruct-q4_K_M
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_c4_deployment:
   enabled: true
   fallback_models:
   - ollama:mistral:7b
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_class:
   enabled: true
   fallback_models:
   - ollama:mistral:7b-instruct-q4_K_M
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_component:
   enabled: true
   fallback_models:
   - ollama:mistral-nemo:12b-instruct-2407-q4_K_M
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_data_flow:
   enabled: true
   fallback_models:
   - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_erd:
   enabled: true
   fallback_models:
   - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_flowchart:
   enabled: true
   fallback_models:
   - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_gantt:
   enabled: true
   fallback_models:
   - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_git_graph:
   enabled: true
   fallback_models:
   - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_journey:
   enabled: true
   fallback_models:
   - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
   - groq:llama-3.3-70b-versatile
-  primary_model: ollama:llama3
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_mindmap:
   enabled: true
   fallback_models:
   - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_pie:
   enabled: true
   fallback_models:
   - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_sequence:
   enabled: true
   fallback_models:
   - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_state:
   enabled: true
   fallback_models:
   - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-  - gemini:gemini-2.0-flash-exp
+  - gemini:gemini-2.5-flash
   - groq:mixtral-8x7b-32768
-  primary_model: ollama:llama3
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_system_overview:
   enabled: true
   fallback_models:
   - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_timeline:
   enabled: true
   fallback_models:
   - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_uml:
   enabled: true
   fallback_models:
   - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 mermaid_user_flow:
   enabled: true
   fallback_models:
   - huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-  - gemini:gemini-2.0-flash-exp
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
 personas:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: ollama:dolphin-llama3:latest
 workflows:
   enabled: true
   fallback_models:
-  - gemini:gemini-2.0-flash-exp
-  - openai:gpt-4-turbo
-  primary_model: ollama:llama3
+  - gemini:gemini-2.5-flash
+  - openai:gpt-4o
+  primary_model: ollama:dolphin-llama3:latest

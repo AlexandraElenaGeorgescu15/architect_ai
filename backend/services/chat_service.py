@@ -709,7 +709,7 @@ When answering:
                             "Content-Type": "application/json"
                         },
                         json={
-                            "model": "llama-3.3-70b-versatile",
+                            "model": "llama-3.3-70b-versatile",  # Groq Llama 3.3
                             "messages": [
                                 {"role": "system", "content": system_message},
                                 {"role": "user", "content": prompt}
@@ -787,7 +787,7 @@ When answering:
                             "Content-Type": "application/json"
                         },
                         json={
-                            "model": "gpt-4-turbo-preview",
+                            "model": "gpt-4o",  # Updated Jan 2026 - Use GPT-4o
                             "messages": [
                                 {"role": "system", "content": system_message},
                                 {"role": "user", "content": prompt}
@@ -805,7 +805,7 @@ When answering:
                         yield {
                             "type": "complete",
                             "content": content,
-                            "model": "gpt-4-turbo-preview",
+                            "model": "gpt-4o",
                             "provider": "openai"
                         }
                         return

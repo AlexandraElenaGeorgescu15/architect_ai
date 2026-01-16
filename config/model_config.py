@@ -39,85 +39,145 @@ class DynamicModelConfig:
     and context window management
     """
 
-    # Cloud Provider Models
+    # Cloud Provider Models (Updated Jan 2026 - Official Google AI docs)
     MODEL_CONFIGS: Dict[str, ModelConfig] = {
-        # Google Gemini Models
-        "gemini-1.5-pro": ModelConfig(
-            name="Gemini 1.5 Pro",
+        # Google Gemini Models (Updated Jan 2026)
+        "gemini-3-pro-preview": ModelConfig(
+            name="Gemini 3 Pro (Most Intelligent)",
             provider=ModelProvider.GEMINI,
-            context_window=1000000,  # 1M tokens
-            recommended_context=800000,
-            max_chunks=200,  # Can handle many chunks
-            recommended_chunks=100,
-            supports_function_calling=True,
-            cost_per_1k_tokens=0.0075
-        ),
-        "gemini-1.5-flash": ModelConfig(
-            name="Gemini 1.5 Flash",
-            provider=ModelProvider.GEMINI,
-            context_window=1000000,
-            recommended_context=800000,
-            max_chunks=200,
-            recommended_chunks=100,
-            supports_function_calling=True,
-            cost_per_1k_tokens=0.00075
-        ),
-        "gemini-2.0-pro": ModelConfig(
-            name="Gemini 2.0 Pro",
-            provider=ModelProvider.GEMINI,
-            context_window=1000000,
+            context_window=1048576,  # 1M tokens
             recommended_context=800000,
             max_chunks=200,
             recommended_chunks=150,
             supports_function_calling=True,
-            cost_per_1k_tokens=0.01
+            cost_per_1k_tokens=0.00125
+        ),
+        "gemini-3-flash-preview": ModelConfig(
+            name="Gemini 3 Flash (Balanced)",
+            provider=ModelProvider.GEMINI,
+            context_window=1048576,
+            recommended_context=800000,
+            max_chunks=200,
+            recommended_chunks=150,
+            supports_function_calling=True,
+            cost_per_1k_tokens=0.000075
+        ),
+        "gemini-2.5-pro": ModelConfig(
+            name="Gemini 2.5 Pro (Advanced Thinking)",
+            provider=ModelProvider.GEMINI,
+            context_window=1048576,  # 1M tokens
+            recommended_context=800000,
+            max_chunks=200,
+            recommended_chunks=150,
+            supports_function_calling=True,
+            cost_per_1k_tokens=0.00125
+        ),
+        "gemini-2.5-flash": ModelConfig(
+            name="Gemini 2.5 Flash (Best Price-Performance)",
+            provider=ModelProvider.GEMINI,
+            context_window=1048576,
+            recommended_context=800000,
+            max_chunks=200,
+            recommended_chunks=100,
+            supports_function_calling=True,
+            cost_per_1k_tokens=0.0  # Free tier
+        ),
+        "gemini-2.5-flash-lite": ModelConfig(
+            name="Gemini 2.5 Flash-Lite (Ultra Fast)",
+            provider=ModelProvider.GEMINI,
+            context_window=1048576,
+            recommended_context=800000,
+            max_chunks=200,
+            recommended_chunks=100,
+            supports_function_calling=True,
+            cost_per_1k_tokens=0.0  # Free tier
+        ),
+        "gemini-2.0-flash": ModelConfig(
+            name="Gemini 2.0 Flash (Legacy)",
+            provider=ModelProvider.GEMINI,
+            context_window=1048576,
+            recommended_context=800000,
+            max_chunks=200,
+            recommended_chunks=100,
+            supports_function_calling=True,
+            cost_per_1k_tokens=0.0  # Free tier
         ),
         
-        # OpenAI Models
-        "gpt-4-turbo": ModelConfig(
-            name="GPT-4 Turbo",
+        # OpenAI Models (Updated Jan 2026)
+        "gpt-4o": ModelConfig(
+            name="GPT-4o (Latest)",
             provider=ModelProvider.OPENAI,
             context_window=128000,  # 128K tokens
             recommended_context=100000,
             max_chunks=100,
             recommended_chunks=50,
             supports_function_calling=True,
-            cost_per_1k_tokens=0.01
+            cost_per_1k_tokens=0.005
         ),
-        "gpt-4": ModelConfig(
-            name="GPT-4",
+        "gpt-4o-mini": ModelConfig(
+            name="GPT-4o Mini (Fast)",
             provider=ModelProvider.OPENAI,
-            context_window=8192,
-            recommended_context=6000,
-            max_chunks=30,
-            recommended_chunks=18,
+            context_window=128000,
+            recommended_context=100000,
+            max_chunks=100,
+            recommended_chunks=50,
             supports_function_calling=True,
-            cost_per_1k_tokens=0.03
+            cost_per_1k_tokens=0.00015
         ),
-        "gpt-3.5-turbo": ModelConfig(
-            name="GPT-3.5 Turbo",
+        "o1": ModelConfig(
+            name="o1 (Reasoning)",
             provider=ModelProvider.OPENAI,
-            context_window=16384,
-            recommended_context=12000,
-            max_chunks=50,
-            recommended_chunks=30,
-            supports_function_calling=True,
-            cost_per_1k_tokens=0.0005
-        ),
-        
-        # Anthropic Models
-        "claude-3-opus": ModelConfig(
-            name="Claude 3 Opus",
-            provider=ModelProvider.ANTHROPIC,
-            context_window=200000,  # 200K tokens
+            context_window=200000,
             recommended_context=150000,
             max_chunks=150,
             recommended_chunks=100,
             supports_function_calling=True,
             cost_per_1k_tokens=0.015
         ),
-        "claude-3-sonnet": ModelConfig(
-            name="Claude 3 Sonnet",
+        "o1-mini": ModelConfig(
+            name="o1 Mini (Reasoning Fast)",
+            provider=ModelProvider.OPENAI,
+            context_window=128000,
+            recommended_context=100000,
+            max_chunks=100,
+            recommended_chunks=50,
+            supports_function_calling=True,
+            cost_per_1k_tokens=0.003
+        ),
+        "gpt-4-turbo": ModelConfig(
+            name="GPT-4 Turbo (Legacy)",
+            provider=ModelProvider.OPENAI,
+            context_window=128000,
+            recommended_context=100000,
+            max_chunks=100,
+            recommended_chunks=50,
+            supports_function_calling=True,
+            cost_per_1k_tokens=0.01
+        ),
+        
+        # Anthropic Models (Updated Jan 2026)
+        "claude-sonnet-4-20250514": ModelConfig(
+            name="Claude Sonnet 4 (Latest)",
+            provider=ModelProvider.ANTHROPIC,
+            context_window=200000,  # 200K tokens
+            recommended_context=150000,
+            max_chunks=150,
+            recommended_chunks=100,
+            supports_function_calling=True,
+            cost_per_1k_tokens=0.003
+        ),
+        "claude-opus-4-20250514": ModelConfig(
+            name="Claude Opus 4",
+            provider=ModelProvider.ANTHROPIC,
+            context_window=200000,
+            recommended_context=150000,
+            max_chunks=150,
+            recommended_chunks=100,
+            supports_function_calling=True,
+            cost_per_1k_tokens=0.015
+        ),
+        "claude-3-5-sonnet-20241022": ModelConfig(
+            name="Claude 3.5 Sonnet",
             provider=ModelProvider.ANTHROPIC,
             context_window=200000,
             recommended_context=150000,
@@ -127,8 +187,18 @@ class DynamicModelConfig:
             cost_per_1k_tokens=0.003
         ),
         
-        # Groq Models
-        "mixtral-8x7b": ModelConfig(
+        # Groq Models (Updated Jan 2026)
+        "llama-3.3-70b-versatile": ModelConfig(
+            name="Llama 3.3 70B Versatile",
+            provider=ModelProvider.GROQ,
+            context_window=128000,
+            recommended_context=100000,
+            max_chunks=100,
+            recommended_chunks=60,
+            supports_function_calling=True,
+            cost_per_1k_tokens=0.0
+        ),
+        "mixtral-8x7b-32768": ModelConfig(
             name="Mixtral 8x7B",
             provider=ModelProvider.GROQ,
             context_window=32768,

@@ -92,7 +92,7 @@ def normalize_model_id(model_id: str, default_provider: str = "ollama") -> tuple
     - "llama3" -> ("ollama", "llama3")
     - "ollama:llama3" -> ("ollama", "llama3")
     - "ollama:llama3:latest" -> ("ollama", "llama3:latest")
-    - "gemini:gemini-2.0-flash-exp" -> ("gemini", "gemini-2.0-flash-exp")
+    - "gemini:gemini-2.5-flash" -> ("gemini", "gemini-2.5-flash")
     
     Args:
         model_id: Model identifier in any format
@@ -364,7 +364,7 @@ class ModelService:
             default_routing[artifact_type] = ModelRoutingDTO(
                 artifact_type=artifact_type,
                 primary_model="ollama:llama3",  # Use full model ID with prefix
-                fallback_models=["ollama:codellama", "gemini:gemini-2.0-flash-exp"],  # Use full model IDs
+                fallback_models=["ollama:codellama", "gemini:gemini-2.5-flash"],  # Use full model IDs
                 enabled=True
             )
         
@@ -398,7 +398,7 @@ class ModelService:
             default_routing[artifact_type] = ModelRoutingDTO(
                 artifact_type=artifact_type,
                 primary_model="ollama:llama3",  # Use full model ID with prefix
-                fallback_models=["gemini:gemini-2.0-flash-exp", "openai:gpt-4-turbo"],  # Use full model IDs
+                fallback_models=["gemini:gemini-2.5-flash", "openai:gpt-4o"],  # Use full model IDs
                 enabled=True
             )
         
@@ -413,7 +413,7 @@ class ModelService:
             default_routing[artifact_type] = ModelRoutingDTO(
                 artifact_type=artifact_type,
                 primary_model="ollama:codellama",  # Use full model ID with prefix
-                fallback_models=["ollama:llama3", "gemini:gemini-2.0-flash-exp"],  # Use full model IDs
+                fallback_models=["ollama:llama3", "gemini:gemini-2.5-flash"],  # Use full model IDs
                 enabled=True
             )
         
@@ -431,7 +431,7 @@ class ModelService:
             default_routing[artifact_type] = ModelRoutingDTO(
                 artifact_type=artifact_type,
                 primary_model="ollama:llama3",  # Use full model ID with prefix
-                fallback_models=["gemini:gemini-2.0-flash-exp", "openai:gpt-4-turbo"],  # Use full model IDs
+                fallback_models=["gemini:gemini-2.5-flash", "openai:gpt-4o"],  # Use full model IDs
                 enabled=True
             )
         
@@ -494,12 +494,19 @@ class ModelService:
     
     async def _refresh_cloud_models(self):
         """Register cloud models based on available API keys."""
-        # Gemini models
+        # Gemini models (Updated Jan 2026 - Official Google AI docs)
+        # See: https://ai.google.dev/gemini-api/docs/models
         has_gemini_key = bool(settings.google_api_key or settings.gemini_api_key)
         gemini_models = [
-            ("gemini-2.0-flash-exp", "Gemini 2.0 Flash Experimental"),
-            ("gemini-1.5-pro", "Gemini 1.5 Pro"),
-            ("gemini-1.5-flash", "Gemini 1.5 Flash"),
+            # Gemini 3 (Latest - Preview, Nov/Dec 2025)
+            ("gemini-3-pro-preview", "Gemini 3 Pro (Most Intelligent)"),
+            ("gemini-3-flash-preview", "Gemini 3 Flash (Balanced)"),
+            # Gemini 2.5 (Stable - June/July 2025)
+            ("gemini-2.5-pro", "Gemini 2.5 Pro (Advanced Thinking)"),
+            ("gemini-2.5-flash", "Gemini 2.5 Flash (Best Price-Performance)"),
+            ("gemini-2.5-flash-lite", "Gemini 2.5 Flash-Lite (Ultra Fast)"),
+            # Gemini 2.0 (Previous Gen - Feb 2025)
+            ("gemini-2.0-flash", "Gemini 2.0 Flash (Legacy)"),
         ]
         for model_name, display_name in gemini_models:
             model_id = f"gemini:{model_name}"
@@ -526,10 +533,16 @@ class ModelService:
         has_xai_key = bool(settings.xai_api_key)
         has_grok = has_groq_key or has_xai_key
         
+        # Groq models (Updated Jan 2026)
+        # See: https://console.groq.com/docs/models
         groq_models = [
+            # Llama 3.3 (Latest)
             ("llama-3.3-70b-versatile", "Llama 3.3 70B Versatile"),
-            ("llama-3.1-70b-versatile", "Llama 3.1 70B Versatile"),
-            ("llama-3.1-8b-instant", "Llama 3.1 8B Instant"),
+            ("llama-3.3-70b-specdec", "Llama 3.3 70B SpecDec (Fast)"),
+            # Llama 3.2 (Multimodal)
+            ("llama-3.2-90b-vision-preview", "Llama 3.2 90B Vision"),
+            ("llama-3.2-11b-vision-preview", "Llama 3.2 11B Vision"),
+            # Mixtral (Still available)
             ("mixtral-8x7b-32768", "Mixtral 8x7B"),
         ]
         for model_name, display_name in groq_models:
@@ -552,12 +565,18 @@ class ModelService:
         # Save registry after updating
         self._save_registry()
         
-        # OpenAI models
+        # OpenAI models (Updated Jan 2026)
+        # See: https://platform.openai.com/docs/models
         has_openai_key = bool(settings.openai_api_key)
         openai_models = [
-            ("gpt-4-turbo", "GPT-4 Turbo"),
-            ("gpt-4", "GPT-4"),
-            ("gpt-3.5-turbo", "GPT-3.5 Turbo"),
+            # GPT-4o (Latest flagship)
+            ("gpt-4o", "GPT-4o (Latest)"),
+            ("gpt-4o-mini", "GPT-4o Mini (Fast)"),
+            # o1 Reasoning models
+            ("o1", "o1 (Reasoning)"),
+            ("o1-mini", "o1 Mini (Reasoning Fast)"),
+            # Legacy (still available)
+            ("gpt-4-turbo", "GPT-4 Turbo (Legacy)"),
         ]
         for model_name, display_name in openai_models:
             model_id = f"openai:{model_name}"
@@ -576,12 +595,16 @@ class ModelService:
                 self.models[model_id].status = status
                 self.models[model_id].metadata["api_key_configured"] = has_openai_key
         
-        # Anthropic models
+        # Anthropic Claude models (Updated Jan 2026)
+        # See: https://docs.anthropic.com/en/docs/about-claude/models
         has_anthropic_key = bool(settings.anthropic_api_key)
         anthropic_models = [
+            # Claude 4 (Latest - if available)
+            ("claude-sonnet-4-20250514", "Claude Sonnet 4 (Latest)"),
+            ("claude-opus-4-20250514", "Claude Opus 4"),
+            # Claude 3.5 (Stable)
             ("claude-3-5-sonnet-20241022", "Claude 3.5 Sonnet"),
-            ("claude-3-opus-20240229", "Claude 3 Opus"),
-            ("claude-3-sonnet-20240229", "Claude 3 Sonnet"),
+            ("claude-3-5-haiku-20241022", "Claude 3.5 Haiku (Fast)"),
         ]
         for model_name, display_name in anthropic_models:
             model_id = f"anthropic:{model_name}"

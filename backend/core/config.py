@@ -48,12 +48,13 @@ class Settings(BaseSettings):
     
     # Model Routing Defaults (centralized to avoid magic strings scattered in code)
     # These are used as fallbacks when no fine-tuned or configured model is available
-    default_mermaid_models: list[str] = ["llama3", "codellama", "gemini-2.0-flash-exp"]
-    default_html_models: list[str] = ["llama3", "gemini-2.0-flash-exp", "gpt-4-turbo"]
-    default_code_models: list[str] = ["codellama", "llama3", "gemini-2.0-flash-exp"]
-    default_pm_models: list[str] = ["llama3", "gemini-2.0-flash-exp", "gpt-4-turbo"]
-    default_fallback_models: list[str] = ["ollama:llama3", "gemini:gemini-2.0-flash-exp"]
-    default_chat_model: str = "gemini-2.0-flash-exp"  # Default model for chat/conversational AI
+    # Updated Jan 2026 - Using official Gemini stable models
+    default_mermaid_models: list[str] = ["llama3", "codellama", "gemini-2.5-flash"]
+    default_html_models: list[str] = ["llama3", "gemini-2.5-flash", "gpt-4o"]
+    default_code_models: list[str] = ["codellama", "llama3", "gemini-2.5-flash"]
+    default_pm_models: list[str] = ["llama3", "gemini-2.5-flash", "gpt-4o"]
+    default_fallback_models: list[str] = ["ollama:llama3", "gemini:gemini-2.5-flash"]
+    default_chat_model: str = "gemini-2.5-flash"  # Best price-performance model
     
     # RAG
     rag_index_path: str = str(Path(__file__).parent.parent.parent / "rag" / "index")

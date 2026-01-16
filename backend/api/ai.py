@@ -964,14 +964,14 @@ OUTPUT THE CORRECTED CODE ONLY:"""
                         if provider in ['gemini', 'openai', 'groq', 'anthropic']:
                             cloud_fallbacks.append(fallback)
             
-            # Add default cloud models if not already included
-            default_clouds = ["gemini:gemini-2.0-flash-exp", "groq:llama-3.3-70b-versatile", "openai:gpt-4-turbo"]
+            # Add default cloud models if not already included (Updated Jan 2026 - Official)
+            default_clouds = ["gemini:gemini-2.5-flash", "groq:llama-3.3-70b-versatile", "openai:gpt-4o"]
             for dc in default_clouds:
                 if dc not in cloud_fallbacks:
                     cloud_fallbacks.append(dc)
             
             routing = FlexibleRouting(
-                primary=cloud_fallbacks[0] if cloud_fallbacks else "gemini:gemini-2.0-flash-exp",
+                primary=cloud_fallbacks[0] if cloud_fallbacks else "gemini:gemini-2.5-flash",
                 fallbacks=cloud_fallbacks[1:] if len(cloud_fallbacks) > 1 else default_clouds[1:]
             )
             logger.info(f"☁️ [AI_REPAIR] Using cloud models: primary={routing.primary_model}, fallbacks={routing.fallback_models}")
@@ -1089,8 +1089,8 @@ OUTPUT:"""
                 self.fallback_models = fallbacks
         
         routing = CloudRouting(
-            primary="gemini:gemini-2.0-flash-exp",
-            fallbacks=["groq:llama-3.3-70b-versatile", "openai:gpt-4-turbo"]
+            primary="gemini:gemini-2.5-flash",  # Updated Jan 2026 - Best price-performance
+            fallbacks=["groq:llama-3.3-70b-versatile", "openai:gpt-4o"]
         )
         
         result = await generation_service.generate_with_fallback(

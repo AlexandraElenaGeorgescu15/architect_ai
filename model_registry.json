@@ -1,7 +1,7 @@
 {
-  "gemini:gemini-2.0-flash-exp": {
-    "id": "gemini:gemini-2.0-flash-exp",
-    "name": "Gemini 2.0 Flash Experimental",
+  "gemini:gemini-3-pro-preview": {
+    "id": "gemini:gemini-3-pro-preview",
+    "name": "Gemini 3 Pro (Most Intelligent)",
     "provider": "gemini",
     "size_gb": null,
     "vram_required_gb": null,
@@ -9,12 +9,13 @@
     "is_trained": false,
     "base_model": null,
     "metadata": {
-      "api_key_configured": true
+      "api_key_configured": true,
+      "description": "Most intelligent model for multimodal understanding"
     }
   },
-  "gemini:gemini-1.5-pro": {
-    "id": "gemini:gemini-1.5-pro",
-    "name": "Gemini 1.5 Pro",
+  "gemini:gemini-3-flash-preview": {
+    "id": "gemini:gemini-3-flash-preview",
+    "name": "Gemini 3 Flash (Balanced)",
     "provider": "gemini",
     "size_gb": null,
     "vram_required_gb": null,
@@ -22,12 +23,13 @@
     "is_trained": false,
     "base_model": null,
     "metadata": {
-      "api_key_configured": true
+      "api_key_configured": true,
+      "description": "Most balanced model for speed and intelligence"
     }
   },
-  "gemini:gemini-1.5-flash": {
-    "id": "gemini:gemini-1.5-flash",
-    "name": "Gemini 1.5 Flash",
+  "gemini:gemini-2.5-pro": {
+    "id": "gemini:gemini-2.5-pro",
+    "name": "Gemini 2.5 Pro (Advanced Thinking)",
     "provider": "gemini",
     "size_gb": null,
     "vram_required_gb": null,
@@ -35,7 +37,50 @@
     "is_trained": false,
     "base_model": null,
     "metadata": {
-      "api_key_configured": true
+      "api_key_configured": true,
+      "description": "State-of-the-art thinking model for complex problems"
+    }
+  },
+  "gemini:gemini-2.5-flash": {
+    "id": "gemini:gemini-2.5-flash",
+    "name": "Gemini 2.5 Flash (Best Price-Performance)",
+    "provider": "gemini",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": true,
+      "description": "Best model for price-performance, ideal for most tasks"
+    }
+  },
+  "gemini:gemini-2.5-flash-lite": {
+    "id": "gemini:gemini-2.5-flash-lite",
+    "name": "Gemini 2.5 Flash-Lite (Ultra Fast)",
+    "provider": "gemini",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": true,
+      "description": "Fastest flash model optimized for cost-efficiency"
+    }
+  },
+  "gemini:gemini-2.0-flash": {
+    "id": "gemini:gemini-2.0-flash",
+    "name": "Gemini 2.0 Flash (Legacy)",
+    "provider": "gemini",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": true,
+      "description": "Previous generation workhorse model"
     }
   },
   "groq:llama-3.3-70b-versatile": {
@@ -51,9 +96,9 @@
       "api_key_configured": true
     }
   },
-  "groq:llama-3.1-70b-versatile": {
-    "id": "groq:llama-3.1-70b-versatile",
-    "name": "Llama 3.1 70B Versatile",
+  "groq:llama-3.3-70b-specdec": {
+    "id": "groq:llama-3.3-70b-specdec",
+    "name": "Llama 3.3 70B SpecDec (Fast)",
     "provider": "groq",
     "size_gb": null,
     "vram_required_gb": null,
@@ -64,9 +109,22 @@
       "api_key_configured": true
     }
   },
-  "groq:llama-3.1-8b-instant": {
-    "id": "groq:llama-3.1-8b-instant",
-    "name": "Llama 3.1 8B Instant",
+  "groq:llama-3.2-90b-vision-preview": {
+    "id": "groq:llama-3.2-90b-vision-preview",
+    "name": "Llama 3.2 90B Vision",
+    "provider": "groq",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": true
+    }
+  },
+  "groq:llama-3.2-11b-vision-preview": {
+    "id": "groq:llama-3.2-11b-vision-preview",
+    "name": "Llama 3.2 11B Vision",
     "provider": "groq",
     "size_gb": null,
     "vram_required_gb": null,
@@ -90,9 +148,61 @@
       "api_key_configured": true
     }
   },
+  "openai:gpt-4o": {
+    "id": "openai:gpt-4o",
+    "name": "GPT-4o (Latest)",
+    "provider": "openai",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": true
+    }
+  },
+  "openai:gpt-4o-mini": {
+    "id": "openai:gpt-4o-mini",
+    "name": "GPT-4o Mini (Fast)",
+    "provider": "openai",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": true
+    }
+  },
+  "openai:o1": {
+    "id": "openai:o1",
+    "name": "o1 (Reasoning)",
+    "provider": "openai",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": true
+    }
+  },
+  "openai:o1-mini": {
+    "id": "openai:o1-mini",
+    "name": "o1 Mini (Reasoning Fast)",
+    "provider": "openai",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "api_key_configured": true
+    }
+  },
   "openai:gpt-4-turbo": {
     "id": "openai:gpt-4-turbo",
-    "name": "GPT-4 Turbo",
+    "name": "GPT-4 Turbo (Legacy)",
     "provider": "openai",
     "size_gb": null,
     "vram_required_gb": null,
@@ -103,30 +213,30 @@
       "api_key_configured": true
     }
   },
-  "openai:gpt-4": {
-    "id": "openai:gpt-4",
-    "name": "GPT-4",
-    "provider": "openai",
+  "anthropic:claude-sonnet-4-20250514": {
+    "id": "anthropic:claude-sonnet-4-20250514",
+    "name": "Claude Sonnet 4 (Latest)",
+    "provider": "anthropic",
     "size_gb": null,
     "vram_required_gb": null,
-    "status": "available",
+    "status": "no_api_key",
     "is_trained": false,
     "base_model": null,
     "metadata": {
-      "api_key_configured": true
+      "api_key_configured": false
     }
   },
-  "openai:gpt-3.5-turbo": {
-    "id": "openai:gpt-3.5-turbo",
-    "name": "GPT-3.5 Turbo",
-    "provider": "openai",
+  "anthropic:claude-opus-4-20250514": {
+    "id": "anthropic:claude-opus-4-20250514",
+    "name": "Claude Opus 4",
+    "provider": "anthropic",
     "size_gb": null,
     "vram_required_gb": null,
-    "status": "available",
+    "status": "no_api_key",
     "is_trained": false,
     "base_model": null,
     "metadata": {
-      "api_key_configured": true
+      "api_key_configured": false
     }
   },
   "anthropic:claude-3-5-sonnet-20241022": {
@@ -142,9 +252,9 @@
       "api_key_configured": false
     }
   },
-  "anthropic:claude-3-opus-20240229": {
-    "id": "anthropic:claude-3-opus-20240229",
-    "name": "Claude 3 Opus",
+  "anthropic:claude-3-5-haiku-20241022": {
+    "id": "anthropic:claude-3-5-haiku-20241022",
+    "name": "Claude 3.5 Haiku (Fast)",
     "provider": "anthropic",
     "size_gb": null,
     "vram_required_gb": null,
@@ -153,162 +263,6 @@
     "base_model": null,
     "metadata": {
       "api_key_configured": false
-    }
-  },
-  "anthropic:claude-3-sonnet-20240229": {
-    "id": "anthropic:claude-3-sonnet-20240229",
-    "name": "Claude 3 Sonnet",
-    "provider": "anthropic",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "no_api_key",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {
-      "api_key_configured": false
-    }
-  },
-  "ollama:deepseek-coder:6.7b-instruct-q4_K_M": {
-    "id": "ollama:deepseek-coder:6.7b-instruct-q4_K_M",
-    "name": "deepseek-coder:6.7b-instruct-q4_K_M",
-    "provider": "ollama",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "available",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {
-      "size": 4083031689
-    }
-  },
-  "ollama:qwen2.5-coder:7b-instruct-q4_K_M": {
-    "id": "ollama:qwen2.5-coder:7b-instruct-q4_K_M",
-    "name": "qwen2.5-coder:7b-instruct-q4_K_M",
-    "provider": "ollama",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "available",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {
-      "size": 4683087561
-    }
-  },
-  "ollama:mistral-nemo:12b-instruct-2407-q4_K_M": {
-    "id": "ollama:mistral-nemo:12b-instruct-2407-q4_K_M",
-    "name": "mistral-nemo:12b-instruct-2407-q4_K_M",
-    "provider": "ollama",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "available",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {
-      "size": 7477217229
-    }
-  },
-  "ollama:qwen2.5-coder:14b-instruct-q4_K_M": {
-    "id": "ollama:qwen2.5-coder:14b-instruct-q4_K_M",
-    "name": "qwen2.5-coder:14b-instruct-q4_K_M",
-    "provider": "ollama",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "available",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {
-      "size": 8988124298
-    }
-  },
-  "ollama:mistral:7b-instruct": {
-    "id": "ollama:mistral:7b-instruct",
-    "name": "mistral:7b-instruct",
-    "provider": "ollama",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "available",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {
-      "size": 4372824384
-    }
-  },
-  "ollama:codellama:7b-instruct": {
-    "id": "ollama:codellama:7b-instruct",
-    "name": "codellama:7b-instruct",
-    "provider": "ollama",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "available",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {
-      "size": 3825910662
-    }
-  },
-  "ollama:llama3:8b-instruct-q4_K_M": {
-    "id": "ollama:llama3:8b-instruct-q4_K_M",
-    "name": "llama3:8b-instruct-q4_K_M",
-    "provider": "ollama",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "available",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {
-      "size": 4920747238
-    }
-  },
-  "ollama:mistral:7b-instruct-q4_K_M": {
-    "id": "ollama:mistral:7b-instruct-q4_K_M",
-    "name": "mistral:7b-instruct-q4_K_M",
-    "provider": "ollama",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "available",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {
-      "size": 4369387754
-    }
-  },
-  "ollama:mistral:7b": {
-    "id": "ollama:mistral:7b",
-    "name": "mistral:7b",
-    "provider": "ollama",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "available",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {
-      "size": 4372824384
-    }
-  },
-  "ollama:llama3.2:3b": {
-    "id": "ollama:llama3.2:3b",
-    "name": "llama3.2:3b",
-    "provider": "ollama",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "available",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {
-      "size": 2019393189
-    }
-  },
-  "ollama:codellama:7b-instruct-q4_K_M": {
-    "id": "ollama:codellama:7b-instruct-q4_K_M",
-    "name": "codellama:7b-instruct-q4_K_M",
-    "provider": "ollama",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "available",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {
-      "size": 4081107848
     }
   },
   "ollama:llama3:latest": {
@@ -320,9 +274,29 @@
     "status": "available",
     "is_trained": false,
     "base_model": null,
-    "metadata": {
-      "size": 4661224676
-    }
+    "metadata": {}
+  },
+  "ollama:codellama:7b-instruct": {
+    "id": "ollama:codellama:7b-instruct",
+    "name": "codellama:7b-instruct",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {}
+  },
+  "ollama:mistral:7b-instruct": {
+    "id": "ollama:mistral:7b-instruct",
+    "name": "mistral:7b-instruct",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {}
   },
   "ollama:dolphin-llama3:latest": {
     "id": "ollama:dolphin-llama3:latest",
@@ -333,14 +307,11 @@
     "status": "available",
     "is_trained": false,
     "base_model": null,
-    "metadata": {
-      "size": 4661235994,
-      "created_at": "2025-12-11T17:56:33.7412807+02:00"
-    }
+    "metadata": {}
   },
-  "huggingface:zai-org-GLM-4.6": {
-    "id": "huggingface:zai-org-GLM-4.6",
-    "name": "zai-org/GLM-4.6 (HuggingFace)",
+  "huggingface:microsoft-Phi-4-mini-instruct": {
+    "id": "huggingface:microsoft-Phi-4-mini-instruct",
+    "name": "microsoft/Phi-4-mini-instruct (HuggingFace)",
     "provider": "huggingface",
     "size_gb": null,
     "vram_required_gb": null,
@@ -348,41 +319,7 @@
     "is_trained": false,
     "base_model": null,
     "metadata": {
-      "huggingface_id": "zai-org/GLM-4.6",
-      "path": "models\\huggingface\\zai-org_GLM-4.6",
-      "actual_file_path": "models\\huggingface\\zai-org_GLM-4.6\\models--zai-org--GLM-4.6\\snapshots\\be72194883d968d7923a07e2f61681ea9a2826d1\\config.json",
-      "usable_via_transformers": true
-    }
-  },
-  "huggingface:microsoft-Phi-3.5-mini-instruct": {
-    "id": "huggingface:microsoft-Phi-3.5-mini-instruct",
-    "name": "microsoft/Phi-3.5-mini-instruct (HuggingFace)",
-    "provider": "huggingface",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "downloaded",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {
-      "huggingface_id": "microsoft/Phi-3.5-mini-instruct",
-      "path": "models\\huggingface\\microsoft_Phi-3.5-mini-instruct",
-      "actual_file_path": null,
-      "usable_via_transformers": true
-    }
-  },
-  "huggingface:microsoft-Phi-3-mini-4k-instruct": {
-    "id": "huggingface:microsoft-Phi-3-mini-4k-instruct",
-    "name": "microsoft/Phi-3-mini-4k-instruct (HuggingFace)",
-    "provider": "huggingface",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "downloaded",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {
-      "huggingface_id": "microsoft/Phi-3-mini-4k-instruct",
-      "path": "models\\huggingface\\microsoft_Phi-3-mini-4k-instruct",
-      "actual_file_path": null,
+      "huggingface_id": "microsoft/Phi-4-mini-instruct",
       "usable_via_transformers": true
     }
   },
@@ -397,24 +334,6 @@
     "base_model": null,
     "metadata": {
       "huggingface_id": "mradermacher/BlackSheep-MermaidMistral-22B-i1-GGUF",
-      "path": "models\\huggingface\\mradermacher_BlackSheep-MermaidMistral-22B-i1-GGUF",
-      "actual_file_path": null,
-      "usable_via_transformers": true
-    }
-  },
-  "huggingface:microsoft-Phi-4-mini-instruct": {
-    "id": "huggingface:microsoft-Phi-4-mini-instruct",
-    "name": "microsoft/Phi-4-mini-instruct (HuggingFace)",
-    "provider": "huggingface",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "downloaded",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {
-      "huggingface_id": "microsoft/Phi-4-mini-instruct",
-      "path": "models\\huggingface\\microsoft_Phi-4-mini-instruct",
-      "actual_file_path": null,
       "usable_via_transformers": true
     }
   },
@@ -429,8 +348,6 @@
     "base_model": null,
     "metadata": {
       "huggingface_id": "mradermacher/ViCoder-html-32B-preview-i1-GGUF",
-      "path": "models\\huggingface\\mradermacher_ViCoder-html-32B-preview-i1-GGUF",
-      "actual_file_path": "models\\huggingface\\mradermacher_ViCoder-html-32B-preview-i1-GGUF\\models--mradermacher--ViCoder-html-32B-preview-i1-GGUF\\snapshots\\87ddaa1b8ad1d5bacff9476e5a538d98ebdb91ec\\ViCoder-html-32B-preview.i1-IQ1_M.gguf",
       "usable_via_transformers": true
     }
   }

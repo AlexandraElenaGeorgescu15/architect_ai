@@ -452,7 +452,7 @@ class UniversalArchitectAgent:
         gemini_key = self.config.get('gemini_api_key') or global_keys.get('gemini') or os.getenv("GEMINI_API_KEY")
         if gemini_key and GEMINI_AVAILABLE:
             genai.configure(api_key=gemini_key)
-            self.client = genai.GenerativeModel('gemini-2.0-flash-exp')
+            self.client = genai.GenerativeModel('gemini-2.5-flash')
             self.client_type = 'gemini'
             if not already_logged:
                 print("[OK] Connected to Gemini 2.0 Flash (FREE)")
@@ -677,7 +677,7 @@ USER REQUEST:
                                     # Temporarily switch to Gemini
                                     import google.generativeai as genai
                                     genai.configure(api_key=gemini_key)
-                                    self.client = genai.GenerativeModel('gemini-2.0-flash-exp')
+                                    self.client = genai.GenerativeModel('gemini-2.5-flash')
                                     self.client_type = 'gemini'
                                     
                                     # Generate with Gemini
@@ -838,7 +838,7 @@ USER REQUEST:
         # Simple tasks (code, ERD) → Groq/OpenAI
         if artifact_type in ['mermaid_class', 'prototype', 'architecture']:
             cloud_providers = [
-                ('gemini', 'gemini-2.0-flash-exp'),
+                ('gemini', 'gemini-2.5-flash'),
                 ('groq', 'llama-3.3-70b-versatile'),
                 ('openai', 'gpt-4')
             ]
@@ -846,7 +846,7 @@ USER REQUEST:
         else:
             cloud_providers = [
                 ('groq', 'llama-3.3-70b-versatile'),
-                ('gemini', 'gemini-2.0-flash-exp'),
+                ('gemini', 'gemini-2.5-flash'),
                 ('openai', 'gpt-4')
             ]
         
@@ -878,7 +878,7 @@ USER REQUEST:
                 elif provider_name == 'gemini':
                     import google.generativeai as genai
                     genai.configure(api_key=api_key)
-                    model = genai.GenerativeModel('gemini-2.0-flash-exp')
+                    model = genai.GenerativeModel('gemini-2.5-flash')
                     
                     combined_prompt = compressed_prompt
                     if system_prompt:
@@ -1190,17 +1190,17 @@ USER REQUEST:
             
             # ⚡ UPDATED: Groq as primary fallback for better reliability (no rate limits like Gemini)
             if task_type == 'mermaid':
-                cloud_providers = [('groq', 'llama-3.3-70b-versatile'), ('gemini', 'gemini-2.0-flash-exp'), ('openai', 'gpt-4')]
+                cloud_providers = [('groq', 'llama-3.3-70b-versatile'), ('gemini', 'gemini-2.5-flash'), ('openai', 'gpt-4')]
             elif task_type in ['code', 'html', 'prototype']:
-                cloud_providers = [('groq', 'llama-3.3-70b-versatile'), ('openai', 'gpt-4'), ('gemini', 'gemini-2.0-flash-exp')]
+                cloud_providers = [('groq', 'llama-3.3-70b-versatile'), ('openai', 'gpt-4'), ('gemini', 'gemini-2.5-flash')]
             elif task_type in ['jira', 'planning', 'documentation']:
                 # Groq first for JIRA (better at structured output), Gemini as fallback
-                cloud_providers = [('groq', 'llama-3.3-70b-versatile'), ('gemini', 'gemini-2.0-flash-exp'), ('openai', 'gpt-4')]
+                cloud_providers = [('groq', 'llama-3.3-70b-versatile'), ('gemini', 'gemini-2.5-flash'), ('openai', 'gpt-4')]
             else:
-                cloud_providers = [('groq', 'llama-3.3-70b-versatile'), ('openai', 'gpt-4'), ('gemini', 'gemini-2.0-flash-exp')]
+                cloud_providers = [('groq', 'llama-3.3-70b-versatile'), ('openai', 'gpt-4'), ('gemini', 'gemini-2.5-flash')]
         else:
             # Default: Groq first (most reliable), OpenAI second, Gemini last
-            cloud_providers = [('groq', 'llama-3.3-70b-versatile'), ('openai', 'gpt-4'), ('gemini', 'gemini-2.0-flash-exp')]
+            cloud_providers = [('groq', 'llama-3.3-70b-versatile'), ('openai', 'gpt-4'), ('gemini', 'gemini-2.5-flash')]
         
         # Try each provider
         for provider_name, model_name in cloud_providers:
@@ -1234,7 +1234,7 @@ USER REQUEST:
                 elif provider_name == 'gemini':
                     import google.generativeai as genai
                     genai.configure(api_key=api_key)
-                    model = genai.GenerativeModel('gemini-2.0-flash-exp')
+                    model = genai.GenerativeModel('gemini-2.5-flash')
                     
                     combined_prompt = compressed_prompt
                     if system_prompt:

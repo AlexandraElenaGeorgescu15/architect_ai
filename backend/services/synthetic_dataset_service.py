@@ -2,7 +2,7 @@
 Synthetic Dataset Service - Generate training examples using FREE models.
 
 Supports:
-- Free Gemini API (gemini-2.0-flash)
+- Free Gemini API (gemini-2.5-flash - best price-performance)
 - Free Grok API (grok-beta)
 - Local Phi-3.5-mini-instruct (HuggingFace, no quota)
 - Local Phi-4-mini (HuggingFace, no quota)
@@ -281,7 +281,7 @@ Focus on realistic, production-ready examples that would help train an AI to gen
         
         try:
             model = genai.GenerativeModel(
-                model_name='gemini-2.0-flash-exp',  # Free tier
+                model_name='gemini-2.5-flash',  # Free tier (best price-performance)
                 generation_config={
                     'temperature': 0.8,
                     'top_p': 0.95,
