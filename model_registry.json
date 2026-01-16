@@ -320,6 +320,8 @@
     "base_model": null,
     "metadata": {
       "huggingface_id": "microsoft/Phi-4-mini-instruct",
+      "path": "models\\huggingface\\microsoft_Phi-4-mini-instruct",
+      "actual_file_path": null,
       "usable_via_transformers": true
     }
   },
@@ -334,6 +336,8 @@
     "base_model": null,
     "metadata": {
       "huggingface_id": "mradermacher/BlackSheep-MermaidMistral-22B-i1-GGUF",
+      "path": "models\\huggingface\\mradermacher_BlackSheep-MermaidMistral-22B-i1-GGUF",
+      "actual_file_path": null,
       "usable_via_transformers": true
     }
   },
@@ -348,6 +352,182 @@
     "base_model": null,
     "metadata": {
       "huggingface_id": "mradermacher/ViCoder-html-32B-preview-i1-GGUF",
+      "path": "models\\huggingface\\mradermacher_ViCoder-html-32B-preview-i1-GGUF",
+      "actual_file_path": "models\\huggingface\\mradermacher_ViCoder-html-32B-preview-i1-GGUF\\models--mradermacher--ViCoder-html-32B-preview-i1-GGUF\\snapshots\\87ddaa1b8ad1d5bacff9476e5a538d98ebdb91ec\\ViCoder-html-32B-preview.i1-IQ1_M.gguf",
+      "usable_via_transformers": true
+    }
+  },
+  "ollama:deepseek-coder:6.7b-instruct-q4_K_M": {
+    "id": "ollama:deepseek-coder:6.7b-instruct-q4_K_M",
+    "name": "deepseek-coder:6.7b-instruct-q4_K_M",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 4083031689,
+      "created_at": "2025-11-10T19:13:53.5978942+02:00"
+    }
+  },
+  "ollama:qwen2.5-coder:7b-instruct-q4_K_M": {
+    "id": "ollama:qwen2.5-coder:7b-instruct-q4_K_M",
+    "name": "qwen2.5-coder:7b-instruct-q4_K_M",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 4683087561,
+      "created_at": "2025-11-10T16:30:27.5792301+02:00"
+    }
+  },
+  "ollama:mistral-nemo:12b-instruct-2407-q4_K_M": {
+    "id": "ollama:mistral-nemo:12b-instruct-2407-q4_K_M",
+    "name": "mistral-nemo:12b-instruct-2407-q4_K_M",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 7477217229,
+      "created_at": "2025-11-10T16:00:57.6572091+02:00"
+    }
+  },
+  "ollama:qwen2.5-coder:14b-instruct-q4_K_M": {
+    "id": "ollama:qwen2.5-coder:14b-instruct-q4_K_M",
+    "name": "qwen2.5-coder:14b-instruct-q4_K_M",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 8988124298,
+      "created_at": "2025-11-10T15:30:19.6999558+02:00"
+    }
+  },
+  "ollama:llama3:8b-instruct-q4_K_M": {
+    "id": "ollama:llama3:8b-instruct-q4_K_M",
+    "name": "llama3:8b-instruct-q4_K_M",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 4920747238,
+      "created_at": "2025-11-06T22:10:27.9895644+02:00"
+    }
+  },
+  "ollama:mistral:7b-instruct-q4_K_M": {
+    "id": "ollama:mistral:7b-instruct-q4_K_M",
+    "name": "mistral:7b-instruct-q4_K_M",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 4369387754,
+      "created_at": "2025-11-06T14:22:04.7670838+02:00"
+    }
+  },
+  "ollama:mistral:7b": {
+    "id": "ollama:mistral:7b",
+    "name": "mistral:7b",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 4372824384,
+      "created_at": "2025-11-06T14:18:48.2008403+02:00"
+    }
+  },
+  "ollama:llama3.2:3b": {
+    "id": "ollama:llama3.2:3b",
+    "name": "llama3.2:3b",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 2019393189,
+      "created_at": "2025-11-06T14:16:00.9161171+02:00"
+    }
+  },
+  "ollama:codellama:7b-instruct-q4_K_M": {
+    "id": "ollama:codellama:7b-instruct-q4_K_M",
+    "name": "codellama:7b-instruct-q4_K_M",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 4081107848,
+      "created_at": "2025-11-06T14:15:59.0278367+02:00"
+    }
+  },
+  "huggingface:microsoft-Phi-3.5-mini-instruct": {
+    "id": "huggingface:microsoft-Phi-3.5-mini-instruct",
+    "name": "microsoft/Phi-3.5-mini-instruct (HuggingFace)",
+    "provider": "huggingface",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "downloaded",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "huggingface_id": "microsoft/Phi-3.5-mini-instruct",
+      "path": "models\\huggingface\\microsoft_Phi-3.5-mini-instruct",
+      "actual_file_path": null,
+      "usable_via_transformers": true
+    }
+  },
+  "huggingface:microsoft-Phi-3-mini-4k-instruct": {
+    "id": "huggingface:microsoft-Phi-3-mini-4k-instruct",
+    "name": "microsoft/Phi-3-mini-4k-instruct (HuggingFace)",
+    "provider": "huggingface",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "downloaded",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "huggingface_id": "microsoft/Phi-3-mini-4k-instruct",
+      "path": "models\\huggingface\\microsoft_Phi-3-mini-4k-instruct",
+      "actual_file_path": null,
+      "usable_via_transformers": true
+    }
+  },
+  "huggingface:zai-org-GLM-4.6": {
+    "id": "huggingface:zai-org-GLM-4.6",
+    "name": "zai-org/GLM-4.6 (HuggingFace)",
+    "provider": "huggingface",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "downloaded",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "huggingface_id": "zai-org/GLM-4.6",
+      "path": "models\\huggingface\\zai-org_GLM-4.6",
+      "actual_file_path": "models\\huggingface\\zai-org_GLM-4.6\\models--zai-org--GLM-4.6\\snapshots\\be72194883d968d7923a07e2f61681ea9a2826d1\\config.json",
       "usable_via_transformers": true
     }
   }

@@ -87,6 +87,21 @@ class Settings(BaseSettings):
     cloud_fallback_timeout: int = 90  # Timeout for cloud API calls
     
     # ==========================================================================
+    # LLM-as-a-Judge Validation Settings
+    # ==========================================================================
+    # Uses a local LLM to evaluate artifact quality alongside rule-based validation
+    llm_judge_enabled: bool = True  # Enable/disable LLM-as-a-Judge
+    llm_judge_weight: float = 0.4  # Weight of LLM score (0.0-1.0). 0.4 = 40% LLM, 60% rule-based
+    llm_judge_timeout: int = 30  # Timeout in seconds for LLM judge call
+    llm_judge_preferred_models: list[str] = [
+        "mistral-nemo:12b-instruct-2407-q4_K_M",  # Best reasoning
+        "llama3:8b-instruct-q4_K_M",  # Good fallback
+        "mistral:7b-instruct-q4_K_M",  # Fast option
+        "llama3.2:3b",  # Ultra fast fallback
+        "llama3:latest",  # Generic fallback
+    ]
+    
+    # ==========================================================================
     # Token/Context Window Limits (CENTRALIZED - use these everywhere!)
     # ==========================================================================
     # These limits prevent context overflow and ensure consistent behavior

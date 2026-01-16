@@ -1,6 +1,11 @@
 """
 Validation Service - Refactored from validation/output_validator.py
 Validates generated artifacts with quality scoring.
+
+Features:
+- Rule-based validation (syntax, structure)
+- LLM-as-a-Judge validation (local model evaluation)
+- Combined scoring for accurate quality assessment
 """
 
 import sys
@@ -9,6 +14,7 @@ from typing import Dict, List, Any, Optional, Tuple
 import logging
 from datetime import datetime
 import re
+import json
 from dataclasses import dataclass
 
 # Add parent directory for imports
@@ -28,6 +34,27 @@ except ImportError:
     VALIDATOR_AVAILABLE = False
     logger.warning("ArtifactValidator not available. Validation will be limited.")
 
+# Optional: Ollama client for LLM-as-a-Judge
+try:
+    from ai.ollama_client import OllamaClient
+    OLLAMA_AVAILABLE = True
+except ImportError:
+    OLLAMA_AVAILABLE = False
+    logger.warning("OllamaClient not available. LLM-as-a-Judge validation disabled.")
+
+# LLM Judge configuration - uses settings from config.py
+def get_llm_judge_config() -> dict:
+    """Get LLM Judge configuration from settings."""
+    return {
+        "enabled": settings.llm_judge_enabled,
+        "preferred_models": settings.llm_judge_preferred_models,
+        "timeout_seconds": settings.llm_judge_timeout,
+        "weight": settings.llm_judge_weight,
+    }
+
+# Backwards compatibility alias
+LLM_JUDGE_CONFIG = get_llm_judge_config()
+
 
 class ValidationService:
     """
@@ -36,6 +63,7 @@ class ValidationService:
     Features:
     - Artifact-specific validation (ERD, Architecture, Sequence, etc.)
     - Quality scoring (0-100)
+    - LLM-as-a-Judge validation (local model evaluation)
     - Multiple validators per artifact type
     - Validation caching
     - Detailed validation reports
@@ -45,31 +73,43 @@ class ValidationService:
         """Initialize Validation Service."""
         self.validator = ArtifactValidator() if VALIDATOR_AVAILABLE else None
         self.custom_validator_service = get_custom_validator_service()
+        self.ollama_client = OllamaClient() if OLLAMA_AVAILABLE else None
+        self._llm_judge_model = None  # Cached judge model
         
-        logger.info("Validation Service initialized")
+        logger.info("Validation Service initialized (LLM-as-a-Judge: %s)", 
+                   "enabled" if self.ollama_client else "disabled")
     
     async def validate_artifact(
         self,
         artifact_type: ArtifactType,
         content: str,
         meeting_notes: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
+        use_llm_judge: bool = True
     ) -> ValidationResultDTO:
         """
         Validate an artifact and return quality score.
+        
+        Uses a two-stage validation:
+        1. Rule-based validation (syntax, structure checks)
+        2. LLM-as-a-Judge validation (local model evaluation)
+        
+        The final score is a weighted combination of both.
         
         Args:
             artifact_type: Type of artifact
             content: Artifact content to validate
             meeting_notes: Optional meeting notes for context validation
             context: Optional additional context
+            use_llm_judge: Whether to use LLM-as-a-Judge (default: True)
         
         Returns:
             ValidationResultDTO with score, is_valid, and details
         """
         logger.info(f"🔍 [VALIDATION] Starting validation: artifact_type={artifact_type.value}, "
                    f"content_length={len(content) if content else 0}, "
-                   f"has_meeting_notes={bool(meeting_notes)}, has_context={bool(context)}")
+                   f"has_meeting_notes={bool(meeting_notes)}, has_context={bool(context)}, "
+                   f"use_llm_judge={use_llm_judge}")
         
         if not content or not content.strip():
             logger.warning(f"⚠️ [VALIDATION] Empty artifact content, returning invalid result")
@@ -81,9 +121,12 @@ class ValidationService:
                 warnings=[]
             )
         
+        # Stage 1: Rule-based validation
+        rule_based_dto = None
+        
         # Use ArtifactValidator if available
         if self.validator:
-            logger.info(f"✅ [VALIDATION] Using ArtifactValidator for validation")
+            logger.info(f"✅ [VALIDATION] Stage 1: Using ArtifactValidator for rule-based validation")
             try:
                 # Build context dict for ArtifactValidator
                 validation_context = context or {}
@@ -105,17 +148,17 @@ class ValidationService:
                 result_warnings = list(getattr(result, "warnings", []) or [])
 
                 logger.info(
-                    f"📊 [VALIDATION] ArtifactValidator result: score={score:.1f}, "
+                    f"📊 [VALIDATION] Rule-based result: score={score:.1f}, "
                     f"is_valid={is_valid}, "
                     f"errors={len(result_errors)}, "
                     f"warnings={len(result_warnings)}"
                 )
 
-                dto = ValidationResultDTO(
+                rule_based_dto = ValidationResultDTO(
                     score=score,
                     is_valid=is_valid,
                     validators={
-                        "artifact_validator": {
+                        "rule_based": {
                             "score": score,
                             "errors": len(result_errors),
                             "warnings": len(result_warnings),
@@ -124,19 +167,266 @@ class ValidationService:
                     errors=result_errors,
                     warnings=result_warnings,
                 )
-                final_dto = self._apply_custom_validators(artifact_type, content, dto)
-                logger.info(
-                    f"✅ [VALIDATION] Final validation result: score={final_dto.score:.1f}, "
-                    f"is_valid={final_dto.is_valid}"
-                )
-                return final_dto
             except Exception as e:
                 logger.error(f"❌ [VALIDATION] Error in ArtifactValidator: {e}", exc_info=True)
                 # Fall through to basic validation
         
-        # Fallback: Basic validation
-        dto = self._basic_validation(artifact_type, content, meeting_notes)
-        return self._apply_custom_validators(artifact_type, content, dto)
+        # Fallback to basic validation if ArtifactValidator failed or unavailable
+        if rule_based_dto is None:
+            rule_based_dto = self._basic_validation(artifact_type, content, meeting_notes)
+        
+        # Apply custom validators
+        rule_based_dto = self._apply_custom_validators(artifact_type, content, rule_based_dto)
+        
+        # Stage 2: LLM-as-a-Judge validation (if enabled and available)
+        llm_config = get_llm_judge_config()
+        if use_llm_judge and llm_config["enabled"] and self.ollama_client:
+            try:
+                llm_result = await self._llm_judge_validation(
+                    artifact_type=artifact_type,
+                    content=content,
+                    rule_based_score=rule_based_dto.score,
+                    rule_based_errors=rule_based_dto.errors,
+                    meeting_notes=meeting_notes
+                )
+                
+                if llm_result:
+                    llm_score, llm_reasoning, llm_model = llm_result
+                    
+                    # Combine scores: weighted average
+                    weight = llm_config["weight"]
+                    combined_score = (rule_based_dto.score * (1 - weight)) + (llm_score * weight)
+                    
+                    # Log the scoring
+                    logger.info(
+                        f"🤖 [LLM_JUDGE] Score: {llm_score:.1f}/100 (model: {llm_model})\n"
+                        f"   Rule-based: {rule_based_dto.score:.1f} × {(1-weight):.1f} = {rule_based_dto.score * (1-weight):.1f}\n"
+                        f"   LLM Judge:  {llm_score:.1f} × {weight:.1f} = {llm_score * weight:.1f}\n"
+                        f"   Combined:   {combined_score:.1f}/100"
+                    )
+                    
+                    # Update the DTO with combined score
+                    rule_based_dto.score = combined_score
+                    rule_based_dto.validators["llm_judge"] = {
+                        "score": llm_score,
+                        "model": llm_model,
+                        "reasoning": llm_reasoning[:200] if llm_reasoning else None,  # Truncate for storage
+                        "weight": weight
+                    }
+                    
+                    # Re-evaluate validity based on combined score
+                    # Valid if combined score >= 60 AND no critical errors
+                    has_critical = any(e.startswith("CRITICAL:") for e in rule_based_dto.errors)
+                    rule_based_dto.is_valid = combined_score >= 60.0 and not has_critical
+                    
+            except Exception as e:
+                logger.warning(f"⚠️ [LLM_JUDGE] LLM judge failed, using rule-based score only: {e}")
+                # Continue with rule-based score only
+        
+        logger.info(
+            f"✅ [VALIDATION] Final result: score={rule_based_dto.score:.1f}, "
+            f"is_valid={rule_based_dto.is_valid}, "
+            f"validators={list(rule_based_dto.validators.keys())}"
+        )
+        return rule_based_dto
+    
+    async def _llm_judge_validation(
+        self,
+        artifact_type: ArtifactType,
+        content: str,
+        rule_based_score: float,
+        rule_based_errors: List[str],
+        meeting_notes: Optional[str] = None
+    ) -> Optional[Tuple[float, str, str]]:
+        """
+        Use a local LLM as a judge to evaluate artifact quality.
+        
+        Args:
+            artifact_type: Type of artifact being validated
+            content: The artifact content
+            rule_based_score: Score from rule-based validation
+            rule_based_errors: Errors from rule-based validation
+            meeting_notes: Optional meeting notes for context
+        
+        Returns:
+            Tuple of (score, reasoning, model_name) or None if failed
+        """
+        if not self.ollama_client:
+            return None
+        
+        logger.info(f"🤖 [LLM_JUDGE] Starting LLM-as-a-Judge evaluation...")
+        
+        # Find an available judge model
+        judge_model = await self._get_available_judge_model()
+        if not judge_model:
+            logger.warning("⚠️ [LLM_JUDGE] No judge model available")
+            return None
+        
+        logger.info(f"🤖 [LLM_JUDGE] Using model: {judge_model}")
+        
+        # Build the judge prompt
+        artifact_type_display = artifact_type.value.replace("_", " ").title()
+        errors_text = "\n".join(f"- {e}" for e in rule_based_errors[:5]) if rule_based_errors else "None"
+        
+        # Truncate content for prompt (first 2000 chars for efficiency)
+        content_preview = content[:2000] + ("..." if len(content) > 2000 else "")
+        
+        prompt = f"""You are an expert code and diagram quality evaluator. Evaluate the following {artifact_type_display} artifact.
+
+## Artifact Content:
+```
+{content_preview}
+```
+
+## Rule-Based Validation Results:
+- Score: {rule_based_score:.1f}/100
+- Issues found: {errors_text}
+
+{f"## Requirements (from meeting notes):" + chr(10) + meeting_notes[:500] if meeting_notes else ""}
+
+## Your Task:
+Evaluate this artifact's quality considering:
+1. **Correctness**: Is the syntax valid? Will it render/compile?
+2. **Completeness**: Does it include all necessary elements?
+3. **Relevance**: Does it match the requirements?
+4. **Quality**: Is it well-structured and professional?
+
+Respond with ONLY a JSON object in this exact format:
+{{"score": <number 0-100>, "reasoning": "<brief explanation>"}}
+
+Be strict but fair. A score of:
+- 90-100: Excellent, production-ready
+- 80-89: Good, minor improvements possible
+- 70-79: Acceptable, some issues
+- 60-69: Needs improvement
+- Below 60: Poor quality, needs rework
+
+JSON response:"""
+
+        try:
+            import asyncio
+            
+            llm_config = get_llm_judge_config()
+            
+            # Call Ollama with timeout
+            response = await asyncio.wait_for(
+                self.ollama_client.generate(
+                    model_name=judge_model,
+                    prompt=prompt,
+                    system_message="You are a strict but fair quality evaluator. Always respond with valid JSON only.",
+                    temperature=0.1,  # Low temperature for consistent scoring
+                    num_ctx=4096
+                ),
+                timeout=llm_config["timeout_seconds"]
+            )
+            
+            if not response.success or not response.content:
+                logger.warning(f"⚠️ [LLM_JUDGE] Model returned no content")
+                return None
+            
+            # Parse JSON response
+            response_text = response.content.strip()
+            
+            # Try to extract JSON from response (handle markdown code blocks)
+            if "```json" in response_text:
+                json_match = re.search(r'```json\s*(\{.*?\})\s*```', response_text, re.DOTALL)
+                if json_match:
+                    response_text = json_match.group(1)
+            elif "```" in response_text:
+                json_match = re.search(r'```\s*(\{.*?\})\s*```', response_text, re.DOTALL)
+                if json_match:
+                    response_text = json_match.group(1)
+            
+            # Find JSON object in response
+            json_match = re.search(r'\{[^{}]*"score"[^{}]*\}', response_text, re.DOTALL)
+            if json_match:
+                response_text = json_match.group(0)
+            
+            try:
+                result = json.loads(response_text)
+                llm_score = float(result.get("score", 0))
+                llm_reasoning = str(result.get("reasoning", ""))
+                
+                # Clamp score to valid range
+                llm_score = max(0.0, min(100.0, llm_score))
+                
+                logger.info(f"🤖 [LLM_JUDGE] LLM evaluation: score={llm_score:.1f}, reasoning={llm_reasoning[:100]}...")
+                return (llm_score, llm_reasoning, judge_model)
+                
+            except json.JSONDecodeError as e:
+                logger.warning(f"⚠️ [LLM_JUDGE] Failed to parse JSON response: {e}")
+                logger.debug(f"   Response was: {response_text[:200]}")
+                return None
+                
+        except asyncio.TimeoutError:
+            logger.warning(f"⚠️ [LLM_JUDGE] Timeout after {llm_config['timeout_seconds']}s")
+            return None
+        except Exception as e:
+            logger.warning(f"⚠️ [LLM_JUDGE] Error calling LLM: {e}")
+            return None
+    
+    async def _get_available_judge_model(self) -> Optional[str]:
+        """
+        Find an available local model for judging.
+        
+        Returns the first available model from the preferred list,
+        or None if no models are available.
+        """
+        if not self.ollama_client:
+            return None
+        
+        # Return cached model if still valid
+        if self._llm_judge_model:
+            return self._llm_judge_model
+        
+        try:
+            # Get list of available Ollama models
+            available_models = await self.ollama_client.list_models()
+            available_names = set()
+            
+            for model in available_models:
+                # Handle different model info formats
+                if isinstance(model, dict):
+                    name = model.get("name", model.get("model", ""))
+                else:
+                    name = str(model)
+                if name:
+                    available_names.add(name.lower())
+                    # Also add without tag for matching
+                    if ":" in name:
+                        available_names.add(name.split(":")[0].lower())
+            
+            logger.debug(f"🤖 [LLM_JUDGE] Available models: {available_names}")
+            
+            # Find first preferred model that's available
+            llm_config = get_llm_judge_config()
+            for preferred in llm_config["preferred_models"]:
+                preferred_lower = preferred.lower()
+                # Check exact match or base name match
+                if preferred_lower in available_names:
+                    self._llm_judge_model = preferred
+                    logger.info(f"🤖 [LLM_JUDGE] Selected judge model: {preferred}")
+                    return preferred
+                # Check if base name matches (e.g., "llama3" matches "llama3:latest")
+                base_name = preferred.split(":")[0].lower()
+                if base_name in available_names:
+                    self._llm_judge_model = preferred
+                    logger.info(f"🤖 [LLM_JUDGE] Selected judge model: {preferred}")
+                    return preferred
+            
+            # No preferred model found - use first available
+            if available_names:
+                first_available = list(available_names)[0]
+                self._llm_judge_model = first_available
+                logger.info(f"🤖 [LLM_JUDGE] Using fallback judge model: {first_available}")
+                return first_available
+            
+            logger.warning("⚠️ [LLM_JUDGE] No Ollama models available for judging")
+            return None
+            
+        except Exception as e:
+            logger.warning(f"⚠️ [LLM_JUDGE] Error listing models: {e}")
+            return None
     
     def _basic_validation(
         self,

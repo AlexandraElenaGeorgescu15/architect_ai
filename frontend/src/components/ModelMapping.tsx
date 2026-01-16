@@ -3,7 +3,7 @@ import { useModelStore } from '../stores/modelStore'
 import { useUIStore } from '../stores/uiStore'
 import api from '../services/api'
 import { downloadHuggingFaceModel, getDownloadStatus } from '../services/huggingfaceService'
-import { Settings, Save, RefreshCw, Download, Search, Loader2 } from 'lucide-react'
+import { Settings, Save, RefreshCw, Download, Search, Loader2, Plus, Trash2 } from 'lucide-react'
 
 interface ModelRouting {
   artifact_type: string
@@ -399,13 +399,23 @@ export default function ModelMapping() {
 
       {/* Model Routing Table */}
       <div className="bg-card border border-border rounded-lg overflow-hidden">
+        {/* Validation info banner */}
+        <div className="bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800 px-4 py-2 text-sm">
+          <span className="text-blue-700 dark:text-blue-300">
+            💡 <strong>How fallback works:</strong> If the primary model's output scores below 80/100 on validation, 
+            the system automatically tries the fallback models in order until one succeeds.
+          </span>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted">
               <tr>
                 <th className="px-4 py-3 text-left text-sm font-semibold">Artifact Type</th>
                 <th className="px-4 py-3 text-left text-sm font-semibold">Primary Model</th>
-                <th className="px-4 py-3 text-left text-sm font-semibold">Fallback Models</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold">
+                  Fallback Models
+                  <span className="ml-1 text-xs font-normal text-muted-foreground">(used if primary &lt; 80)</span>
+                </th>
                 <th className="px-4 py-3 text-left text-sm font-semibold">Enabled</th>
               </tr>
             </thead>
@@ -467,44 +477,59 @@ export default function ModelMapping() {
                     </select>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                       {routing.fallback_models.map((model, idx) => (
-                        <select
-                          key={idx}
-                          value={model}
-                          onChange={(e) => {
-                            const newFallbacks = [...routing.fallback_models]
-                            newFallbacks[idx] = e.target.value
-                            updateRouting(artifactType, 'fallback_models', newFallbacks)
-                          }}
-                          className="w-full px-2 py-1 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all hover:border-primary/50"
-                        >
-                          <option value="">-- Select fallback --</option>
-                          <optgroup label="Ollama (Local)">
-                            {ollamaModels.map(m => (
-                              <option key={m.id} value={m.id}>{m.name}</option>
-                            ))}
-                          </optgroup>
-                          <optgroup label="HuggingFace (Local)">
-                            {huggingfaceModels.map(m => (
-                              <option key={m.id} value={m.id}>{m.name}</option>
-                            ))}
-                          </optgroup>
-                          <optgroup label="Cloud (API)">
-                            {cloudModels.map(m => (
-                              <option key={m.id} value={m.id}>{m.name}</option>
-                            ))}
-                          </optgroup>
-                        </select>
+                        <div key={idx} className="flex items-center gap-2">
+                          <select
+                            value={model}
+                            onChange={(e) => {
+                              const newFallbacks = [...routing.fallback_models]
+                              newFallbacks[idx] = e.target.value
+                              updateRouting(artifactType, 'fallback_models', newFallbacks)
+                            }}
+                            className="flex-1 px-2 py-1 text-sm border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all hover:border-primary/50"
+                          >
+                            <option value="">-- Select fallback --</option>
+                            <optgroup label="Ollama (Local)">
+                              {ollamaModels.map(m => (
+                                <option key={m.id} value={m.id}>{m.name}</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="HuggingFace (Local)">
+                              {huggingfaceModels.map(m => (
+                                <option key={m.id} value={m.id}>{m.name}</option>
+                              ))}
+                            </optgroup>
+                            <optgroup label="Cloud (API)">
+                              {cloudModels.map(m => (
+                                <option key={m.id} value={m.id}>{m.name}</option>
+                              ))}
+                            </optgroup>
+                          </select>
+                          {/* Remove button - only show if more than 1 fallback */}
+                          {routing.fallback_models.length > 1 && (
+                            <button
+                              onClick={() => {
+                                const newFallbacks = routing.fallback_models.filter((_, i) => i !== idx)
+                                updateRouting(artifactType, 'fallback_models', newFallbacks)
+                              }}
+                              className="p-1 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
+                              title="Remove this fallback"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       ))}
                       <button
                         onClick={() => {
                           const newFallbacks = [...routing.fallback_models, '']
                           updateRouting(artifactType, 'fallback_models', newFallbacks)
                         }}
-                        className="text-xs text-primary hover:underline"
+                        className="flex items-center gap-1 text-xs text-primary hover:underline mt-1"
                       >
-                        + Add Fallback
+                        <Plus className="w-3 h-3" />
+                        Add Fallback
                       </button>
                     </div>
                   </td>
