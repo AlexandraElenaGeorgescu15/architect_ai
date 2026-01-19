@@ -1,8 +1,10 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Folder, FolderPlus, FileText, Upload, Sparkles, Check, X, Search, Info, ChevronRight, Trash2, Move, MoreVertical, Edit2 } from 'lucide-react'
 import api from '../services/api'
 import { useUIStore } from '../stores/uiStore'
 import { useSystemStatus } from '../hooks/useSystemStatus'
+import { useArtifactStore } from '../stores/artifactStore'
+import { listArtifacts } from '../services/generationService'
 
 interface Folder {
   id: string
@@ -37,8 +39,9 @@ const PRO_TIPS = [
 
 export default function MeetingNotesManager() {
   const { addNotification } = useUIStore()
+  const { currentFolderId, setCurrentFolderId, setArtifacts, artifacts } = useArtifactStore()
   const [folders, setFolders] = useState<Folder[]>([])
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(currentFolderId)
   const [notes, setNotes] = useState<Note[]>([])
   const [newFolderName, setNewFolderName] = useState('')
   const [showNewFolder, setShowNewFolder] = useState(false)
@@ -101,6 +104,21 @@ export default function MeetingNotesManager() {
 
   // Import useSystemStatus to check backend readiness
   const { isReady: backendReady } = useSystemStatus()
+  
+  // Sync selected folder with artifact store and reload artifacts
+  const handleFolderSelect = useCallback(async (folderId: string | null) => {
+    setSelectedFolder(folderId)
+    setCurrentFolderId(folderId)
+    
+    // Reload artifacts filtered by the new folder
+    try {
+      const loadedArtifacts = await listArtifacts(folderId)
+      setArtifacts(loadedArtifacts)
+      console.log(`📁 [FOLDER_SELECT] Loaded ${loadedArtifacts.length} artifacts for folder: ${folderId || 'all'}`)
+    } catch (error) {
+      console.error('Failed to reload artifacts on folder change:', error)
+    }
+  }, [setCurrentFolderId, setArtifacts])
 
   useEffect(() => {
     if (backendReady) {
@@ -113,6 +131,16 @@ export default function MeetingNotesManager() {
       loadNotes(selectedFolder)
     }
   }, [selectedFolder, backendReady])
+  
+  // Sync with artifact store's currentFolderId on mount
+  useEffect(() => {
+    if (currentFolderId && currentFolderId !== selectedFolder) {
+      setSelectedFolder(currentFolderId)
+      if (backendReady) {
+        loadNotes(currentFolderId)
+      }
+    }
+  }, [currentFolderId, backendReady])
 
   const normalizeSuggestion = (raw: any): FolderSuggestion => {
     if (!raw) {
@@ -328,8 +356,14 @@ export default function MeetingNotesManager() {
     try {
       await api.delete(`/api/meeting-notes/folders/${folderId}`)
       addNotification('success', `Folder "${folderName}" deleted successfully`)
+      
+      // Remove artifacts associated with this folder from the store
+      const remainingArtifacts = artifacts.filter((a: any) => a.folder_id !== folderId)
+      setArtifacts(remainingArtifacts)
+      
       if (selectedFolder === folderId) {
-        setSelectedFolder(null)
+        // Clear selection and reload artifacts for all folders
+        await handleFolderSelect(null)
         setNotes([])
       }
       await loadFolders()
@@ -607,10 +641,10 @@ export default function MeetingNotesManager() {
                   </div>
                 ) : (
                   <div
-                onClick={() => setSelectedFolder(folder.id)}
+                onClick={() => handleFolderSelect(folder.id)}
                     role="button"
                     tabIndex={0}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setSelectedFolder(folder.id) }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleFolderSelect(folder.id) }}
                     className={`w-full text-left p-3 rounded-lg transition-all duration-200 flex items-center justify-between group cursor-pointer ${
                   selectedFolder === folder.id
                     ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'

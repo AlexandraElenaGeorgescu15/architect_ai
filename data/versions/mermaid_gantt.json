@@ -47,6 +47,57 @@
       "update_type": "manual_edit"
     },
     "created_at": "2025-12-11T08:08:34.888887",
+    "is_current": false
+  },
+  {
+    "version": 3,
+    "artifact_id": "mermaid_gantt",
+    "artifact_type": "mermaid_gantt",
+    "content": "gantt\n    title Phone Swap Request Feature Implementation Plan\n    section Frontend (UI/UX)\n    UX Team: Create wireframe of modal and form          : 2025-10-17, 1d\n    Frontend Team: Build \"Request Phone Swap\" button and basic modal structure      : 2025-10-21, 4d\n    section Backend (Logic)\n    Backend Team: Develop new API endpoint and database schema     : 2025-10-21, 2d\n    Backend Team: Implement backend validation for user ownership of offered phone   : 2025-10-24, 3d\n    section Product Management\n    Product Manager: Create formal Jira ticket with defined user story and acceptance criteria      : 2025-10-17, 1d\n    dependencies:\n    UX Team depends on Backend Team for wireframe approval\n    Frontend Team depends on UX Team for wireframe approval\n    Backend Team depends on Product Manager for formal Jira ticket creation",
+    "metadata": {
+      "model_used": "gemini-2.5-flash",
+      "provider": "cloud",
+      "validation_score": 100.0,
+      "is_valid": true,
+      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
+      "html_content": "\n        <!DOCTYPE html>\n        <html lang=\"en\">\n        <head>\n            <meta charset=\"UTF-8\">\n            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n            <title>Mermaid Diagram</title>\n            <script src=\"https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js\"></script>\n            <style>\n                body {\n                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n                    margin: 0;\n                    padding: 20px;\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    min-height: 100vh;\n                }\n                .container {\n                    max-width: 1200px;\n                    margin: 0 auto;\n                    background: white;\n                    border-radius: 12px;\n                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);\n                    overflow: hidden;\n                }\n                .header {\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    color: white;\n                    padding: 20px;\n                    text-align: center;\n                }\n                .header h1 {\n                    margin: 0;\n                    font-size: 24px;\n                    font-weight: 300;\n                }\n                .diagram-container {\n                    padding: 30px;\n                    text-align: center;\n                }\n                .mermaid {\n                    background: #f8f9fa;\n                    border-radius: 8px;\n                    padding: 20px;\n                    margin: 20px 0;\n                }\n                .info {\n                    background: #e3f2fd;\n                    border-left: 4px solid #2196f3;\n                    padding: 15px;\n                    margin: 20px 0;\n                    border-radius: 4px;\n                }\n                .info h3 {\n                    margin: 0 0 10px 0;\n                    color: #1976d2;\n                }\n                .info p {\n                    margin: 0;\n                    color: #424242;\n                }\n                .footer {\n                    background: #f5f5f5;\n                    padding: 15px;\n                    text-align: center;\n                    color: #666;\n                    font-size: 12px;\n                }\n            </style>\n        </head>\n        <body>\n            <div class=\"container\">\n                <div class=\"header\">\n                    <h1>\ud83c\udfa8 Mermaid Diagram Visualization</h1>\n                </div>\n                \n                <div class=\"diagram-container\">\n                    <div class=\"info\">\n                        <h3>\ud83d\udcca Interactive Diagram</h3>\n                        <p>This diagram is rendered using Mermaid.js and is fully interactive. You can zoom, pan, and interact with the elements.</p>\n                    </div>\n                    \n                    <div class=\"mermaid\" id=\"gantt_diagram\">\n                        gantt\n    title Phone Swap Request Feature Implementation Plan\n    section Frontend (UI/UX)\n    UX Team: Create wireframe of modal and form          : 2025-10-17, 1d\n    Frontend Team: Build \"Request Phone Swap\" button and basic modal structure      : 2025-10-21, 4d\n    section Backend (Logic)\n    Backend Team: Develop new API endpoint and database schema     : 2025-10-21, 2d\n    Backend Team: Implement backend validation for user ownership of offered phone   : 2025-10-24, 3d\n    section Product Management\n    Product Manager: Create formal Jira ticket with defined user story and acceptance criteria      : 2025-10-17, 1d\n    dependencies:\n    UX Team depends on Backend Team for wireframe approval\n    Frontend Team depends on UX Team for wireframe approval\n    Backend Team depends on Product Manager for formal Jira ticket creation\n                    </div>\n                    \n                    <div class=\"info\">\n                        <h3>\ud83d\udd27 Technical Details</h3>\n                        <p><strong>Diagram ID:</strong> gantt_diagram</p>\n                        <p><strong>Generated:</strong> 2026-01-19 13:52:30</p>\n                        <p><strong>Mermaid Version:</strong> 10.6.1</p>\n                    </div>\n                </div>\n                \n                <div class=\"footer\">\n                    <p>Generated by Architect.AI - Mermaid HTML Renderer</p>\n                </div>\n            </div>\n            \n            <script>\n                mermaid.initialize({\n                    startOnLoad: true,\n                    theme: 'default',\n                    themeVariables: {\n                        primaryColor: '#667eea',\n                        primaryTextColor: '#333',\n                        primaryBorderColor: '#764ba2',\n                        lineColor: '#666',\n                        secondaryColor: '#f8f9fa',\n                        tertiaryColor: '#e3f2fd'\n                    },\n                    flowchart: {\n                        useMaxWidth: true,\n                        htmlLabels: true\n                    },\n                    sequence: {\n                        useMaxWidth: true,\n                        wrap: true\n                    },\n                    gantt: {\n                        useMaxWidth: true\n                    }\n                });\n                \n                // Add interactivity\n                document.addEventListener('DOMContentLoaded', function() {\n                    const diagram = document.getElementById('gantt_diagram');\n                    if (diagram) {\n                        diagram.style.cursor = 'grab';\n                        diagram.addEventListener('click', function(e) {\n                            console.log('Diagram clicked:', e.target);\n                        });\n                    }\n                });\n            </script>\n        </body>\n        </html>\n        ",
+      "quality_prediction": {
+        "label": "high",
+        "confidence": 0.9,
+        "score": 0.9,
+        "reasons": {
+          "notes_depth": 0.2,
+          "notes_structure": 0.05,
+          "context_rag": 0.1
+        }
+      },
+      "job_id": "gen_8b100225",
+      "attempts": [
+        {
+          "model": "gemini-2.5-flash",
+          "provider": "gemini",
+          "content": "```mermaid\ngantt\n    title Phone Swap Request Feature Implementation Plan\n    section Frontend (UI/UX)\n    UX Team: Create wireframe of modal and form          : 2025-10-17, 1d\n    Frontend Team: Build \"Request Phone Swap\" button and basic modal structure      : 2025-10-21, 4d\n\n    section Backend (Logic)\n    Backend Team: Develop new API endpoint and database schema     : 2025-10-21, 2d\n    Backend Team: Implement backend validation for user ownership of offered phone   : 2025-10-24, 3d\n\n    section Product Management\n    Product Manager: Create formal Jira ticket with defined user story and acceptance criteria      : 2025-10-17, 1d\n\n    dependencies:\n        UX Team depends on Backend Team for wireframe approval\n        Frontend Team depends on UX Team for wireframe approval\n        Backend Team depends on Product Manager for formal Jira ticket creation\n```",
+          "score": 100.0,
+          "is_valid": true,
+          "errors": []
+        }
+      ],
+      "folder_id": "swap phones"
+    },
+    "created_at": "2026-01-19T13:52:30.438037",
+    "is_current": false
+  },
+  {
+    "version": 4,
+    "artifact_id": "mermaid_gantt",
+    "artifact_type": "mermaid_gantt",
+    "content": "gantt\n    title Phone Swap Request Feature Implementation Plan\n    section Frontend (UI/UX)\n    UX Team: Create wireframe of modal and form          : 2025-10-17, 1d\n    Frontend Team: Build \"Request Phone Swap\" button and basic modal structure      : 2025-10-21, 4d\n    section Backend (Logic)\n    Backend Team: Develop new API endpoint and database schema     : 2025-10-21, 2d\n    Backend Team: Implement backend validation for user ownership of offered phone   : 2025-10-24, 3d\n    section Product Management\n    Product Manager: Create formal Jira ticket with defined user story and acceptance criteria      : 2025-10-17, 1d\n    dependencies:\n    UX Team depends on Backend Team for wireframe approval\n    Frontend Team depends on UX Team for wireframe approval\n    Backend Team depends on Product Manager for formal Jira ticket creation",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_gantt"
+    },
+    "created_at": "2026-01-19T13:53:50.734763",
     "is_current": true
   }
 ]

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
-import { GitBranch, GitCommit, RefreshCw, CheckCircle, ChevronRight, Loader2, ArrowUpCircle, Eye, Plus, Minus, ArrowLeftRight, CheckSquare, Square, AlertTriangle, Wand2, Columns, List } from 'lucide-react'
+import { GitBranch, GitCommit, RefreshCw, CheckCircle, ChevronRight, Loader2, ArrowUpCircle, Eye, Plus, Minus, ArrowLeftRight, CheckSquare, Square, AlertTriangle, Wand2, Columns, List, FolderOpen } from 'lucide-react'
 import api from '../services/api'
 import { useUIStore } from '../stores/uiStore'
 import { useArtifactStore } from '../stores/artifactStore'
@@ -71,17 +71,21 @@ export default function VersionControl() {
   const [error, setError] = useState<string | null>(null)
   
   const { addNotification } = useUIStore()
+  const { currentFolderId } = useArtifactStore()
 
   useEffect(() => {
     loadAllVersions()
-  }, [])
+  }, [currentFolderId])
 
   const loadAllVersions = async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const response = await api.get<AllVersionsResponse>('/api/versions/all')
+      // Filter versions by folder if one is selected
+      const params = currentFolderId ? { folder_id: currentFolderId } : {}
+      const response = await api.get<AllVersionsResponse>('/api/versions/all', { params })
       setAllVersions(response.data)
+      console.log(`📁 [VERSION_CONTROL] Loaded ${response.data.total_versions} versions for folder: ${currentFolderId || 'all'}`)
       
       if (response.data.artifact_types.length > 0 && !selectedType) {
         setSelectedType(response.data.artifact_types[0])
@@ -388,6 +392,12 @@ export default function VersionControl() {
           <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
             <GitBranch className="w-5 h-5 text-primary" />
             Version History
+            {currentFolderId && (
+              <span className="text-sm font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-md flex items-center gap-1">
+                <FolderOpen className="w-3.5 h-3.5" />
+                {currentFolderId}
+              </span>
+            )}
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
             {allVersions ? `${allVersions.total_versions} versions, ${allVersions.total_artifacts} artifacts` : 'Track versions'}

@@ -54,16 +54,20 @@ export const useDiagramStore = create<DiagramState>((set, get) => ({
 
   setIsRepairing: (isRepairing) => set({ isRepairing }),
 
-  setZoom: (zoom) => set({ zoom: Math.max(0.5, Math.min(2, zoom)) }),
+  setZoom: (zoom) => set({ zoom: Math.max(0.1, Math.min(5, zoom)) }),
 
   zoomIn: () => {
     const { zoom } = get()
-    set({ zoom: Math.min(zoom + 0.1, 2) })
+    // Dynamic step: smaller steps at low zoom, larger at high zoom
+    const step = zoom < 0.5 ? 0.05 : zoom < 1.5 ? 0.1 : 0.25
+    set({ zoom: Math.min(zoom + step, 5) })
   },
 
   zoomOut: () => {
     const { zoom } = get()
-    set({ zoom: Math.max(zoom - 0.1, 0.5) })
+    // Dynamic step: smaller steps at low zoom, larger at high zoom
+    const step = zoom <= 0.5 ? 0.05 : zoom <= 1.5 ? 0.1 : 0.25
+    set({ zoom: Math.max(zoom - step, 0.1) })
   },
 
   resetZoom: () => set({ zoom: 1 }),

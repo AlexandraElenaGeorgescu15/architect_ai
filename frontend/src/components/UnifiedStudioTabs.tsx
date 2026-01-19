@@ -73,7 +73,7 @@ const LibraryView = memo(function LibraryView() {
   const [searchQuery, setSearchQuery] = useState('')
   const [showSearch, setShowSearch] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
-  const { artifacts } = useArtifactStore()
+  const { artifacts, currentFolderId } = useArtifactStore()
   
   // Focus search input when opened
   useEffect(() => {
@@ -106,9 +106,15 @@ const LibraryView = memo(function LibraryView() {
           <div>
             <h2 className="text-3xl font-black text-foreground tracking-tight flex items-center gap-3">
               <span className="bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">Artifact Library</span>
+              {currentFolderId && (
+                <span className="text-sm font-medium text-primary bg-primary/10 px-3 py-1 rounded-lg flex items-center gap-1.5">
+                  <Folder className="w-4 h-4" />
+                  {currentFolderId}
+                </span>
+              )}
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              {artifacts.length} artifact{artifacts.length !== 1 ? 's' : ''} • Browse and manage your generated artifacts
+              {artifacts.length} artifact{artifacts.length !== 1 ? 's' : ''} • {currentFolderId ? `Showing artifacts for folder "${currentFolderId}"` : 'Browse and manage your generated artifacts'}
             </p>
           </div>
           <div className="flex gap-3">

@@ -77,15 +77,20 @@ async def create_version(
 @limiter.limit("30/minute")
 async def get_all_versions(
     request: Request,
+    folder_id: Optional[str] = Query(None, description="Filter versions by meeting notes folder ID"),
     current_user: UserPublic = Depends(get_current_user)
 ):
-    """Get all versions for all artifacts, grouped by artifact type."""
+    """Get all versions for all artifacts, grouped by artifact type.
+    
+    Args:
+        folder_id: Optional filter to only return versions for artifacts associated with a specific folder.
+    """
     service = get_version_service()
     
     # Reload from disk to ensure we have latest
     service._load_versions()
     
-    logger.info(f"📋 [VERSIONS] Loading all versions. Service has {len(service.versions)} artifacts tracked.")
+    logger.info(f"📋 [VERSIONS] Loading all versions. Service has {len(service.versions)} artifacts tracked. folder_id={folder_id}")
     
     # Group by artifact type
     by_type: Dict[str, List[Dict[str, Any]]] = {}
@@ -95,8 +100,15 @@ async def get_all_versions(
         if not versions:
             continue
         
-        # Get artifact type from first version
+        # Get artifact type and folder_id from first version
         artifact_type = versions[0].get("artifact_type", "unknown")
+        
+        # Filter by folder_id if provided
+        if folder_id:
+            # Check if any version in this artifact matches the folder
+            version_folder_id = versions[0].get("folder_id")
+            if version_folder_id != folder_id:
+                continue
         
         if artifact_type not in by_type:
             by_type[artifact_type] = []
@@ -113,7 +125,7 @@ async def get_all_versions(
     for artifact_type in by_type:
         by_type[artifact_type].sort(key=lambda v: v.get("created_at", ""), reverse=True)
     
-    logger.info(f"📋 [VERSIONS] Returning {total_versions} total versions across {len(by_type)} artifact types")
+    logger.info(f"📋 [VERSIONS] Returning {total_versions} total versions across {len(by_type)} artifact types (folder_id={folder_id})")
     
     return {
         "versions_by_type": by_type,

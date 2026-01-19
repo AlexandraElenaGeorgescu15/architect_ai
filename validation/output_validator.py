@@ -495,55 +495,62 @@ class ArtifactValidator:
     
     def validate_workflows(self, content: str, context: Dict) -> ValidationResult:
         """
-        Validate deployment workflows.
+        Validate workflow documentation (business processes, CI/CD, deployment, etc.).
         
         Checks:
-        - Has clear steps
-        - Includes setup instructions
-        - Has deployment commands
-        - Error handling mentioned
+        - Has sufficient content
+        - Has clear steps or structure
+        - Contains actionable workflow elements
         """
         errors = []
         warnings = []
         suggestions = []
         score = 100.0
         
-        if not content or len(content.strip()) < 100:
+        if not content or len(content.strip()) < 50:
             errors.append("Workflow documentation is too short")
             score -= 50
             return ValidationResult(False, max(0, score), errors, warnings, suggestions)
         
-        # Check for steps/sections
+        content_lower = content.lower()
+        
+        # Check for steps/sections - markdown OR numbered/bulleted lists
         sections = len(re.findall(r'^#+\s', content, re.MULTILINE))
-        if sections < 3:
-            warnings.append(f"Only {sections} sections found")
-            score -= 10
+        numbered_steps = len(re.findall(r'^\s*\d+[\.\)]\s', content, re.MULTILINE))
+        bullet_points = len(re.findall(r'^\s*[-*•]\s', content, re.MULTILINE))
+        structure_elements = sections + (numbered_steps // 2) + (bullet_points // 3)
         
-        # Check for commands/code blocks
-        code_blocks = len(re.findall(r'```', content))
-        if code_blocks < 2:
-            warnings.append("Missing command examples")
-            score -= 15
+        if structure_elements < 2:
+            suggestions.append("Consider adding more structure (sections/numbered steps)")
+            score -= 5
         
-        # Check for deployment keywords
-        deployment_terms = ['deploy', 'build', 'install', 'setup', 'configure']
-        found_terms = [t for t in deployment_terms if t in content.lower()]
+        # Check for workflow-related keywords (broader list - not just deployment)
+        workflow_terms = [
+            'step', 'phase', 'stage', 'process', 'flow', 'action', 'task',
+            'trigger', 'event', 'complete', 'start', 'end', 'approve', 'review',
+            'submit', 'request', 'notify', 'send', 'receive', 'validate', 'check',
+            'deploy', 'build', 'install', 'setup', 'configure', 'run', 'execute',
+            'workflow', 'pipeline', 'sequence', 'order', 'priority'
+        ]
+        found_terms = [t for t in workflow_terms if t in content_lower]
         if len(found_terms) < 2:
-            warnings.append("Missing deployment steps")
-            score -= 10
+            suggestions.append("Consider adding more workflow-specific terminology")
+            score -= 5
         
-        # Check for environment setup
-        if 'environment' not in content.lower() and 'env' not in content.lower():
-            suggestions.append("Consider documenting environment variables")
+        # Check for role/actor mentions (optional - just suggestions)
+        role_terms = ['user', 'admin', 'system', 'team', 'manager', 'developer', 'client', 'customer']
+        found_roles = [t for t in role_terms if t in content_lower]
+        if len(found_roles) == 0:
+            suggestions.append("Consider mentioning who performs each action")
         
-        # STEP 2: GENERIC CONTENT DETECTION (CRITICAL - FAIL IF GENERIC)
+        # GENERIC CONTENT DETECTION (CRITICAL - FAIL IF GENERIC)
         is_generic, generic_issues = self._detect_generic_content(content, context)
         if is_generic:
             errors.extend([f"❌ GENERIC CONTENT: {issue}" for issue in generic_issues[:3]])
             score = 0  # FAIL VALIDATION - Generic content is unacceptable
             errors.append("⛔ VALIDATION FAILED: Content is generic/placeholder, not project-specific. Regenerate with actual project context.")
         
-        return ValidationResult(True, max(0, score), errors, warnings, suggestions, is_generic_content=is_generic)
+        return ValidationResult(score >= 80, max(0, score), errors, warnings, suggestions, is_generic_content=is_generic)
     
     def validate_diagrams(self, content: str, context: Dict) -> ValidationResult:
         """

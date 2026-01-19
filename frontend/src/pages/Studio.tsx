@@ -26,7 +26,7 @@ function Studio() {
   
   const { isGenerating, progress, generate, clearProgress, cancelGeneration } = useGeneration()
   const { isBuilding, build } = useContext()
-  const { artifacts, getArtifactsByType, setArtifacts, setLoading } = useArtifactStore()
+  const { artifacts, getArtifactsByType, setArtifacts, setLoading, currentFolderId } = useArtifactStore()
   const { resetState: resetDiagramState } = useDiagramStore()
   const { addNotification } = useUIStore()
   const location = useLocation()
@@ -74,13 +74,15 @@ function Studio() {
     loadCustomTypes()
   }, [])
 
-  // Load artifacts on mount and when location changes
+  // Load artifacts on mount, when location changes, or when folder changes
   useEffect(() => {
     const loadArtifacts = async () => {
       try {
         setLoading(true)
-        const loadedArtifacts = await listArtifacts()
+        // Filter artifacts by current folder if one is selected
+        const loadedArtifacts = await listArtifacts(currentFolderId)
         setArtifacts(loadedArtifacts)
+        console.log(`📁 [STUDIO] Loaded ${loadedArtifacts.length} artifacts for folder: ${currentFolderId || 'all'}`)
       } catch (error) {
         console.error('Failed to load artifacts:', error)
       } finally {
@@ -95,7 +97,7 @@ function Studio() {
     }
     window.addEventListener('focus', handleFocus)
     return () => window.removeEventListener('focus', handleFocus)
-  }, [setArtifacts, setLoading])
+  }, [setArtifacts, setLoading, currentFolderId])
 
   // Memoize artifact types to prevent recreation on every render
   const artifactTypes = useMemo<{ value: ArtifactType; label: string; category: string }[]>(() => [

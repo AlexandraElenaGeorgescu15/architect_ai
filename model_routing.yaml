@@ -1,7 +1,7 @@
 api_docs:
   enabled: true
   fallback_models:
-  - huggingface:microsoft-Phi-3-mini-4k-instruct
+  - huggingface:microsoft-Phi-4-mini-instruct
   - gemini:gemini-2.5-flash
   primary_model: ollama:dolphin-llama3:latest
 backlog:

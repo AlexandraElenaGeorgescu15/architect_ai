@@ -775,15 +775,89 @@ class UniversalDiagramFixer:
         return '\n'.join(fixed_lines)
     
     def _fix_gantt_diagram(self, content: str) -> str:
-        """Fix Gantt diagram syntax"""
+        """Fix Gantt diagram syntax.
+        
+        Valid Gantt syntax:
+        - gantt (header)
+        - title Project Title
+        - dateFormat YYYY-MM-DD
+        - section Section Name
+        - Task Name :taskId, 2024-01-01, 5d
+        - Task Name :active, taskId, after task1, 3d
+        
+        Common errors fixed:
+        - 'dependencies:' is not valid - should be 'section Dependencies'
+        - Task lines with ':' in wrong places
+        - Invalid task definitions
+        """
+        import re
         lines = content.strip().split('\n')
         fixed_lines = ['gantt']
+        seen_header = False
         
-        for line in lines[1:]:
-            line = line.strip()
-            if not line or line.startswith('```') or line.lower() == 'gantt':
+        for line in lines:
+            line_stripped = line.strip()
+            
+            # Skip empty lines, markdown blocks, duplicate headers
+            if not line_stripped or line_stripped.startswith('```'):
                 continue
-            fixed_lines.append('    ' + line)
+            if line_stripped.lower() == 'gantt':
+                if seen_header:
+                    continue
+                seen_header = True
+                continue  # Already added gantt header
+            
+            # Fix invalid 'dependencies:' - should be 'section Dependencies'
+            if re.match(r'^dependencies\s*:', line_stripped, re.IGNORECASE):
+                fixed_lines.append('    section Dependencies')
+                self.errors_fixed.append("Fixed invalid 'dependencies:' -> 'section Dependencies'")
+                continue
+            
+            # Fix section headers - must start with 'section'
+            if line_stripped.lower().startswith('section'):
+                # Ensure proper formatting
+                section_match = re.match(r'^section\s+(.+)$', line_stripped, re.IGNORECASE)
+                if section_match:
+                    fixed_lines.append(f'    section {section_match.group(1)}')
+                else:
+                    fixed_lines.append(f'    {line_stripped}')
+                continue
+            
+            # Fix title/dateFormat - these go without indentation
+            if line_stripped.lower().startswith('title') or line_stripped.lower().startswith('dateformat'):
+                fixed_lines.append(f'    {line_stripped}')
+                continue
+            
+            # Fix task lines - common issues:
+            # "Task Name depend on X: 1d" -> should be "Task Name :after taskX, 1d"
+            # "UX Team depend..." is invalid task syntax
+            
+            # Check for common malformed task patterns
+            # Pattern: "Something depend on/depends on Something: duration"
+            depend_match = re.match(r'^(.+?)\s+depend(?:s|encies)?\s+(?:on\s+)?(.+?):\s*(.+)$', line_stripped, re.IGNORECASE)
+            if depend_match:
+                task_name = depend_match.group(1).strip()
+                dependency = depend_match.group(2).strip()
+                duration = depend_match.group(3).strip()
+                # Convert to valid syntax: TaskName :after dependency, duration
+                task_id = re.sub(r'[^a-zA-Z0-9]', '', task_name.lower())[:10]
+                dep_id = re.sub(r'[^a-zA-Z0-9]', '', dependency.lower())[:10]
+                fixed_lines.append(f'    {task_name} :{task_id}, after {dep_id}, {duration}')
+                self.errors_fixed.append(f"Fixed malformed dependency task: {line_stripped[:40]}...")
+                continue
+            
+            # Check for task with just name and duration (no proper task format)
+            simple_task_match = re.match(r'^([^:]+):\s*(\d+[dwmh]?)$', line_stripped)
+            if simple_task_match:
+                task_name = simple_task_match.group(1).strip()
+                duration = simple_task_match.group(2).strip()
+                task_id = re.sub(r'[^a-zA-Z0-9]', '', task_name.lower())[:10]
+                fixed_lines.append(f'    {task_name} :{task_id}, {duration}')
+                self.errors_fixed.append(f"Fixed simple task format: {line_stripped[:30]}...")
+                continue
+            
+            # Regular task line - just indent it
+            fixed_lines.append(f'    {line_stripped}')
         
         return '\n'.join(fixed_lines)
     
