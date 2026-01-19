@@ -628,11 +628,21 @@ async def contextual_ask(
     try:
         from backend.services.chat_service import get_chat_service
         from pathlib import Path
-        from backend.core.config import settings
+        from backend.utils.target_project import get_target_project_path
+        from backend.utils.tool_detector import detect_tool_directory
         
         # FIX: Security - Validate file paths to prevent path traversal attacks
-        # Only allow files within the workspace/project directory
-        workspace_root = Path(settings.workspace_path or ".").resolve()
+        # Only allow files within the user's project directory (not Architect.AI)
+        target_project = get_target_project_path()
+        tool_dir = detect_tool_directory()
+        
+        # Use target project if available, otherwise use parent of tool directory
+        if target_project:
+            workspace_root = target_project.resolve()
+        elif tool_dir:
+            workspace_root = tool_dir.parent.resolve()
+        else:
+            workspace_root = Path(".").resolve()
         
         # Build context from specific files
         file_context = ""
@@ -660,16 +670,25 @@ async def contextual_ask(
             enhanced_question = f"Regarding these specific files:{file_context}\n\nQuestion: {request.question}"
         
         chat_service = get_chat_service()
-        response = await chat_service.chat(
+        
+        # chat() returns an async generator, so we need to collect the response
+        response_content = ""
+        async for chunk in chat_service.chat(
             message=enhanced_question,
             conversation_history=[],
-            include_project_context=request.include_project_context
-        )
+            include_project_context=request.include_project_context,
+            stream=False
+        ):
+            if chunk.get("type") == "complete":
+                response_content = chunk.get("content", "")
+                break
+            elif chunk.get("type") == "chunk":
+                response_content += chunk.get("content", "")
         
         return {
             "question": request.question,
             "files_analyzed": request.file_paths,
-            "response": response.get("message", ""),
+            "answer": response_content,
             "context_used": bool(file_context)
         }
         

@@ -1588,5 +1588,1510 @@
     "model_used": "llama3",
     "context": {},
     "added_at": "2025-11-26T20:04:00.073876"
+  },
+  {
+    "artifact_type": "mermaid_erd",
+    "content": "```mermaid\ngraph TD;\n    A[Phone Management System] --> B[Brands];\n    A --> C[Models];\n    B --> D[Storage];\n    C --> E[Pricing];\n    F[Users] --> G[Add, Edit, Delete Phones];\n```",
+    "meeting_notes": "Phone management system with brands, models, storage, and pricing. Users can add, edit, and delete phones.",
+    "validation_score": 85.0,
+    "model_used": "gemini-2.5-flash",
+    "context": {
+      "meeting_notes": "Phone management system with brands, models, storage, and pricing. Users can add, edit, and delete phones.",
+      "repo_id": null,
+      "created_at": "2026-01-19T20:26:24.729404",
+      "universal_context": {
+        "project_directories": [
+          "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln",
+          "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project"
+        ],
+        "total_files": 69,
+        "key_entities": [
+          {
+            "name": "UserDto",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs"
+          },
+          {
+            "name": "WeatherForecast",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\WeatherForecast.cs"
+          },
+          {
+            "name": "UsersController",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs"
+          },
+          {
+            "name": "WeatherForecastController",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs"
+          },
+          {
+            "name": "IUserService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs"
+          },
+          {
+            "name": "UserService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs"
+          },
+          {
+            "name": "IMongoDBSettings",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\IMongoDBSettings.cs"
+          },
+          {
+            "name": "MongoDBSettings",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\MongoDBSettings.cs"
+          },
+          {
+            "name": "AppRoutingModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts"
+          },
+          {
+            "name": "AppComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.ts"
+          },
+          {
+            "name": "AppModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts"
+          },
+          {
+            "name": "AuthenticationModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts"
+          },
+          {
+            "name": "LoginComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts"
+          },
+          {
+            "name": "RegisterComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts"
+          },
+          {
+            "name": "NameUppercasePipe",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\pipes\\name-uppercase.pipe.ts"
+          },
+          {
+            "name": "AuthenticationService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts"
+          },
+          {
+            "name": "PhoneService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts"
+          },
+          {
+            "name": "TableRoutingModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table-routing.module.ts"
+          },
+          {
+            "name": "TableModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts"
+          },
+          {
+            "name": "EntryDetailsModalComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\entry-details-modal\\entry-details-modal.component.ts"
+          },
+          {
+            "name": "PhoneComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts"
+          },
+          {
+            "name": "TablePageComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts"
+          },
+          {
+            "name": "Phone",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts"
+          },
+          {
+            "name": "User",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts"
+          }
+        ],
+        "project_map": {
+          "directories": {
+            "final-proj-sln": {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln",
+              "file_count": 14,
+              "subdirectories": []
+            },
+            "final_project": {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project",
+              "file_count": 55,
+              "subdirectories": []
+            }
+          },
+          "file_types": {
+            ".sln": 1,
+            ".json": 9,
+            ".cs": 9,
+            ".csproj": 1,
+            ".md": 1,
+            ".ico": 1,
+            ".html": 7,
+            ".ts": 27,
+            ".scss": 7,
+            ".less": 1,
+            ".jpg": 2
+          },
+          "key_files": [
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Program.cs",
+              "name": "Program.cs",
+              "importance": 1.0
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs",
+              "name": "Controller.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs",
+              "name": "WeatherForecastController.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs",
+              "name": "IUserService.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+              "name": "UserService.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.spec.ts",
+              "name": "authentication.service.spec.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts",
+              "name": "authentication.service.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.spec.ts",
+              "name": "phone.service.spec.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts",
+              "name": "phone.service.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs",
+              "name": "UserDto.cs",
+              "importance": 0.8
+            }
+          ]
+        }
+      },
+      "sources": {
+        "rag": {
+          "context": "=== PROJECT CONTEXT (Universal Knowledge + Targeted Retrieval) ===\n\n\ud83d\udd11 KEY PROJECT ENTITIES:\n  - UserDto (class)\n  - WeatherForecast (class)\n  - UsersController (class)\n  - WeatherForecastController (class)\n  - IUserService (class)\n  - UserService (class)\n  - IMongoDBSettings (class)\n  - MongoDBSettings (class)\n  - AppRoutingModule (class)\n  - AppComponent (class)\n\n\ud83d\udcc4 RELEVANT CODE SNIPPETS (ranked by importance + relevance):\n\n\n--- Snippet 1 \u2b50\u2b50 (score: 0.353) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts\nSECTION: 0\nexport interface Phone {\n    id: number;\n    brand: string;\n    model: string;\n    storage: number;\n    price: number;\n  }\n  \n\n--- Snippet 2 \u2b50\u2b50\u2b50\u2b50 (score: 0.291) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs\n\ufeffusing MongoDB.Driver;\nusing registration_api.Settings;\nusing System.Threading.Tasks;\n\nnamespace registration_api.Services\n{\n    public class UserService : IUserService\n    {\n        private readonly IMongoCollection<UserDto> _users;\n        public UserService(IMongoDBSettings settings)\n        {\n            var client = new MongoClient(settings.ConnectionString);\n            var database = client.GetDatabase(settings.DatabaseName);\n\n            _users = database.GetCollection<UserDto>(settings.CollectionName);\n        }\n\n        public async Task<bool> Register(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n            Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n            Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n        );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n\n            if (user != null)\n            {\n                return false; // Registration failed\n            }\n\n--- Snippet 3 \u2b50\u2b50\u2b50\u2b50 (score: 0.289) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts\n    { id: 9, brand: 'Motorola', model: 'x', storage: 64, price: 199 },\n  ];\n\n  getPhones(): Observable<Phone[]> {\n    // simulate delay of fetching data from API\n    return of(this.phones).pipe(delay(1000));\n  }\n\n  addPhone(phone: Phone): void {\n    phone.id = this.phones.length + 1;\n    this.phones.push(phone);\n  }\n\n  updatePhone(phone: Phone): void {\n    const index = this.phones.findIndex((p) => p.id === phone.id);\n    if (index !== -1) {\n      this.phones[index] = phone;\n    }\n  }\n\n  deletePhone(phoneId: number): void {\n    const index = this.phones.findIndex(p => p.id === phoneId);\n    if (index !== -1) {\n      this.phones.splice(index, 1);\n    }\n  }\n}\n\n\n--- Snippet 4 \u2b50\u2b50 (score: 0.250) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\components\\UnifiedStudioTabs.tsx\n    : qualityPrediction.label === 'high'\n      ? 'bg-primary/10 text-primary border border-primary/30'\n      : qualityPrediction.label === 'medium'\n        ? 'bg-accent/10 text-accent border border-accent/30'\n        : 'bg-destructive/10 text-destructive border border-destructive/30'\n  const { addArtifact } = useArtifactStore()\n  const { addNotification } = useUIStore()\n  const [isBulkDialogOpen, setBulkDialogOpen] = useState(false)\n  const [isBulkGenerating, setIsBulkGenerating] = useState(false)\n  \n  // Meeting notes folder selection state\n  const [folders, setFolders] = useState<Array<{ id: string; name: string; notes_count: number }>>([])\n  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)\n  \n  // Import useSystemStatus to check backend readiness\n  const { isReady: backendReady } = useSystemStatus()\n  \n  // Load folders when generate tab is active and backend is ready\n  useEffect(() => {\n    if (backendReady) {\n      loadFolders()\n    }\n\n--- Snippet 5 \u2b50\u2b50 (score: 0.243) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\UnifiedStudioTabs.tsx\n  const [isBulkDialogOpen, setBulkDialogOpen] = useState(false)\n  const [isBulkGenerating, setIsBulkGenerating] = useState(false)\n  \n  // Meeting notes folder selection state\n  const [folders, setFolders] = useState<Array<{ id: string; name: string; notes_count: number }>>([])\n  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)\n  \n  // Import useSystemStatus to check backend readiness\n  const { isReady: backendReady } = useSystemStatus()\n  \n  // Load folders when generate tab is active and backend is ready\n  useEffect(() => {\n    if (backendReady) {\n      loadFolders()\n    }\n  }, [backendReady])\n  \n  const loadFolders = async () => {\n    try {\n      const { default: api } = await import('../services/api')\n      const response = await api.get('/api/meeting-notes/folders')\n      setFolders(response.data.folders || [])\n    } catch (error) {\n      // Failed to load folders - handle in UI\n      console.error('Failed to load folders:', error)\n    }\n  }\n\n\n--- Snippet 6 \u2b50\u2b50 (score: 0.216) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\n  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload the phones after deletion\n    this.loadPhones();\n  }  \n\n  sortPhones(column: string): void {\n      // Implement the sorting logic based on the selected column\n      switch (column) {\n        case 'id':\n          this.phones.sort((a, b) => a.id - b.id);\n          break;\n        case 'brand':\n          this.phones.sort((a, b) => a.brand.localeCompare(b.brand));\n          break;\n        case 'model':\n          this.phones.sort((a, b) => a.model.localeCompare(b.model));\n          break;\n        case 'storage':\n          this.phones.sort((a, b) => a.storage - b.storage);\n          break;\n        case 'price':\n          this.phones.sort((a, b) => a.price - b.price);\n          break;\n        default:\n          break;\n      }\n    }\n\n  openDetailsModal(phone: Phone): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Phone Details',\n      nzContent: EntryDetailsModalComponent,\n\n--- Snippet 7 \u2b50\u2b50 (score: 0.203) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\index.css\n    /* \n      DEEP NAVY PROFESSIONAL THEME\n      Concept: Professional dev tool aesthetic with deep navy blues and teal accents\n      Matching the Canvas screenshot - dark navy with teal/cyan highlights\n      Inspired by: GitHub Dark, VS Code Dark+, Professional IDEs\n      Color Psychology: Deep navy = professionalism, Teal = modern & technical\n    */\n    \n    /* Rich dark backgrounds with excellent contrast */\n    --background: 220 40% 6%;         /* #0A0E14 - Very dark navy (matching screenshot) */\n    --foreground: 210 25% 88%;        /* #DBE1E8 - Light gray-blue text */\n    \n    /* Elevated surfaces with clear differentiation */\n    --card: 215 30% 12%;              /* #161D29 - Dark navy card */\n    --card-foreground: 210 40% 98%;\n    \n    --popover: 215 28% 16%;           /* #1D2633 - Popover surface */\n    --popover-foreground: 210 40% 98%;\n    \n    /* Electric Sapphire Blue - Main accent */\n    --primary: 195 75% 50%;           /* #20A4C4 - Teal-blue (matching screenshot) */\n\n--- Snippet 8 \u2b50\u2b50 (score: 0.191) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\VersionControl.tsx\n    \n    for (const line of lines) {\n      if (line.startsWith('@@')) {\n        // Parse hunk header: @@ -old_start,old_count +new_start,new_count @@\n        const match = line.match(/@@ -(\\d+)(?:,(\\d+))? \\+(\\d+)(?:,(\\d+))? @@/)\n        if (match) {\n          oldLineNum = parseInt(match[1]) - 1\n          newLineNum = parseInt(match[3]) - 1\n        }\n        continue\n      }\n      \n      if (line.startsWith('+') && !line.startsWith('+++')) {\n        newLineNum++\n        changes.push({ type: 'added', line: line.substring(1), lineNumber: newLineNum })\n      } else if (line.startsWith('-') && !line.startsWith('---')) {\n        oldLineNum++\n        changes.push({ type: 'removed', line: line.substring(1), lineNumber: oldLineNum })\n      } else if (line.startsWith(' ')) {\n        oldLineNum++\n        newLineNum++\n        changes.push({ type: 'context', line: line.substring(1), lineNumber: newLineNum })\n      }\n    }\n    \n    return changes\n  }, [gitDiff])\n\n\n--- Snippet 9 \u2b50\u2b50 (score: 0.186) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"edit\" (click)=\"editPhone(phone)\">Edit</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"info-circle\" (click)=\"openDetailsModal(phone)\">Details</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"delete\" (click)=\"deletePhone(phone.id)\">Delete</button>\n          </td>\n        </tr>\n      </tbody>\n    </nz-table>\n  \n  <div class=\"add-button-container\">\n    <button nz-button nzType=\"primary\" nzSize=\"large\" nzShape=\"round\" (click)=\"addPhone()\">Add</button>\n  </div>\n  \n\n--- Snippet 10 \u2b50\u2b50 (score: 0.182) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.html\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Storage (GB)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"storage\" placeholder=\"Enter phone storage\">\n  </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Price (\u20ac)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"price\" placeholder=\"Enter phone price\">\n  </nz-form-control>\n</nz-form-item>\n</form>\n\n\n\n--- Snippet 11 \u2b50\u2b50 (score: 0.180) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\pages\\Studio.tsx\n    { value: 'code_prototype', label: 'Code Prototype', category: 'Code' },\n    { value: 'dev_visual_prototype', label: 'Visual Prototype', category: 'Code' },\n    { value: 'api_docs', label: 'API Documentation', category: 'Code' },\n    // PM Artifacts\n    { value: 'jira', label: 'JIRA Tasks', category: 'PM' },\n    { value: 'workflows', label: 'Workflows', category: 'PM' },\n    { value: 'backlog', label: 'Backlog', category: 'PM' },\n    { value: 'personas', label: 'Personas', category: 'PM' },\n    { value: 'estimations', label: 'Estimations', category: 'PM' },\n    { value: 'feature_scoring', label: 'Feature Scoring', category: 'PM' },\n  ], [])\n\n  // Memoize callback to prevent unnecessary re-renders\n  const handleTemplateApply = useCallback((payload: TemplateApplyResponse) => {\n    setMeetingNotes(payload.meeting_notes)\n    if (payload.artifact_types?.length) {\n      setSelectedArtifactType(payload.artifact_types[0])\n    }\n  }, [])\n\n  return (\n\n--- Snippet 12 \u2b50\u2b50 (score: 0.180) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\pages\\Studio.tsx\n    { value: 'code_prototype', label: 'Code Prototype', category: 'Code' },\n    { value: 'dev_visual_prototype', label: 'Visual Prototype', category: 'Code' },\n    { value: 'api_docs', label: 'API Documentation', category: 'Code' },\n    // PM Artifacts\n    { value: 'jira', label: 'JIRA Tasks', category: 'PM' },\n    { value: 'workflows', label: 'Workflows', category: 'PM' },\n    { value: 'backlog', label: 'Backlog', category: 'PM' },\n    { value: 'personas', label: 'Personas', category: 'PM' },\n    { value: 'estimations', label: 'Estimations', category: 'PM' },\n    { value: 'feature_scoring', label: 'Feature Scoring', category: 'PM' },\n  ], [])\n\n  // Memoize callback to prevent unnecessary re-renders\n  const handleTemplateApply = useCallback((payload: TemplateApplyResponse) => {\n    setMeetingNotes(payload.meeting_notes)\n    if (payload.artifact_types?.length) {\n      setSelectedArtifactType(payload.artifact_types[0])\n    }\n  }, [])\n\n  return (\n\n--- Snippet 13 \u2b50\u2b50 (score: 0.173) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts\n    this.phoneForm = this.fb.group({\n      brand: [this.phone?.brand, [Validators.required],],\n      model: [this.phone?.model, [Validators.required]],\n      storage: [this.phone?.storage, [Validators.required, Validators.min(1)]],\n      price: [this.phone?.price, [Validators.required, Validators.min(1)]],\n      id: [this.phone?.id, [Validators.required, Validators.min(1)]]\n    });\n  }\n\n  submitForm(): void {\n    if (this.phoneForm.invalid) {\n      for (const i in this.phoneForm.controls) {\n        if (this.phoneForm.controls.hasOwnProperty(i)) {\n          this.phoneForm.controls[i].markAsDirty();\n          this.phoneForm.controls[i].updateValueAndValidity();\n        }\n      }\n      return;\n    }\n\n    this.newPhone = {\n      brand: this.phoneForm.value.brand,\n      model: this.phoneForm.value.model,\n      storage: this.phoneForm.value.storage,\n      price: this.phoneForm.value.price,\n      id: this.phoneForm.value.id\n    };\n\n  }\n\n}\n\n--- Snippet 14 \u2b50\u2b50 (score: 0.173) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\backend\\api\\versions.py\n    \"\"\"Get all versions for all artifacts of a given type.\"\"\"\n    service = get_version_service()\n    all_versions = []\n    \n    logger.info(f\"\ud83d\udccb [VERSIONS] Loading versions for artifact_type: {artifact_type}\")\n    logger.info(f\"\ud83d\udccb [VERSIONS] Total artifact_ids in service: {len(service.versions)}\")\n    \n    # Normalize artifact_type for matching (handle case and format variations)\n    artifact_type_normalized = artifact_type.lower().replace(\"-\", \"_\").replace(\" \", \"_\")\n    \n    # Iterate through all artifact_ids in the version service\n    matching_artifact_ids = []\n    for artifact_id, versions in service.versions.items():\n        # Normalize artifact_id for matching\n        artifact_id_normalized = artifact_id.lower().replace(\"-\", \"_\").replace(\" \", \"_\")\n        \n        # Check if this artifact_id matches the type (starts with artifact_type)\n        # This handles cases like \"mermaid_erd_20251126_200400\" matching \"mermaid_erd\"\n\n--- Snippet 15 \u2b50\u2b50 (score: 0.169) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts\nSECTION: 1\nexport class PhoneComponent implements OnInit {\n  @Input() phone!: Phone;\n  phoneForm!: FormGroup;\n  newPhone?: Phone;\n\n\n  constructor(private fb: FormBuilder, public modalRef: NzModalRef) {}\n\n  ngOnInit(): void {\n    this.createForm();\n  }\n\n  private createForm(): void {\n    this.phoneForm = this.fb.group({\n      brand: [this.phone?.brand, [Validators.required],],\n      model: [this.phone?.model, [Validators.required]],\n      storage: [this.phone?.storage, [Validators.required, Validators.min(1)]],\n      price: [this.phone?.price, [Validators.required, Validators.min(1)]],\n      id: [this.phone?.id, [Validators.required, Validators.min(1)]]\n    });\n  }\n\n  submitForm(): void {\n    if (this.phoneForm.invalid) {\n      for (const i in this.phoneForm.controls) {\n        if (this.phoneForm.controls.hasOwnProperty(i)) {\n          this.phoneForm.controls[i].markAsDirty();\n          this.phoneForm.controls[i].updateValueAndValidity();\n        }\n      }\n      return;\n    }\n\n    this.newPhone = {\n      brand: this.phoneForm.value.brand,\n      model: this.phoneForm.value.model,\n      storage: this.phoneForm.value.storage,\n      price: this.phoneForm.value.price,\n      id: this.phoneForm.value.id\n    };\n\n  }\n\n}\n\n--- Snippet 16 \u2b50\u2b50 (score: 0.169) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\layout\\Sidebar.tsx\n  const { models } = useModelStore()\n  const { getActiveJobs } = useTrainingStore()\n  const { isConnected } = useWebSocketStatus()\n  const { darkMode, toggleDarkMode, sidebarOpen, setSidebarOpen } = useUIStore()\n  const [ragStatus, setRagStatus] = useState<'indexed' | 'indexing' | 'not_indexed'>('indexed')\n\n  // Force layout to match darkMode state on mount\n  useEffect(() => {\n    if (darkMode) {\n      document.documentElement.classList.add('dark')\n    } else {\n      document.documentElement.classList.remove('dark')\n    }\n  }, [darkMode])\n\n  // Memoize expensive computations\n  const activeJobs = useMemo(() => getActiveJobs(), [getActiveJobs])\n  const ollamaModels = useMemo(() => models.filter(m => m.provider === 'ollama'), [models])\n  const cloudModels = useMemo(() => models.filter(m => m.provider !== 'ollama' && m.status === 'available'), [models])\n\n  useEffect(() => {\n    setRagStatus('indexed')\n  }, [])\n\n  const handleReplayTour = () => {\n\n--- Snippet 17 \u2b50\u2b50 (score: 0.169) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts\nexport interface Phone {\n    id: number;\n    brand: string;\n    model: string;\n    storage: number;\n    price: number;\n  }\n  \n\n--- Snippet 18 \u2b50\u2b50 (score: 0.168) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\pages\\Studio.tsx\n}\n\nexport default function Studio() {\n  const [meetingNotes, setMeetingNotes] = useState('')\n  const [selectedArtifactType, setSelectedArtifactType] = useState<ArtifactType>('mermaid_erd')\n  const [contextId, setContextId] = useState<string | null>(null)\n  const [isTemplateGalleryOpen, setTemplateGalleryOpen] = useState(false)\n  \n  const { isGenerating, progress, generate, clearProgress } = useGeneration()\n  const { isBuilding, build } = useContext()\n  const { artifacts, getArtifactsByType, setArtifacts, setLoading } = useArtifactStore()\n\n  // Load artifacts on mount and when location changes\n  useEffect(() => {\n    const loadArtifacts = async () => {\n      try {\n        setLoading(true)\n        console.log('\ud83d\udce5 [STUDIO] Loading artifacts from backend...')\n        const loadedArtifacts = await listArtifacts()\n        console.log(`\u2705 [STUDIO] Loaded ${loadedArtifacts.length} artifacts`)\n        setArtifacts(loadedArtifacts)\n      } catch (error) {",
+          "snippets": [
+            {
+              "content": "FILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts\nSECTION: 0\nexport interface Phone {\n    id: number;\n    brand: string;\n    model: string;\n    storage: number;\n    price: number;\n  }\n  ",
+              "file_path": "unknown",
+              "score": 0.35262074465339116,
+              "importance": 0.5,
+              "metadata": {
+                "chunk": 0,
+                "complexity_score": 0.0,
+                "file_type": ".ts",
+                "has_documentation": false,
+                "has_tests": false,
+                "importance_score": 0.55,
+                "is_config": false,
+                "kind": "code",
+                "language": "typescript",
+                "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts"
+              }
+            },
+            {
+              "content": "\ufeffusing MongoDB.Driver;\nusing registration_api.Settings;\nusing System.Threading.Tasks;\n\nnamespace registration_api.Services\n{\n    public class UserService : IUserService\n    {\n        private readonly IMongoCollection<UserDto> _users;\n        public UserService(IMongoDBSettings settings)\n        {\n            var client = new MongoClient(settings.ConnectionString);\n            var database = client.GetDatabase(settings.DatabaseName);\n\n            _users = database.GetCollection<UserDto>(settings.CollectionName);\n        }\n\n        public async Task<bool> Register(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n            Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n            Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n        );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n\n            if (user != null)\n            {\n                return false; // Registration failed\n            }",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+              "score": 0.29075739388736527,
+              "importance": 0.9,
+              "metadata": {
+                "end_line": 30,
+                "file_hash": "ff9b3e84c3737cf9a0979f5770bcb732c95ec1d3",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+                "indexed_at": "2025-11-20T15:11:11.051904",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "    { id: 9, brand: 'Motorola', model: 'x', storage: 64, price: 199 },\n  ];\n\n  getPhones(): Observable<Phone[]> {\n    // simulate delay of fetching data from API\n    return of(this.phones).pipe(delay(1000));\n  }\n\n  addPhone(phone: Phone): void {\n    phone.id = this.phones.length + 1;\n    this.phones.push(phone);\n  }\n\n  updatePhone(phone: Phone): void {\n    const index = this.phones.findIndex((p) => p.id === phone.id);\n    if (index !== -1) {\n      this.phones[index] = phone;\n    }\n  }\n\n  deletePhone(phoneId: number): void {\n    const index = this.phones.findIndex(p => p.id === phoneId);\n    if (index !== -1) {\n      this.phones.splice(index, 1);\n    }\n  }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts",
+              "score": 0.28892237442922375,
+              "importance": 0.9,
+              "metadata": {
+                "end_line": 828,
+                "file_hash": "612c0daa5990048ba403946925cbdf83b3bea490",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts",
+                "indexed_at": "2025-11-20T15:11:27.762001",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "    : qualityPrediction.label === 'high'\n      ? 'bg-primary/10 text-primary border border-primary/30'\n      : qualityPrediction.label === 'medium'\n        ? 'bg-accent/10 text-accent border border-accent/30'\n        : 'bg-destructive/10 text-destructive border border-destructive/30'\n  const { addArtifact } = useArtifactStore()\n  const { addNotification } = useUIStore()\n  const [isBulkDialogOpen, setBulkDialogOpen] = useState(false)\n  const [isBulkGenerating, setIsBulkGenerating] = useState(false)\n  \n  // Meeting notes folder selection state\n  const [folders, setFolders] = useState<Array<{ id: string; name: string; notes_count: number }>>([])\n  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)\n  \n  // Import useSystemStatus to check backend readiness\n  const { isReady: backendReady } = useSystemStatus()\n  \n  // Load folders when generate tab is active and backend is ready\n  useEffect(() => {\n    if (backendReady) {\n      loadFolders()\n    }",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\components\\UnifiedStudioTabs.tsx",
+              "score": 0.24968708772476947,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 4822,
+                "file_hash": "a220811bbbce6d5fceb23e441dcce9736d592e8f",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\components\\UnifiedStudioTabs.tsx",
+                "indexed_at": "2025-12-08T13:21:50.851083",
+                "start_line": 4801
+              }
+            },
+            {
+              "content": "  const [isBulkDialogOpen, setBulkDialogOpen] = useState(false)\n  const [isBulkGenerating, setIsBulkGenerating] = useState(false)\n  \n  // Meeting notes folder selection state\n  const [folders, setFolders] = useState<Array<{ id: string; name: string; notes_count: number }>>([])\n  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)\n  \n  // Import useSystemStatus to check backend readiness\n  const { isReady: backendReady } = useSystemStatus()\n  \n  // Load folders when generate tab is active and backend is ready\n  useEffect(() => {\n    if (backendReady) {\n      loadFolders()\n    }\n  }, [backendReady])\n  \n  const loadFolders = async () => {\n    try {\n      const { default: api } = await import('../services/api')\n      const response = await api.get('/api/meeting-notes/folders')\n      setFolders(response.data.folders || [])\n    } catch (error) {\n      // Failed to load folders - handle in UI\n      console.error('Failed to load folders:', error)\n    }\n  }\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\UnifiedStudioTabs.tsx",
+              "score": 0.243300973443132,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 3228,
+                "file_hash": "25a86b62f765ad5739e27e5d548b97d51114aded",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\UnifiedStudioTabs.tsx",
+                "indexed_at": "2025-12-08T12:31:21.083585",
+                "start_line": 3201
+              }
+            },
+            {
+              "content": "  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload the phones after deletion\n    this.loadPhones();\n  }  \n\n  sortPhones(column: string): void {\n      // Implement the sorting logic based on the selected column\n      switch (column) {\n        case 'id':\n          this.phones.sort((a, b) => a.id - b.id);\n          break;\n        case 'brand':\n          this.phones.sort((a, b) => a.brand.localeCompare(b.brand));\n          break;\n        case 'model':\n          this.phones.sort((a, b) => a.model.localeCompare(b.model));\n          break;\n        case 'storage':\n          this.phones.sort((a, b) => a.storage - b.storage);\n          break;\n        case 'price':\n          this.phones.sort((a, b) => a.price - b.price);\n          break;\n        default:\n          break;\n      }\n    }\n\n  openDetailsModal(phone: Phone): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Phone Details',\n      nzContent: EntryDetailsModalComponent,",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts",
+              "score": 0.21574160009781068,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 3235,
+                "file_hash": "33520ad0f26dd0d060a5511b75fce2257a02db5d",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts",
+                "indexed_at": "2025-11-20T15:11:28.613131",
+                "start_line": 3201
+              }
+            },
+            {
+              "content": "    /* \n      DEEP NAVY PROFESSIONAL THEME\n      Concept: Professional dev tool aesthetic with deep navy blues and teal accents\n      Matching the Canvas screenshot - dark navy with teal/cyan highlights\n      Inspired by: GitHub Dark, VS Code Dark+, Professional IDEs\n      Color Psychology: Deep navy = professionalism, Teal = modern & technical\n    */\n    \n    /* Rich dark backgrounds with excellent contrast */\n    --background: 220 40% 6%;         /* #0A0E14 - Very dark navy (matching screenshot) */\n    --foreground: 210 25% 88%;        /* #DBE1E8 - Light gray-blue text */\n    \n    /* Elevated surfaces with clear differentiation */\n    --card: 215 30% 12%;              /* #161D29 - Dark navy card */\n    --card-foreground: 210 40% 98%;\n    \n    --popover: 215 28% 16%;           /* #1D2633 - Popover surface */\n    --popover-foreground: 210 40% 98%;\n    \n    /* Electric Sapphire Blue - Main accent */\n    --primary: 195 75% 50%;           /* #20A4C4 - Teal-blue (matching screenshot) */",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\index.css",
+              "score": 0.20326876247484252,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 1621,
+                "file_hash": "0943d728ea8498500c23f5c7643b689696762347",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\index.css",
+                "indexed_at": "2025-12-08T12:31:17.775862",
+                "start_line": 1601
+              }
+            },
+            {
+              "content": "    \n    for (const line of lines) {\n      if (line.startsWith('@@')) {\n        // Parse hunk header: @@ -old_start,old_count +new_start,new_count @@\n        const match = line.match(/@@ -(\\d+)(?:,(\\d+))? \\+(\\d+)(?:,(\\d+))? @@/)\n        if (match) {\n          oldLineNum = parseInt(match[1]) - 1\n          newLineNum = parseInt(match[3]) - 1\n        }\n        continue\n      }\n      \n      if (line.startsWith('+') && !line.startsWith('+++')) {\n        newLineNum++\n        changes.push({ type: 'added', line: line.substring(1), lineNumber: newLineNum })\n      } else if (line.startsWith('-') && !line.startsWith('---')) {\n        oldLineNum++\n        changes.push({ type: 'removed', line: line.substring(1), lineNumber: oldLineNum })\n      } else if (line.startsWith(' ')) {\n        oldLineNum++\n        newLineNum++\n        changes.push({ type: 'context', line: line.substring(1), lineNumber: newLineNum })\n      }\n    }\n    \n    return changes\n  }, [gitDiff])\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\VersionControl.tsx",
+              "score": 0.1913974858326793,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 7228,
+                "file_hash": "ee7657c0a25fcf9affb073dd03dd86bdb4e28d39",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\VersionControl.tsx",
+                "indexed_at": "2025-12-08T13:22:00.288564",
+                "start_line": 7201
+              }
+            },
+            {
+              "content": "          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"edit\" (click)=\"editPhone(phone)\">Edit</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"info-circle\" (click)=\"openDetailsModal(phone)\">Details</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"delete\" (click)=\"deletePhone(phone.id)\">Delete</button>\n          </td>\n        </tr>\n      </tbody>\n    </nz-table>\n  \n  <div class=\"add-button-container\">\n    <button nz-button nzType=\"primary\" nzSize=\"large\" nzShape=\"round\" (click)=\"addPhone()\">Add</button>\n  </div>\n  ",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html",
+              "score": 0.18641414141414142,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 1617,
+                "file_hash": "9c379e06d25408857a72df401bf552f0e767bea7",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html",
+                "indexed_at": "2025-11-20T15:11:28.411131",
+                "start_line": 1601
+              }
+            },
+            {
+              "content": "</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Storage (GB)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"storage\" placeholder=\"Enter phone storage\">\n  </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Price (\u20ac)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"price\" placeholder=\"Enter phone price\">\n  </nz-form-control>\n</nz-form-item>\n</form>\n\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.html",
+              "score": 0.1817657924746052,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 818,
+                "file_hash": "e741613976ad4e674a08696d6d00f976a726f997",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.html",
+                "indexed_at": "2025-11-20T15:11:28.166487",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "    { value: 'code_prototype', label: 'Code Prototype', category: 'Code' },\n    { value: 'dev_visual_prototype', label: 'Visual Prototype', category: 'Code' },\n    { value: 'api_docs', label: 'API Documentation', category: 'Code' },\n    // PM Artifacts\n    { value: 'jira', label: 'JIRA Tasks', category: 'PM' },\n    { value: 'workflows', label: 'Workflows', category: 'PM' },\n    { value: 'backlog', label: 'Backlog', category: 'PM' },\n    { value: 'personas', label: 'Personas', category: 'PM' },\n    { value: 'estimations', label: 'Estimations', category: 'PM' },\n    { value: 'feature_scoring', label: 'Feature Scoring', category: 'PM' },\n  ], [])\n\n  // Memoize callback to prevent unnecessary re-renders\n  const handleTemplateApply = useCallback((payload: TemplateApplyResponse) => {\n    setMeetingNotes(payload.meeting_notes)\n    if (payload.artifact_types?.length) {\n      setSelectedArtifactType(payload.artifact_types[0])\n    }\n  }, [])\n\n  return (",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\pages\\Studio.tsx",
+              "score": 0.1797861165791776,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 6421,
+                "file_hash": "daa302d2a3a97abb70265b5cc79ef36699786d5d",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\pages\\Studio.tsx",
+                "indexed_at": "2025-12-08T13:21:57.021115",
+                "start_line": 6401
+              }
+            },
+            {
+              "content": "    { value: 'code_prototype', label: 'Code Prototype', category: 'Code' },\n    { value: 'dev_visual_prototype', label: 'Visual Prototype', category: 'Code' },\n    { value: 'api_docs', label: 'API Documentation', category: 'Code' },\n    // PM Artifacts\n    { value: 'jira', label: 'JIRA Tasks', category: 'PM' },\n    { value: 'workflows', label: 'Workflows', category: 'PM' },\n    { value: 'backlog', label: 'Backlog', category: 'PM' },\n    { value: 'personas', label: 'Personas', category: 'PM' },\n    { value: 'estimations', label: 'Estimations', category: 'PM' },\n    { value: 'feature_scoring', label: 'Feature Scoring', category: 'PM' },\n  ], [])\n\n  // Memoize callback to prevent unnecessary re-renders\n  const handleTemplateApply = useCallback((payload: TemplateApplyResponse) => {\n    setMeetingNotes(payload.meeting_notes)\n    if (payload.artifact_types?.length) {\n      setSelectedArtifactType(payload.artifact_types[0])\n    }\n  }, [])\n\n  return (",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\pages\\Studio.tsx",
+              "score": 0.17953230094756298,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 6421,
+                "file_hash": "daa302d2a3a97abb70265b5cc79ef36699786d5d",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\pages\\Studio.tsx",
+                "indexed_at": "2025-12-08T13:22:04.805575",
+                "start_line": 6401
+              }
+            },
+            {
+              "content": "    this.phoneForm = this.fb.group({\n      brand: [this.phone?.brand, [Validators.required],],\n      model: [this.phone?.model, [Validators.required]],\n      storage: [this.phone?.storage, [Validators.required, Validators.min(1)]],\n      price: [this.phone?.price, [Validators.required, Validators.min(1)]],\n      id: [this.phone?.id, [Validators.required, Validators.min(1)]]\n    });\n  }\n\n  submitForm(): void {\n    if (this.phoneForm.invalid) {\n      for (const i in this.phoneForm.controls) {\n        if (this.phoneForm.controls.hasOwnProperty(i)) {\n          this.phoneForm.controls[i].markAsDirty();\n          this.phoneForm.controls[i].updateValueAndValidity();\n        }\n      }\n      return;\n    }\n\n    this.newPhone = {\n      brand: this.phoneForm.value.brand,\n      model: this.phoneForm.value.model,\n      storage: this.phoneForm.value.storage,\n      price: this.phoneForm.value.price,\n      id: this.phoneForm.value.id\n    };\n\n  }\n\n}",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts",
+              "score": 0.1734319830682662,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 831,
+                "file_hash": "287036664b71903508f067a4c732ccc3e55ff1e8",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts",
+                "indexed_at": "2025-11-20T15:11:28.351763",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "    \"\"\"Get all versions for all artifacts of a given type.\"\"\"\n    service = get_version_service()\n    all_versions = []\n    \n    logger.info(f\"\ud83d\udccb [VERSIONS] Loading versions for artifact_type: {artifact_type}\")\n    logger.info(f\"\ud83d\udccb [VERSIONS] Total artifact_ids in service: {len(service.versions)}\")\n    \n    # Normalize artifact_type for matching (handle case and format variations)\n    artifact_type_normalized = artifact_type.lower().replace(\"-\", \"_\").replace(\" \", \"_\")\n    \n    # Iterate through all artifact_ids in the version service\n    matching_artifact_ids = []\n    for artifact_id, versions in service.versions.items():\n        # Normalize artifact_id for matching\n        artifact_id_normalized = artifact_id.lower().replace(\"-\", \"_\").replace(\" \", \"_\")\n        \n        # Check if this artifact_id matches the type (starts with artifact_type)\n        # This handles cases like \"mermaid_erd_20251126_200400\" matching \"mermaid_erd\"",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\backend\\api\\versions.py",
+              "score": 0.17285499548128885,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 3218,
+                "file_hash": "fc7ea93990b3503dfee38dc73bc1727dca6afa95",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\backend\\api\\versions.py",
+                "indexed_at": "2025-12-08T13:21:58.526435",
+                "start_line": 3201
+              }
+            },
+            {
+              "content": "FILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts\nSECTION: 1\nexport class PhoneComponent implements OnInit {\n  @Input() phone!: Phone;\n  phoneForm!: FormGroup;\n  newPhone?: Phone;\n\n\n  constructor(private fb: FormBuilder, public modalRef: NzModalRef) {}\n\n  ngOnInit(): void {\n    this.createForm();\n  }\n\n  private createForm(): void {\n    this.phoneForm = this.fb.group({\n      brand: [this.phone?.brand, [Validators.required],],\n      model: [this.phone?.model, [Validators.required]],\n      storage: [this.phone?.storage, [Validators.required, Validators.min(1)]],\n      price: [this.phone?.price, [Validators.required, Validators.min(1)]],\n      id: [this.phone?.id, [Validators.required, Validators.min(1)]]\n    });\n  }\n\n  submitForm(): void {\n    if (this.phoneForm.invalid) {\n      for (const i in this.phoneForm.controls) {\n        if (this.phoneForm.controls.hasOwnProperty(i)) {\n          this.phoneForm.controls[i].markAsDirty();\n          this.phoneForm.controls[i].updateValueAndValidity();\n        }\n      }\n      return;\n    }\n\n    this.newPhone = {\n      brand: this.phoneForm.value.brand,\n      model: this.phoneForm.value.model,\n      storage: this.phoneForm.value.storage,\n      price: this.phoneForm.value.price,\n      id: this.phoneForm.value.id\n    };\n\n  }\n\n}",
+              "file_path": "unknown",
+              "score": 0.1690909090909091,
+              "importance": 0.5,
+              "metadata": {
+                "chunk": 1,
+                "complexity_score": 0.007,
+                "file_type": ".ts",
+                "has_documentation": false,
+                "has_tests": true,
+                "importance_score": 0.6,
+                "is_config": false,
+                "kind": "code",
+                "language": "typescript",
+                "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts"
+              }
+            },
+            {
+              "content": "  const { models } = useModelStore()\n  const { getActiveJobs } = useTrainingStore()\n  const { isConnected } = useWebSocketStatus()\n  const { darkMode, toggleDarkMode, sidebarOpen, setSidebarOpen } = useUIStore()\n  const [ragStatus, setRagStatus] = useState<'indexed' | 'indexing' | 'not_indexed'>('indexed')\n\n  // Force layout to match darkMode state on mount\n  useEffect(() => {\n    if (darkMode) {\n      document.documentElement.classList.add('dark')\n    } else {\n      document.documentElement.classList.remove('dark')\n    }\n  }, [darkMode])\n\n  // Memoize expensive computations\n  const activeJobs = useMemo(() => getActiveJobs(), [getActiveJobs])\n  const ollamaModels = useMemo(() => models.filter(m => m.provider === 'ollama'), [models])\n  const cloudModels = useMemo(() => models.filter(m => m.provider !== 'ollama' && m.status === 'available'), [models])\n\n  useEffect(() => {\n    setRagStatus('indexed')\n  }, [])\n\n  const handleReplayTour = () => {",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\layout\\Sidebar.tsx",
+              "score": 0.16899045635184445,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 825,
+                "file_hash": "62082494d876769881aa4c7439482db51319c778",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\layout\\Sidebar.tsx",
+                "indexed_at": "2025-12-08T12:31:26.490958",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "export interface Phone {\n    id: number;\n    brand: string;\n    model: string;\n    storage: number;\n    price: number;\n  }\n  ",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts",
+              "score": 0.16854700854700855,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 8,
+                "file_hash": "73743034e52386bf35b19115aaf75b39fff72057",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts",
+                "indexed_at": "2025-11-20T15:11:28.795131",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "}\n\nexport default function Studio() {\n  const [meetingNotes, setMeetingNotes] = useState('')\n  const [selectedArtifactType, setSelectedArtifactType] = useState<ArtifactType>('mermaid_erd')\n  const [contextId, setContextId] = useState<string | null>(null)\n  const [isTemplateGalleryOpen, setTemplateGalleryOpen] = useState(false)\n  \n  const { isGenerating, progress, generate, clearProgress } = useGeneration()\n  const { isBuilding, build } = useContext()\n  const { artifacts, getArtifactsByType, setArtifacts, setLoading } = useArtifactStore()\n\n  // Load artifacts on mount and when location changes\n  useEffect(() => {\n    const loadArtifacts = async () => {\n      try {\n        setLoading(true)\n        console.log('\ud83d\udce5 [STUDIO] Loading artifacts from backend...')\n        const loadedArtifacts = await listArtifacts()\n        console.log(`\u2705 [STUDIO] Loaded ${loadedArtifacts.length} artifacts`)\n        setArtifacts(loadedArtifacts)\n      } catch (error) {",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\pages\\Studio.tsx",
+              "score": 0.1682735788113695,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 822,
+                "file_hash": "3d40cac97effde696176571bc142b48f3bfde8db",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\pages\\Studio.tsx",
+                "indexed_at": "2025-12-08T12:31:28.248235",
+                "start_line": 801
+              }
+            }
+          ],
+          "num_snippets": 18,
+          "avg_score": 0.21024353918385488,
+          "key_entities": [
+            {
+              "name": "UserDto",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs"
+            },
+            {
+              "name": "WeatherForecast",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\WeatherForecast.cs"
+            },
+            {
+              "name": "UsersController",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs"
+            },
+            {
+              "name": "WeatherForecastController",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs"
+            },
+            {
+              "name": "IUserService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs"
+            },
+            {
+              "name": "UserService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs"
+            },
+            {
+              "name": "IMongoDBSettings",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\IMongoDBSettings.cs"
+            },
+            {
+              "name": "MongoDBSettings",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\MongoDBSettings.cs"
+            },
+            {
+              "name": "AppRoutingModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts"
+            },
+            {
+              "name": "AppComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.ts"
+            },
+            {
+              "name": "AppModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts"
+            },
+            {
+              "name": "AuthenticationModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts"
+            },
+            {
+              "name": "LoginComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts"
+            },
+            {
+              "name": "RegisterComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts"
+            },
+            {
+              "name": "NameUppercasePipe",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\pipes\\name-uppercase.pipe.ts"
+            },
+            {
+              "name": "AuthenticationService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts"
+            },
+            {
+              "name": "PhoneService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts"
+            },
+            {
+              "name": "TableRoutingModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table-routing.module.ts"
+            },
+            {
+              "name": "TableModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts"
+            },
+            {
+              "name": "EntryDetailsModalComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\entry-details-modal\\entry-details-modal.component.ts"
+            },
+            {
+              "name": "PhoneComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts"
+            },
+            {
+              "name": "TablePageComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts"
+            },
+            {
+              "name": "Phone",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts"
+            },
+            {
+              "name": "User",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts"
+            }
+          ],
+          "uses_universal_context": true
+        },
+        "kg": {
+          "graph_stats": {
+            "node_count": 104,
+            "edge_count": 127,
+            "file_count": 27,
+            "class_count": 16,
+            "function_count": 3,
+            "total_classes": 16,
+            "total_functions": 3,
+            "total_files": 27,
+            "is_connected": false,
+            "component_count": 5
+          },
+          "relevant_nodes": [],
+          "most_connected": [
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts",
+              "degree": 22
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts",
+              "degree": 15
+            },
+            {
+              "node_id": "module:@angular/core",
+              "degree": 14
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts:table-page.component.ts",
+              "degree": 10
+            },
+            {
+              "node_id": "module:@angular/core/testing",
+              "degree": 8
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts:authentication.module.ts",
+              "degree": 8
+            },
+            {
+              "node_id": "module:@angular/forms",
+              "degree": 7
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts:register.component.ts",
+              "degree": 7
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts:app-routing.module.ts",
+              "degree": 6
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts:login.component.ts",
+              "degree": 6
+            }
+          ],
+          "top_central_nodes": [
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts",
+              "centrality": 0.21359223300970873
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts",
+              "centrality": 0.14563106796116504
+            },
+            {
+              "node_id": "module:@angular/core",
+              "centrality": 0.13592233009708737
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts:table-page.component.ts",
+              "centrality": 0.09708737864077668
+            },
+            {
+              "node_id": "module:@angular/core/testing",
+              "centrality": 0.07766990291262135
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts:authentication.module.ts",
+              "centrality": 0.07766990291262135
+            },
+            {
+              "node_id": "module:@angular/forms",
+              "centrality": 0.06796116504854369
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts:register.component.ts",
+              "centrality": 0.06796116504854369
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts:app-routing.module.ts",
+              "centrality": 0.058252427184466014
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts:login.component.ts",
+              "centrality": 0.058252427184466014
+            }
+          ],
+          "key_terms_searched": [
+            "phone",
+            "users"
+          ]
+        },
+        "patterns": {
+          "patterns_available": true,
+          "patterns_detected": [
+            "PatternDetail(name='Observer', pattern_type='Observer', description='Observer pattern detected.', frequency=2, severity='info', files=['C'], suggestions=['Validate observers are unsubscribed properly to avoid memory leaks and unexpected notifications.'])"
+          ],
+          "pattern_count": 1,
+          "code_smells": [],
+          "code_smell_count": 0,
+          "security_issues": [],
+          "security_issue_count": 0,
+          "note": "Real pattern mining data from project analysis"
+        }
+      },
+      "assembled_context": "\ud83d\udd11 === KEY PROJECT ENTITIES (Most Important) ===\n  \u2022 UserDto (class)\n  \u2022 WeatherForecast (class)\n  \u2022 UsersController (class)\n  \u2022 WeatherForecastController (class)\n  \u2022 IUserService (class)\n  \u2022 UserService (class)\n  \u2022 IMongoDBSettings (class)\n  \u2022 MongoDBSettings (class)\n  \u2022 AppRoutingModule (class)\n  \u2022 AppComponent (class)\n  \u2022 AppModule (class)\n  \u2022 AuthenticationModule (class)\n  \u2022 LoginComponent (class)\n  \u2022 RegisterComponent (class)\n  \u2022 NameUppercasePipe (class)\n\n\ud83d\udccb === YOUR REQUIREMENTS ===\nPhone management system with brands, models, storage, and pricing. Users can add, edit, and delete phones.\n\ud83d\udcc4 === CODEBASE CONTEXT (High Relevance) ===\n\n--- Snippet 1 (score: 0.353, file: unknown) ---\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts\nSECTION: 0\nexport interface Phone {\n    id: number;\n    brand: string;\n    model: string;\n    storage: number;\n    price: number;\n  }\n  \n\n--- Snippet 2 (score: 0.291, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs) ---\n\ufeffusing MongoDB.Driver;\nusing registration_api.Settings;\nusing System.Threading.Tasks;\n\nnamespace registration_api.Services\n{\n    public class UserService : IUserService\n    {\n        private readonly IMongoCollection<UserDto> _users;\n        public UserService(IMongoDBSettings settings)\n        {\n            var client = new MongoClient(settings.ConnectionString);\n            var database = client.GetDatabase(settings.DatabaseName);\n\n            _users = database.GetCollection<UserDto>(settings.CollectionName);\n        }\n\n        public async Task<bool> Register(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n            Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n            Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n        );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n\n            if (user != null)\n            {\n                return false; // Registration failed\n            }\n\n--- Snippet 3 (score: 0.289, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts) ---\n    { id: 9, brand: 'Motorola', model: 'x', storage: 64, price: 199 },\n  ];\n\n  getPhones(): Observable<Phone[]> {\n    // simulate delay of fetching data from API\n    return of(this.phones).pipe(delay(1000));\n  }\n\n  addPhone(phone: Phone): void {\n    phone.id = this.phones.length + 1;\n    this.phones.push(phone);\n  }\n\n  updatePhone(phone: Phone): void {\n    const index = this.phones.findIndex((p) => p.id === phone.id);\n    if (index !== -1) {\n      this.phones[index] = phone;\n    }\n  }\n\n  deletePhone(phoneId: number): void {\n    const index = this.phones.findIndex(p => p.id === phoneId);\n    if (index !== -1) {\n      this.phones.splice(index, 1);\n    }\n  }\n}\n\n\n--- Snippet 4 (score: 0.250, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\components\\UnifiedStudioTabs.tsx) ---\n    : qualityPrediction.label === 'high'\n      ? 'bg-primary/10 text-primary border border-primary/30'\n      : qualityPrediction.label === 'medium'\n        ? 'bg-accent/10 text-accent border border-accent/30'\n        : 'bg-destructive/10 text-destructive border border-destructive/30'\n  const { addArtifact } = useArtifactStore()\n  const { addNotification } = useUIStore()\n  const [isBulkDialogOpen, setBulkDialogOpen] = useState(false)\n  const [isBulkGenerating, setIsBulkGenerating] = useState(false)\n  \n  // Meeting notes folder selection state\n  const [folders, setFolders] = useState<Array<{ id: string; name: string; notes_count: number }>>([])\n  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)\n  \n  // Import useSystemStatus to check backend readiness\n  const { isReady: backendReady } = useSystemStatus()\n  \n  // Load folders when generate tab is active and backend is ready\n  useEffect(() => {\n    if (backendReady) {\n      loadFolders()\n    }\n\n--- Snippet 5 (score: 0.243, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\UnifiedStudioTabs.tsx) ---\n  const [isBulkDialogOpen, setBulkDialogOpen] = useState(false)\n  const [isBulkGenerating, setIsBulkGenerating] = useState(false)\n  \n  // Meeting notes folder selection state\n  const [folders, setFolders] = useState<Array<{ id: string; name: string; notes_count: number }>>([])\n  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)\n  \n  // Import useSystemStatus to check backend readiness\n  const { isReady: backendReady } = useSystemStatus()\n  \n  // Load folders when generate tab is active and backend is ready\n  useEffect(() => {\n    if (backendReady) {\n      loadFolders()\n    }\n  }, [backendReady])\n  \n  const loadFolders = async () => {\n    try {\n      const { default: api } = await import('../services/api')\n      const response = await api.get('/api/meeting-notes/folders')\n      setFolders(response.data.folders || [])\n    } catch (error) {\n      // Failed to load folders - handle in UI\n      console.error('Failed to load folders:', error)\n    }\n  }\n\n\n--- Snippet 6 (score: 0.216, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts) ---\n  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload the phones after deletion\n    this.loadPhones();\n  }  \n\n  sortPhones(column: string): void {\n      // Implement the sorting logic based on the selected column\n      switch (column) {\n        case 'id':\n          this.phones.sort((a, b) => a.id - b.id);\n          break;\n        case 'brand':\n          this.phones.sort((a, b) => a.brand.localeCompare(b.brand));\n          break;\n        case 'model':\n          this.phones.sort((a, b) => a.model.localeCompare(b.model));\n          break;\n        case 'storage':\n          this.phones.sort((a, b) => a.storage - b.storage);\n          break;\n        case 'price':\n          this.phones.sort((a, b) => a.price - b.price);\n          break;\n        default:\n          break;\n      }\n    }\n\n  openDetailsModal(phone: Phone): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Phone Details',\n      nzContent: EntryDetailsModalComponent,\n\n--- Snippet 7 (score: 0.203, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\index.css) ---\n    /* \n      DEEP NAVY PROFESSIONAL THEME\n      Concept: Professional dev tool aesthetic with deep navy blues and teal accents\n      Matching the Canvas screenshot - dark navy with teal/cyan highlights\n      Inspired by: GitHub Dark, VS Code Dark+, Professional IDEs\n      Color Psychology: Deep navy = professionalism, Teal = modern & technical\n    */\n    \n    /* Rich dark backgrounds with excellent contrast */\n    --background: 220 40% 6%;         /* #0A0E14 - Very dark navy (matching screenshot) */\n    --foreground: 210 25% 88%;        /* #DBE1E8 - Light gray-blue text */\n    \n    /* Elevated surfaces with clear differentiation */\n    --card: 215 30% 12%;              /* #161D29 - Dark navy card */\n    --card-foreground: 210 40% 98%;\n    \n    --popover: 215 28% 16%;           /* #1D2633 - Popover surface */\n    --popover-foreground: 210 40% 98%;\n    \n    /* Electric Sapphire Blue - Main accent */\n    --primary: 195 75% 50%;           /* #20A4C4 - Teal-blue (matching screenshot) */\n\n--- Snippet 8 (score: 0.191, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\VersionControl.tsx) ---\n    \n    for (const line of lines) {\n      if (line.startsWith('@@')) {\n        // Parse hunk header: @@ -old_start,old_count +new_start,new_count @@\n        const match = line.match(/@@ -(\\d+)(?:,(\\d+))? \\+(\\d+)(?:,(\\d+))? @@/)\n        if (match) {\n          oldLineNum = parseInt(match[1]) - 1\n          newLineNum = parseInt(match[3]) - 1\n        }\n        continue\n      }\n      \n      if (line.startsWith('+') && !line.startsWith('+++')) {\n        newLineNum++\n        changes.push({ type: 'added', line: line.substring(1), lineNumber: newLineNum })\n      } else if (line.startsWith('-') && !line.startsWith('---')) {\n        oldLineNum++\n        changes.push({ type: 'removed', line: line.substring(1), lineNumber: oldLineNum })\n      } else if (line.startsWith(' ')) {\n        oldLineNum++\n        newLineNum++\n        changes.push({ type: 'context', line: line.substring(1), lineNumber: newLineNum })\n      }\n    }\n    \n    return changes\n  }, [gitDiff])\n\n\n--- Snippet 9 (score: 0.186, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html) ---\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"edit\" (click)=\"editPhone(phone)\">Edit</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"info-circle\" (click)=\"openDetailsModal(phone)\">Details</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"delete\" (click)=\"deletePhone(phone.id)\">Delete</button>\n          </td>\n        </tr>\n      </tbody>\n    </nz-table>\n  \n  <div class=\"add-button-container\">\n    <button nz-button nzType=\"primary\" nzSize=\"large\" nzShape=\"round\" (click)=\"addPhone()\">Add</button>\n  </div>\n  \n\n--- Snippet 10 (score: 0.182, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.html) ---\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Storage (GB)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"storage\" placeholder=\"Enter phone storage\">\n  </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Price (\u20ac)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"price\" placeholder=\"Enter phone price\">\n  </nz-form-control>\n</nz-form-item>\n</form>\n\n\n\n\ud83e\udde0 === KNOWLEDGE GRAPH INSIGHTS ===\nGraph: 104 nodes, 127 edges\nMost Connected:\n  \u2022 file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts (degree: 22)\n  \u2022 file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts (degree: 15)\n  \u2022 module:@angular/core (degree: 14)\n\n\ud83d\udd0d === DESIGN PATTERNS DETECTED (1) ===\nPatternDetail(name='Observer', pattern_type='Observer', description='Observer pattern detected.', frequency=2, severity='info', files=['C'], suggestions=['Validate observers are unsubscribed properly to avoid memory leaks and unexpected notifications.'])\n\n\ud83d\udcc4 === ADDITIONAL CONTEXT (Lower Relevance) ===\n\n--- Snippet 11 (score: 0.180, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\pages\\Studio.tsx) ---\n    { value: 'code_prototype', label: 'Code Prototype', category: 'Code' },\n    { value: 'dev_visual_prototype', label: 'Visual Prototype', category: 'Code' },\n    { value: 'api_docs', label: 'API Documentation', category: 'Code' },\n    // PM Artifacts\n    { value: 'jira', label: 'JIRA Tasks', category: 'PM' },\n    { value: 'workflows', label: 'Workflows', category: 'PM' },\n    { value: 'backlog', label: 'Backlog', category: 'PM' },\n    { value: 'personas', label: 'Personas', category: 'PM' },\n    { value: 'estimations', label: 'Estimations', category: 'PM' },\n    { value: 'feature_scoring', label: 'Feature Scoring', category: 'PM' },\n  ], [])\n\n  // Memoize callback to prevent unnecessary re-renders\n  const handleTemplateApply = useCallback((payload: TemplateApplyResponse) => {\n    setMeetingNotes(payload.meeting_notes)\n    if (payload.artifact_types?.length) {\n      setSelectedArtifactType(payload.artifact_types[0])\n    }\n  }, [])\n\n  return (\n\n--- Snippet 12 (score: 0.180, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\pages\\Studio.tsx) ---\n    { value: 'code_prototype', label: 'Code Prototype', category: 'Code' },\n    { value: 'dev_visual_prototype', label: 'Visual Prototype', category: 'Code' },\n    { value: 'api_docs', label: 'API Documentation', category: 'Code' },\n    // PM Artifacts\n    { value: 'jira', label: 'JIRA Tasks', category: 'PM' },\n    { value: 'workflows', label: 'Workflows', category: 'PM' },\n    { value: 'backlog', label: 'Backlog', category: 'PM' },\n    { value: 'personas', label: 'Personas', category: 'PM' },\n    { value: 'estimations', label: 'Estimations', category: 'PM' },\n    { value: 'feature_scoring', label: 'Feature Scoring', category: 'PM' },\n  ], [])\n\n  // Memoize callback to prevent unnecessary re-renders\n  const handleTemplateApply = useCallback((payload: TemplateApplyResponse) => {\n    setMeetingNotes(payload.meeting_notes)\n    if (payload.artifact_types?.length) {\n      setSelectedArtifactType(payload.artifact_types[0])\n    }\n  }, [])\n\n  return (\n\n--- Snippet 13 (score: 0.173, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts) ---\n    this.phoneForm = this.fb.group({\n      brand: [this.phone?.brand, [Validators.required],],\n      model: [this.phone?.model, [Validators.required]],\n      storage: [this.phone?.storage, [Validators.required, Validators.min(1)]],\n      price: [this.phone?.price, [Validators.required, Validators.min(1)]],\n      id: [this.phone?.id, [Validators.required, Validators.min(1)]]\n    });\n  }\n\n  submitForm(): void {\n    if (this.phoneForm.invalid) {\n      for (const i in this.phoneForm.controls) {\n        if (this.phoneForm.controls.hasOwnProperty(i)) {\n          this.phoneForm.controls[i].markAsDirty();\n          this.phoneForm.controls[i].updateValueAndValidity();\n        }\n      }\n      return;\n    }\n\n    this.newPhone = {\n      brand: this.phoneForm.value.brand,\n      model: this.phoneForm.value.model,\n      storage: this.phoneForm.value.storage,\n      price: this.phoneForm.value.price,\n      id: this.phoneForm.value.id\n    };\n\n  }\n\n}\n\n--- Snippet 14 (score: 0.173, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\backend\\api\\versions.py) ---\n    \"\"\"Get all versions for all artifacts of a given type.\"\"\"\n    service = get_version_service()\n    all_versions = []\n    \n    logger.info(f\"\ud83d\udccb [VERSIONS] Loading versions for artifact_type: {artifact_type}\")\n    logger.info(f\"\ud83d\udccb [VERSIONS] Total artifact_ids in service: {len(service.versions)}\")\n    \n    # Normalize artifact_type for matching (handle case and format variations)\n    artifact_type_normalized = artifact_type.lower().replace(\"-\", \"_\").replace(\" \", \"_\")\n    \n    # Iterate through all artifact_ids in the version service\n    matching_artifact_ids = []\n    for artifact_id, versions in service.versions.items():\n        # Normalize artifact_id for matching\n        artifact_id_normalized = artifact_id.lower().replace(\"-\", \"_\").replace(\" \", \"_\")\n        \n        # Check if this artifact_id matches the type (starts with artifact_type)\n        # This handles cases like \"mermaid_erd_20251126_200400\" matching \"mermaid_erd\"\n\n--- Snippet 15 (score: 0.169, file: unknown) ---\n\n[... Low-Priority RAG truncated to preserve higher-priority context ...]",
+      "truncation_info": {
+        "any_truncated": true,
+        "sections_truncated": [
+          {
+            "section": "Low-Priority RAG",
+            "original_tokens": 2104,
+            "budget_tokens": 1200,
+            "reduction_percent": 43.0
+          }
+        ],
+        "token_budget": 8000,
+        "tokens_used": 3975
+      },
+      "from_cache": false,
+      "context_id": "2026-01-19T20:26:24.729404"
+    },
+    "added_at": "2026-01-19T20:26:52.887848"
+  },
+  {
+    "artifact_type": "mermaid_erd",
+    "content": "graph TD;\n    A[Phone Management System] --> B[Brands];\n    A --> C[Models];\n    B --> D[Storage];\n    C --> E[Pricing];\n    F[Users] --> G[Add, Edit, Delete Phones];",
+    "meeting_notes": "Phone management system with brands, models, storage, and pricing. Users can add, edit, and delete phones.",
+    "validation_score": 85.0,
+    "model_used": "gemini-2.5-flash",
+    "context": {},
+    "added_at": "2026-01-19T20:26:52.902765"
+  },
+  {
+    "artifact_type": "mermaid_erd",
+    "content": "```mermaid\nerDiagram\n    USER {\n        id PK\n        name VARCHAR(50) NOT NULL\n        email VARCHAR(100) UNIQUE NOT NULL\n        password VARCHAR(255) NOT NULL\n    }\n\n    PHONE {\n        id PK\n        brand VARCHAR(50) NOT NULL\n        model VARCHAR(50) NOT NULL\n        storage INT NOT NULL\n        price DECIMAL(10, 2) NOT NULL\n    }\n\n    USER ||--o{ PHONE : contains }\n```",
+    "meeting_notes": "Phone management app",
+    "validation_score": 100.0,
+    "model_used": "gemini-2.5-flash",
+    "context": {
+      "meeting_notes": "Phone management app",
+      "repo_id": null,
+      "created_at": "2026-01-19T20:35:38.068322",
+      "universal_context": {
+        "project_directories": [
+          "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln",
+          "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project"
+        ],
+        "total_files": 69,
+        "key_entities": [
+          {
+            "name": "UserDto",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs"
+          },
+          {
+            "name": "WeatherForecast",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\WeatherForecast.cs"
+          },
+          {
+            "name": "UsersController",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs"
+          },
+          {
+            "name": "WeatherForecastController",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs"
+          },
+          {
+            "name": "IUserService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs"
+          },
+          {
+            "name": "UserService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs"
+          },
+          {
+            "name": "IMongoDBSettings",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\IMongoDBSettings.cs"
+          },
+          {
+            "name": "MongoDBSettings",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\MongoDBSettings.cs"
+          },
+          {
+            "name": "AppRoutingModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts"
+          },
+          {
+            "name": "AppComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.ts"
+          },
+          {
+            "name": "AppModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts"
+          },
+          {
+            "name": "AuthenticationModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts"
+          },
+          {
+            "name": "LoginComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts"
+          },
+          {
+            "name": "RegisterComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts"
+          },
+          {
+            "name": "NameUppercasePipe",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\pipes\\name-uppercase.pipe.ts"
+          },
+          {
+            "name": "AuthenticationService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts"
+          },
+          {
+            "name": "PhoneService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts"
+          },
+          {
+            "name": "TableRoutingModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table-routing.module.ts"
+          },
+          {
+            "name": "TableModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts"
+          },
+          {
+            "name": "EntryDetailsModalComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\entry-details-modal\\entry-details-modal.component.ts"
+          },
+          {
+            "name": "PhoneComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts"
+          },
+          {
+            "name": "TablePageComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts"
+          },
+          {
+            "name": "Phone",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts"
+          },
+          {
+            "name": "User",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts"
+          }
+        ],
+        "project_map": {
+          "directories": {
+            "final-proj-sln": {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln",
+              "file_count": 14,
+              "subdirectories": []
+            },
+            "final_project": {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project",
+              "file_count": 55,
+              "subdirectories": []
+            }
+          },
+          "file_types": {
+            ".sln": 1,
+            ".json": 9,
+            ".cs": 9,
+            ".csproj": 1,
+            ".md": 1,
+            ".ico": 1,
+            ".html": 7,
+            ".ts": 27,
+            ".scss": 7,
+            ".less": 1,
+            ".jpg": 2
+          },
+          "key_files": [
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Program.cs",
+              "name": "Program.cs",
+              "importance": 1.0
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs",
+              "name": "Controller.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs",
+              "name": "WeatherForecastController.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs",
+              "name": "IUserService.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+              "name": "UserService.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.spec.ts",
+              "name": "authentication.service.spec.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts",
+              "name": "authentication.service.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.spec.ts",
+              "name": "phone.service.spec.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts",
+              "name": "phone.service.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs",
+              "name": "UserDto.cs",
+              "importance": 0.8
+            }
+          ]
+        }
+      },
+      "sources": {
+        "rag": {
+          "context": "=== PROJECT CONTEXT (Universal Knowledge + Targeted Retrieval) ===\n\n\ud83d\udd11 KEY PROJECT ENTITIES:\n  - UserDto (class)\n  - WeatherForecast (class)\n  - UsersController (class)\n  - WeatherForecastController (class)\n  - IUserService (class)\n  - UserService (class)\n  - IMongoDBSettings (class)\n  - MongoDBSettings (class)\n  - AppRoutingModule (class)\n  - AppComponent (class)\n\n\ud83d\udcc4 RELEVANT CODE SNIPPETS (ranked by importance + relevance):\n\n\n--- Snippet 1 \u2b50\u2b50 (score: 0.419) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts\nSECTION: 0\nexport interface Phone {\n    id: number;\n    brand: string;\n    model: string;\n    storage: number;\n    price: number;\n  }\n  \n\n--- Snippet 2 \u2b50\u2b50\u2b50\u2b50\u2b50 (score: 0.317) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Program.cs\n\nusing Microsoft.Extensions.Options;\nusing registration_api.Services;\nusing registration_api.Settings;\nusing System.Reflection;\n\nvar builder = WebApplication.CreateBuilder(args);\n\n// Add services to the container.\n\nbuilder.Services.AddSingleton<IMongoDBSettings>(sp => sp.GetRequiredService<IOptions<MongoDBSettings>>().Value);\nbuilder.Services.AddSingleton<IUserService, UserService>();\n\nbuilder.Services.Configure<MongoDBSettings>(builder.Configuration.GetSection(nameof(MongoDBSettings)));\n\nbuilder.Services.AddCors(options =>\n{\n    options.AddPolicy(name: \"CorsPolicy\",\n                              policy =>\n                              {\n                                  policy.WithOrigins(\"http://localhost:4200\")\n                                  .AllowAnyHeader()\n                                  .AllowAnyMethod()\n                                  .AllowCredentials();\n                              });\n});\n\nbuilder.Services.AddSignalR();\nbuilder.Services.AddControllers();\n\n--- Snippet 3 \u2b50\u2b50\u2b50\u2b50 (score: 0.294) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts\n    { id: 9, brand: 'Motorola', model: 'x', storage: 64, price: 199 },\n  ];\n\n  getPhones(): Observable<Phone[]> {\n    // simulate delay of fetching data from API\n    return of(this.phones).pipe(delay(1000));\n  }\n\n  addPhone(phone: Phone): void {\n    phone.id = this.phones.length + 1;\n    this.phones.push(phone);\n  }\n\n  updatePhone(phone: Phone): void {\n    const index = this.phones.findIndex((p) => p.id === phone.id);\n    if (index !== -1) {\n      this.phones[index] = phone;\n    }\n  }\n\n  deletePhone(phoneId: number): void {\n    const index = this.phones.findIndex(p => p.id === phoneId);\n    if (index !== -1) {\n      this.phones.splice(index, 1);\n    }\n  }\n}\n\n\n--- Snippet 4 \u2b50\u2b50\u2b50\u2b50 (score: 0.288) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs\n\ufeffusing MongoDB.Driver;\nusing registration_api.Settings;\nusing System.Threading.Tasks;\n\nnamespace registration_api.Services\n{\n    public class UserService : IUserService\n    {\n        private readonly IMongoCollection<UserDto> _users;\n        public UserService(IMongoDBSettings settings)\n        {\n            var client = new MongoClient(settings.ConnectionString);\n            var database = client.GetDatabase(settings.DatabaseName);\n\n            _users = database.GetCollection<UserDto>(settings.CollectionName);\n        }\n\n        public async Task<bool> Register(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n            Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n            Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n        );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n\n            if (user != null)\n            {\n                return false; // Registration failed\n            }\n\n--- Snippet 5 \u2b50\u2b50 (score: 0.210) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\n  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload the phones after deletion\n    this.loadPhones();\n  }  \n\n  sortPhones(column: string): void {\n      // Implement the sorting logic based on the selected column\n      switch (column) {\n        case 'id':\n          this.phones.sort((a, b) => a.id - b.id);\n          break;\n        case 'brand':\n          this.phones.sort((a, b) => a.brand.localeCompare(b.brand));\n          break;\n        case 'model':\n          this.phones.sort((a, b) => a.model.localeCompare(b.model));\n          break;\n        case 'storage':\n          this.phones.sort((a, b) => a.storage - b.storage);\n          break;\n        case 'price':\n          this.phones.sort((a, b) => a.price - b.price);\n          break;\n        default:\n          break;\n      }\n    }\n\n  openDetailsModal(phone: Phone): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Phone Details',\n      nzContent: EntryDetailsModalComponent,\n\n--- Snippet 6 \u2b50\u2b50 (score: 0.183) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts\nSECTION: 1\nexport class PhoneComponent implements OnInit {\n  @Input() phone!: Phone;\n  phoneForm!: FormGroup;\n  newPhone?: Phone;\n\n\n  constructor(private fb: FormBuilder, public modalRef: NzModalRef) {}\n\n  ngOnInit(): void {\n    this.createForm();\n  }\n\n  private createForm(): void {\n    this.phoneForm = this.fb.group({\n      brand: [this.phone?.brand, [Validators.required],],\n      model: [this.phone?.model, [Validators.required]],\n      storage: [this.phone?.storage, [Validators.required, Validators.min(1)]],\n      price: [this.phone?.price, [Validators.required, Validators.min(1)]],\n      id: [this.phone?.id, [Validators.required, Validators.min(1)]]\n    });\n  }\n\n  submitForm(): void {\n    if (this.phoneForm.invalid) {\n      for (const i in this.phoneForm.controls) {\n        if (this.phoneForm.controls.hasOwnProperty(i)) {\n          this.phoneForm.controls[i].markAsDirty();\n          this.phoneForm.controls[i].updateValueAndValidity();\n        }\n      }\n      return;\n    }\n\n    this.newPhone = {\n      brand: this.phoneForm.value.brand,\n      model: this.phoneForm.value.model,\n      storage: this.phoneForm.value.storage,\n      price: this.phoneForm.value.price,\n      id: this.phoneForm.value.id\n    };\n\n  }\n\n}\n\n--- Snippet 7 \u2b50\u2b50 (score: 0.181) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\pages\\Studio.tsx\n    { value: 'code_prototype', label: 'Code Prototype', category: 'Code' },\n    { value: 'dev_visual_prototype', label: 'Visual Prototype', category: 'Code' },\n    { value: 'api_docs', label: 'API Documentation', category: 'Code' },\n    // PM Artifacts\n    { value: 'jira', label: 'JIRA Tasks', category: 'PM' },\n    { value: 'workflows', label: 'Workflows', category: 'PM' },\n    { value: 'backlog', label: 'Backlog', category: 'PM' },\n    { value: 'personas', label: 'Personas', category: 'PM' },\n    { value: 'estimations', label: 'Estimations', category: 'PM' },\n    { value: 'feature_scoring', label: 'Feature Scoring', category: 'PM' },\n  ], [])\n\n  // Memoize callback to prevent unnecessary re-renders\n  const handleTemplateApply = useCallback((payload: TemplateApplyResponse) => {\n    setMeetingNotes(payload.meeting_notes)\n    if (payload.artifact_types?.length) {\n      setSelectedArtifactType(payload.artifact_types[0])\n    }\n  }, [])\n\n  return (\n\n--- Snippet 8 \u2b50\u2b50 (score: 0.180) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\pages\\Studio.tsx\n    { value: 'code_prototype', label: 'Code Prototype', category: 'Code' },\n    { value: 'dev_visual_prototype', label: 'Visual Prototype', category: 'Code' },\n    { value: 'api_docs', label: 'API Documentation', category: 'Code' },\n    // PM Artifacts\n    { value: 'jira', label: 'JIRA Tasks', category: 'PM' },\n    { value: 'workflows', label: 'Workflows', category: 'PM' },\n    { value: 'backlog', label: 'Backlog', category: 'PM' },\n    { value: 'personas', label: 'Personas', category: 'PM' },\n    { value: 'estimations', label: 'Estimations', category: 'PM' },\n    { value: 'feature_scoring', label: 'Feature Scoring', category: 'PM' },\n  ], [])\n\n  // Memoize callback to prevent unnecessary re-renders\n  const handleTemplateApply = useCallback((payload: TemplateApplyResponse) => {\n    setMeetingNotes(payload.meeting_notes)\n    if (payload.artifact_types?.length) {\n      setSelectedArtifactType(payload.artifact_types[0])\n    }\n  }, [])\n\n  return (\n\n--- Snippet 9 \u2b50\u2b50 (score: 0.179) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"edit\" (click)=\"editPhone(phone)\">Edit</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"info-circle\" (click)=\"openDetailsModal(phone)\">Details</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"delete\" (click)=\"deletePhone(phone.id)\">Delete</button>\n          </td>\n        </tr>\n      </tbody>\n    </nz-table>\n  \n  <div class=\"add-button-container\">\n    <button nz-button nzType=\"primary\" nzSize=\"large\" nzShape=\"round\" (click)=\"addPhone()\">Add</button>\n  </div>\n  \n\n--- Snippet 10 \u2b50\u2b50 (score: 0.176) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\pages\\Studio.tsx\n    { value: 'html_component' as ArtifactType, label: 'HTML Component', category: 'HTML' },\n    { value: 'html_system_overview' as ArtifactType, label: 'HTML System Overview', category: 'HTML' },\n    { value: 'html_uml' as ArtifactType, label: 'HTML UML', category: 'HTML' },\n    // Code Artifacts\n    { value: 'code_prototype' as ArtifactType, label: 'Code Prototype', category: 'Code' },\n    { value: 'dev_visual_prototype' as ArtifactType, label: 'Visual Prototype', category: 'Code' },\n    { value: 'api_docs' as ArtifactType, label: 'API Documentation', category: 'Code' },\n    // PM Artifacts\n    { value: 'jira' as ArtifactType, label: 'JIRA Tasks', category: 'PM' },\n    { value: 'workflows' as ArtifactType, label: 'Workflows', category: 'PM' },\n    { value: 'backlog' as ArtifactType, label: 'Backlog', category: 'PM' },\n    { value: 'personas' as ArtifactType, label: 'Personas', category: 'PM' },\n    { value: 'estimations' as ArtifactType, label: 'Estimations', category: 'PM' },\n\n--- Snippet 11 \u2b50\u2b50 (score: 0.175) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts\nSECTION: 0.0\nimport { Injectable } from '@angular/core';\nimport { Phone } from 'src/models/phone';\nimport { Observable, delay, of } from 'rxjs';\n\n@Injectable({\n  providedIn: 'root'\n})\nexport class PhoneService {\n\n  private phones: Phone[]= [\n    { id: 1, brand: 'Apple', model: 'iPhone 12', storage: 64, price: 799 },\n    { id: 2, brand: 'Samsung', model: 'Galaxy S21', storage: 128, price: 699 },\n    { id: 3, brand: 'Google', model: 'Pixel 5', storage: 128, price: 699 },\n    { id: 4, brand: 'OnePlus', model: '9 Pro', storage: 256, price: 969 },\n    { id: 5, brand: 'Xiaomi', model: 'Mi 11', storage: 256, price: 749 },\n    { id: 6, brand: 'Motorola', model: 'Moto G Power (2021)', storage: 64, price: 199 },\n    { id: 7, brand: 'Samsung', model: 'S22 Ultra', storage: 256, price: 969 },\n    { id: 8, brand: 'Xiaomi', model: 'Mi 12', storage: 256, price: 749 },\n    { id: 9, brand: 'Motorola', model: 'x', storage: 64, price: 199 },\n  ];\n\n  getPhones(): Observable<Phone[]> {\n    // simulate delay of fetching data from API\n    return of(this.phones).pipe(delay(1000));\n  }\n\n \n\n--- Snippet 12 \u2b50\u2b50 (score: 0.174) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts\n    this.phoneForm = this.fb.group({\n      brand: [this.phone?.brand, [Validators.required],],\n      model: [this.phone?.model, [Validators.required]],\n      storage: [this.phone?.storage, [Validators.required, Validators.min(1)]],\n      price: [this.phone?.price, [Validators.required, Validators.min(1)]],\n      id: [this.phone?.id, [Validators.required, Validators.min(1)]]\n    });\n  }\n\n  submitForm(): void {\n    if (this.phoneForm.invalid) {\n      for (const i in this.phoneForm.controls) {\n        if (this.phoneForm.controls.hasOwnProperty(i)) {\n          this.phoneForm.controls[i].markAsDirty();\n          this.phoneForm.controls[i].updateValueAndValidity();\n        }\n      }\n      return;\n    }\n\n    this.newPhone = {\n      brand: this.phoneForm.value.brand,\n      model: this.phoneForm.value.model,\n      storage: this.phoneForm.value.storage,\n      price: this.phoneForm.value.price,\n      id: this.phoneForm.value.id\n    };\n\n  }\n\n}\n\n--- Snippet 13 \u2b50\u2b50 (score: 0.171) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts\nexport interface Phone {\n    id: number;\n    brand: string;\n    model: string;\n    storage: number;\n    price: number;\n  }\n  \n\n--- Snippet 14 \u2b50\u2b50 (score: 0.171) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.html\n<form nz-form [formGroup]=\"phoneForm\">\n\n<nz-form-item>\n        <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Id</nz-form-label>\n        <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n          <input nz-input type=\"number\" min=\"0\" formControlName=\"id\" placeholder=\"Enter phone id\">\n        </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n      <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Brand</nz-form-label>\n      <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n        <input nz-input formControlName=\"brand\" placeholder=\"Enter phone brand\">\n        <div *ngIf=\"phoneForm.get('brand')\"></div>\n    </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Model</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input formControlName=\"model\" placeholder=\"Enter phone model\">\n  </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Storage (GB)</nz-form-label>\n\n--- Snippet 15 \u2b50\u2b50 (score: 0.170) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\nSECTION: 1.2\n.searchQuery.toLowerCase()) ||\n             phone.storage.toString().includes(this.searchQuery.toLowerCase()) ||\n             phone.price.toString().includes(this.searchQuery.toLowerCase());\n    });\n  \n    return filteredPhones;\n\n  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload the phones after deletion\n    this.loadPhones();\n  }  \n\n  sortPhones(column: string): void {\n      // Implement the sorting logic based on the selected column\n      switch (column) {\n        case 'id':\n          this.phones.sort((a, b) => a.id - b.id);\n          break;\n        case 'brand':\n          this.phones.sort((a, b) => a.brand.localeCompare(b.brand));\n          break;\n        case 'model':\n          this.phones.sort((a, b) => a.model.localeCompare(b.model));\n          break;\n        case 'storage':\n          this.phones.sort((a, b) => a.storage - b.storage);\n          break;\n        case 'price':\n          this.phones.sort((a, b) => a.price - b.price);\n          break;\n        default:\n          break;\n      }\n    }\n\n  openDetailsModal(phone: Phone): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Phone Details',\n      nzContent: EntryDetailsModalComponent,\n      nzComponentParams: {\n        phone: phone\n      }\n    });\n  }\n\n  logout(): void {\n    this.authService.logout();\n  }\n  \n}\n\n\n--- Snippet 16 \u2b50\u2b50 (score: 0.168) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\nSECTION: 1.0\nexport class TablePageComponent implements OnInit {\n  \n  phones$!: Observable<Phone[]>;\n  searchQuery: string = '';\n\n\n  constructor(private phoneService: PhoneService, private modal: NzModalService, private authService: AuthenticationService) {}\n\n  ngOnInit(): void {\n    this.loadPhones();\n    this.getPhones();\n  }\n\n  loadPhones(): void {\n    this.phones$ = this.phoneService.getPhones();\n  }\n\n  public addPhone(): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Add Phone',\n      nzContent: PhoneComponent,\n      nzComponentParams: {},\n      nzOnOk: () => {\n        const phoneComponent = modalRef.getContentComponent() as PhoneComponent;\n        phoneComponent.submitForm();\n        const newPhone = phoneComponent.newPhone;\n        if (newPhone) {\n          this.phoneService.addPhone(newPhone);\n          this.loadPhones();\n          console.log(this.phones$)\n        }\n      }\n    })\n  \n    modalRef.afterClose.subscribe((result: Phone) => {\n      if (result) {\n        this.phoneService.addPhone(result);\n        this.loadPhones();\n        console.log(this.phones$)\n      }\n    });\n  }\n  \n  public editPhone(phone: Phone): void {\n    \n    const modalRef = this.modal.create({\n      nzTitle: 'Edit Phone',\n      nzContent: PhoneComponent,\n      nzComponentParams: {\n        phone: { ...phone },\n      },\n      nzOnOk: () => {\n        const phoneComponent = modalRef.getContentComponent() as PhoneComponent;\n        phoneComponent.submitForm();\n        const newPhone = phoneComponent.newPhone;\n        if (newPhone) {\n          this.phoneService.updatePhone(newPhone);\n          this.loadPhones();\n        }\n      }\n      \n    });    \n\n\n--- Snippet 17 \u2b50\u2b50 (score: 0.167) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts\nSECTION: 0.1\n9, brand: 'Motorola', model: 'x', storage: 64, price: 199 },\n  ];\n\n  getPhones(): Observable<Phone[]> {\n    // simulate delay of fetching data from API\n    return of(this.phones).pipe(delay(1000));\n  }\n\n  addPhone(phone: Phone): void {\n    phone.id = this.phones.length + 1;\n    this.phones.push(phone);\n  }\n\n  updatePhone(phone: Phone): void {\n    const index = this.phones.findIndex((p) => p.id === phone.id);\n    if (index !== -1) {\n      this.phones[index] = phone;\n    }\n  }\n\n  deletePhone(phoneId: number): void {\n    const index = this.phones.findIndex(p => p.id === phoneId);\n    if (index !== -1) {\n      this.phones.splice(index, 1);\n    }\n  }\n}\n\n\n--- Snippet 18 \u2b50 (score: 0.111) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.spec.ts\n  it('should render title', () => {\n    const fixture = TestBed.createComponent(AppComponent);\n    fixture.detectChanges();\n    const compiled = fixture.nativeElement as HTMLElement;\n    expect(compiled.querySelector('.content span')?.textContent).toContain('final_project app is running!');\n  });\n});\n",
+          "snippets": [
+            {
+              "content": "FILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts\nSECTION: 0\nexport interface Phone {\n    id: number;\n    brand: string;\n    model: string;\n    storage: number;\n    price: number;\n  }\n  ",
+              "file_path": "unknown",
+              "score": 0.4186486057958917,
+              "importance": 0.5,
+              "metadata": {
+                "chunk": 0,
+                "complexity_score": 0.0,
+                "file_type": ".ts",
+                "has_documentation": false,
+                "has_tests": false,
+                "importance_score": 0.55,
+                "is_config": false,
+                "kind": "code",
+                "language": "typescript",
+                "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts"
+              }
+            },
+            {
+              "content": "\nusing Microsoft.Extensions.Options;\nusing registration_api.Services;\nusing registration_api.Settings;\nusing System.Reflection;\n\nvar builder = WebApplication.CreateBuilder(args);\n\n// Add services to the container.\n\nbuilder.Services.AddSingleton<IMongoDBSettings>(sp => sp.GetRequiredService<IOptions<MongoDBSettings>>().Value);\nbuilder.Services.AddSingleton<IUserService, UserService>();\n\nbuilder.Services.Configure<MongoDBSettings>(builder.Configuration.GetSection(nameof(MongoDBSettings)));\n\nbuilder.Services.AddCors(options =>\n{\n    options.AddPolicy(name: \"CorsPolicy\",\n                              policy =>\n                              {\n                                  policy.WithOrigins(\"http://localhost:4200\")\n                                  .AllowAnyHeader()\n                                  .AllowAnyMethod()\n                                  .AllowCredentials();\n                              });\n});\n\nbuilder.Services.AddSignalR();\nbuilder.Services.AddControllers();",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Program.cs",
+              "score": 0.31729166666666664,
+              "importance": 1.0,
+              "metadata": {
+                "end_line": 29,
+                "file_hash": "5a5d8a7091d91677e754c6cfba9ff3215ff6129f",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Program.cs",
+                "indexed_at": "2025-11-20T15:11:10.659901",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "    { id: 9, brand: 'Motorola', model: 'x', storage: 64, price: 199 },\n  ];\n\n  getPhones(): Observable<Phone[]> {\n    // simulate delay of fetching data from API\n    return of(this.phones).pipe(delay(1000));\n  }\n\n  addPhone(phone: Phone): void {\n    phone.id = this.phones.length + 1;\n    this.phones.push(phone);\n  }\n\n  updatePhone(phone: Phone): void {\n    const index = this.phones.findIndex((p) => p.id === phone.id);\n    if (index !== -1) {\n      this.phones[index] = phone;\n    }\n  }\n\n  deletePhone(phoneId: number): void {\n    const index = this.phones.findIndex(p => p.id === phoneId);\n    if (index !== -1) {\n      this.phones.splice(index, 1);\n    }\n  }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts",
+              "score": 0.29424447888415345,
+              "importance": 0.9,
+              "metadata": {
+                "end_line": 828,
+                "file_hash": "612c0daa5990048ba403946925cbdf83b3bea490",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts",
+                "indexed_at": "2025-11-20T15:11:27.762001",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "\ufeffusing MongoDB.Driver;\nusing registration_api.Settings;\nusing System.Threading.Tasks;\n\nnamespace registration_api.Services\n{\n    public class UserService : IUserService\n    {\n        private readonly IMongoCollection<UserDto> _users;\n        public UserService(IMongoDBSettings settings)\n        {\n            var client = new MongoClient(settings.ConnectionString);\n            var database = client.GetDatabase(settings.DatabaseName);\n\n            _users = database.GetCollection<UserDto>(settings.CollectionName);\n        }\n\n        public async Task<bool> Register(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n            Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n            Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n        );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n\n            if (user != null)\n            {\n                return false; // Registration failed\n            }",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+              "score": 0.2876767676767677,
+              "importance": 0.9,
+              "metadata": {
+                "end_line": 30,
+                "file_hash": "ff9b3e84c3737cf9a0979f5770bcb732c95ec1d3",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+                "indexed_at": "2025-11-20T15:11:11.051904",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload the phones after deletion\n    this.loadPhones();\n  }  \n\n  sortPhones(column: string): void {\n      // Implement the sorting logic based on the selected column\n      switch (column) {\n        case 'id':\n          this.phones.sort((a, b) => a.id - b.id);\n          break;\n        case 'brand':\n          this.phones.sort((a, b) => a.brand.localeCompare(b.brand));\n          break;\n        case 'model':\n          this.phones.sort((a, b) => a.model.localeCompare(b.model));\n          break;\n        case 'storage':\n          this.phones.sort((a, b) => a.storage - b.storage);\n          break;\n        case 'price':\n          this.phones.sort((a, b) => a.price - b.price);\n          break;\n        default:\n          break;\n      }\n    }\n\n  openDetailsModal(phone: Phone): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Phone Details',\n      nzContent: EntryDetailsModalComponent,",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts",
+              "score": 0.2103767169829117,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 3235,
+                "file_hash": "33520ad0f26dd0d060a5511b75fce2257a02db5d",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts",
+                "indexed_at": "2025-11-20T15:11:28.613131",
+                "start_line": 3201
+              }
+            },
+            {
+              "content": "FILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts\nSECTION: 1\nexport class PhoneComponent implements OnInit {\n  @Input() phone!: Phone;\n  phoneForm!: FormGroup;\n  newPhone?: Phone;\n\n\n  constructor(private fb: FormBuilder, public modalRef: NzModalRef) {}\n\n  ngOnInit(): void {\n    this.createForm();\n  }\n\n  private createForm(): void {\n    this.phoneForm = this.fb.group({\n      brand: [this.phone?.brand, [Validators.required],],\n      model: [this.phone?.model, [Validators.required]],\n      storage: [this.phone?.storage, [Validators.required, Validators.min(1)]],\n      price: [this.phone?.price, [Validators.required, Validators.min(1)]],\n      id: [this.phone?.id, [Validators.required, Validators.min(1)]]\n    });\n  }\n\n  submitForm(): void {\n    if (this.phoneForm.invalid) {\n      for (const i in this.phoneForm.controls) {\n        if (this.phoneForm.controls.hasOwnProperty(i)) {\n          this.phoneForm.controls[i].markAsDirty();\n          this.phoneForm.controls[i].updateValueAndValidity();\n        }\n      }\n      return;\n    }\n\n    this.newPhone = {\n      brand: this.phoneForm.value.brand,\n      model: this.phoneForm.value.model,\n      storage: this.phoneForm.value.storage,\n      price: this.phoneForm.value.price,\n      id: this.phoneForm.value.id\n    };\n\n  }\n\n}",
+              "file_path": "unknown",
+              "score": 0.18258664788236112,
+              "importance": 0.5,
+              "metadata": {
+                "chunk": 1,
+                "complexity_score": 0.007,
+                "file_type": ".ts",
+                "has_documentation": false,
+                "has_tests": true,
+                "importance_score": 0.6,
+                "is_config": false,
+                "kind": "code",
+                "language": "typescript",
+                "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts"
+              }
+            },
+            {
+              "content": "    { value: 'code_prototype', label: 'Code Prototype', category: 'Code' },\n    { value: 'dev_visual_prototype', label: 'Visual Prototype', category: 'Code' },\n    { value: 'api_docs', label: 'API Documentation', category: 'Code' },\n    // PM Artifacts\n    { value: 'jira', label: 'JIRA Tasks', category: 'PM' },\n    { value: 'workflows', label: 'Workflows', category: 'PM' },\n    { value: 'backlog', label: 'Backlog', category: 'PM' },\n    { value: 'personas', label: 'Personas', category: 'PM' },\n    { value: 'estimations', label: 'Estimations', category: 'PM' },\n    { value: 'feature_scoring', label: 'Feature Scoring', category: 'PM' },\n  ], [])\n\n  // Memoize callback to prevent unnecessary re-renders\n  const handleTemplateApply = useCallback((payload: TemplateApplyResponse) => {\n    setMeetingNotes(payload.meeting_notes)\n    if (payload.artifact_types?.length) {\n      setSelectedArtifactType(payload.artifact_types[0])\n    }\n  }, [])\n\n  return (",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\pages\\Studio.tsx",
+              "score": 0.1807164426482608,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 6421,
+                "file_hash": "daa302d2a3a97abb70265b5cc79ef36699786d5d",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\pages\\Studio.tsx",
+                "indexed_at": "2025-12-08T13:21:57.021115",
+                "start_line": 6401
+              }
+            },
+            {
+              "content": "    { value: 'code_prototype', label: 'Code Prototype', category: 'Code' },\n    { value: 'dev_visual_prototype', label: 'Visual Prototype', category: 'Code' },\n    { value: 'api_docs', label: 'API Documentation', category: 'Code' },\n    // PM Artifacts\n    { value: 'jira', label: 'JIRA Tasks', category: 'PM' },\n    { value: 'workflows', label: 'Workflows', category: 'PM' },\n    { value: 'backlog', label: 'Backlog', category: 'PM' },\n    { value: 'personas', label: 'Personas', category: 'PM' },\n    { value: 'estimations', label: 'Estimations', category: 'PM' },\n    { value: 'feature_scoring', label: 'Feature Scoring', category: 'PM' },\n  ], [])\n\n  // Memoize callback to prevent unnecessary re-renders\n  const handleTemplateApply = useCallback((payload: TemplateApplyResponse) => {\n    setMeetingNotes(payload.meeting_notes)\n    if (payload.artifact_types?.length) {\n      setSelectedArtifactType(payload.artifact_types[0])\n    }\n  }, [])\n\n  return (",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\pages\\Studio.tsx",
+              "score": 0.18044711666767912,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 6421,
+                "file_hash": "daa302d2a3a97abb70265b5cc79ef36699786d5d",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\pages\\Studio.tsx",
+                "indexed_at": "2025-12-08T13:22:04.805575",
+                "start_line": 6401
+              }
+            },
+            {
+              "content": "          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"edit\" (click)=\"editPhone(phone)\">Edit</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"info-circle\" (click)=\"openDetailsModal(phone)\">Details</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"delete\" (click)=\"deletePhone(phone.id)\">Delete</button>\n          </td>\n        </tr>\n      </tbody>\n    </nz-table>\n  \n  <div class=\"add-button-container\">\n    <button nz-button nzType=\"primary\" nzSize=\"large\" nzShape=\"round\" (click)=\"addPhone()\">Add</button>\n  </div>\n  ",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html",
+              "score": 0.1789327485380117,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 1617,
+                "file_hash": "9c379e06d25408857a72df401bf552f0e767bea7",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html",
+                "indexed_at": "2025-11-20T15:11:28.411131",
+                "start_line": 1601
+              }
+            },
+            {
+              "content": "    { value: 'html_component' as ArtifactType, label: 'HTML Component', category: 'HTML' },\n    { value: 'html_system_overview' as ArtifactType, label: 'HTML System Overview', category: 'HTML' },\n    { value: 'html_uml' as ArtifactType, label: 'HTML UML', category: 'HTML' },\n    // Code Artifacts\n    { value: 'code_prototype' as ArtifactType, label: 'Code Prototype', category: 'Code' },\n    { value: 'dev_visual_prototype' as ArtifactType, label: 'Visual Prototype', category: 'Code' },\n    { value: 'api_docs' as ArtifactType, label: 'API Documentation', category: 'Code' },\n    // PM Artifacts\n    { value: 'jira' as ArtifactType, label: 'JIRA Tasks', category: 'PM' },\n    { value: 'workflows' as ArtifactType, label: 'Workflows', category: 'PM' },\n    { value: 'backlog' as ArtifactType, label: 'Backlog', category: 'PM' },\n    { value: 'personas' as ArtifactType, label: 'Personas', category: 'PM' },\n    { value: 'estimations' as ArtifactType, label: 'Estimations', category: 'PM' },",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\pages\\Studio.tsx",
+              "score": 0.17592794845275828,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 8013,
+                "file_hash": "3d40cac97effde696176571bc142b48f3bfde8db",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\pages\\Studio.tsx",
+                "indexed_at": "2025-12-08T12:31:28.248235",
+                "start_line": 8001
+              }
+            },
+            {
+              "content": "FILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts\nSECTION: 0.0\nimport { Injectable } from '@angular/core';\nimport { Phone } from 'src/models/phone';\nimport { Observable, delay, of } from 'rxjs';\n\n@Injectable({\n  providedIn: 'root'\n})\nexport class PhoneService {\n\n  private phones: Phone[]= [\n    { id: 1, brand: 'Apple', model: 'iPhone 12', storage: 64, price: 799 },\n    { id: 2, brand: 'Samsung', model: 'Galaxy S21', storage: 128, price: 699 },\n    { id: 3, brand: 'Google', model: 'Pixel 5', storage: 128, price: 699 },\n    { id: 4, brand: 'OnePlus', model: '9 Pro', storage: 256, price: 969 },\n    { id: 5, brand: 'Xiaomi', model: 'Mi 11', storage: 256, price: 749 },\n    { id: 6, brand: 'Motorola', model: 'Moto G Power (2021)', storage: 64, price: 199 },\n    { id: 7, brand: 'Samsung', model: 'S22 Ultra', storage: 256, price: 969 },\n    { id: 8, brand: 'Xiaomi', model: 'Mi 12', storage: 256, price: 749 },\n    { id: 9, brand: 'Motorola', model: 'x', storage: 64, price: 199 },\n  ];\n\n  getPhones(): Observable<Phone[]> {\n    // simulate delay of fetching data from API\n    return of(this.phones).pipe(delay(1000));\n  }\n\n ",
+              "file_path": "unknown",
+              "score": 0.17546573809227706,
+              "importance": 0.5,
+              "metadata": {
+                "chunk": "0.0",
+                "complexity_score": 0.004,
+                "file_type": ".ts",
+                "has_documentation": false,
+                "has_tests": false,
+                "importance_score": 0.55,
+                "is_config": false,
+                "kind": "code",
+                "language": "typescript",
+                "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts"
+              }
+            },
+            {
+              "content": "    this.phoneForm = this.fb.group({\n      brand: [this.phone?.brand, [Validators.required],],\n      model: [this.phone?.model, [Validators.required]],\n      storage: [this.phone?.storage, [Validators.required, Validators.min(1)]],\n      price: [this.phone?.price, [Validators.required, Validators.min(1)]],\n      id: [this.phone?.id, [Validators.required, Validators.min(1)]]\n    });\n  }\n\n  submitForm(): void {\n    if (this.phoneForm.invalid) {\n      for (const i in this.phoneForm.controls) {\n        if (this.phoneForm.controls.hasOwnProperty(i)) {\n          this.phoneForm.controls[i].markAsDirty();\n          this.phoneForm.controls[i].updateValueAndValidity();\n        }\n      }\n      return;\n    }\n\n    this.newPhone = {\n      brand: this.phoneForm.value.brand,\n      model: this.phoneForm.value.model,\n      storage: this.phoneForm.value.storage,\n      price: this.phoneForm.value.price,\n      id: this.phoneForm.value.id\n    };\n\n  }\n\n}",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts",
+              "score": 0.17368255254627207,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 831,
+                "file_hash": "287036664b71903508f067a4c732ccc3e55ff1e8",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts",
+                "indexed_at": "2025-11-20T15:11:28.351763",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "export interface Phone {\n    id: number;\n    brand: string;\n    model: string;\n    storage: number;\n    price: number;\n  }\n  ",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts",
+              "score": 0.17140522875816994,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 8,
+                "file_hash": "73743034e52386bf35b19115aaf75b39fff72057",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts",
+                "indexed_at": "2025-11-20T15:11:28.795131",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "<form nz-form [formGroup]=\"phoneForm\">\n\n<nz-form-item>\n        <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Id</nz-form-label>\n        <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n          <input nz-input type=\"number\" min=\"0\" formControlName=\"id\" placeholder=\"Enter phone id\">\n        </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n      <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Brand</nz-form-label>\n      <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n        <input nz-input formControlName=\"brand\" placeholder=\"Enter phone brand\">\n        <div *ngIf=\"phoneForm.get('brand')\"></div>\n    </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Model</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input formControlName=\"model\" placeholder=\"Enter phone model\">\n  </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Storage (GB)</nz-form-label>",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.html",
+              "score": 0.17137529137529137,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 26,
+                "file_hash": "e741613976ad4e674a08696d6d00f976a726f997",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.html",
+                "indexed_at": "2025-11-20T15:11:28.166487",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "FILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\nSECTION: 1.2\n.searchQuery.toLowerCase()) ||\n             phone.storage.toString().includes(this.searchQuery.toLowerCase()) ||\n             phone.price.toString().includes(this.searchQuery.toLowerCase());\n    });\n  \n    return filteredPhones;\n\n  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload the phones after deletion\n    this.loadPhones();\n  }  \n\n  sortPhones(column: string): void {\n      // Implement the sorting logic based on the selected column\n      switch (column) {\n        case 'id':\n          this.phones.sort((a, b) => a.id - b.id);\n          break;\n        case 'brand':\n          this.phones.sort((a, b) => a.brand.localeCompare(b.brand));\n          break;\n        case 'model':\n          this.phones.sort((a, b) => a.model.localeCompare(b.model));\n          break;\n        case 'storage':\n          this.phones.sort((a, b) => a.storage - b.storage);\n          break;\n        case 'price':\n          this.phones.sort((a, b) => a.price - b.price);\n          break;\n        default:\n          break;\n      }\n    }\n\n  openDetailsModal(phone: Phone): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Phone Details',\n      nzContent: EntryDetailsModalComponent,\n      nzComponentParams: {\n        phone: phone\n      }\n    });\n  }\n\n  logout(): void {\n    this.authService.logout();\n  }\n  \n}\n",
+              "file_path": "unknown",
+              "score": 0.17001199520191923,
+              "importance": 0.5,
+              "metadata": {
+                "chunk": "1.2",
+                "complexity_score": 0.01,
+                "file_type": ".ts",
+                "has_documentation": false,
+                "has_tests": true,
+                "importance_score": 0.7,
+                "is_config": false,
+                "kind": "code",
+                "language": "typescript",
+                "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts"
+              }
+            },
+            {
+              "content": "FILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\nSECTION: 1.0\nexport class TablePageComponent implements OnInit {\n  \n  phones$!: Observable<Phone[]>;\n  searchQuery: string = '';\n\n\n  constructor(private phoneService: PhoneService, private modal: NzModalService, private authService: AuthenticationService) {}\n\n  ngOnInit(): void {\n    this.loadPhones();\n    this.getPhones();\n  }\n\n  loadPhones(): void {\n    this.phones$ = this.phoneService.getPhones();\n  }\n\n  public addPhone(): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Add Phone',\n      nzContent: PhoneComponent,\n      nzComponentParams: {},\n      nzOnOk: () => {\n        const phoneComponent = modalRef.getContentComponent() as PhoneComponent;\n        phoneComponent.submitForm();\n        const newPhone = phoneComponent.newPhone;\n        if (newPhone) {\n          this.phoneService.addPhone(newPhone);\n          this.loadPhones();\n          console.log(this.phones$)\n        }\n      }\n    })\n  \n    modalRef.afterClose.subscribe((result: Phone) => {\n      if (result) {\n        this.phoneService.addPhone(result);\n        this.loadPhones();\n        console.log(this.phones$)\n      }\n    });\n  }\n  \n  public editPhone(phone: Phone): void {\n    \n    const modalRef = this.modal.create({\n      nzTitle: 'Edit Phone',\n      nzContent: PhoneComponent,\n      nzComponentParams: {\n        phone: { ...phone },\n      },\n      nzOnOk: () => {\n        const phoneComponent = modalRef.getContentComponent() as PhoneComponent;\n        phoneComponent.submitForm();\n        const newPhone = phoneComponent.newPhone;\n        if (newPhone) {\n          this.phoneService.updatePhone(newPhone);\n          this.loadPhones();\n        }\n      }\n      \n    });    \n",
+              "file_path": "unknown",
+              "score": 0.16775362318840578,
+              "importance": 0.5,
+              "metadata": {
+                "chunk": "1.0",
+                "complexity_score": 0.01,
+                "file_type": ".ts",
+                "has_documentation": false,
+                "has_tests": true,
+                "importance_score": 0.7,
+                "is_config": false,
+                "kind": "code",
+                "language": "typescript",
+                "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts"
+              }
+            },
+            {
+              "content": "FILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts\nSECTION: 0.1\n9, brand: 'Motorola', model: 'x', storage: 64, price: 199 },\n  ];\n\n  getPhones(): Observable<Phone[]> {\n    // simulate delay of fetching data from API\n    return of(this.phones).pipe(delay(1000));\n  }\n\n  addPhone(phone: Phone): void {\n    phone.id = this.phones.length + 1;\n    this.phones.push(phone);\n  }\n\n  updatePhone(phone: Phone): void {\n    const index = this.phones.findIndex((p) => p.id === phone.id);\n    if (index !== -1) {\n      this.phones[index] = phone;\n    }\n  }\n\n  deletePhone(phoneId: number): void {\n    const index = this.phones.findIndex(p => p.id === phoneId);\n    if (index !== -1) {\n      this.phones.splice(index, 1);\n    }\n  }\n}\n",
+              "file_path": "unknown",
+              "score": 0.1669607843137255,
+              "importance": 0.5,
+              "metadata": {
+                "chunk": "0.1",
+                "complexity_score": 0.004,
+                "file_type": ".ts",
+                "has_documentation": false,
+                "has_tests": false,
+                "importance_score": 0.55,
+                "is_config": false,
+                "kind": "code",
+                "language": "typescript",
+                "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts"
+              }
+            },
+            {
+              "content": "  it('should render title', () => {\n    const fixture = TestBed.createComponent(AppComponent);\n    fixture.detectChanges();\n    const compiled = fixture.nativeElement as HTMLElement;\n    expect(compiled.querySelector('.content span')?.textContent).toContain('final_project app is running!');\n  });\n});\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.spec.ts",
+              "score": 0.11138526119402985,
+              "importance": 0.3,
+              "metadata": {
+                "end_line": 808,
+                "file_hash": "d3fedd47ec07ca0fe6379de89730bd4effc5821b",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.spec.ts",
+                "indexed_at": "2025-11-20T15:11:26.812379",
+                "start_line": 801
+              }
+            }
+          ],
+          "num_snippets": 18,
+          "avg_score": 0.2074938674925307,
+          "key_entities": [
+            {
+              "name": "UserDto",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs"
+            },
+            {
+              "name": "WeatherForecast",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\WeatherForecast.cs"
+            },
+            {
+              "name": "UsersController",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs"
+            },
+            {
+              "name": "WeatherForecastController",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs"
+            },
+            {
+              "name": "IUserService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs"
+            },
+            {
+              "name": "UserService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs"
+            },
+            {
+              "name": "IMongoDBSettings",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\IMongoDBSettings.cs"
+            },
+            {
+              "name": "MongoDBSettings",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\MongoDBSettings.cs"
+            },
+            {
+              "name": "AppRoutingModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts"
+            },
+            {
+              "name": "AppComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.ts"
+            },
+            {
+              "name": "AppModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts"
+            },
+            {
+              "name": "AuthenticationModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts"
+            },
+            {
+              "name": "LoginComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts"
+            },
+            {
+              "name": "RegisterComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts"
+            },
+            {
+              "name": "NameUppercasePipe",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\pipes\\name-uppercase.pipe.ts"
+            },
+            {
+              "name": "AuthenticationService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts"
+            },
+            {
+              "name": "PhoneService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts"
+            },
+            {
+              "name": "TableRoutingModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table-routing.module.ts"
+            },
+            {
+              "name": "TableModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts"
+            },
+            {
+              "name": "EntryDetailsModalComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\entry-details-modal\\entry-details-modal.component.ts"
+            },
+            {
+              "name": "PhoneComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts"
+            },
+            {
+              "name": "TablePageComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts"
+            },
+            {
+              "name": "Phone",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts"
+            },
+            {
+              "name": "User",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts"
+            }
+          ],
+          "uses_universal_context": true
+        },
+        "kg": {
+          "graph_stats": {
+            "node_count": 104,
+            "edge_count": 127,
+            "file_count": 27,
+            "class_count": 16,
+            "function_count": 3,
+            "total_classes": 16,
+            "total_functions": 3,
+            "total_files": 27,
+            "is_connected": false,
+            "component_count": 5
+          },
+          "relevant_nodes": [],
+          "most_connected": [
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts",
+              "degree": 22
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts",
+              "degree": 15
+            },
+            {
+              "node_id": "module:@angular/core",
+              "degree": 14
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts:table-page.component.ts",
+              "degree": 10
+            },
+            {
+              "node_id": "module:@angular/core/testing",
+              "degree": 8
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts:authentication.module.ts",
+              "degree": 8
+            },
+            {
+              "node_id": "module:@angular/forms",
+              "degree": 7
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts:register.component.ts",
+              "degree": 7
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts:app-routing.module.ts",
+              "degree": 6
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts:login.component.ts",
+              "degree": 6
+            }
+          ],
+          "top_central_nodes": [
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts",
+              "centrality": 0.21359223300970873
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts",
+              "centrality": 0.14563106796116504
+            },
+            {
+              "node_id": "module:@angular/core",
+              "centrality": 0.13592233009708737
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts:table-page.component.ts",
+              "centrality": 0.09708737864077668
+            },
+            {
+              "node_id": "module:@angular/core/testing",
+              "centrality": 0.07766990291262135
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts:authentication.module.ts",
+              "centrality": 0.07766990291262135
+            },
+            {
+              "node_id": "module:@angular/forms",
+              "centrality": 0.06796116504854369
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts:register.component.ts",
+              "centrality": 0.06796116504854369
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts:app-routing.module.ts",
+              "centrality": 0.058252427184466014
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts:login.component.ts",
+              "centrality": 0.058252427184466014
+            }
+          ],
+          "key_terms_searched": [
+            "phone"
+          ]
+        },
+        "patterns": {
+          "patterns_available": true,
+          "patterns_detected": [
+            {
+              "name": "Observer",
+              "type": "Observer",
+              "description": "Observer pattern detected.",
+              "frequency": 2,
+              "severity": "info",
+              "files": [
+                "C"
+              ],
+              "suggestions": [
+                "Validate observers are unsubscribed properly to avoid memory leaks and unexpected notifications."
+              ]
+            }
+          ],
+          "pattern_count": 1,
+          "code_smells": [],
+          "code_smell_count": 0,
+          "security_issues": [],
+          "security_issue_count": 0,
+          "note": "Real pattern mining data from project analysis"
+        }
+      },
+      "assembled_context": "\ud83d\udd11 === KEY PROJECT ENTITIES (Most Important) ===\n  \u2022 UserDto (class)\n  \u2022 WeatherForecast (class)\n  \u2022 UsersController (class)\n  \u2022 WeatherForecastController (class)\n  \u2022 IUserService (class)\n  \u2022 UserService (class)\n  \u2022 IMongoDBSettings (class)\n  \u2022 MongoDBSettings (class)\n  \u2022 AppRoutingModule (class)\n  \u2022 AppComponent (class)\n  \u2022 AppModule (class)\n  \u2022 AuthenticationModule (class)\n  \u2022 LoginComponent (class)\n  \u2022 RegisterComponent (class)\n  \u2022 NameUppercasePipe (class)\n\n\ud83d\udccb === YOUR REQUIREMENTS ===\nPhone management app\n\ud83d\udcc4 === CODEBASE CONTEXT (High Relevance) ===\n\n--- Snippet 1 (score: 0.419, file: unknown) ---\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts\nSECTION: 0\nexport interface Phone {\n    id: number;\n    brand: string;\n    model: string;\n    storage: number;\n    price: number;\n  }\n  \n\n--- Snippet 2 (score: 0.317, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Program.cs) ---\n\nusing Microsoft.Extensions.Options;\nusing registration_api.Services;\nusing registration_api.Settings;\nusing System.Reflection;\n\nvar builder = WebApplication.CreateBuilder(args);\n\n// Add services to the container.\n\nbuilder.Services.AddSingleton<IMongoDBSettings>(sp => sp.GetRequiredService<IOptions<MongoDBSettings>>().Value);\nbuilder.Services.AddSingleton<IUserService, UserService>();\n\nbuilder.Services.Configure<MongoDBSettings>(builder.Configuration.GetSection(nameof(MongoDBSettings)));\n\nbuilder.Services.AddCors(options =>\n{\n    options.AddPolicy(name: \"CorsPolicy\",\n                              policy =>\n                              {\n                                  policy.WithOrigins(\"http://localhost:4200\")\n                                  .AllowAnyHeader()\n                                  .AllowAnyMethod()\n                                  .AllowCredentials();\n                              });\n});\n\nbuilder.Services.AddSignalR();\nbuilder.Services.AddControllers();\n\n--- Snippet 3 (score: 0.294, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts) ---\n    { id: 9, brand: 'Motorola', model: 'x', storage: 64, price: 199 },\n  ];\n\n  getPhones(): Observable<Phone[]> {\n    // simulate delay of fetching data from API\n    return of(this.phones).pipe(delay(1000));\n  }\n\n  addPhone(phone: Phone): void {\n    phone.id = this.phones.length + 1;\n    this.phones.push(phone);\n  }\n\n  updatePhone(phone: Phone): void {\n    const index = this.phones.findIndex((p) => p.id === phone.id);\n    if (index !== -1) {\n      this.phones[index] = phone;\n    }\n  }\n\n  deletePhone(phoneId: number): void {\n    const index = this.phones.findIndex(p => p.id === phoneId);\n    if (index !== -1) {\n      this.phones.splice(index, 1);\n    }\n  }\n}\n\n\n--- Snippet 4 (score: 0.288, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs) ---\n\ufeffusing MongoDB.Driver;\nusing registration_api.Settings;\nusing System.Threading.Tasks;\n\nnamespace registration_api.Services\n{\n    public class UserService : IUserService\n    {\n        private readonly IMongoCollection<UserDto> _users;\n        public UserService(IMongoDBSettings settings)\n        {\n            var client = new MongoClient(settings.ConnectionString);\n            var database = client.GetDatabase(settings.DatabaseName);\n\n            _users = database.GetCollection<UserDto>(settings.CollectionName);\n        }\n\n        public async Task<bool> Register(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n            Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n            Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n        );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n\n            if (user != null)\n            {\n                return false; // Registration failed\n            }\n\n--- Snippet 5 (score: 0.210, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts) ---\n  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload the phones after deletion\n    this.loadPhones();\n  }  \n\n  sortPhones(column: string): void {\n      // Implement the sorting logic based on the selected column\n      switch (column) {\n        case 'id':\n          this.phones.sort((a, b) => a.id - b.id);\n          break;\n        case 'brand':\n          this.phones.sort((a, b) => a.brand.localeCompare(b.brand));\n          break;\n        case 'model':\n          this.phones.sort((a, b) => a.model.localeCompare(b.model));\n          break;\n        case 'storage':\n          this.phones.sort((a, b) => a.storage - b.storage);\n          break;\n        case 'price':\n          this.phones.sort((a, b) => a.price - b.price);\n          break;\n        default:\n          break;\n      }\n    }\n\n  openDetailsModal(phone: Phone): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Phone Details',\n      nzContent: EntryDetailsModalComponent,\n\n--- Snippet 6 (score: 0.183, file: unknown) ---\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts\nSECTION: 1\nexport class PhoneComponent implements OnInit {\n  @Input() phone!: Phone;\n  phoneForm!: FormGroup;\n  newPhone?: Phone;\n\n\n  constructor(private fb: FormBuilder, public modalRef: NzModalRef) {}\n\n  ngOnInit(): void {\n    this.createForm();\n  }\n\n  private createForm(): void {\n    this.phoneForm = this.fb.group({\n      brand: [this.phone?.brand, [Validators.required],],\n      model: [this.phone?.model, [Validators.required]],\n      storage: [this.phone?.storage, [Validators.required, Validators.min(1)]],\n      price: [this.phone?.price, [Validators.required, Validators.min(1)]],\n      id: [this.phone?.id, [Validators.required, Validators.min(1)]]\n    });\n  }\n\n  submitForm(): void {\n    if (this.phoneForm.invalid) {\n      for (const i in this.phoneForm.controls) {\n        if (this.phoneForm.controls.hasOwnProperty(i)) {\n          this.phoneForm.controls[i].markAsDirty();\n          this.phoneForm.controls[i].updateValueAndValidity();\n        }\n      }\n      return;\n    }\n\n    this.newPhone = {\n      brand: this.phoneForm.value.brand,\n      model: this.phoneForm.value.model,\n      storage: this.phoneForm.value.storage,\n      price: this.phoneForm.value.price,\n      id: this.phoneForm.value.id\n    };\n\n  }\n\n}\n\n--- Snippet 7 (score: 0.181, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\pages\\Studio.tsx) ---\n    { value: 'code_prototype', label: 'Code Prototype', category: 'Code' },\n    { value: 'dev_visual_prototype', label: 'Visual Prototype', category: 'Code' },\n    { value: 'api_docs', label: 'API Documentation', category: 'Code' },\n    // PM Artifacts\n    { value: 'jira', label: 'JIRA Tasks', category: 'PM' },\n    { value: 'workflows', label: 'Workflows', category: 'PM' },\n    { value: 'backlog', label: 'Backlog', category: 'PM' },\n    { value: 'personas', label: 'Personas', category: 'PM' },\n    { value: 'estimations', label: 'Estimations', category: 'PM' },\n    { value: 'feature_scoring', label: 'Feature Scoring', category: 'PM' },\n  ], [])\n\n  // Memoize callback to prevent unnecessary re-renders\n  const handleTemplateApply = useCallback((payload: TemplateApplyResponse) => {\n    setMeetingNotes(payload.meeting_notes)\n    if (payload.artifact_types?.length) {\n      setSelectedArtifactType(payload.artifact_types[0])\n    }\n  }, [])\n\n  return (\n\n--- Snippet 8 (score: 0.180, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\pages\\Studio.tsx) ---\n    { value: 'code_prototype', label: 'Code Prototype', category: 'Code' },\n    { value: 'dev_visual_prototype', label: 'Visual Prototype', category: 'Code' },\n    { value: 'api_docs', label: 'API Documentation', category: 'Code' },\n    // PM Artifacts\n    { value: 'jira', label: 'JIRA Tasks', category: 'PM' },\n    { value: 'workflows', label: 'Workflows', category: 'PM' },\n    { value: 'backlog', label: 'Backlog', category: 'PM' },\n    { value: 'personas', label: 'Personas', category: 'PM' },\n    { value: 'estimations', label: 'Estimations', category: 'PM' },\n    { value: 'feature_scoring', label: 'Feature Scoring', category: 'PM' },\n  ], [])\n\n  // Memoize callback to prevent unnecessary re-renders\n  const handleTemplateApply = useCallback((payload: TemplateApplyResponse) => {\n    setMeetingNotes(payload.meeting_notes)\n    if (payload.artifact_types?.length) {\n      setSelectedArtifactType(payload.artifact_types[0])\n    }\n  }, [])\n\n  return (\n\n--- Snippet 9 (score: 0.179, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html) ---\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"edit\" (click)=\"editPhone(phone)\">Edit</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"info-circle\" (click)=\"openDetailsModal(phone)\">Details</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"delete\" (click)=\"deletePhone(phone.id)\">Delete</button>\n          </td>\n        </tr>\n      </tbody>\n    </nz-table>\n  \n  <div class=\"add-button-container\">\n    <button nz-button nzType=\"primary\" nzSize=\"large\" nzShape=\"round\" (click)=\"addPhone()\">Add</button>\n  </div>\n  \n\n--- Snippet 10 (score: 0.176, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\pages\\Studio.tsx) ---\n    { value: 'html_component' as ArtifactType, label: 'HTML Component', category: 'HTML' },\n    { value: 'html_system_overview' as ArtifactType, label: 'HTML System Overview', category: 'HTML' },\n    { value: 'html_uml' as ArtifactType, label: 'HTML UML', category: 'HTML' },\n    // Code Artifacts\n    { value: 'code_prototype' as ArtifactType, label: 'Code Prototype', category: 'Code' },\n    { value: 'dev_visual_prototype' as ArtifactType, label: 'Visual Prototype', category: 'Code' },\n    { value: 'api_docs' as ArtifactType, label: 'API Documentation', category: 'Code' },\n    // PM Artifacts\n    { value: 'jira' as ArtifactType, label: 'JIRA Tasks', category: 'PM' },\n    { value: 'workflows' as ArtifactType, label: 'Workflows', category: 'PM' },\n    { value: 'backlog' as ArtifactType, label: 'Backlog', category: 'PM' },\n    { value: 'personas' as ArtifactType, label: 'Personas', category: 'PM' },\n    { value: 'estimations' as ArtifactType, label: 'Estimations', category: 'PM' },\n\n\ud83e\udde0 === KNOWLEDGE GRAPH INSIGHTS ===\nGraph: 104 nodes, 127 edges\nMost Connected:\n  \u2022 file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts (degree: 22)\n  \u2022 file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts (degree: 15)\n  \u2022 module:@angular/core (degree: 14)\n\n\ud83d\udd0d === DESIGN PATTERNS DETECTED (1) ===\nObserver\n\n\ud83d\udcc4 === ADDITIONAL CONTEXT (Lower Relevance) ===\n\n--- Snippet 11 (score: 0.175, file: unknown) ---\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts\nSECTION: 0.0\nimport { Injectable } from '@angular/core';\nimport { Phone } from 'src/models/phone';\nimport { Observable, delay, of } from 'rxjs';\n\n@Injectable({\n  providedIn: 'root'\n})\nexport class PhoneService {\n\n  private phones: Phone[]= [\n    { id: 1, brand: 'Apple', model: 'iPhone 12', storage: 64, price: 799 },\n    { id: 2, brand: 'Samsung', model: 'Galaxy S21', storage: 128, price: 699 },\n    { id: 3, brand: 'Google', model: 'Pixel 5', storage: 128, price: 699 },\n    { id: 4, brand: 'OnePlus', model: '9 Pro', storage: 256, price: 969 },\n    { id: 5, brand: 'Xiaomi', model: 'Mi 11', storage: 256, price: 749 },\n    { id: 6, brand: 'Motorola', model: 'Moto G Power (2021)', storage: 64, price: 199 },\n    { id: 7, brand: 'Samsung', model: 'S22 Ultra', storage: 256, price: 969 },\n    { id: 8, brand: 'Xiaomi', model: 'Mi 12', storage: 256, price: 749 },\n    { id: 9, brand: 'Motorola', model: 'x', storage: 64, price: 199 },\n  ];\n\n  getPhones(): Observable<Phone[]> {\n    // simulate delay of fetching data from API\n    return of(this.phones).pipe(delay(1000));\n  }\n\n \n\n--- Snippet 12 (score: 0.174, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts) ---\n    this.phoneForm = this.fb.group({\n      brand: [this.phone?.brand, [Validators.required],],\n      model: [this.phone?.model, [Validators.required]],\n      storage: [this.phone?.storage, [Validators.required, Validators.min(1)]],\n      price: [this.phone?.price, [Validators.required, Validators.min(1)]],\n      id: [this.phone?.id, [Validators.required, Validators.min(1)]]\n    });\n  }\n\n  submitForm(): void {\n    if (this.phoneForm.invalid) {\n      for (const i in this.phoneForm.controls) {\n        if (this.phoneForm.controls.hasOwnProperty(i)) {\n          this.phoneForm.controls[i].markAsDirty();\n          this.phoneForm.controls[i].updateValueAndValidity();\n        }\n      }\n      return;\n    }\n\n    this.newPhone = {\n      brand: this.phoneForm.value.brand,\n      model: this.phoneForm.value.model,\n      storage: this.phoneForm.value.storage,\n      price: this.phoneForm.value.price,\n      id: this.phoneForm.value.id\n    };\n\n  }\n\n}\n\n--- Snippet 13 (score: 0.171, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts) ---\nexport interface Phone {\n    id: number;\n    brand: string;\n    model: string;\n    storage: number;\n    price: number;\n  }\n  \n\n--- Snippet 14 (score: 0.171, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.html) ---\n<form nz-form [formGroup]=\"phoneForm\">\n\n<nz-form-item>\n        <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Id</nz-form-label>\n        <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n          <input nz-input type=\"number\" min=\"0\" formControlName=\"id\" placeholder=\"Enter phone id\">\n        </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n      <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Brand</nz-form-label>\n      <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n        <input nz-input formControlName=\"brand\" placeholder=\"Enter phone brand\">\n        <div *ngIf=\"phoneForm.get('brand')\"></div>\n    </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Model</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input formControlName=\"model\" placeholder=\"Enter phone model\">\n  </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Storage (GB)</nz-form-label>\n\n--- Snippet 15 (score: 0.170, file: unknown) ---\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\nSECTION: 1.2\n.searchQuery.toLowerCase()) ||\n\n[... Low-Priority RAG truncated to preserve higher-priority context ...]",
+      "truncation_info": {
+        "any_truncated": true,
+        "sections_truncated": [
+          {
+            "section": "Low-Priority RAG",
+            "original_tokens": 2241,
+            "budget_tokens": 1200,
+            "reduction_percent": 46.5
+          }
+        ],
+        "token_budget": 8000,
+        "tokens_used": 4013
+      },
+      "from_cache": false,
+      "context_id": "2026-01-19T20:35:38.068322"
+    },
+    "added_at": "2026-01-19T20:36:03.060367"
+  },
+  {
+    "artifact_type": "mermaid_erd",
+    "content": "erDiagram\n    USER {\n        varchar name\n        varchar email\n        varchar password\n    }\n    PHONE {\n        varchar brand\n        varchar model\n        int storage\n        decimal price\n    }\n    USER ||--o{ PHONE : contains }",
+    "meeting_notes": "Phone management app",
+    "validation_score": 100.0,
+    "model_used": "gemini-2.5-flash",
+    "context": {},
+    "added_at": "2026-01-19T20:36:03.076544"
   }
 ]

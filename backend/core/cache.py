@@ -141,6 +141,25 @@ class CacheManager:
         
         return True
     
+    async def set_async(
+        self,
+        key: str,
+        value: Any,
+        ttl: Optional[int] = None
+    ) -> bool:
+        """
+        Async wrapper for set - allows calling from async contexts.
+        The underlying cache operation is synchronous but this allows
+        consistent async/await patterns in the codebase.
+        """
+        return self.set(key, value, ttl)
+    
+    async def get_async(self, key: str) -> Optional[Any]:
+        """
+        Async wrapper for get - allows calling from async contexts.
+        """
+        return self.get(key)
+    
     def delete(self, key: str) -> bool:
         """
         Delete value from cache.

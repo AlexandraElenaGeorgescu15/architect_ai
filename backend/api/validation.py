@@ -5,6 +5,7 @@ Validation API endpoints.
 from fastapi import APIRouter, HTTPException, status, Depends, Request
 from typing import List, Dict, Any
 import logging
+import re
 
 from backend.models.dto import (
     ValidationResultDTO, ArtifactType
@@ -248,7 +249,6 @@ async def validate_mermaid(
             score -= 10.0
         
         # Count entities (lines with { that aren't relationships)
-        import re
         entities = re.findall(r'^(\w+)\s*\{', clean_content, re.MULTILINE)
         stats["entities_count"] = len(entities)
         

@@ -590,7 +590,7 @@ export default function Intelligence() {
                     </div>
                   ))}
                 </div>
-              </div>
+              </details>
             )}
 
             {/* Info Box */}
