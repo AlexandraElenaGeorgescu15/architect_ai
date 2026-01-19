@@ -775,89 +775,139 @@ class UniversalDiagramFixer:
         return '\n'.join(fixed_lines)
     
     def _fix_gantt_diagram(self, content: str) -> str:
-        """Fix Gantt diagram syntax.
+        """Fix Gantt diagram syntax with AGGRESSIVE validation.
         
-        Valid Gantt syntax:
+        Valid Gantt syntax ONLY:
         - gantt (header)
         - title Project Title
         - dateFormat YYYY-MM-DD
         - section Section Name
         - Task Name :taskId, 2024-01-01, 5d
-        - Task Name :active, taskId, after task1, 3d
+        - Task Name :taskId, after task1, 3d
         
-        Common errors fixed:
-        - 'dependencies:' is not valid - should be 'section Dependencies'
-        - Task lines with ':' in wrong places
-        - Invalid task definitions
+        REMOVES anything that doesn't match these patterns exactly.
         """
         import re
         lines = content.strip().split('\n')
         fixed_lines = ['gantt']
         seen_header = False
+        task_counter = 1
+        
+        def make_task_id(name):
+            """Create a valid task ID from a name"""
+            clean = re.sub(r'[^a-zA-Z0-9]', '', name.lower())[:10]
+            return clean if clean else f'task{task_counter}'
+        
+        def is_valid_duration(s):
+            """Check if string looks like a valid duration (e.g., 1d, 2w, 3h)"""
+            return bool(re.match(r'^\d+[dwmh]?$', s.strip()))
+        
+        def is_valid_task_data(data):
+            """Check if task data is valid Gantt format"""
+            data = data.strip()
+            # Valid patterns:
+            # taskId, 1d
+            # taskId, 2024-01-01, 1d  
+            # taskId, after otherId, 1d
+            # active, taskId, 1d
+            # crit, taskId, 1d
+            parts = [p.strip() for p in data.split(',')]
+            if not parts:
+                return False
+            # Last part should be a duration OR a date
+            last = parts[-1]
+            if not (is_valid_duration(last) or re.match(r'^\d{4}-\d{2}-\d{2}$', last)):
+                return False
+            # Check for "after" keyword (valid dependency reference)
+            for part in parts:
+                if part.lower().startswith('after '):
+                    return True
+            return True
         
         for line in lines:
             line_stripped = line.strip()
             
-            # Skip empty lines, markdown blocks, duplicate headers
-            if not line_stripped or line_stripped.startswith('```'):
+            # Skip empty lines, markdown blocks, comments
+            if not line_stripped or line_stripped.startswith('```') or line_stripped.startswith('%%'):
                 continue
+            
+            # Skip duplicate gantt headers
             if line_stripped.lower() == 'gantt':
                 if seen_header:
                     continue
                 seen_header = True
                 continue  # Already added gantt header
             
-            # Fix invalid 'dependencies:' - should be 'section Dependencies'
-            if re.match(r'^dependencies\s*:', line_stripped, re.IGNORECASE):
-                fixed_lines.append('    section Dependencies')
-                self.errors_fixed.append("Fixed invalid 'dependencies:' -> 'section Dependencies'")
+            # REJECT any line containing "depend" - this is NEVER valid Gantt syntax
+            if 'depend' in line_stripped.lower():
+                self.errors_fixed.append(f"Removed invalid 'depend' line: {line_stripped[:50]}...")
                 continue
             
-            # Fix section headers - must start with 'section'
+            # REJECT any line with "dependencies:" header - invalid
+            if re.match(r'^dependencies\s*:', line_stripped, re.IGNORECASE):
+                self.errors_fixed.append(f"Removed invalid 'dependencies:' line")
+                continue
+            
+            # Valid: section headers
             if line_stripped.lower().startswith('section'):
-                # Ensure proper formatting
                 section_match = re.match(r'^section\s+(.+)$', line_stripped, re.IGNORECASE)
                 if section_match:
-                    fixed_lines.append(f'    section {section_match.group(1)}')
+                    section_name = section_match.group(1).strip()
+                    # Section name should not contain colons or task-like patterns
+                    if ':' not in section_name:
+                        fixed_lines.append(f'    section {section_name}')
+                        continue
+                self.errors_fixed.append(f"Removed malformed section: {line_stripped[:40]}...")
+                continue
+            
+            # Valid: directives (title, dateFormat, etc.)
+            directive_match = re.match(r'^(title|dateformat|excludes|todaymarker|axisformat|tickinterval)\s+(.+)$', line_stripped, re.IGNORECASE)
+            if directive_match:
+                directive = directive_match.group(1).lower()
+                value = directive_match.group(2).strip()
+                fixed_lines.append(f'    {directive} {value}')
+                continue
+            
+            # Valid: task with proper format: "Task Name :taskData"
+            # taskData must be: id, duration OR id, date, duration OR id, after other, duration
+            task_match = re.match(r'^(.+?)\s*:\s*(.+)$', line_stripped)
+            if task_match:
+                task_name = task_match.group(1).strip()
+                task_data = task_match.group(2).strip()
+                
+                # Reject if task_name contains invalid patterns
+                if 'depend' in task_name.lower():
+                    self.errors_fixed.append(f"Removed task with 'depend' in name: {line_stripped[:40]}...")
+                    continue
+                
+                # Validate task_data format
+                if is_valid_task_data(task_data):
+                    fixed_lines.append(f'    {task_name} :{task_data}')
+                    task_counter += 1
+                    continue
                 else:
-                    fixed_lines.append(f'    {line_stripped}')
-                continue
+                    # Try to fix simple cases: "Task Name: 1d" -> "Task Name :taskid, 1d"
+                    if is_valid_duration(task_data):
+                        task_id = make_task_id(task_name)
+                        fixed_lines.append(f'    {task_name} :{task_id}, {task_data}')
+                        self.errors_fixed.append(f"Fixed task format: {line_stripped[:30]}...")
+                        task_counter += 1
+                        continue
+                    else:
+                        self.errors_fixed.append(f"Removed invalid task data: {line_stripped[:40]}...")
+                        continue
             
-            # Fix title/dateFormat - these go without indentation
-            if line_stripped.lower().startswith('title') or line_stripped.lower().startswith('dateformat'):
-                fixed_lines.append(f'    {line_stripped}')
-                continue
-            
-            # Fix task lines - common issues:
-            # "Task Name depend on X: 1d" -> should be "Task Name :after taskX, 1d"
-            # "UX Team depend..." is invalid task syntax
-            
-            # Check for common malformed task patterns
-            # Pattern: "Something depend on/depends on Something: duration"
-            depend_match = re.match(r'^(.+?)\s+depend(?:s|encies)?\s+(?:on\s+)?(.+?):\s*(.+)$', line_stripped, re.IGNORECASE)
-            if depend_match:
-                task_name = depend_match.group(1).strip()
-                dependency = depend_match.group(2).strip()
-                duration = depend_match.group(3).strip()
-                # Convert to valid syntax: TaskName :after dependency, duration
-                task_id = re.sub(r'[^a-zA-Z0-9]', '', task_name.lower())[:10]
-                dep_id = re.sub(r'[^a-zA-Z0-9]', '', dependency.lower())[:10]
-                fixed_lines.append(f'    {task_name} :{task_id}, after {dep_id}, {duration}')
-                self.errors_fixed.append(f"Fixed malformed dependency task: {line_stripped[:40]}...")
-                continue
-            
-            # Check for task with just name and duration (no proper task format)
-            simple_task_match = re.match(r'^([^:]+):\s*(\d+[dwmh]?)$', line_stripped)
-            if simple_task_match:
-                task_name = simple_task_match.group(1).strip()
-                duration = simple_task_match.group(2).strip()
-                task_id = re.sub(r'[^a-zA-Z0-9]', '', task_name.lower())[:10]
-                fixed_lines.append(f'    {task_name} :{task_id}, {duration}')
-                self.errors_fixed.append(f"Fixed simple task format: {line_stripped[:30]}...")
-                continue
-            
-            # Regular task line - just indent it
-            fixed_lines.append(f'    {line_stripped}')
+            # If line doesn't match any valid pattern, REMOVE it
+            self.errors_fixed.append(f"Removed non-matching line: {line_stripped[:40]}...")
+        
+        # Ensure we have at least some content after gantt header
+        if len(fixed_lines) <= 1:
+            # Add a placeholder task if diagram is empty
+            fixed_lines.append('    title Gantt Chart')
+            fixed_lines.append('    dateFormat YYYY-MM-DD')
+            fixed_lines.append('    section Tasks')
+            fixed_lines.append('    Placeholder :task1, 1d')
+            self.errors_fixed.append("Added placeholder content for empty Gantt")
         
         return '\n'.join(fixed_lines)
     

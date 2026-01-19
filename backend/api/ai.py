@@ -922,8 +922,55 @@ ERROR MESSAGE FROM RENDERER:
 {request.error_message}
 """
         
-        prompt = f"""Fix this broken Mermaid {diagram_type} diagram.
+        # Diagram-type-specific syntax guidance
+        syntax_guide = ""
+        if diagram_type == "gantt":
+            syntax_guide = """
+VALID GANTT SYNTAX - FOLLOW EXACTLY:
+gantt
+    title Project Title
+    dateFormat YYYY-MM-DD
+    section Section Name
+    Task Name :taskid, 2024-01-01, 5d
+    Another Task :task2, after taskid, 3d
 
+TASK FORMAT RULES:
+- Tasks MUST follow: TaskName :taskId, startDate/after, duration
+- duration must be like: 1d, 2w, 3h (number + unit)
+- Use "after taskId" for dependencies, NOT "depend on"
+- NEVER use "depend on X: 1d" - this is INVALID
+
+❌ INVALID GANTT SYNTAX (DO NOT GENERATE):
+- "UX Team depend on wireframe: 1d" ← WRONG
+- "dependencies: something" ← WRONG
+- "Task depend on Other: 5d" ← WRONG
+
+✅ VALID GANTT SYNTAX (GENERATE THIS):
+- "UX Review :uxreview, after wireframe, 1d" ← CORRECT
+- "section Dependencies" ← CORRECT (for section headers only)
+- "Wireframe :wireframe, 2024-01-01, 5d" ← CORRECT
+"""
+        elif diagram_type == "erDiagram":
+            syntax_guide = """
+VALID ERD SYNTAX - FOLLOW EXACTLY:
+erDiagram
+    EntityA ||--o{ EntityB : has
+    EntityA {
+        int id PK
+        string name
+    }
+"""
+        elif diagram_type == "flowchart":
+            syntax_guide = """
+VALID FLOWCHART SYNTAX - FOLLOW EXACTLY:
+flowchart TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Action]
+    B -->|No| D[Other]
+"""
+        
+        prompt = f"""Fix this broken Mermaid {diagram_type} diagram.
+{syntax_guide}
 BROKEN CODE:
 ```
 {request.mermaid_code}
@@ -983,6 +1030,33 @@ OUTPUT THE CORRECTED CODE ONLY:"""
         
         # Call AI with EXTREMELY STRICT system prompt
         # LLMs consistently ignore instructions - use aggressive negative examples
+        
+        # Build diagram-type-specific example for system instruction
+        example_output = ""
+        if diagram_type == "gantt":
+            example_output = """gantt
+    title Project Timeline
+    dateFormat YYYY-MM-DD
+    section Planning
+    Requirements :req, 2024-01-01, 5d
+    Design :design, after req, 3d
+    section Development
+    Implementation :impl, after design, 10d"""
+            gantt_warning = """
+
+🚨 GANTT-SPECIFIC RULES:
+- Task format: "TaskName :taskId, duration" or "TaskName :taskId, after otherId, duration"
+- NEVER use "depend on", "depends on", or "dependencies:" in task lines
+- Duration must be like: 1d, 2w, 5d (number + letter)
+- Use "after taskId" for dependencies"""
+        else:
+            example_output = f"""{diagram_type}
+    EntityA ||--o{{ EntityB : has
+    EntityB {{
+        int id PK
+    }}"""
+            gantt_warning = ""
+        
         result = await generation_service.generate_with_fallback(
             prompt=prompt,
             model_routing=routing,
@@ -995,6 +1069,7 @@ OUTPUT THE CORRECTED CODE ONLY:"""
 2. First character of your response MUST be the letter of "{diagram_type}"
 3. ZERO words before the diagram type declaration
 4. ZERO words after the last diagram element
+{gantt_warning}
 
 ❌ INSTANT FAILURE EXAMPLES (DO NOT OUTPUT THESE):
 - "Here is the corrected diagram:" ← FAIL
@@ -1005,13 +1080,10 @@ OUTPUT THE CORRECTED CODE ONLY:"""
 - "Sure, " ← FAIL
 - "Of course, " ← FAIL
 - ANY English sentence before the code ← FAIL
+- "Task depend on Other: 5d" ← FAIL (invalid Gantt)
 
 ✅ CORRECT OUTPUT (your response should look EXACTLY like this):
-{diagram_type}
-    EntityA ||--o{{ EntityB : has
-    EntityB {{
-        int id PK
-    }}
+{example_output}
 
 YOUR RESPONSE STARTS NOW - FIRST CHARACTER MUST BE "{diagram_type[0].upper()}"."""
         )

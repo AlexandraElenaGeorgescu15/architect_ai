@@ -98,6 +98,19 @@
       "artifact_type": "mermaid_gantt"
     },
     "created_at": "2026-01-19T13:53:50.734763",
+    "is_current": false
+  },
+  {
+    "version": 5,
+    "artifact_id": "mermaid_gantt",
+    "artifact_type": "mermaid_gantt",
+    "content": "gantt\n    title Phone Swap Request Feature Implementation Plan\n    section Frontend (UI/UX)\n    UX Team: Create wireframe of modal and form          : 2025-10-17, 1d\n    Frontend Team: Build \"Request Phone Swap\" button and basic modal structure      : 2025-10-21, 4d\n    section Backend (Logic)\n    Backend Team: Develop new API endpoint and database schema     : 2025-10-21, 2d\n    Backend Team: Implement backend validation for user ownership of offered phone   : 2025-10-24, 3d\n    section Product Management\n    Product Manager: Create formal Jira ticket with defined user story and acceptance criteria      : 2025-10-17, 1d\n    dependencies:\n    UX Team depends on Backend Team for wireframe approval\n    Frontend Team depends on UX Team for wireframe approval\n    Backend Team depends on Product Manager for formal Jira ticket creation",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "artifact_type": "mermaid_gantt"
+    },
+    "created_at": "2026-01-19T16:52:57.533930",
     "is_current": true
   }
 ]

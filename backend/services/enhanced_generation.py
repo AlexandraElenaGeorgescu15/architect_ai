@@ -833,7 +833,34 @@ CRITICAL OUTPUT RULES:
             ArtifactType.MERMAID_DATA_FLOW: f"{base_message} Generate a Data Flow Diagram in Mermaid syntax. Show processes, data stores, external entities, and data flows.{mermaid_output_rules}",
             ArtifactType.MERMAID_USER_FLOW: f"{base_message} Generate a User Flow Diagram in Mermaid syntax. Show user actions, decision points, and flow paths.{mermaid_output_rules}",
             ArtifactType.MERMAID_COMPONENT: f"{base_message} Generate a Component Diagram in Mermaid syntax. Show components, interfaces, and dependencies.{mermaid_output_rules}",
-            ArtifactType.MERMAID_GANTT: f"{base_message} Generate a Gantt Chart in Mermaid syntax. Include tasks, durations, and dependencies.{mermaid_output_rules}",
+            ArtifactType.MERMAID_GANTT: f"""{base_message} Generate a Gantt Chart in Mermaid syntax.
+
+VALID GANTT SYNTAX - FOLLOW EXACTLY:
+gantt
+    title Project Timeline
+    dateFormat YYYY-MM-DD
+    section Phase Name
+    Task Name :taskid, 2024-01-01, 5d
+    Another Task :task2, after taskid, 3d
+
+CRITICAL RULES:
+1. Task format: "Task Name :taskId, startDate, duration" OR "Task Name :taskId, after otherId, duration"
+2. Duration MUST be number + unit (1d, 2w, 3h)
+3. Use "after taskId" for dependencies
+4. NEVER use "depend on" or "depends on" - this is INVALID
+5. NEVER use "dependencies:" as a line - use "section Dependencies" instead
+
+❌ INVALID (DO NOT GENERATE):
+- "Task depend on Other: 1d"
+- "dependencies: UX Team"
+- "UX Team depend on wireframe approval"
+
+✅ VALID (GENERATE THIS):
+- "UX Review :uxreview, after wireframe, 1d"
+- "section Dependencies"
+- "Wireframe Design :wireframe, 2024-01-01, 5d"
+
+{mermaid_output_rules}""",
             ArtifactType.MERMAID_PIE: f"{base_message} Generate a Pie Chart in Mermaid syntax with proper data visualization.{mermaid_output_rules}",
             ArtifactType.MERMAID_JOURNEY: f"{base_message} Generate a User Journey Map in Mermaid syntax showing user experience stages.{mermaid_output_rules}",
             ArtifactType.MERMAID_MINDMAP: f"{base_message} Generate a Mindmap in Mermaid syntax with hierarchical structure.{mermaid_output_rules}",
