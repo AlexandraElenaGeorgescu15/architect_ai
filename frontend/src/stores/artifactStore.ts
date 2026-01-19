@@ -5,6 +5,7 @@ import { ArtifactType } from '../services/generationService'
 interface ArtifactStore {
   artifacts: Artifact[]
   currentArtifact: Artifact | null
+  currentFolderId: string | null  // Current meeting notes folder context
   isLoading: boolean
   error: string | null
 
@@ -14,6 +15,7 @@ interface ArtifactStore {
   updateArtifact: (id: string, updates: Partial<Artifact>) => void
   removeArtifact: (id: string) => void
   setCurrentArtifact: (artifact: Artifact | null) => void
+  setCurrentFolderId: (folderId: string | null) => void  // Set current folder context
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   clearError: () => void
@@ -21,6 +23,7 @@ interface ArtifactStore {
   // Selectors
   getArtifactsByType: (type: ArtifactType) => Artifact[]
   getArtifactById: (id: string) => Artifact | undefined
+  getArtifactsByFolder: (folderId: string | null) => Artifact[]  // Filter by folder
 
   // Reset
   reset: () => void
@@ -29,6 +32,7 @@ interface ArtifactStore {
 export const useArtifactStore = create<ArtifactStore>((set, get) => ({
   artifacts: [],
   currentArtifact: null,
+  currentFolderId: null,
   isLoading: false,
   error: null,
 
@@ -70,6 +74,8 @@ export const useArtifactStore = create<ArtifactStore>((set, get) => ({
     })),
 
   setCurrentArtifact: (artifact) => set({ currentArtifact: artifact }),
+  
+  setCurrentFolderId: (folderId) => set({ currentFolderId: folderId }),
 
   setLoading: (loading) => set({ isLoading: loading }),
 
@@ -88,10 +94,23 @@ export const useArtifactStore = create<ArtifactStore>((set, get) => ({
     return get().artifacts.find((a) => a.id === id)
   },
 
+  // Filter artifacts by folder ID
+  getArtifactsByFolder: (folderId) => {
+    const artifacts = get().artifacts
+    if (!folderId) {
+      // If no folder specified, return all artifacts
+      return artifacts.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+    }
+    return artifacts
+      .filter((a) => (a as any).folder_id === folderId)
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+  },
+
   // Reset store to initial state (call on cleanup/logout)
   reset: () => set({
     artifacts: [],
     currentArtifact: null,
+    currentFolderId: null,
     isLoading: false,
     error: null,
   }),

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { createPortal } from 'react-dom'
-import { MessageSquare, X, Send, Bot, FileCode, GitBranch, Sparkles, Trash2, Zap, Search } from 'lucide-react'
+import { MessageSquare, X, Send, Bot, FileCode, GitBranch, Sparkles, Trash2, Zap, Search, Edit3, AlertTriangle } from 'lucide-react'
 import { 
   sendChatMessage, 
   streamChatMessage, 
@@ -74,7 +74,9 @@ function FloatingChat() {
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [agenticMode, setAgenticMode] = useState(true)  // Agentic mode ON by default
+  const [writeMode, setWriteMode] = useState(false)  // Write mode OFF by default (safety)
   const [currentToolStatus, setCurrentToolStatus] = useState<string | null>(null)
+  const [showWriteConfirm, setShowWriteConfirm] = useState(false)  // Confirmation dialog for write mode
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Load conversation from storage on mount (session persistence)
@@ -227,16 +229,17 @@ function FloatingChat() {
         setCurrentToolStatus(null)
         
         // Pass session_id for persistent context across messages
-        // Use agentic mode if enabled
+        // Use agentic mode if enabled, and write mode if both agentic and write are enabled
         for await (const chunk of streamChatMessage({
           message: currentInput,
           conversation_history: conversationHistory,
           include_project_context: true,
           session_id: sessionId
-        }, agenticMode)) {
+        }, agenticMode, writeMode)) {
           if (chunk.type === 'status') {
             // Tool status update - show what the agent is doing
-            setCurrentToolStatus(chunk.content)
+            const statusIcon = chunk.is_write_tool ? '✏️' : '🔍'
+            setCurrentToolStatus(`${statusIcon} ${chunk.content}`)
           } else if (chunk.type === 'chunk') {
             // Clear tool status when content starts flowing
             setCurrentToolStatus(null)
@@ -397,24 +400,83 @@ function FloatingChat() {
 
             {/* Input */}
             <div className="p-5 border-t border-border/30 bg-gradient-to-r from-background/30 to-background/10 backdrop-blur-md">
-              {/* Agentic Mode Toggle */}
-              <div className="flex items-center justify-between mb-3 px-1">
-                <button
-                  onClick={() => setAgenticMode(!agenticMode)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                    agenticMode 
-                      ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-500 border border-amber-500/30 shadow-sm' 
-                      : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-                  }`}
-                  title={agenticMode ? 'Agent mode: AI will search codebase when needed' : 'Basic mode: Uses pre-loaded context only'}
-                >
-                  <Zap className={`w-3.5 h-3.5 ${agenticMode ? 'animate-pulse' : ''}`} />
-                  {agenticMode ? 'Agent Mode' : 'Basic Mode'}
-                </button>
+              {/* Mode Toggles */}
+              <div className="flex items-center justify-between mb-3 px-1 gap-2">
+                <div className="flex items-center gap-2">
+                  {/* Agentic Mode Toggle */}
+                  <button
+                    onClick={() => setAgenticMode(!agenticMode)}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                      agenticMode 
+                        ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-500 border border-amber-500/30 shadow-sm' 
+                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                    }`}
+                    title={agenticMode ? 'Agent mode: AI will search codebase when needed' : 'Basic mode: Uses pre-loaded context only'}
+                  >
+                    <Zap className={`w-3.5 h-3.5 ${agenticMode ? 'animate-pulse' : ''}`} />
+                    {agenticMode ? 'Agent' : 'Basic'}
+                  </button>
+                  
+                  {/* Write Mode Toggle - Only visible in agentic mode */}
+                  {agenticMode && (
+                    <button
+                      onClick={() => {
+                        if (!writeMode) {
+                          setShowWriteConfirm(true)
+                        } else {
+                          setWriteMode(false)
+                        }
+                      }}
+                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                        writeMode 
+                          ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 text-red-500 border border-red-500/30 shadow-sm' 
+                          : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                      }`}
+                      title={writeMode ? 'Write mode: AI can modify artifacts (click to disable)' : 'Enable write mode to let AI modify artifacts'}
+                    >
+                      <Edit3 className={`w-3 h-3 ${writeMode ? 'animate-pulse' : ''}`} />
+                      {writeMode ? 'Write' : 'Read'}
+                    </button>
+                  )}
+                </div>
                 <span className="text-[10px] text-muted-foreground">
-                  {agenticMode ? '🔍 Can search & explore' : '📄 Pre-loaded context'}
+                  {writeMode ? '✏️ Can modify artifacts' : agenticMode ? '🔍 Can search & explore' : '📄 Pre-loaded context'}
                 </span>
               </div>
+              
+              {/* Write Mode Confirmation Dialog */}
+              {showWriteConfirm && (
+                <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 mb-1">
+                        Enable Write Mode?
+                      </p>
+                      <p className="text-[10px] text-yellow-600/80 dark:text-yellow-400/80 mb-2">
+                        The AI will be able to update artifacts, create new artifacts, and save files to the outputs folder.
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setWriteMode(true)
+                            setShowWriteConfirm(false)
+                          }}
+                          className="px-2 py-1 text-[10px] font-medium bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
+                        >
+                          Enable Write Mode
+                        </button>
+                        <button
+                          onClick={() => setShowWriteConfirm(false)}
+                          className="px-2 py-1 text-[10px] font-medium bg-muted text-muted-foreground rounded hover:bg-muted/80 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div className="flex gap-3">
                 <textarea

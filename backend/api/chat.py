@@ -535,11 +535,20 @@ async def stream_agentic_chat(
     - Query the knowledge graph
     - Explore project structure
     
+    If write_mode is enabled (body.write_mode=true), the AI can also:
+    - Update existing artifacts
+    - Create new artifacts
+    - Save analysis to outputs folder
+    
     It will iterate until it has enough information to answer.
     """
     from backend.services.agentic_chat_service import get_agentic_chat_service
     
     service = get_agentic_chat_service()
+    write_mode = getattr(body, 'write_mode', False)
+    
+    if write_mode:
+        logger.info(f"[AGENTIC_CHAT] Write mode enabled for session {body.session_id}")
     
     async def generate_stream():
         """Stream agentic chat response with tool status updates."""
@@ -547,7 +556,8 @@ async def stream_agentic_chat(
             async for chunk in service.chat(
                 message=body.message,
                 conversation_history=body.conversation_history,
-                session_id=body.session_id
+                session_id=body.session_id,
+                write_mode=write_mode
             ):
                 yield f"data: {json.dumps(chunk)}\n\n"
         except Exception as e:
@@ -571,12 +581,24 @@ async def stream_agentic_chat(
 
 
 @router.get("/agent/tools")
-async def get_agent_tools():
-    """Get list of tools available to the agentic chat."""
-    from backend.services.agentic_chat_service import AGENT_TOOLS
+async def get_agent_tools(
+    write_mode: bool = False
+):
+    """
+    Get list of tools available to the agentic chat.
+    
+    Args:
+        write_mode: If true, includes write tools in the response
+    """
+    from backend.services.agentic_chat_service import AGENT_TOOLS, AGENT_WRITE_TOOLS
+    
+    tools = AGENT_TOOLS.copy()
+    if write_mode:
+        tools.extend(AGENT_WRITE_TOOLS)
     
     return {
-        "tools": AGENT_TOOLS,
-        "description": "The AI agent can use these tools to explore your codebase autonomously"
+        "tools": tools,
+        "write_mode": write_mode,
+        "description": "The AI agent can use these tools to explore and optionally modify your codebase"
     }
 

@@ -14,6 +14,7 @@ export interface Artifact {
   created_at: string
   updated_at: string
   model_used?: string
+  folder_id?: string | null  // Meeting notes folder association
   attempts?: Array<{
     model: string
     provider: string

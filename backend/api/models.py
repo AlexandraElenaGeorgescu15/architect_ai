@@ -58,6 +58,186 @@ async def get_routing_for_artifact(
     return routing
 
 
+@router.post("/suggest-routing", summary="Get AI-powered model routing suggestions")
+@limiter.limit("10/minute")
+async def suggest_routing(
+    request: Request,
+    artifact_type: ArtifactType,
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """
+    Get AI-powered model routing suggestions for an artifact type.
+    
+    Uses a fast LLM to analyze the artifact type's characteristics and 
+    recommend the best models based on their capabilities.
+    
+    Returns:
+        - suggested_primary: Recommended primary model
+        - suggested_fallbacks: List of recommended fallback models
+        - reasoning: AI's explanation for the recommendations
+        - confidence: Confidence score (0-1)
+    """
+    from backend.core.config import settings
+    import httpx
+    
+    service = get_service()
+    
+    # Get available models
+    models = await service.list_models()
+    available_models = [
+        {"id": m.id, "name": m.name, "provider": m.provider}
+        for m in models
+        if m.status in ["available", "downloaded"]
+    ]
+    
+    if not available_models:
+        return {
+            "success": False,
+            "error": "No models available",
+            "suggested_primary": None,
+            "suggested_fallbacks": [],
+            "reasoning": "No models are currently available. Please ensure Ollama is running or API keys are configured.",
+            "confidence": 0.0
+        }
+    
+    # Build prompt for AI suggestion
+    artifact_info = {
+        "mermaid_erd": "Entity Relationship Diagrams - database schema visualization",
+        "mermaid_architecture": "System architecture diagrams - high-level component relationships",
+        "mermaid_sequence": "Sequence diagrams - API/method call flows",
+        "mermaid_class": "Class diagrams - OOP structure visualization",
+        "mermaid_flowchart": "Flowcharts - process/decision flows",
+        "mermaid_state": "State diagrams - state machine visualization",
+        "code_prototype": "Code generation - working code prototypes",
+        "dev_visual_prototype": "HTML prototypes - interactive UI mockups",
+        "api_docs": "API documentation - endpoint documentation",
+        "jira": "JIRA tickets - user stories and tasks",
+        "workflows": "Workflow definitions - process workflows",
+        "backlog": "Product backlog - prioritized features",
+    }
+    
+    artifact_description = artifact_info.get(
+        artifact_type.value, 
+        f"{artifact_type.value} - software development artifact"
+    )
+    
+    models_list = "\n".join([
+        f"- {m['id']} ({m['provider']})" for m in available_models[:15]
+    ])
+    
+    prompt = f"""You are an expert at matching AI models to software development tasks.
+
+ARTIFACT TYPE: {artifact_type.value}
+DESCRIPTION: {artifact_description}
+
+AVAILABLE MODELS:
+{models_list}
+
+Based on the artifact type, suggest the best model configuration:
+
+1. PRIMARY MODEL: The model best suited for this artifact type
+2. FALLBACK MODELS: 2-3 alternative models in order of preference
+3. REASONING: Brief explanation (1-2 sentences) of why these models are best
+
+Guidelines:
+- For diagrams/Mermaid: Prefer models good at structured output (mistral, llama3)
+- For code: Prefer code-specialized models (codellama, deepseek-coder)
+- For documentation/text: Prefer models good at natural language (llama3, mistral)
+- Cloud models (gemini, gpt-4) are good fallbacks but prefer local models when available
+
+Respond in this exact JSON format:
+{{
+    "primary": "model_id",
+    "fallbacks": ["model_id_1", "model_id_2"],
+    "reasoning": "explanation",
+    "confidence": 0.85
+}}"""
+
+    # Use Groq for fast response (or fall back to other providers)
+    suggestion = None
+    
+    if settings.groq_api_key:
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                response = await client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {settings.groq_api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    json={
+                        "model": "llama-3.3-70b-versatile",
+                        "messages": [
+                            {"role": "system", "content": "You are an AI model routing expert. Always respond with valid JSON."},
+                            {"role": "user", "content": prompt}
+                        ],
+                        "temperature": 0.3,
+                        "max_tokens": 300
+                    }
+                )
+                response.raise_for_status()
+                data = response.json()
+                
+                if "choices" in data and len(data["choices"]) > 0:
+                    content = data["choices"][0]["message"]["content"].strip()
+                    
+                    # Parse JSON response
+                    import json
+                    try:
+                        if "{" in content:
+                            json_start = content.index("{")
+                            json_end = content.rindex("}") + 1
+                            suggestion = json.loads(content[json_start:json_end])
+                    except (json.JSONDecodeError, ValueError) as e:
+                        logger.warning(f"Failed to parse AI suggestion: {e}")
+        except Exception as e:
+            logger.warning(f"Groq suggestion failed: {e}")
+    
+    # Fallback: Use heuristic-based suggestion if AI fails
+    if not suggestion:
+        # Default recommendations based on artifact type
+        if artifact_type.value.startswith("mermaid_"):
+            primary = next((m["id"] for m in available_models if "mistral" in m["id"].lower()), 
+                          next((m["id"] for m in available_models if "llama" in m["id"].lower()), 
+                               available_models[0]["id"] if available_models else None))
+            fallbacks = [m["id"] for m in available_models 
+                        if m["id"] != primary and ("llama" in m["id"].lower() or "gemini" in m["id"].lower())][:2]
+            reasoning = "Mistral and Llama models are well-suited for structured Mermaid diagram generation."
+        elif artifact_type.value in ["code_prototype", "dev_visual_prototype"]:
+            primary = next((m["id"] for m in available_models if "codellama" in m["id"].lower() or "deepseek" in m["id"].lower()), 
+                          available_models[0]["id"] if available_models else None)
+            fallbacks = [m["id"] for m in available_models 
+                        if m["id"] != primary and ("llama" in m["id"].lower() or "gpt" in m["id"].lower())][:2]
+            reasoning = "Code-specialized models (CodeLlama, DeepSeek) produce better code output."
+        else:
+            primary = next((m["id"] for m in available_models if "llama" in m["id"].lower()), 
+                          available_models[0]["id"] if available_models else None)
+            fallbacks = [m["id"] for m in available_models if m["id"] != primary][:2]
+            reasoning = "Llama models provide good general-purpose text generation for documentation and PM artifacts."
+        
+        suggestion = {
+            "primary": primary,
+            "fallbacks": fallbacks,
+            "reasoning": reasoning,
+            "confidence": 0.7
+        }
+    
+    # Validate that suggested models exist in available models
+    available_ids = [m["id"] for m in available_models]
+    if suggestion["primary"] not in available_ids:
+        suggestion["primary"] = available_models[0]["id"] if available_models else None
+    suggestion["fallbacks"] = [f for f in suggestion.get("fallbacks", []) if f in available_ids][:3]
+    
+    return {
+        "success": True,
+        "artifact_type": artifact_type.value,
+        "suggested_primary": suggestion.get("primary"),
+        "suggested_fallbacks": suggestion.get("fallbacks", []),
+        "reasoning": suggestion.get("reasoning", ""),
+        "confidence": suggestion.get("confidence", 0.5)
+    }
+
+
 # ============== SPECIFIC ROUTES (must come before /{model_id}) ==============
 
 @router.get("/stats", summary="Get model service statistics")

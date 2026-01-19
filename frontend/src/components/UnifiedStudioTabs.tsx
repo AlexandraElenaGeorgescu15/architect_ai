@@ -170,6 +170,7 @@ interface UnifiedStudioTabsProps {
   artifacts: any[]
   getArtifactsByType: (type: ArtifactType) => any[]
   artifactTypes: { value: ArtifactType; label: string; category: string }[]
+  onOpenCustomArtifactModal?: () => void  // Open custom artifact type modal
 }
 
 // Memoized tab button component to prevent unnecessary re-renders
@@ -404,6 +405,7 @@ const MermaidDiagramViewer = memo(function MermaidDiagramViewer({
 
 function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
   const [activeView, setActiveView] = useState('context')
+  const [selectedCategory, setSelectedCategory] = useState<string>('All')  // Category filter for artifact types
   const navigate = useNavigate()
   
   // CRITICAL FIX: Reset diagram error state when switching artifact types
@@ -415,6 +417,20 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
     // Clear stale diagram errors when switching to a different artifact type
     resetDiagramState()
   }, [props.selectedArtifactType, resetDiagramState])
+  
+  // Get unique categories from artifact types
+  const categories = useMemo(() => {
+    const cats = ['All', ...new Set(props.artifactTypes.map(t => t.category))]
+    return cats
+  }, [props.artifactTypes])
+  
+  // Filter artifact types by selected category
+  const filteredArtifactTypes = useMemo(() => {
+    if (selectedCategory === 'All') {
+      return props.artifactTypes
+    }
+    return props.artifactTypes.filter(t => t.category === selectedCategory)
+  }, [props.artifactTypes, selectedCategory])
   
   // Memoize tabs configuration
   const tabs = useMemo(() => [
@@ -730,9 +746,44 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                     </div>
 
                     <div className="pt-5 border-t border-border/50">
-                      <label className="text-[10px] font-bold text-primary uppercase tracking-widest mb-3 block">Select Artifact</label>
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="text-[10px] font-bold text-primary uppercase tracking-widest">Select Artifact</label>
+                        {props.onOpenCustomArtifactModal && (
+                          <button
+                            onClick={props.onOpenCustomArtifactModal}
+                            className="flex items-center gap-1 px-2 py-1 text-[10px] font-medium text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                            title="Create custom artifact type"
+                          >
+                            <Sparkles className="w-3 h-3" />
+                            Custom
+                          </button>
+                        )}
+                      </div>
+                      
+                      {/* Category Tabs */}
+                      <div className="flex flex-wrap gap-1 mb-3">
+                        {categories.map((category) => (
+                          <button
+                            key={category}
+                            onClick={() => setSelectedCategory(category)}
+                            className={`px-2 py-1 text-[10px] font-medium rounded-md transition-all ${
+                              selectedCategory === category
+                                ? 'bg-primary text-primary-foreground shadow-sm'
+                                : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                            }`}
+                          >
+                            {category}
+                            <span className="ml-1 opacity-60">
+                              ({category === 'All' 
+                                ? props.artifactTypes.length 
+                                : props.artifactTypes.filter(t => t.category === category).length})
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                      
                       <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
-                        {props.artifactTypes.map((type) => (
+                        {filteredArtifactTypes.map((type) => (
                           <ArtifactTypeButton
                             key={type.value}
                             type={type}

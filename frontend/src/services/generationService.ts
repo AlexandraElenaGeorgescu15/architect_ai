@@ -161,9 +161,11 @@ export async function getGenerationJob(jobId: string): Promise<GenerationJob> {
 
 /**
  * List all artifacts.
+ * @param folderId - Optional folder ID to filter artifacts by meeting notes folder
  */
-export async function listArtifacts(): Promise<Artifact[]> {
-  const response = await api.get<Artifact[]>('/api/generation/artifacts')
+export async function listArtifacts(folderId?: string | null): Promise<Artifact[]> {
+  const params = folderId ? { folder_id: folderId } : {}
+  const response = await api.get<Artifact[]>('/api/generation/artifacts', { params })
   return extractData(response)
 }
 

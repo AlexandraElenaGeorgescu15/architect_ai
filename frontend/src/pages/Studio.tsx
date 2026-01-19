@@ -7,11 +7,22 @@ import { ArtifactType, listArtifacts } from '../services/generationService'
 import UnifiedStudioTabs from '../components/UnifiedStudioTabs'
 import { useLocation } from 'react-router-dom'
 import { useUIStore } from '../stores/uiStore'
+import CustomArtifactModal from '../components/CustomArtifactModal'
+import api from '../services/api'
+
+interface CustomTypeInfo {
+  id: string
+  name: string
+  category: string
+  is_custom: boolean
+}
 
 function Studio() {
   const [meetingNotes, setMeetingNotes] = useState('')
   const [selectedArtifactType, setSelectedArtifactType] = useState<ArtifactType>('mermaid_erd')
   const [contextId, setContextId] = useState<string | null>(null)
+  const [showCustomArtifactModal, setShowCustomArtifactModal] = useState(false)
+  const [customTypes, setCustomTypes] = useState<CustomTypeInfo[]>([])
   
   const { isGenerating, progress, generate, clearProgress, cancelGeneration } = useGeneration()
   const { isBuilding, build } = useContext()
@@ -42,6 +53,26 @@ function Studio() {
       window.history.replaceState({}, document.title)
     }
   }, [location.state])
+
+  // Load custom artifact types
+  useEffect(() => {
+    const loadCustomTypes = async () => {
+      try {
+        const response = await api.get('/api/generation/artifact-types/custom')
+        if (response.data.success && response.data.custom_types) {
+          setCustomTypes(response.data.custom_types.map((t: any) => ({
+            id: t.id,
+            name: t.name,
+            category: t.category,
+            is_custom: true
+          })))
+        }
+      } catch (error) {
+        console.warn('Failed to load custom artifact types:', error)
+      }
+    }
+    loadCustomTypes()
+  }, [])
 
   // Load artifacts on mount and when location changes
   useEffect(() => {
@@ -128,7 +159,33 @@ function Studio() {
     { value: 'personas', label: 'Personas', category: 'PM' },
     { value: 'estimations', label: 'Estimations', category: 'PM' },
     { value: 'feature_scoring', label: 'Feature Scoring', category: 'PM' },
-  ], [])
+    // Add custom types dynamically
+    ...customTypes.map(ct => ({
+      value: ct.id as ArtifactType,
+      label: ct.name,
+      category: ct.category || 'Custom'
+    }))
+  ], [customTypes])
+
+  // Handler for when a custom type is created
+  const handleCustomTypeCreated = useCallback(async (typeId: string) => {
+    // Reload custom types
+    try {
+      const response = await api.get('/api/generation/artifact-types/custom')
+      if (response.data.success && response.data.custom_types) {
+        setCustomTypes(response.data.custom_types.map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          category: t.category,
+          is_custom: true
+        })))
+      }
+      // Select the newly created type
+      setSelectedArtifactType(typeId as ArtifactType)
+    } catch (error) {
+      console.warn('Failed to reload custom artifact types:', error)
+    }
+  }, [])
 
   return (
     <div className="w-full animate-fade-in-up">
@@ -150,8 +207,16 @@ function Studio() {
         artifacts={artifacts}
         getArtifactsByType={getArtifactsByType}
         artifactTypes={artifactTypes}
+        onOpenCustomArtifactModal={() => setShowCustomArtifactModal(true)}
         />
       </div>
+      
+      {/* Custom Artifact Type Modal */}
+      <CustomArtifactModal
+        isOpen={showCustomArtifactModal}
+        onClose={() => setShowCustomArtifactModal(false)}
+        onTypeCreated={handleCustomTypeCreated}
+      />
     </div>
   )
 }

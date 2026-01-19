@@ -20,6 +20,7 @@ export interface ChatRequest {
   conversation_history?: ChatMessage[]
   include_project_context?: boolean
   session_id?: string  // For persistent context across messages
+  write_mode?: boolean  // Enable write tools in agentic mode
 }
 
 // Session management for conversation persistence
@@ -107,13 +108,15 @@ export async function getProjectSummary(): Promise<ProjectSummary> {
 }
 
 /**
- * Stream chat message with optional agentic mode.
+ * Stream chat message with optional agentic and write modes.
  * In agentic mode, the AI can autonomously search the codebase.
+ * In write mode (requires agentic), the AI can modify artifacts.
  */
 export async function* streamChatMessage(
   request: ChatRequest,
-  agenticMode: boolean = false
-): AsyncGenerator<{ type: string; content: string; tool?: string }, void, unknown> {
+  agenticMode: boolean = false,
+  writeMode: boolean = false
+): AsyncGenerator<{ type: string; content: string; tool?: string; is_write_tool?: boolean }, void, unknown> {
   // Get auth token for streaming request
   const token = localStorage.getItem('access_token')
   
@@ -123,6 +126,12 @@ export async function* streamChatMessage(
   // Use agentic endpoint if enabled
   const endpoint = agenticMode ? '/api/chat/agent/stream' : '/api/chat/stream'
   
+  // Include write_mode in request if agentic mode and write mode are both enabled
+  const requestWithWriteMode = {
+    ...request,
+    write_mode: agenticMode && writeMode
+  }
+  
   const response = await fetch(`${baseUrl}${endpoint}`, {
     method: 'POST',
     headers: {
@@ -131,7 +140,7 @@ export async function* streamChatMessage(
       'ngrok-skip-browser-warning': 'true',
       ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     },
-    body: JSON.stringify(request),
+    body: JSON.stringify(requestWithWriteMode),
   })
 
   if (!response.body) {

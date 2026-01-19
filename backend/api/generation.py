@@ -125,7 +125,8 @@ async def generate_artifact(
                 meeting_notes=meeting_notes,
                 context_id=gen_request.context_id,
                 options=gen_request.options.dict() if gen_request.options else None,
-                stream=False
+                stream=False,
+                folder_id=gen_request.folder_id  # Pass folder_id for artifact association
             ):
                 # Capture job_id from first update
                 if not job_state["job_id"] and update.get("job_id"):
@@ -327,13 +328,14 @@ async def generate_artifact_stream(
     
     async def generate_stream():
         """Stream generation progress."""
-        logger.info(f"🔄 [STREAM] Starting streaming generation for {artifact_type.value}")
+        logger.info(f"🔄 [STREAM] Starting streaming generation for {artifact_type.value}, folder_id={folder_id}")
         async for update in service.generate_artifact(
             artifact_type=artifact_type,
             meeting_notes=meeting_notes,
             context_id=context_id,
             options=options,
-            stream=True
+            stream=True,
+            folder_id=folder_id  # Pass folder_id for artifact association
         ):
             # Emit WebSocket event if job_id available
             job_id = update.get("job_id")
@@ -614,6 +616,7 @@ async def update_artifact(
 async def list_artifacts(
     request: Request,
     all_versions: bool = Query(False, description="If True, return all versions of all artifacts. If False (default), return only latest version per type."),
+    folder_id: Optional[str] = Query(None, description="Filter artifacts by meeting notes folder ID"),
     current_user: UserPublic = Depends(get_current_user)
 ):
     """
@@ -621,9 +624,10 @@ async def list_artifacts(
     
     Args:
         all_versions: If True, return all versions of all artifacts. If False (default), return only latest version per type.
+        folder_id: Optional filter to only return artifacts associated with a specific meeting notes folder.
     
     Returns:
-        List of artifact objects with id, type, content, validation, etc.
+        List of artifact objects with id, type, content, validation, folder_id, etc.
     """
     service = get_service()
     artifacts = []
@@ -646,6 +650,13 @@ async def list_artifacts(
         if job.get("status") == GenerationStatus.COMPLETED.value:
             artifact = job.get("artifact")
             if artifact:
+                # Get artifact's folder_id (from artifact or job)
+                artifact_folder_id = artifact.get("folder_id") or job.get("folder_id")
+                
+                # Filter by folder_id if specified
+                if folder_id and artifact_folder_id != folder_id:
+                    continue
+                
                 artifact_id = artifact.get("id") or artifact.get("artifact_id") or job_id
                 if artifact_id not in artifact_ids_seen:
                     artifact_ids_seen.add(artifact_id)
@@ -661,6 +672,7 @@ async def list_artifacts(
                         "content": cleaned_content,
                         "created_at": artifact.get("generated_at") or job.get("created_at") or job.get("completed_at", datetime.now().isoformat()),
                         "updated_at": job.get("updated_at") or artifact.get("generated_at") or job.get("created_at", datetime.now().isoformat()),
+                        "folder_id": artifact_folder_id,  # Include folder association
                     }
                     # Add optional fields
                     if "validation" in artifact:
@@ -688,13 +700,19 @@ async def list_artifacts(
                 
                 # Add all versions for this artifact
                 for version in versions:
+                    metadata = version.get("metadata", {})
+                    version_folder_id = metadata.get("folder_id")
+                    
+                    # Filter by folder_id if specified
+                    if folder_id and version_folder_id != folder_id:
+                        continue
+                    
                     artifact_type = version.get("artifact_type", "unknown")
                     raw_content = version.get("content", "")
                     # Clean artifact content using centralized cleaner
                     cleaned_content = clean_artifact_content(raw_content, artifact_type)
                     
                     # Convert version to frontend format
-                    metadata = version.get("metadata", {})
                     artifact_dict = {
                         "id": artifact_id,
                         "type": artifact_type,
@@ -703,6 +721,7 @@ async def list_artifacts(
                         "updated_at": version.get("created_at", datetime.now().isoformat()),
                         "version": version.get("version", 1),
                         "is_current": version.get("is_current", False),
+                        "folder_id": version_folder_id,  # Include folder association
                     }
                     # Add optional fields from metadata
                     if "validation_score" in metadata:
@@ -732,6 +751,13 @@ async def list_artifacts(
                     current_version = versions[-1]
                 
                 if current_version and artifact_id not in artifact_ids_seen:
+                    metadata = current_version.get("metadata", {})
+                    version_folder_id = metadata.get("folder_id")
+                    
+                    # Filter by folder_id if specified
+                    if folder_id and version_folder_id != folder_id:
+                        continue
+                    
                     artifact_ids_seen.add(artifact_id)
                     artifact_type = current_version.get("artifact_type", "unknown")
                     raw_content = current_version.get("content", "")
@@ -739,13 +765,13 @@ async def list_artifacts(
                     cleaned_content = clean_artifact_content(raw_content, artifact_type)
                     
                     # Convert version to frontend format
-                    metadata = current_version.get("metadata", {})
                     artifact_dict = {
                         "id": artifact_id,
                         "type": artifact_type,
                         "content": cleaned_content,
                         "created_at": current_version.get("created_at", datetime.now().isoformat()),
                         "updated_at": current_version.get("created_at", datetime.now().isoformat()),
+                        "folder_id": version_folder_id,  # Include folder association
                     }
                     # Add optional fields from metadata
                     if "validation_score" in metadata:
@@ -1067,4 +1093,222 @@ async def get_artifact(
     )
 
 
+# ============================================================================
+# Custom Artifact Types Endpoints
+# ============================================================================
+
+@router.get("/artifact-types", summary="List all artifact types (built-in + custom)")
+async def list_artifact_types(
+    include_disabled: bool = Query(False, description="Include disabled custom types"),
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """
+    List all available artifact types including built-in and custom types.
+    
+    Returns list with: id, name, category, is_custom, is_enabled, description
+    """
+    from backend.services.custom_artifact_service import get_service as get_custom_service
+    custom_service = get_custom_service()
+    
+    all_types = custom_service.get_all_artifact_types()
+    
+    if not include_disabled:
+        all_types = [t for t in all_types if t.get("is_enabled", True)]
+    
+    return {
+        "success": True,
+        "artifact_types": all_types,
+        "categories": custom_service.get_categories()
+    }
+
+
+@router.get("/artifact-types/custom", summary="List custom artifact types only")
+async def list_custom_artifact_types(
+    include_disabled: bool = Query(False, description="Include disabled custom types"),
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """List only custom-defined artifact types."""
+    from backend.services.custom_artifact_service import get_service as get_custom_service
+    custom_service = get_custom_service()
+    
+    custom_types = custom_service.list_types(include_disabled=include_disabled)
+    
+    return {
+        "success": True,
+        "custom_types": [t.to_dict() for t in custom_types],
+        "count": len(custom_types)
+    }
+
+
+@router.post("/artifact-types/custom", summary="Create a custom artifact type")
+@limiter.limit("10/minute")
+async def create_custom_artifact_type(
+    request: Request,
+    type_id: str = Query(..., description="Unique ID (snake_case, 3-50 chars)"),
+    name: str = Query(..., description="Display name"),
+    category: str = Query(..., description="Category for grouping"),
+    prompt_template: str = Query(..., description="Prompt template for generation"),
+    description: str = Query("", description="Brief description"),
+    default_model: Optional[str] = Query(None, description="Preferred model"),
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """
+    Create a new custom artifact type.
+    
+    The prompt_template should include {meeting_notes} and {context} placeholders.
+    """
+    from backend.services.custom_artifact_service import get_service as get_custom_service
+    custom_service = get_custom_service()
+    
+    try:
+        custom_type = custom_service.create_type(
+            id=type_id,
+            name=name,
+            category=category,
+            prompt_template=prompt_template,
+            description=description,
+            default_model=default_model
+        )
+        
+        return {
+            "success": True,
+            "custom_type": custom_type.to_dict(),
+            "message": f"Custom artifact type '{name}' created successfully"
+        }
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+
+@router.get("/artifact-types/custom/{type_id}", summary="Get a custom artifact type")
+async def get_custom_artifact_type(
+    type_id: str,
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """Get details of a specific custom artifact type."""
+    from backend.services.custom_artifact_service import get_service as get_custom_service
+    custom_service = get_custom_service()
+    
+    custom_type = custom_service.get_type(type_id)
+    if not custom_type:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Custom artifact type '{type_id}' not found"
+        )
+    
+    return {
+        "success": True,
+        "custom_type": custom_type.to_dict()
+    }
+
+
+@router.put("/artifact-types/custom/{type_id}", summary="Update a custom artifact type")
+async def update_custom_artifact_type(
+    type_id: str,
+    name: Optional[str] = Query(None, description="Display name"),
+    category: Optional[str] = Query(None, description="Category for grouping"),
+    prompt_template: Optional[str] = Query(None, description="Prompt template"),
+    description: Optional[str] = Query(None, description="Brief description"),
+    default_model: Optional[str] = Query(None, description="Preferred model"),
+    is_enabled: Optional[bool] = Query(None, description="Enable/disable type"),
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """Update an existing custom artifact type."""
+    from backend.services.custom_artifact_service import get_service as get_custom_service
+    custom_service = get_custom_service()
+    
+    # Build updates dict with only provided fields
+    updates = {}
+    if name is not None:
+        updates["name"] = name
+    if category is not None:
+        updates["category"] = category
+    if prompt_template is not None:
+        updates["prompt_template"] = prompt_template
+    if description is not None:
+        updates["description"] = description
+    if default_model is not None:
+        updates["default_model"] = default_model
+    if is_enabled is not None:
+        updates["is_enabled"] = is_enabled
+    
+    if not updates:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No fields to update"
+        )
+    
+    custom_type = custom_service.update_type(type_id, **updates)
+    if not custom_type:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Custom artifact type '{type_id}' not found"
+        )
+    
+    return {
+        "success": True,
+        "custom_type": custom_type.to_dict(),
+        "message": f"Custom artifact type '{type_id}' updated successfully"
+    }
+
+
+@router.delete("/artifact-types/custom/{type_id}", summary="Delete a custom artifact type")
+async def delete_custom_artifact_type(
+    type_id: str,
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """Delete a custom artifact type."""
+    from backend.services.custom_artifact_service import get_service as get_custom_service
+    custom_service = get_custom_service()
+    
+    success = custom_service.delete_type(type_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Custom artifact type '{type_id}' not found"
+        )
+    
+    return {
+        "success": True,
+        "message": f"Custom artifact type '{type_id}' deleted successfully"
+    }
+
+
+@router.get("/artifact-types/categories", summary="List all artifact categories")
+async def list_artifact_categories(
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """List all available categories (default + custom)."""
+    from backend.services.custom_artifact_service import get_service as get_custom_service
+    custom_service = get_custom_service()
+    
+    return {
+        "success": True,
+        "categories": custom_service.get_categories()
+    }
+
+
+@router.post("/artifact-types/categories", summary="Add a custom category")
+async def add_artifact_category(
+    category: str = Query(..., description="Category name to add"),
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """Add a new custom category."""
+    from backend.services.custom_artifact_service import get_service as get_custom_service
+    custom_service = get_custom_service()
+    
+    success = custom_service.add_category(category)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Category '{category}' already exists"
+        )
+    
+    return {
+        "success": True,
+        "message": f"Category '{category}' added successfully",
+        "categories": custom_service.get_categories()
+    }
 

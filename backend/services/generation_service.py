@@ -207,7 +207,8 @@ class GenerationService:
         meeting_notes: str,
         context_id: Optional[str] = None,
         options: Optional[Dict[str, Any]] = None,
-        stream: bool = False
+        stream: bool = False,
+        folder_id: Optional[str] = None
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Generate an artifact with optional streaming.
@@ -218,6 +219,7 @@ class GenerationService:
             context_id: Optional pre-built context ID
             options: Generation options (max_retries, temperature, etc.)
             stream: Whether to stream progress updates
+            folder_id: Optional folder ID to associate artifact with meeting notes folder
         
         Yields:
             Progress updates and final artifact
@@ -226,7 +228,7 @@ class GenerationService:
         logger.info(f"🎯 [GEN_SERVICE] Starting generation: job_id={job_id}, "
                    f"artifact_type={artifact_type.value}, "
                    f"meeting_notes_length={len(meeting_notes)}, "
-                   f"context_id={context_id}, stream={stream}")
+                   f"context_id={context_id}, folder_id={folder_id}, stream={stream}")
         
         # Default options
         opts = {
@@ -250,9 +252,10 @@ class GenerationService:
             "status": GenerationStatus.IN_PROGRESS.value,
             "progress": 0.0,
             "created_at": datetime.now().isoformat(),
-            "meeting_notes": meeting_notes
+            "meeting_notes": meeting_notes,
+            "folder_id": folder_id  # Associate artifact with meeting notes folder
         }
-        logger.info(f"📋 [GEN_SERVICE] Job initialized: {job_id}")
+        logger.info(f"📋 [GEN_SERVICE] Job initialized: {job_id}, folder_id={folder_id}")
         
         try:
             # Step 1: Build context (if not provided)
@@ -526,7 +529,8 @@ class GenerationService:
                 },
                 "quality_prediction": quality_prediction.to_dict(),
                 "model_used": model_used,
-                "generated_at": datetime.now().isoformat()
+                "generated_at": datetime.now().isoformat(),
+                "folder_id": folder_id  # Associate artifact with meeting notes folder
             }
             if html_content:
                 artifact_obj["html_content"] = html_content
@@ -569,10 +573,11 @@ class GenerationService:
                         "html_content": html_content,  # Include HTML version if generated
                         "quality_prediction": quality_prediction.to_dict(),
                         "job_id": job_id,  # Keep reference to job_id for tracking
-                        "attempts": result.get("attempts", [])  # Include all attempts for tracking
+                        "attempts": result.get("attempts", []),  # Include all attempts for tracking
+                        "folder_id": folder_id  # Associate artifact with meeting notes folder
                     }
                 )
-                logger.info(f"✅ [GEN_SERVICE] Saved artifact to VersionService: artifact_id={artifact_id_for_version}, job_id={job_id}")
+                logger.info(f"✅ [GEN_SERVICE] Saved artifact to VersionService: artifact_id={artifact_id_for_version}, job_id={job_id}, folder_id={folder_id}")
             except Exception as e:
                 logger.warning(f"⚠️ [GEN_SERVICE] Failed to save artifact to VersionService: {e} (artifact_id={artifact_id_for_version}, job_id={job_id})")
             
@@ -593,7 +598,8 @@ class GenerationService:
                         },
                         "quality_prediction": quality_prediction.to_dict(),
                         "model_used": model_used,
-                        "generated_at": datetime.now().isoformat()
+                        "generated_at": datetime.now().isoformat(),
+                        "folder_id": folder_id
                     }
                 }
             else:
@@ -611,7 +617,8 @@ class GenerationService:
                         },
                         "quality_prediction": quality_prediction.to_dict(),
                         "model_used": model_used,
-                        "generated_at": datetime.now().isoformat()
+                        "generated_at": datetime.now().isoformat(),
+                        "folder_id": folder_id
                     }
                 }
             

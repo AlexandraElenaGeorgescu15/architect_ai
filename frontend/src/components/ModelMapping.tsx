@@ -3,13 +3,20 @@ import { useModelStore } from '../stores/modelStore'
 import { useUIStore } from '../stores/uiStore'
 import api from '../services/api'
 import { downloadHuggingFaceModel, getDownloadStatus } from '../services/huggingfaceService'
-import { Settings, Save, RefreshCw, Download, Search, Loader2, Plus, Trash2 } from 'lucide-react'
+import { Settings, Save, RefreshCw, Download, Search, Loader2, Plus, Trash2, Sparkles, CheckCircle } from 'lucide-react'
 
 interface ModelRouting {
   artifact_type: string
   primary_model: string
   fallback_models: string[]
   enabled: boolean
+}
+
+interface AISuggestion {
+  suggested_primary: string | null
+  suggested_fallbacks: string[]
+  reasoning: string
+  confidence: number
 }
 
 export default function ModelMapping() {
@@ -25,6 +32,8 @@ export default function ModelMapping() {
   const [isAutoRefreshing, setIsAutoRefreshing] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)  // Track unsaved changes
   const [initialRoutings, setInitialRoutings] = useState<Record<string, ModelRouting>>({})  // Track original state
+  const [suggestingFor, setSuggestingFor] = useState<string | null>(null)  // Track which artifact is being suggested
+  const [suggestions, setSuggestions] = useState<Record<string, AISuggestion>>({})  // Store AI suggestions
 
   // Check if there are any unavailable configured models
   const hasUnavailableModels = useMemo(() => {
@@ -285,6 +294,60 @@ export default function ModelMapping() {
     setHasUnsavedChanges(true)  // Mark as having unsaved changes
   }
 
+  // Get AI suggestion for model routing
+  const getAISuggestion = useCallback(async (artifactType: string) => {
+    setSuggestingFor(artifactType)
+    try {
+      const response = await api.post('/api/models/suggest-routing', null, {
+        params: { artifact_type: artifactType }
+      })
+      
+      if (response.data.success) {
+        const suggestion: AISuggestion = {
+          suggested_primary: response.data.suggested_primary,
+          suggested_fallbacks: response.data.suggested_fallbacks || [],
+          reasoning: response.data.reasoning,
+          confidence: response.data.confidence
+        }
+        setSuggestions(prev => ({ ...prev, [artifactType]: suggestion }))
+        addNotification('success', `AI suggests: ${suggestion.suggested_primary || 'No primary model'} (${Math.round(suggestion.confidence * 100)}% confidence)`)
+      } else {
+        addNotification('error', response.data.error || 'Failed to get AI suggestion')
+      }
+    } catch (error: any) {
+      console.error('AI suggestion error:', error)
+      addNotification('error', error?.response?.data?.detail || 'Failed to get AI suggestion')
+    } finally {
+      setSuggestingFor(null)
+    }
+  }, [addNotification])
+
+  // Apply AI suggestion to routing
+  const applySuggestion = useCallback((artifactType: string) => {
+    const suggestion = suggestions[artifactType]
+    if (!suggestion) return
+    
+    setRoutings(prev => ({
+      ...prev,
+      [artifactType]: {
+        ...prev[artifactType],
+        primary_model: suggestion.suggested_primary || prev[artifactType]?.primary_model || '',
+        fallback_models: suggestion.suggested_fallbacks.length > 0 
+          ? suggestion.suggested_fallbacks 
+          : prev[artifactType]?.fallback_models || []
+      }
+    }))
+    setHasUnsavedChanges(true)
+    addNotification('success', `Applied AI suggestion for ${artifactType.replace(/_/g, ' ')}`)
+    
+    // Clear the suggestion after applying
+    setSuggestions(prev => {
+      const newSuggestions = { ...prev }
+      delete newSuggestions[artifactType]
+      return newSuggestions
+    })
+  }, [suggestions, addNotification])
+
   const filteredRoutings = Object.entries(routings).filter(([type]) =>
     type.toLowerCase().includes(routingFilter.toLowerCase())
   )
@@ -417,6 +480,12 @@ export default function ModelMapping() {
                   <span className="ml-1 text-xs font-normal text-muted-foreground">(used if primary &lt; 80)</span>
                 </th>
                 <th className="px-4 py-3 text-left text-sm font-semibold">Enabled</th>
+                <th className="px-4 py-3 text-left text-sm font-semibold">
+                  <span className="flex items-center gap-1">
+                    <Sparkles className="w-4 h-4 text-amber-500" />
+                    Ask AI
+                  </span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -540,6 +609,56 @@ export default function ModelMapping() {
                       onChange={(e) => updateRouting(artifactType, 'enabled', e.target.checked)}
                       className="w-4 h-4"
                     />
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col gap-2">
+                      {/* Ask AI Button */}
+                      <button
+                        onClick={() => getAISuggestion(artifactType)}
+                        disabled={suggestingFor === artifactType}
+                        className="flex items-center gap-1 px-2 py-1 text-xs bg-gradient-to-r from-amber-500/10 to-orange-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 rounded hover:from-amber-500/20 hover:to-orange-500/20 disabled:opacity-50 transition-all"
+                        title="Get AI recommendation for this artifact type"
+                      >
+                        {suggestingFor === artifactType ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            Thinking...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="w-3 h-3" />
+                            Ask AI
+                          </>
+                        )}
+                      </button>
+                      
+                      {/* Show AI suggestion if available */}
+                      {suggestions[artifactType] && (
+                        <div className="text-xs bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded p-2">
+                          <div className="font-medium text-green-700 dark:text-green-300 mb-1">
+                            AI Suggestion ({Math.round(suggestions[artifactType].confidence * 100)}%)
+                          </div>
+                          <div className="text-green-600 dark:text-green-400 mb-1">
+                            Primary: {suggestions[artifactType].suggested_primary || 'None'}
+                          </div>
+                          {suggestions[artifactType].suggested_fallbacks.length > 0 && (
+                            <div className="text-green-600 dark:text-green-400 mb-1">
+                              Fallbacks: {suggestions[artifactType].suggested_fallbacks.join(', ')}
+                            </div>
+                          )}
+                          <div className="text-green-600/80 dark:text-green-400/80 italic mb-2 text-[10px]">
+                            {suggestions[artifactType].reasoning}
+                          </div>
+                          <button
+                            onClick={() => applySuggestion(artifactType)}
+                            className="flex items-center gap-1 px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 transition-colors"
+                          >
+                            <CheckCircle className="w-3 h-3" />
+                            Apply
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

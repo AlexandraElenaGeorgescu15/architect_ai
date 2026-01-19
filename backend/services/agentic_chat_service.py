@@ -125,6 +125,77 @@ AGENT_TOOLS = [
     }
 ]
 
+# Write tools - only available when write_mode is enabled
+AGENT_WRITE_TOOLS = [
+    {
+        "name": "update_artifact",
+        "description": "Update an existing artifact's content. Use this to modify generated diagrams, code, or documentation.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "artifact_id": {
+                    "type": "string",
+                    "description": "ID of the artifact to update (e.g., 'mermaid_erd', 'code_prototype')"
+                },
+                "new_content": {
+                    "type": "string",
+                    "description": "The new content for the artifact"
+                },
+                "reason": {
+                    "type": "string",
+                    "description": "Brief explanation of why this change is being made"
+                }
+            },
+            "required": ["artifact_id", "new_content", "reason"]
+        }
+    },
+    {
+        "name": "create_artifact",
+        "description": "Create a new artifact from chat analysis. Use this to generate new diagrams or documentation based on discussion.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "artifact_type": {
+                    "type": "string",
+                    "description": "Type of artifact to create (e.g., 'mermaid_erd', 'mermaid_flowchart', 'code_prototype')"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "The content for the new artifact"
+                },
+                "description": {
+                    "type": "string",
+                    "description": "Brief description of what this artifact represents"
+                }
+            },
+            "required": ["artifact_type", "content"]
+        }
+    },
+    {
+        "name": "save_to_outputs",
+        "description": "Save analysis or generated content to the outputs folder. Use for saving summaries, notes, or analysis.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "filename": {
+                    "type": "string",
+                    "description": "Name for the output file (e.g., 'auth_analysis.md', 'api_review.txt')"
+                },
+                "content": {
+                    "type": "string",
+                    "description": "Content to save"
+                },
+                "format": {
+                    "type": "string",
+                    "description": "File format: 'markdown', 'text', 'json'",
+                    "default": "markdown"
+                }
+            },
+            "required": ["filename", "content"]
+        }
+    }
+]
+
 
 class AgenticChatService:
     """
@@ -389,8 +460,131 @@ class AgenticChatService:
             logger.error(f"Get patterns error: {e}")
             return {"success": False, "error": str(e)}
     
-    async def execute_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    # =========================================================================
+    # WRITE TOOL IMPLEMENTATIONS (only available in write_mode)
+    # =========================================================================
+    
+    async def _tool_update_artifact(self, artifact_id: str, new_content: str, reason: str) -> Dict[str, Any]:
+        """Update an existing artifact's content."""
+        try:
+            from backend.services.generation_service import get_service as get_gen_service
+            from backend.services.version_service import get_version_service
+            
+            version_service = get_version_service()
+            
+            # Check if artifact exists
+            if artifact_id not in version_service.versions:
+                return {
+                    "success": False, 
+                    "error": f"Artifact '{artifact_id}' not found",
+                    "available_artifacts": list(version_service.versions.keys())[:10]
+                }
+            
+            # Create new version with updated content
+            version_service.create_version(
+                artifact_id=artifact_id,
+                artifact_type=artifact_id,
+                content=new_content,
+                metadata={
+                    "updated_by": "agentic_chat",
+                    "update_reason": reason,
+                    "update_timestamp": datetime.now().isoformat()
+                }
+            )
+            
+            logger.info(f"[AGENTIC_CHAT] Updated artifact: {artifact_id}, reason: {reason}")
+            
+            return {
+                "success": True,
+                "artifact_id": artifact_id,
+                "message": f"Artifact '{artifact_id}' updated successfully",
+                "reason": reason
+            }
+        except Exception as e:
+            logger.error(f"Update artifact error: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def _tool_create_artifact(self, artifact_type: str, content: str, description: str = "") -> Dict[str, Any]:
+        """Create a new artifact from chat analysis."""
+        try:
+            from backend.services.version_service import get_version_service
+            
+            version_service = get_version_service()
+            
+            # Generate a unique ID if this is a completely new type
+            artifact_id = f"chat_{artifact_type}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            
+            # Create the artifact as a version
+            version_service.create_version(
+                artifact_id=artifact_id,
+                artifact_type=artifact_type,
+                content=content,
+                metadata={
+                    "created_by": "agentic_chat",
+                    "description": description,
+                    "created_timestamp": datetime.now().isoformat()
+                }
+            )
+            
+            logger.info(f"[AGENTIC_CHAT] Created artifact: {artifact_id}, type: {artifact_type}")
+            
+            return {
+                "success": True,
+                "artifact_id": artifact_id,
+                "artifact_type": artifact_type,
+                "message": f"Created new artifact '{artifact_id}'",
+                "description": description
+            }
+        except Exception as e:
+            logger.error(f"Create artifact error: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def _tool_save_to_outputs(self, filename: str, content: str, format: str = "markdown") -> Dict[str, Any]:
+        """Save content to the outputs folder."""
+        try:
+            from backend.core.config import settings
+            
+            # Ensure filename is safe
+            safe_filename = "".join(c for c in filename if c.isalnum() or c in "._-")
+            if not safe_filename:
+                safe_filename = f"chat_output_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            
+            # Add extension if missing
+            ext_map = {"markdown": ".md", "text": ".txt", "json": ".json"}
+            expected_ext = ext_map.get(format, ".txt")
+            if not safe_filename.endswith(expected_ext):
+                safe_filename += expected_ext
+            
+            # Save to outputs folder
+            outputs_dir = Path(settings.base_path) / "outputs" / "chat_analysis"
+            outputs_dir.mkdir(parents=True, exist_ok=True)
+            
+            output_path = outputs_dir / safe_filename
+            
+            # Format content based on type
+            if format == "json":
+                try:
+                    content = json.dumps(json.loads(content), indent=2)
+                except json.JSONDecodeError:
+                    content = json.dumps({"content": content}, indent=2)
+            
+            output_path.write_text(content, encoding="utf-8")
+            
+            logger.info(f"[AGENTIC_CHAT] Saved to outputs: {output_path}")
+            
+            return {
+                "success": True,
+                "filename": safe_filename,
+                "path": str(output_path.relative_to(settings.base_path)),
+                "message": f"Saved to {output_path.name}"
+            }
+        except Exception as e:
+            logger.error(f"Save to outputs error: {e}")
+            return {"success": False, "error": str(e)}
+    
+    async def execute_tool(self, tool_name: str, arguments: Dict[str, Any], write_mode: bool = False) -> Dict[str, Any]:
         """Execute a tool by name with given arguments."""
+        # Read-only tools (always available)
         tool_map = {
             "search_codebase": self._tool_search_codebase,
             "read_file": self._tool_read_file,
@@ -398,6 +592,22 @@ class AgenticChatService:
             "query_knowledge_graph": self._tool_query_knowledge_graph,
             "get_project_patterns": self._tool_get_project_patterns
         }
+        
+        # Write tools (only available when write_mode is enabled)
+        write_tool_map = {
+            "update_artifact": self._tool_update_artifact,
+            "create_artifact": self._tool_create_artifact,
+            "save_to_outputs": self._tool_save_to_outputs
+        }
+        
+        # Check if it's a write tool
+        if tool_name in write_tool_map:
+            if not write_mode:
+                return {
+                    "success": False, 
+                    "error": f"Write tool '{tool_name}' requires write mode to be enabled. The user can enable this in the chat settings."
+                }
+            tool_map[tool_name] = write_tool_map[tool_name]
         
         if tool_name not in tool_map:
             return {"success": False, "error": f"Unknown tool: {tool_name}"}
@@ -413,7 +623,8 @@ class AgenticChatService:
         self,
         message: str,
         conversation_history: Optional[List[Any]] = None,
-        session_id: Optional[str] = None
+        session_id: Optional[str] = None,
+        write_mode: bool = False
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Agentic chat that can use tools to find information.
@@ -423,6 +634,12 @@ class AgenticChatService:
         2. If LLM wants to use a tool, execute it and add result to context
         3. Repeat until LLM provides final answer (max 5 iterations)
         4. Stream the final response
+        
+        Args:
+            message: User's message
+            conversation_history: Previous conversation messages
+            session_id: Optional session identifier
+            write_mode: If True, enables write tools (update_artifact, create_artifact, save_to_outputs)
         """
         from backend.core.config import settings
         import httpx
@@ -432,13 +649,19 @@ class AgenticChatService:
         tool_results = []
         iterations = 0
         
+        # Determine which tools to expose based on write_mode
+        available_tools = AGENT_TOOLS.copy()
+        if write_mode:
+            available_tools.extend(AGENT_WRITE_TOOLS)
+            logger.info("[AGENTIC_CHAT] Write mode enabled - write tools available")
+        
         # Agentic loop - let AI decide when to use tools
         while iterations < self.MAX_TOOL_ITERATIONS:
             iterations += 1
             
             # Call LLM with tools
             try:
-                tool_call = await self._call_llm_with_tools(messages, tool_results)
+                tool_call = await self._call_llm_with_tools(messages, tool_results, available_tools)
                 
                 if tool_call is None:
                     # No tool call - AI is ready to answer
@@ -451,18 +674,22 @@ class AgenticChatService:
                 logger.info(f"🔧 [AGENT] Calling tool: {tool_name} with args: {tool_args}")
                 
                 # Yield status update
+                is_write_tool = tool_name in ["update_artifact", "create_artifact", "save_to_outputs"]
+                status_icon = "✏️" if is_write_tool else "🔍"
                 yield {
                     "type": "status",
-                    "content": f"🔍 Searching: {tool_name}...",
-                    "tool": tool_name
+                    "content": f"{status_icon} {'Writing' if is_write_tool else 'Searching'}: {tool_name}...",
+                    "tool": tool_name,
+                    "is_write_tool": is_write_tool
                 }
                 
-                # Execute tool
-                result = await self.execute_tool(tool_name, tool_args)
+                # Execute tool (pass write_mode for write tools)
+                result = await self.execute_tool(tool_name, tool_args, write_mode=write_mode)
                 tool_results.append({
                     "tool": tool_name,
                     "arguments": tool_args,
-                    "result": result
+                    "result": result,
+                    "is_write_tool": is_write_tool
                 })
                 
                 logger.info(f"🔧 [AGENT] Tool result: {json.dumps(result)[:200]}...")
@@ -523,13 +750,21 @@ Be conversational and helpful."""
     async def _call_llm_with_tools(
         self,
         messages: List[Dict[str, str]],
-        tool_results: List[Dict[str, Any]]
+        tool_results: List[Dict[str, Any]],
+        available_tools: Optional[List[Dict[str, Any]]] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Call LLM and check if it wants to use a tool.
         
+        Args:
+            messages: Conversation messages
+            tool_results: Results from previous tool calls
+            available_tools: List of available tools (defaults to AGENT_TOOLS)
+        
         Returns tool call info if AI wants to use a tool, None if ready to answer.
         """
+        if available_tools is None:
+            available_tools = AGENT_TOOLS
         import httpx
         
         # Add tool results to context if any

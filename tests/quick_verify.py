@@ -3,6 +3,11 @@
 """Quick verification that imports work for Architect.AI v3.5.2"""
 import sys
 import os
+from pathlib import Path
+
+# Add project root to path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
 
 # Enable UTF-8 output on Windows
 if sys.platform == 'win32':
