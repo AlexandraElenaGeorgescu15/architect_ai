@@ -2,12 +2,21 @@
 Artifact plugin system architecture.
 
 Defines the base Artifact class and registry for plugin-based artifact generation.
+Supports auto-discovery of artifact plugins from the backend/artifacts/ directory.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Type
 from enum import Enum
+from pathlib import Path
+import importlib
+import importlib.util
+import inspect
+import logging
+
 from backend.models.dto import ArtifactType, ValidationResultDTO
+
+logger = logging.getLogger(__name__)
 
 
 class Artifact(ABC):
@@ -151,20 +160,103 @@ class ArtifactRegistry:
         """
         return list(self._artifacts.keys())
     
-    def auto_discover(self):
+    def auto_discover(self, artifacts_dir: Optional[Path] = None):
         """
         Auto-discover and register artifact plugins.
         
-        Scans backend/artifacts/ directory for plugin implementations.
+        Scans backend/artifacts/ directory for Python files containing
+        classes that inherit from Artifact, instantiates them, and registers them.
+        
+        Args:
+            artifacts_dir: Optional path to artifacts directory. If None, uses default.
         """
-        # TODO: Implement auto-discovery
-        # This will scan for classes inheriting from Artifact
-        # and automatically register them
-        pass
+        if artifacts_dir is None:
+            # Default to backend/artifacts/ relative to this file
+            artifacts_dir = Path(__file__).parent.parent / "artifacts"
+        
+        if not artifacts_dir.exists():
+            logger.debug(f"Artifacts directory not found: {artifacts_dir}")
+            # Create the directory so plugins can be added later
+            artifacts_dir.mkdir(parents=True, exist_ok=True)
+            return
+        
+        discovered_count = 0
+        
+        # Scan all Python files in the artifacts directory
+        for py_file in artifacts_dir.glob("*.py"):
+            if py_file.name.startswith("_"):
+                continue  # Skip __init__.py and private modules
+            
+            try:
+                # Load the module
+                module_name = f"backend.artifacts.{py_file.stem}"
+                spec = importlib.util.spec_from_file_location(module_name, py_file)
+                if spec is None or spec.loader is None:
+                    logger.warning(f"Could not load spec for {py_file}")
+                    continue
+                
+                module = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(module)
+                
+                # Find all classes in the module that inherit from Artifact
+                for name, obj in inspect.getmembers(module, inspect.isclass):
+                    # Check if it's a subclass of Artifact (but not Artifact itself)
+                    if (
+                        issubclass(obj, Artifact) and 
+                        obj is not Artifact and
+                        not inspect.isabstract(obj)
+                    ):
+                        try:
+                            # Instantiate and register the artifact
+                            instance = obj()
+                            self.register(instance)
+                            discovered_count += 1
+                            logger.info(f"Auto-discovered artifact plugin: {name} ({instance.artifact_type})")
+                        except Exception as e:
+                            logger.error(f"Failed to instantiate artifact plugin {name}: {e}")
+                            
+            except Exception as e:
+                logger.error(f"Failed to load artifact module {py_file}: {e}")
+        
+        if discovered_count > 0:
+            logger.info(f"Auto-discovered {discovered_count} artifact plugins")
+        else:
+            logger.debug("No artifact plugins discovered")
+    
+    def get_all_artifacts(self) -> Dict[ArtifactType, 'Artifact']:
+        """
+        Get all registered artifacts.
+        
+        Returns:
+            Dictionary mapping artifact types to plugin instances
+        """
+        return self._artifacts.copy()
+    
+    def is_registered(self, artifact_type: ArtifactType) -> bool:
+        """
+        Check if an artifact type is registered.
+        
+        Args:
+            artifact_type: Artifact type to check
+            
+        Returns:
+            True if registered, False otherwise
+        """
+        return artifact_type in self._artifacts
 
 
 # Global artifact registry
 artifact_registry = ArtifactRegistry()
+
+
+def get_artifact_registry() -> ArtifactRegistry:
+    """Get the global artifact registry."""
+    return artifact_registry
+
+
+def discover_artifacts():
+    """Convenience function to run auto-discovery on the global registry."""
+    artifact_registry.auto_discover()
 
 
 

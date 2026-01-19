@@ -133,6 +133,261 @@ def extract_json_from_response(response: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def _get_syntax_guide_for_diagram_type(diagram_type: str) -> str:
+    """
+    Get comprehensive syntax guide for a specific diagram type.
+    Used by AI repair to ensure correct Mermaid syntax generation.
+    """
+    guides = {
+        "gantt": """
+VALID GANTT SYNTAX - FOLLOW EXACTLY:
+gantt
+    title Project Title
+    dateFormat YYYY-MM-DD
+    section Section Name
+    Task Name :taskid, 2024-01-01, 5d
+    Another Task :task2, after taskid, 3d
+
+TASK FORMAT RULES:
+- Tasks MUST follow: TaskName :taskId, startDate/after, duration
+- duration must be number + unit: 1d, 2w, 3h, 5m (day/week/hour/minute)
+- Use "after taskId" for dependencies, NOT "depend on"
+- NEVER use "depend on X: 1d" - this is INVALID
+- NEVER use "dependencies:" as a line - use "section Dependencies" instead
+
+❌ INVALID GANTT (NEVER GENERATE):
+- "UX Team depend on wireframe: 1d"
+- "dependencies: something"
+- "Task depend on Other: 5d"
+- Any line containing the word "depend"
+
+✅ VALID GANTT (GENERATE THIS):
+- "UX Review :uxreview, after wireframe, 1d"
+- "section Dependencies"
+- "Wireframe :wireframe, 2024-01-01, 5d"
+""",
+        "erDiagram": """
+VALID ERD SYNTAX - FOLLOW EXACTLY:
+erDiagram
+    EntityA ||--o{ EntityB : has
+    EntityA {
+        int id PK
+        string name
+    }
+
+RELATIONSHIP SYMBOLS:
+- ||--|| : one to one
+- ||--o{ : one to many
+- }o--o{ : many to many
+- ||--o| : one to zero or one
+
+❌ INVALID ERD:
+- Using "-> " arrows (flowchart syntax)
+- Missing relationship labels after :
+- Unmatched braces
+
+✅ VALID ERD:
+- "User ||--o{ Order : places"
+- "Product { int id PK }"
+""",
+        "flowchart": """
+VALID FLOWCHART SYNTAX - FOLLOW EXACTLY:
+flowchart TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Action]
+    B -->|No| D[Other]
+
+SHAPES:
+- [text] : rectangle
+- (text) : rounded rectangle
+- {text} : diamond (decision)
+- ((text)) : circle
+- >text] : flag
+- [[text]] : subroutine
+
+ARROWS:
+- --> : solid arrow
+- --- : solid line (no arrow)
+- -.-> : dotted arrow
+- ==> : thick arrow
+
+❌ INVALID FLOWCHART:
+- Using |> at end of arrows (-->|label|>)
+- Unclosed brackets
+- Double arrows (-->-->)
+
+✅ VALID FLOWCHART:
+- "A[Start] --> B[End]"
+- "A -->|label| B"
+""",
+        "sequenceDiagram": """
+VALID SEQUENCE SYNTAX - FOLLOW EXACTLY:
+sequenceDiagram
+    participant A
+    participant B
+    A->>B: Request
+    B-->>A: Response
+
+ARROWS:
+- ->> : solid arrow with arrowhead (request)
+- -->> : dotted arrow with arrowhead (response)
+- -> : solid arrow (sync)
+- --> : dotted arrow (async)
+- -x : solid with X (destroy)
+
+KEYWORDS: participant, actor, Note, loop, alt, opt, par, end, activate, deactivate
+
+❌ INVALID SEQUENCE:
+- Using " -> " with spaces
+- Missing colon before message
+- Note without positioning (right of, left of, over)
+
+✅ VALID SEQUENCE:
+- "A->>B: Hello"
+- "Note right of A: Comment"
+""",
+        "classDiagram": """
+VALID CLASS SYNTAX - FOLLOW EXACTLY:
+classDiagram
+    class ClassName {
+        +publicMethod()
+        -privateAttribute
+    }
+    ClassA <|-- ClassB
+
+RELATIONSHIPS:
+- <|-- : inheritance
+- *-- : composition
+- o-- : aggregation
+- --> : association
+- ..> : dependency
+
+VISIBILITY: + public, - private, # protected, ~ package
+
+❌ INVALID CLASS:
+- Mixed relationship symbols (<|--*)
+- Triple arrows (--->)
+
+✅ VALID CLASS:
+- "Animal <|-- Dog"
+- "+getName() String"
+""",
+        "stateDiagram-v2": """
+VALID STATE SYNTAX - FOLLOW EXACTLY:
+stateDiagram-v2
+    [*] --> StateA
+    StateA --> StateB : event
+    StateB --> [*]
+
+SPECIAL STATES:
+- [*] : start/end state
+- state "Description" as s1
+
+❌ INVALID STATE:
+- Missing [*] for start
+- Using --> without state names
+
+✅ VALID STATE:
+- "[*] --> Idle"
+- "Idle --> Processing : start"
+""",
+        "pie": """
+VALID PIE SYNTAX - FOLLOW EXACTLY:
+pie showData
+    title Chart Title
+    "Category A" : 40
+    "Category B" : 60
+
+RULES:
+- Labels MUST be in quotes
+- Values are numbers (no units)
+
+❌ INVALID PIE:
+- Labels without quotes
+- Non-numeric values
+
+✅ VALID PIE:
+- "\"Sales\" : 100"
+""",
+        "journey": """
+VALID JOURNEY SYNTAX - FOLLOW EXACTLY:
+journey
+    title User Journey
+    section Phase
+    Task Name: 5: Actor
+
+RULES:
+- Score is 1-5 (satisfaction)
+- Actor names after score
+
+❌ INVALID JOURNEY:
+- Missing score number
+- Wrong section format
+
+✅ VALID JOURNEY:
+- "Login: 4: User"
+""",
+        "gitGraph": """
+VALID GITGRAPH SYNTAX - FOLLOW EXACTLY:
+gitGraph
+    commit
+    branch develop
+    checkout develop
+    commit
+    checkout main
+    merge develop
+
+COMMANDS: commit, branch, checkout, merge, cherry-pick
+
+❌ INVALID GITGRAPH:
+- Using flowchart node syntax ([label])
+- Using label= syntax
+
+✅ VALID GITGRAPH:
+- "commit id: \"message\""
+- "branch feature"
+""",
+        "mindmap": """
+VALID MINDMAP SYNTAX - FOLLOW EXACTLY:
+mindmap
+    root((Central Topic))
+        Child 1
+            Grandchild
+        Child 2
+
+RULES:
+- First node is root with (( ))
+- Children use indentation (2 spaces per level)
+
+✅ VALID MINDMAP:
+- "root((Main))"
+- "  Topic" (indented child)
+""",
+        "timeline": """
+VALID TIMELINE SYNTAX - FOLLOW EXACTLY:
+timeline
+    title Timeline
+    section 2024
+    Event : Description
+
+RULES:
+- Sections are time periods
+- Events have descriptions
+
+✅ VALID TIMELINE:
+- "Launch : Product released"
+"""
+    }
+    
+    return guides.get(diagram_type, f"""
+GENERAL MERMAID RULES:
+- Start with diagram type declaration
+- Use proper indentation (4 spaces)
+- No markdown code blocks
+- No explanatory text before/after
+""")
+
+
 def extract_mermaid_diagram(content: str) -> str:
     """
     Extract Mermaid diagram code from markdown code blocks or plain text.
@@ -698,6 +953,19 @@ async def repair_diagram(
                 if marker in code.lower():
                     return False, f"Contains AI text: {marker}"
             
+            # GANTT-SPECIFIC: Check for "depend" which is NEVER valid
+            if first_line.startswith('gantt'):
+                if 'depend' in code.lower():
+                    return False, "Gantt contains invalid 'depend' keyword"
+                # Check task format: must have colon followed by valid taskId
+                gantt_lines = [l.strip() for l in code.split('\n')[1:] if l.strip() and not l.strip().startswith(('title', 'dateformat', 'section', '%%', 'excludes', 'todaymarker'))]
+                for gl in gantt_lines:
+                    if ':' in gl and not gl.lower().startswith('section'):
+                        # Task line - verify format
+                        task_match = re.match(r'^.+:\s*\w+', gl)
+                        if not task_match:
+                            return False, f"Invalid Gantt task format: {gl[:30]}"
+            
             return True, "Valid"
         
         # ============================================================
@@ -922,52 +1190,8 @@ ERROR MESSAGE FROM RENDERER:
 {request.error_message}
 """
         
-        # Diagram-type-specific syntax guidance
-        syntax_guide = ""
-        if diagram_type == "gantt":
-            syntax_guide = """
-VALID GANTT SYNTAX - FOLLOW EXACTLY:
-gantt
-    title Project Title
-    dateFormat YYYY-MM-DD
-    section Section Name
-    Task Name :taskid, 2024-01-01, 5d
-    Another Task :task2, after taskid, 3d
-
-TASK FORMAT RULES:
-- Tasks MUST follow: TaskName :taskId, startDate/after, duration
-- duration must be like: 1d, 2w, 3h (number + unit)
-- Use "after taskId" for dependencies, NOT "depend on"
-- NEVER use "depend on X: 1d" - this is INVALID
-
-❌ INVALID GANTT SYNTAX (DO NOT GENERATE):
-- "UX Team depend on wireframe: 1d" ← WRONG
-- "dependencies: something" ← WRONG
-- "Task depend on Other: 5d" ← WRONG
-
-✅ VALID GANTT SYNTAX (GENERATE THIS):
-- "UX Review :uxreview, after wireframe, 1d" ← CORRECT
-- "section Dependencies" ← CORRECT (for section headers only)
-- "Wireframe :wireframe, 2024-01-01, 5d" ← CORRECT
-"""
-        elif diagram_type == "erDiagram":
-            syntax_guide = """
-VALID ERD SYNTAX - FOLLOW EXACTLY:
-erDiagram
-    EntityA ||--o{ EntityB : has
-    EntityA {
-        int id PK
-        string name
-    }
-"""
-        elif diagram_type == "flowchart":
-            syntax_guide = """
-VALID FLOWCHART SYNTAX - FOLLOW EXACTLY:
-flowchart TD
-    A[Start] --> B{Decision}
-    B -->|Yes| C[Action]
-    B -->|No| D[Other]
-"""
+        # Diagram-type-specific syntax guidance - COMPREHENSIVE for ALL types
+        syntax_guide = _get_syntax_guide_for_diagram_type(diagram_type)
         
         prompt = f"""Fix this broken Mermaid {diagram_type} diagram.
 {syntax_guide}

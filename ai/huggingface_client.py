@@ -132,6 +132,88 @@ class HuggingFaceClient:
             logger.debug(f"Error checking model availability for {model_id}: {e}")
             return False
     
+    def validate_model_structure(self, model_path: str) -> tuple[bool, str]:
+        """
+        Validate that a model directory has the required structure for loading.
+        
+        Args:
+            model_path: Path to the model directory
+            
+        Returns:
+            Tuple of (is_valid, error_message)
+        """
+        path = Path(model_path)
+        
+        # Check if path exists
+        if not path.exists():
+            return False, f"Model path does not exist: {model_path}"
+        
+        # For remote model IDs (contain /), we can't validate locally
+        if '/' in str(model_path) and not path.is_dir():
+            return True, "Remote model ID - will validate on load"
+        
+        if not path.is_dir():
+            return False, f"Model path is not a directory: {model_path}"
+        
+        # Check for config.json (required for transformers)
+        config_file = path / "config.json"
+        if not config_file.exists():
+            # Check subdirectories
+            config_files = list(path.rglob("config.json"))
+            if not config_files:
+                return False, f"No config.json found in {model_path}"
+            # Update to use the found config
+            config_file = config_files[0]
+        
+        # Validate config.json has required fields
+        try:
+            import json
+            config = json.loads(config_file.read_text(encoding='utf-8'))
+            
+            # Check for model_type which is required
+            if 'model_type' not in config:
+                # Some models use architectures array instead
+                if 'architectures' not in config:
+                    return False, f"config.json missing 'model_type' or 'architectures' field in {config_file}"
+            
+            # Check for common issues with GGUF models
+            if 'gguf' in str(model_path).lower():
+                # GGUF models require llama.cpp or similar, not transformers
+                return False, f"GGUF models are not supported via HuggingFace transformers. Use Ollama instead for: {model_path}"
+            
+        except json.JSONDecodeError as e:
+            return False, f"Invalid JSON in config.json: {e}"
+        except Exception as e:
+            return False, f"Error reading config.json: {e}"
+        
+        # Check for tokenizer files
+        has_tokenizer = (
+            (path / "tokenizer.json").exists() or
+            (path / "tokenizer_config.json").exists() or
+            (path / "vocab.json").exists() or
+            (path / "spiece.model").exists() or
+            any(path.rglob("tokenizer*.json"))
+        )
+        
+        if not has_tokenizer:
+            # Some models bundle tokenizer in the model itself
+            logger.warning(f"No tokenizer files found in {model_path}, may fail to load")
+        
+        # Check for model weights
+        has_weights = (
+            any(path.glob("*.bin")) or
+            any(path.glob("*.safetensors")) or
+            any(path.glob("pytorch_model*.bin")) or
+            any(path.glob("model*.safetensors")) or
+            any(path.rglob("*.bin")) or
+            any(path.rglob("*.safetensors"))
+        )
+        
+        if not has_weights:
+            return False, f"No model weights (.bin or .safetensors) found in {model_path}"
+        
+        return True, "Model structure valid"
+    
     async def ensure_model_loaded(self, model_id: str, model_path: Optional[str] = None) -> bool:
         """
         Ensure a model is loaded and ready to use.
@@ -198,6 +280,16 @@ class HuggingFaceClient:
                         # Use model_id directly (will download from HF Hub)
                         load_path = model_id
                         logger.info(f"Model not found locally, will download from HuggingFace Hub: {model_id}")
+                
+                # CRITICAL: Validate model structure before attempting to load
+                # This prevents cryptic errors from transformers
+                is_valid, validation_msg = self.validate_model_structure(load_path)
+                if not is_valid:
+                    logger.error(f"Model validation failed for {model_id}: {validation_msg}")
+                    if model_id in self.models:
+                        self.models[model_id].status = ModelStatus.ERROR
+                        self.models[model_id].error_message = validation_msg
+                    raise ValueError(f"Model validation failed: {validation_msg}")
                 
                 # Load tokenizer and model in thread pool (blocking operations)
                 def load_model():

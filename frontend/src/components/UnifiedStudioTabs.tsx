@@ -4,7 +4,8 @@ import { ArtifactType } from '../services/generationService'
 import { useSystemStatus } from '../hooks/useSystemStatus'
 import { 
   Loader2, Sparkles, FileText, CheckCircle2, Folder, Code, FileCode, 
-  Download, Key, Settings, Search, Network, ListTodo, Sliders, Edit3, GitBranch
+  Download, Key, Settings, Search, Network, ListTodo, Sliders, Edit3, GitBranch,
+  FolderGit2, Link2, ShieldCheck
 } from 'lucide-react'
 import MeetingNotesManager from './MeetingNotesManager'
 import BulkGenerationDialog from './BulkGenerationDialog'
@@ -55,6 +56,8 @@ const InteractivePrototypeEditor = lazyWithRetry(() => import('./InteractiveProt
 const CodeWithTestsEditor = lazyWithRetry(() => import('./CodeWithTestsEditor'))
 const MermaidRenderer = lazyWithRetry(() => import('./MermaidRenderer'))
 const VersionControl = lazyWithRetry(() => import('./VersionControl'))
+const MultiRepoManager = lazyWithRetry(() => import('./MultiRepoManager'))
+const ArtifactDependencies = lazyWithRetry(() => import('./ArtifactDependencies'))
 
 // Loading fallback component
 const LoadingFallback = memo(function LoadingFallback() {
@@ -1012,6 +1015,40 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                  <div className="p-6">
                     <Suspense fallback={<LoadingFallback />}>
                       <ExportManager />
+                    </Suspense>
+                 </div>
+              </div>
+
+              <div className="glass-panel rounded-2xl overflow-hidden shadow-elevated hover:shadow-floating transition-all duration-300 border-border bg-card interactive-card">
+                 <div className="border-b border-border bg-secondary/20 px-6 py-5 backdrop-blur-md">
+                    <h3 className="font-black flex items-center gap-3 text-foreground">
+                       <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30">
+                         <FolderGit2 className="w-4 h-4 text-emerald-500" />
+                       </div>
+                       Multi-Repository Analysis
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1 ml-11">Configure multiple repositories for unified architecture analysis</p>
+                 </div>
+                 <div className="p-6">
+                    <Suspense fallback={<LoadingFallback />}>
+                      <MultiRepoManager />
+                    </Suspense>
+                 </div>
+              </div>
+
+              <div className="glass-panel rounded-2xl overflow-hidden shadow-elevated hover:shadow-floating transition-all duration-300 border-border bg-card interactive-card">
+                 <div className="border-b border-border bg-secondary/20 px-6 py-5 backdrop-blur-md">
+                    <h3 className="font-black flex items-center gap-3 text-foreground">
+                       <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center border border-orange-500/30">
+                         <Link2 className="w-4 h-4 text-orange-500" />
+                       </div>
+                       Artifact Dependencies
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1 ml-11">View and manage artifact relationships and staleness</p>
+                 </div>
+                 <div className="p-6">
+                    <Suspense fallback={<LoadingFallback />}>
+                      <ArtifactDependencies />
                     </Suspense>
                  </div>
               </div>

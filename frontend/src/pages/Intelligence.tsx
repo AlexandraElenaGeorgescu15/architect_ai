@@ -7,9 +7,10 @@ import { listModels } from '../services/modelService'
 import { listTrainingJobs, triggerTraining, getTrainingStats } from '../services/trainingService'
 import { ArtifactType } from '../services/generationService'
 import ModelMapping from '../components/ModelMapping'
-import { Loader2, Brain, Database, Play, RefreshCw, Network, Search as SearchIcon, Sparkles, Trash2, GraduationCap, AlertCircle, CheckCircle, TrendingUp, Clock } from 'lucide-react'
+import { Loader2, Brain, Database, Play, RefreshCw, Network, Search as SearchIcon, Sparkles, Trash2, GraduationCap, AlertCircle, CheckCircle, TrendingUp, Clock, ShieldCheck, FileSearch } from 'lucide-react'
 import KnowledgeGraphViewer from '../components/KnowledgeGraphViewer'
 import PatternMiningResults from '../components/PatternMiningResults'
+import DesignReviewPanel from '../components/DesignReviewPanel'
 import { generateSyntheticData, getAllStats, clearSynthetic, SyntheticStats } from '../services/syntheticDataService'
 import { useUIStore } from '../stores/uiStore'
 import { getBackendUrl } from '../services/api'
@@ -610,6 +611,22 @@ export default function Intelligence() {
           </div>
         </div>
         <PatternMiningResults data={pmData} isLoading={isLoadingPM} />
+      </div>
+
+      {/* Design Review Section */}
+      <div className="glass-panel rounded-2xl p-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+              <ShieldCheck className="w-5 h-5 text-emerald-500" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-foreground">Design Review</h2>
+              <p className="text-xs text-foreground uppercase tracking-wider">AI-Powered Code Analysis</p>
+            </div>
+          </div>
+        </div>
+        <DesignReviewPanel />
       </div>
 
       {/* Model Mapping - Consolidated HuggingFace Search */}

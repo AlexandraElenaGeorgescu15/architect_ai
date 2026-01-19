@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { X, Layers, CheckCircle, AlertCircle, Loader2 } from 'lucide-react'
+import { X, Layers, CheckCircle, AlertCircle, Loader2, Package, Zap, Layout, FileCode, FileText, Sparkles } from 'lucide-react'
 import { ArtifactType } from '../services/generationService'
 
 interface BulkGenerationProgress {
@@ -9,6 +9,65 @@ interface BulkGenerationProgress {
   message?: string
   error?: string
 }
+
+// Sprint Package Presets - Quick selection groups
+interface PackagePreset {
+  id: string
+  name: string
+  description: string
+  icon: typeof Package
+  color: string
+  artifacts: ArtifactType[]
+  estimatedTime: string
+}
+
+const PACKAGE_PRESETS: PackagePreset[] = [
+  {
+    id: 'full',
+    name: 'Full Sprint Package',
+    description: 'Complete artifact suite for a feature',
+    icon: Package,
+    color: 'text-primary',
+    artifacts: ['mermaid_erd', 'mermaid_architecture', 'mermaid_sequence', 'api_docs', 'code_prototype', 'dev_visual_prototype', 'jira'],
+    estimatedTime: '~15 min'
+  },
+  {
+    id: 'backend',
+    name: 'Backend Package',
+    description: 'Data model, API, and implementation',
+    icon: FileCode,
+    color: 'text-emerald-500',
+    artifacts: ['mermaid_erd', 'mermaid_class', 'api_docs', 'code_prototype'],
+    estimatedTime: '~8 min'
+  },
+  {
+    id: 'frontend',
+    name: 'Frontend Package',
+    description: 'UI prototype and user flows',
+    icon: Layout,
+    color: 'text-blue-500',
+    artifacts: ['dev_visual_prototype', 'mermaid_user_flow', 'mermaid_state'],
+    estimatedTime: '~6 min'
+  },
+  {
+    id: 'documentation',
+    name: 'Documentation Package',
+    description: 'All diagrams and documentation',
+    icon: FileText,
+    color: 'text-amber-500',
+    artifacts: ['mermaid_erd', 'mermaid_architecture', 'mermaid_sequence', 'mermaid_component', 'mermaid_data_flow', 'api_docs'],
+    estimatedTime: '~10 min'
+  },
+  {
+    id: 'quick',
+    name: 'Quick Start',
+    description: 'Essential artifacts only',
+    icon: Zap,
+    color: 'text-purple-500',
+    artifacts: ['mermaid_erd', 'mermaid_architecture', 'api_docs'],
+    estimatedTime: '~5 min'
+  }
+]
 
 interface BulkGenerationDialogProps {
   isOpen: boolean
@@ -27,21 +86,36 @@ export default function BulkGenerationDialog({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [bulkProgress, setBulkProgress] = useState<BulkGenerationProgress[]>([])
   const [showProgress, setShowProgress] = useState(false)
+  const [activePreset, setActivePreset] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<'presets' | 'custom'>('presets')
 
   // Reset state when dialog closes
   useEffect(() => {
     if (!isOpen) {
       setShowProgress(false)
       setBulkProgress([])
+      setActivePreset(null)
+      setViewMode('presets')
     }
   }, [isOpen])
 
   if (!isOpen) return null
 
   const toggleSelection = (type: ArtifactType) => {
+    setActivePreset(null) // Clear preset when manually selecting
     setSelection((prev) =>
       prev.includes(type) ? prev.filter((item) => item !== type) : [...prev, type]
     )
+  }
+
+  const applyPreset = (preset: PackagePreset) => {
+    // Only include artifacts that are available in the artifactTypes list
+    const availableArtifacts = preset.artifacts.filter(a => 
+      artifactTypes.some(t => t.value === a)
+    )
+    setSelection(availableArtifacts as ArtifactType[])
+    setActivePreset(preset.id)
+    setViewMode('custom') // Switch to custom view to show what's selected
   }
 
   const handleProgressUpdate = (progress: BulkGenerationProgress[]) => {
@@ -91,17 +165,44 @@ export default function BulkGenerationDialog({
               <Layers className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-foreground">Bulk Generation</h2>
-              <p className="text-xs text-muted-foreground">Select multiple artifacts to generate in one run.</p>
+              <h2 className="text-lg font-bold text-foreground">Sprint Package Generator</h2>
+              <p className="text-xs text-muted-foreground">Generate multiple artifacts in one run</p>
             </div>
           </div>
-          <button 
-            onClick={onClose} 
-            className="p-2 hover:bg-destructive/10 hover:text-destructive rounded-xl transition-all duration-200 group"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
-          </button>
+          <div className="flex items-center gap-2">
+            {!showProgress && (
+              <div className="flex rounded-lg border border-border overflow-hidden">
+                <button
+                  onClick={() => setViewMode('presets')}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                    viewMode === 'presets' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'bg-background hover:bg-secondary text-muted-foreground'
+                  }`}
+                >
+                  <Sparkles className="w-3 h-3 inline mr-1" />
+                  Presets
+                </button>
+                <button
+                  onClick={() => setViewMode('custom')}
+                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                    viewMode === 'custom' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'bg-background hover:bg-secondary text-muted-foreground'
+                  }`}
+                >
+                  Custom
+                </button>
+              </div>
+            )}
+            <button 
+              onClick={onClose} 
+              className="p-2 hover:bg-destructive/10 hover:text-destructive rounded-xl transition-all duration-200 group"
+              aria-label="Close"
+            >
+              <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -195,34 +296,113 @@ export default function BulkGenerationDialog({
                 ))}
               </div>
             </div>
-          ) : (
-            /* Selection View */
-            <div className="grid gap-3 md:grid-cols-2">
-              {artifactTypes.map((type) => (
-                <label
-                  key={type.value}
-                  className={`glass-button border-2 rounded-xl p-4 cursor-pointer transition-all duration-300 group ${
-                    selection.includes(type.value)
-                      ? 'border-primary bg-primary/10 shadow-glow'
-                      : 'border-border hover:border-primary/50 hover:bg-primary/5'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={selection.includes(type.value)}
-                      onChange={() => toggleSelection(type.value)}
-                      className="mt-1 w-4 h-4 accent-primary rounded border-border"
-                    />
-                    <div className="flex-1">
-                      <span className="font-semibold text-foreground block group-hover:text-primary transition-colors">
-                        {type.label}
+          ) : viewMode === 'presets' ? (
+            /* Presets View */
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground mb-4">
+                Choose a pre-configured package or customize your selection
+              </p>
+              <div className="grid gap-3 md:grid-cols-2">
+                {PACKAGE_PRESETS.map((preset) => {
+                  const Icon = preset.icon
+                  const availableCount = preset.artifacts.filter(a => 
+                    artifactTypes.some(t => t.value === a)
+                  ).length
+                  
+                  return (
+                    <button
+                      key={preset.id}
+                      onClick={() => applyPreset(preset)}
+                      className={`text-left border-2 rounded-xl p-4 transition-all duration-300 hover:scale-[1.02] ${
+                        activePreset === preset.id
+                          ? 'border-primary bg-primary/10 shadow-glow'
+                          : 'border-border hover:border-primary/50 hover:bg-primary/5'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-10 h-10 rounded-lg bg-secondary flex items-center justify-center ${preset.color}`}>
+                          <Icon className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1">
+                          <span className="font-semibold text-foreground block">
+                            {preset.name}
+                          </span>
+                          <span className="text-xs text-muted-foreground block mt-1">
+                            {preset.description}
+                          </span>
+                          <div className="flex items-center gap-3 mt-2">
+                            <span className="text-xs px-2 py-0.5 bg-secondary rounded-full">
+                              {availableCount} artifacts
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              {preset.estimatedTime}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+              
+              {activePreset && (
+                <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                  <p className="text-sm text-primary font-medium mb-2">
+                    Selected: {PACKAGE_PRESETS.find(p => p.id === activePreset)?.name}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {selection.map(type => (
+                      <span key={type} className="text-xs px-2 py-1 bg-primary/10 text-primary rounded">
+                        {getArtifactLabel(type)}
                       </span>
-                      <span className="text-xs text-muted-foreground block mt-1">{type.category}</span>
-                    </div>
+                    ))}
                   </div>
-                </label>
-              ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Custom Selection View */
+            <div className="space-y-4">
+              {activePreset && (
+                <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg flex items-center justify-between">
+                  <span className="text-sm text-primary">
+                    Based on: {PACKAGE_PRESETS.find(p => p.id === activePreset)?.name}
+                  </span>
+                  <button 
+                    onClick={() => { setActivePreset(null); setSelection([]) }}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Clear
+                  </button>
+                </div>
+              )}
+              <div className="grid gap-3 md:grid-cols-2">
+                {artifactTypes.map((type) => (
+                  <label
+                    key={type.value}
+                    className={`glass-button border-2 rounded-xl p-4 cursor-pointer transition-all duration-300 group ${
+                      selection.includes(type.value)
+                        ? 'border-primary bg-primary/10 shadow-glow'
+                        : 'border-border hover:border-primary/50 hover:bg-primary/5'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={selection.includes(type.value)}
+                        onChange={() => toggleSelection(type.value)}
+                        className="mt-1 w-4 h-4 accent-primary rounded border-border"
+                      />
+                      <div className="flex-1">
+                        <span className="font-semibold text-foreground block group-hover:text-primary transition-colors">
+                          {type.label}
+                        </span>
+                        <span className="text-xs text-muted-foreground block mt-1">{type.category}</span>
+                      </div>
+                    </div>
+                  </label>
+                ))}
+              </div>
             </div>
           )}
         </div>

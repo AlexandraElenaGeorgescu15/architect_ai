@@ -257,148 +257,166 @@ class UniversalDiagramFixer:
         return None
     
     def _fix_erd_diagram(self, content: str) -> str:
-        """Fix ERD diagram syntax with comprehensive error handling"""
+        """Fix ERD diagram syntax with STRICT validation.
+        
+        Valid ERD syntax:
+        - erDiagram (header)
+        - EntityA ||--o{ EntityB : relationship
+        - EntityA { type field_name KEY }
+        
+        Relationship symbols:
+        - ||--|| : one to one
+        - ||--o{ : one to many  
+        - }o--o{ : many to many
+        - ||--o| : one to zero or one
+        
+        REMOVES any line that doesn't match valid patterns.
+        """
         import re
         lines = content.strip().split('\n')
-        fixed_lines = []
+        fixed_lines = ['erDiagram']
         entities = {}
         relationships = []
         current_entity = None
         current_entity_fields = []
+        seen_header = False
         
-        # Pre-process: Fix common ERD syntax errors
-        processed_lines = []
+        # Valid ERD field types
+        valid_field_types = [
+            'int', 'integer', 'bigint', 'smallint', 'tinyint',
+            'string', 'varchar', 'text', 'char', 'nvarchar',
+            'date', 'datetime', 'timestamp', 'time',
+            'boolean', 'bool', 'bit',
+            'decimal', 'float', 'double', 'real', 'numeric',
+            'uuid', 'guid', 'binary', 'blob', 'json', 'enum'
+        ]
+        
+        # Valid relationship patterns
+        relationship_regex = re.compile(
+            r'^(\w+)\s*([\|\}o\{]+--[\|\}o\{]+)\s*(\w+)\s*(?::\s*(.+))?$'
+        )
+        
         for line in lines:
             original_line = line
-            line = line.strip()
+            line_stripped = line.strip()
             
-            if not line or line.startswith('```'):
+            # Skip empty, markdown
+            if not line_stripped or line_stripped.startswith('```'):
                 continue
             
-            # Fix: Convert classDiagram-style syntax to ERD
-            # "class USER { - id (pk) }" -> "USER { int id PK }"
-            if line.lower().startswith('class ') and '{' not in line:
-                line = line.replace('class ', '').replace('CLASS ', '')
-                self.errors_fixed.append("Converted class declaration to ERD entity")
+            # Skip duplicate headers
+            if line_stripped.lower() == 'erdiagram':
+                if seen_header:
+                    continue
+                seen_header = True
+                continue
             
-            # Fix: Convert invalid relationship markers
-            # "USER -> ORDER" should be "USER ||--o{ ORDER"
-            if ' -> ' in line and '||' not in line and '{' not in line:
-                parts = line.split(' -> ')
+            # REJECT AI explanatory text
+            ai_text_patterns = [
+                r'^(This|The|Here|Below|Above|I\'ve|Let me|Hope|Feel free|As requested|Sure|Certainly|Of course)',
+                r'^[A-Z][a-z]+.*:\s*$',
+                r'^\d+\.\s+[A-Z]',
+            ]
+            is_ai_junk = any(re.match(p, line_stripped, re.IGNORECASE) for p in ai_text_patterns)
+            if is_ai_junk:
+                self.errors_fixed.append(f"Removed AI text: {line_stripped[:40]}...")
+                continue
+            
+            # Fix: Convert " -> " to ERD relationship (common AI mistake)
+            if ' -> ' in line_stripped and '||' not in line_stripped and '{' not in line_stripped:
+                parts = line_stripped.split(' -> ')
                 if len(parts) == 2:
-                    line = f'{parts[0].strip()} ||--o{{ {parts[1].strip()} : has'
+                    line_stripped = f'{parts[0].strip()} ||--o{{ {parts[1].strip()} : has'
                     self.errors_fixed.append("Converted -> to ERD relationship")
             
-            # Fix: ERD entities can't have quoted names
-            if '{' in line and '"' in line:
-                # Remove quotes from entity names
-                line = re.sub(r'"(\w+)"(\s*\{)', r'\1\2', line)
-                self.errors_fixed.append("Removed quotes from entity name")
-            
-            # Fix: Field type must come first in ERD
-            # "id int PK" should be "int id PK"
-            field_match = re.match(r'^(\s*)(\w+)\s+(int|string|varchar|text|date|datetime|boolean|decimal|float|timestamp)\s*(PK|FK)?', line)
-            if field_match:
-                indent = field_match.group(1)
-                field_name = field_match.group(2)
-                field_type = field_match.group(3)
-                key = field_match.group(4) or ''
-                line = f'{indent}{field_type} {field_name} {key}'.strip()
-                self.errors_fixed.append(f"Reordered field definition: {field_name}")
-            
-            # Fix: Invalid characters in entity/field names
-            if '{' in line or any(rel in line for rel in ['||', '}|', '|{', 'o{']):
-                # Clean up entity names (before {)
-                if '{' in line and '||' not in line:
-                    parts = line.split('{')
-                    entity_part = re.sub(r'[^\w\s]', '', parts[0]).strip()
-                    if entity_part:
-                        line = f'{entity_part} {{{parts[1]}' if len(parts) > 1 else f'{entity_part} {{'
-            
-            processed_lines.append(line)
-        
-        # Main processing loop
-        for line in processed_lines:
-            line = line.strip()
-            
-            # Ensure first line is erDiagram
-            if not fixed_lines:
-                if not line.startswith('erDiagram'):
-                    fixed_lines.append('erDiagram')
-                    if line and line != 'erDiagram':
-                        # Process this line again
-                        pass
-                    else:
-                        continue
-                else:
-                    fixed_lines.append('erDiagram')
-                    continue
-            
-            # Detect entity definition start
-            if '{' in line and not ('||' in line or '}}' in line or line.count('{') > 1):
-                entity_name = line.split('{')[0].strip()
-                # Clean entity name
-                entity_name = re.sub(r'[^\w]', '', entity_name)
-                if entity_name:
-                    current_entity = entity_name
-                    current_entity_fields = []
-                continue
-            
-            # Detect entity definition end
-            if line.startswith('}') and current_entity:
+            # Handle entity definition end
+            if line_stripped == '}' and current_entity:
                 entities[current_entity] = current_entity_fields
                 current_entity = None
                 current_entity_fields = []
                 continue
             
-            # Detect field definition (with type)
+            # Handle entity definition start
+            entity_start = re.match(r'^(\w+)\s*\{$', line_stripped)
+            if entity_start:
+                current_entity = entity_start.group(1)
+                current_entity_fields = []
+                continue
+            
+            # Handle inline entity definition: ENTITY { field... }
+            inline_entity = re.match(r'^(\w+)\s*\{(.+)\}$', line_stripped)
+            if inline_entity:
+                entity_name = inline_entity.group(1)
+                field_content = inline_entity.group(2).strip()
+                # Parse fields
+                fields = []
+                for field_def in field_content.split(','):
+                    field_def = field_def.strip()
+                    if field_def:
+                        fields.append(f'        {field_def}')
+                if fields:
+                    entities[entity_name] = fields
+                continue
+            
+            # Handle field definitions inside entity
             if current_entity:
-                # Try to parse as field: "type name KEY" or just "type name"
-                field_match = re.match(r'^(int|string|varchar|text|date|datetime|boolean|decimal|float|timestamp|uuid|bigint)\s+(\w+)\s*(PK|FK)?', line, re.IGNORECASE)
+                # Try to parse as field: "type name KEY"
+                field_match = re.match(
+                    r'^(' + '|'.join(valid_field_types) + r')\s+(\w+)\s*(PK|FK|UK)?',
+                    line_stripped, re.IGNORECASE
+                )
                 if field_match:
                     field_type = field_match.group(1).lower()
                     field_name = field_match.group(2)
-                    key = f' {field_match.group(3)}' if field_match.group(3) else ''
+                    key = f' {field_match.group(3).upper()}' if field_match.group(3) else ''
                     current_entity_fields.append(f'        {field_type} {field_name}{key}')
                     continue
-                # Also accept lines that look like fields (have underscores, typical field names)
-                elif re.match(r'^\w+(_\w+)*$', line):
-                    # Guess field type based on name
-                    field_type = 'string'
-                    if line.endswith('_id') or line == 'id':
-                        field_type = 'int'
-                    elif 'date' in line.lower() or 'time' in line.lower():
-                        field_type = 'datetime'
-                    elif line.startswith('is_') or line.startswith('has_'):
-                        field_type = 'boolean'
-                    
-                    key = ' PK' if line == 'id' else (' FK' if line.endswith('_id') else '')
-                    current_entity_fields.append(f'        {field_type} {line}{key}')
-                    self.errors_fixed.append(f"Inferred type for field: {line}")
+                
+                # Try reversed order: "name type KEY" -> fix to "type name KEY"
+                reversed_match = re.match(
+                    r'^(\w+)\s+(' + '|'.join(valid_field_types) + r')\s*(PK|FK|UK)?',
+                    line_stripped, re.IGNORECASE
+                )
+                if reversed_match:
+                    field_name = reversed_match.group(1)
+                    field_type = reversed_match.group(2).lower()
+                    key = f' {reversed_match.group(3).upper()}' if reversed_match.group(3) else ''
+                    current_entity_fields.append(f'        {field_type} {field_name}{key}')
+                    self.errors_fixed.append(f"Fixed field order: {line_stripped[:30]}...")
                     continue
-            
-            # Detect relationship with more flexible matching
-            relationship_patterns = [
-                r'(\w+)\s*([\|\}o\{]+--[\|\}o\{]+)\s*(\w+)\s*:\s*(.+)',  # Full: A ||--o{ B : label
-                r'(\w+)\s*([\|\}o\{]+--[\|\}o\{]+)\s*(\w+)',  # Without label: A ||--o{ B
-            ]
-            
-            is_relationship = False
-            for pattern in relationship_patterns:
-                rel_match = re.match(pattern, line)
-                if rel_match:
-                    entity1 = rel_match.group(1)
-                    rel_type = rel_match.group(2)
-                    entity2 = rel_match.group(3)
-                    label = rel_match.group(4) if len(rel_match.groups()) > 3 else 'relates'
-                    relationships.append(f'    {entity1} {rel_type} {entity2} : {label}')
-                    is_relationship = True
-                    break
-            
-            if is_relationship:
+                
+                # Accept simple field names and infer types
+                if re.match(r'^\w+(_\w+)*$', line_stripped):
+                    field_type = 'string'
+                    key = ''
+                    if line_stripped.endswith('_id') or line_stripped == 'id':
+                        field_type = 'int'
+                        key = ' PK' if line_stripped == 'id' else ' FK'
+                    elif 'date' in line_stripped.lower() or 'time' in line_stripped.lower():
+                        field_type = 'datetime'
+                    elif line_stripped.startswith('is_') or line_stripped.startswith('has_'):
+                        field_type = 'boolean'
+                    current_entity_fields.append(f'        {field_type} {line_stripped}{key}')
+                    continue
+                
+                # Reject invalid field line
+                self.errors_fixed.append(f"Removed invalid field: {line_stripped[:40]}...")
                 continue
+            
+            # Handle relationships
+            rel_match = relationship_regex.match(line_stripped)
+            if rel_match:
+                entity1 = rel_match.group(1)
+                rel_type = rel_match.group(2)
+                entity2 = rel_match.group(3)
+                label = rel_match.group(4) if rel_match.group(4) else 'relates'
+                relationships.append(f'    {entity1} {rel_type} {entity2} : {label}')
+                continue
+            
+            # Reject anything else outside entity definition
+            self.errors_fixed.append(f"Removed invalid ERD line: {line_stripped[:40]}...")
         
-        # Handle case where entity wasn't closed
+        # Handle unclosed entity
         if current_entity and current_entity_fields:
             entities[current_entity] = current_entity_fields
             self.errors_fixed.append(f"Auto-closed entity: {current_entity}")
@@ -418,7 +436,6 @@ class UniversalDiagramFixer:
             if fields:
                 fixed_lines.extend(fields)
             else:
-                # Add placeholder if no fields
                 fixed_lines.append('        int id PK')
                 self.errors_fixed.append(f"Added placeholder fields to entity {entity_name}")
             fixed_lines.append('    }')
@@ -426,35 +443,68 @@ class UniversalDiagramFixer:
         # Add relationships
         fixed_lines.extend(relationships)
         
-        if entities:
-            self.errors_fixed.append(f"Fixed ERD structure: {len(entities)} entities, {len(relationships)} relationships")
-        
         return '\n'.join(fixed_lines)
     
     def _fix_flowchart_diagram(self, content: str) -> str:
-        """Fix flowchart/graph diagram syntax"""
+        """Fix flowchart/graph diagram syntax with STRICT validation.
+        
+        Valid flowchart syntax:
+        - flowchart TD|LR|TB|BT|RL (direction)
+        - graph TD|LR|TB|BT|RL (direction)
+        - A[Label] --> B[Label]
+        - A{Decision} -->|Yes| B
+        - subgraph name ... end
+        - classDef/class statements
+        
+        REMOVES any line that doesn't match valid patterns.
+        """
         import re
         lines = content.strip().split('\n')
         fixed_lines = []
         seen_header = False
+        in_subgraph = 0  # Track subgraph nesting
+        
+        # Valid flowchart line patterns (strict)
+        valid_patterns = [
+            r'^(flowchart|graph)\s+(TD|LR|TB|BT|RL)',  # Header
+            r'^\s*subgraph\s+',  # Subgraph start
+            r'^\s*end\s*$',  # Subgraph end
+            r'^\s*classDef\s+',  # Class definition
+            r'^\s*class\s+\w+',  # Class application
+            r'^\s*style\s+',  # Style definition
+            r'^\s*linkStyle\s+',  # Link style
+            r'^\s*direction\s+',  # Direction override
+            r'^\s*%%',  # Comments
+            # Node definitions and connections - the core patterns
+            r'^\s*\w+[\[\(\{\<]',  # Node with shape: A[, A(, A{, A<
+            r'^\s*\w+\s*--',  # Connection starting: A --
+            r'^\s*\w+\s*-\.', # Dotted line: A -.
+            r'^\s*\w+\s*==',  # Thick line: A ==
+            r'^\s*\w+\s*~~~', # Invisible link
+            r'^\s*\w+\s*\|',  # A | text
+        ]
         
         for line in lines:
-            line = line.strip()
+            original_line = line
+            line_stripped = line.strip()
             
             # Skip empty lines and markdown blocks
-            if not line or line.startswith('```'):
+            if not line_stripped or line_stripped.startswith('```'):
                 continue
             
-            # Skip duplicate flowchart/graph declarations
-            line_lower = line.lower()
-            if ('flowchart' in line_lower or 'graph' in line_lower):
+            # Handle header
+            line_lower = line_stripped.lower()
+            if line_lower.startswith('flowchart') or line_lower.startswith('graph'):
                 if seen_header:
-                    self.errors_fixed.append(f"Removed duplicate header: {line}")
+                    self.errors_fixed.append(f"Removed duplicate header: {line_stripped}")
                     continue
-                else:
-                    fixed_lines.append(line)
-                    seen_header = True
-                    continue
+                # Ensure valid direction
+                if not re.match(r'^(flowchart|graph)\s+(TD|LR|TB|BT|RL)', line_stripped, re.IGNORECASE):
+                    line_stripped = 'flowchart TD'
+                    self.errors_fixed.append("Fixed flowchart header direction")
+                fixed_lines.append(line_stripped)
+                seen_header = True
+                continue
             
             # Add header if missing
             if not seen_header:
@@ -462,101 +512,64 @@ class UniversalDiagramFixer:
                 seen_header = True
                 self.errors_fixed.append("Added missing flowchart TD header")
             
-            # Fix common syntax issues
-            # Issue 1: Fix INVALID arrow syntax -->|label|> should be -->|label|
-            # This is a CRITICAL fix - the |> at the end is invalid Mermaid syntax
-            if '|>' in line:
-                original_line = line
-                line = re.sub(r'\|>', '', line)  # Remove all |> occurrences
-                if line != original_line:
-                    self.errors_fixed.append("Fixed invalid arrow syntax (removed trailing |>)")
-            
-            # Issue 1b: Fix reversed |> arrow to proper --> syntax
-            # A|>B should become A --> B  
-            line = re.sub(r'(\w+)\s*\|>\s*(\w+)', r'\1 --> \2', line)
-            
-            # Issue 2: Missing quotes in labels with spaces
-            if '[' in line and ']' in line:
-                match = re.search(r'\[([^\]]+)\]', line)
-                if match:
-                    label = match.group(1)
-                    if ' ' in label and not (label.startswith('"') or label.startswith("'")):
-                        line = line.replace(f'[{label}]', f'["{label}"]')
-                        self.errors_fixed.append("Added quotes to labels with spaces")
-            
-            # Issue 2b: Fix unbalanced quotes in labels
-            if '[' in line and ']' in line:
-                # Count quotes inside brackets
-                bracket_content = re.search(r'\[([^\]]*)\]', line)
-                if bracket_content:
-                    inside = bracket_content.group(1)
-                    quote_count = inside.count('"')
-                    if quote_count % 2 != 0:
-                        # Unbalanced quotes - remove them all
-                        fixed_inside = inside.replace('"', '')
-                        line = line.replace(f'[{inside}]', f'[{fixed_inside}]')
-                        self.errors_fixed.append("Fixed unbalanced quotes in label")
-            
-            # Issue 3: Fix arrow syntax
-            line = re.sub(r'--+>', '-->', line)  # Multiple dashes to standard arrow
-            line = re.sub(r'==+>', '==>', line)  # Bold arrows
-            
-            # Issue 3b: Fix malformed arrows like -.- or -..- to -.->
-            line = re.sub(r'-\.-(?!>)', '-.->', line)
-            
-            # Issue 3c: Fix double arrow heads --> --> to single -->
-            line = re.sub(r'-->\s*-->', '-->', line)
-            
-            # Issue 4: Fix node definition with missing closing bracket
-            # A[Start -> B should become A[Start] --> B
-            if re.search(r'\[[^\]]*$', line):
-                # Line has unclosed bracket - try to fix
-                line = re.sub(r'\[([^\]]*?)(\s*-+>)', r'[\1]\2', line)
-                self.errors_fixed.append("Fixed unclosed bracket in node definition")
-            
-            # Issue 4: Remove explanatory text lines (comprehensive patterns)
-            explanatory_line_patterns = [
-                r'^[A-Z][a-z].*:$',  # "Start:", "Here is:", etc. (ending with colon)
-                r'^This diagram.*',  # "This diagram shows..."
-                r'^The following.*',  # "The following..."
-                r'^Below is.*',  # "Below is..."
-                r'^Above is.*',  # "Above is..."
-                r'^Generated.*',  # "Generated..."
-                r'^Output.*',  # "Output..."
-                r'^Result.*',  # "Result..."
-                r'^Corrected.*',  # "Corrected..."
-                r'^Fixed.*',  # "Fixed..."
-                r'^Updated.*',  # "Updated..."
-                r'^\d+\.\s+[A-Z]',  # "1. The generated...", "2. Otherwise..."
-                r'^Let me know.*',  # "Let me know if..."
-                r'^Hope this helps.*',  # "Hope this helps!"
-                r'^Feel free.*',  # "Feel free to..."
-                r'^I\'ve made.*',  # "I've made the following..."
-                r'^Here\'s.*',  # "Here's the..."
-                r'^Here are.*',  # "Here are the..."
-                r'^Here is.*',  # "Here is the..."
-            ]
-            is_explanatory = any(re.match(pattern, line, re.IGNORECASE) for pattern in explanatory_line_patterns)
-            if is_explanatory:
-                self.errors_fixed.append(f"Removed explanatory text: {line[:50]}...")
+            # Track subgraph nesting
+            if line_stripped.lower().startswith('subgraph'):
+                in_subgraph += 1
+            elif line_stripped.lower() == 'end':
+                in_subgraph = max(0, in_subgraph - 1)
+                fixed_lines.append('    ' + line_stripped)
                 continue
             
-            # Issue 5: Fix node IDs (remove special characters)
-            if '-->' in line or '---' in line or '-.>' in line or '[' in line:
-                if not line.startswith('    '):
-                    line = '    ' + line
-                fixed_lines.append(line)
-            elif line and not line.startswith(('flowchart', 'graph', 'classDef', 'class ')):
-                # Include classDef and class statements without indentation check
-                if line.startswith('classDef') or line.startswith('class '):
-                    if not line.startswith('    '):
-                        line = '    ' + line
-                    fixed_lines.append(line)
-                elif not line.startswith('    '):
-                    line = '    ' + line
-                    fixed_lines.append(line)
-                else:
-                    fixed_lines.append(line)
+            # Fix INVALID |> syntax (critical error source)
+            if '|>' in line_stripped:
+                line_stripped = line_stripped.replace('|>', '')
+                self.errors_fixed.append("Removed invalid |> syntax")
+            
+            # Fix double arrows
+            line_stripped = re.sub(r'-->\s*-->', '-->', line_stripped)
+            line_stripped = re.sub(r'--+>', '-->', line_stripped)
+            line_stripped = re.sub(r'==+>', '==>', line_stripped)
+            
+            # Fix unclosed brackets
+            open_brackets = line_stripped.count('[') + line_stripped.count('(') + line_stripped.count('{')
+            close_brackets = line_stripped.count(']') + line_stripped.count(')') + line_stripped.count('}')
+            if open_brackets > close_brackets:
+                # Add missing closing brackets
+                diff = open_brackets - close_brackets
+                for _ in range(diff):
+                    if '[' in line_stripped and line_stripped.count('[') > line_stripped.count(']'):
+                        line_stripped += ']'
+                    elif '(' in line_stripped and line_stripped.count('(') > line_stripped.count(')'):
+                        line_stripped += ')'
+                    elif '{' in line_stripped and line_stripped.count('{') > line_stripped.count('}'):
+                        line_stripped += '}'
+                self.errors_fixed.append("Fixed unclosed brackets")
+            
+            # REJECT explanatory text (AI-generated junk)
+            ai_text_patterns = [
+                r'^(This|The|Here|Below|Above|I\'ve|Let me|Hope|Feel free|As requested)',
+                r'^[A-Z][a-z]+.*:\s*$',  # "Something:" on its own
+                r'^\d+\.\s+[A-Z]',  # Numbered list
+            ]
+            is_ai_junk = any(re.match(p, line_stripped, re.IGNORECASE) for p in ai_text_patterns)
+            if is_ai_junk:
+                self.errors_fixed.append(f"Removed AI text: {line_stripped[:40]}...")
+                continue
+            
+            # Check if line matches any valid pattern
+            is_valid = any(re.match(p, line_stripped, re.IGNORECASE) for p in valid_patterns)
+            
+            # Also accept lines that look like diagram content
+            has_arrow = any(x in line_stripped for x in ['-->', '---', '-.', '==>', '~~~'])
+            has_node = re.search(r'\w+[\[\(\{\<]', line_stripped)
+            
+            if is_valid or has_arrow or has_node or in_subgraph > 0:
+                # Ensure proper indentation
+                if not line_stripped.startswith(' '):
+                    line_stripped = '    ' + line_stripped
+                fixed_lines.append(line_stripped)
+            else:
+                self.errors_fixed.append(f"Removed invalid flowchart line: {line_stripped[:40]}...")
         
         if len(fixed_lines) <= 1:
             self.errors_fixed.append("Flowchart appears empty - added sample node")
@@ -565,108 +578,120 @@ class UniversalDiagramFixer:
         return '\n'.join(fixed_lines)
     
     def _fix_sequence_diagram(self, content: str) -> str:
-        """Fix sequence diagram syntax with comprehensive error handling"""
+        """Fix sequence diagram syntax with STRICT validation.
+        
+        Valid sequence diagram syntax:
+        - sequenceDiagram (header)
+        - participant A as Alias
+        - actor A as Alias
+        - A->>B: Message (solid arrow with arrowhead)
+        - A-->>B: Message (dotted arrow with arrowhead)
+        - A->B: Message (solid arrow without arrowhead)
+        - A-->B: Message (dotted arrow without arrowhead)
+        - Note right/left of A: Text
+        - Note over A,B: Text
+        - loop/alt/opt/par/rect/critical ... end
+        - activate/deactivate A
+        
+        REMOVES any line that doesn't match valid patterns.
+        """
         import re
         lines = content.strip().split('\n')
-        fixed_lines = []
+        fixed_lines = ['sequenceDiagram']
         participants = set()
+        in_block = 0  # Track nested blocks (loop, alt, etc.)
+        seen_header = False
         
-        # Ensure header
-        if not lines[0].strip().lower().startswith('sequencediagram'):
-            fixed_lines.append('sequenceDiagram')
-            self.errors_fixed.append("Added missing sequenceDiagram header")
-        else:
-            fixed_lines.append('sequenceDiagram')
+        # Valid sequence diagram line patterns (strict)
+        valid_keywords = [
+            'participant', 'actor', 'note', 'loop', 'alt', 'else', 'opt', 'par', 
+            'and', 'critical', 'break', 'rect', 'activate', 'deactivate', 'end',
+            'autonumber', 'box', 'title', 'links', 'link'
+        ]
         
-        # Pre-process to extract participants from arrows
+        # First pass: extract participants from arrows
         for line in lines:
-            # Match arrow patterns to find participants
             arrow_match = re.search(r'(\w+)\s*(->>|-->>|->|-->)\s*(\w+)', line)
             if arrow_match:
                 participants.add(arrow_match.group(1))
                 participants.add(arrow_match.group(3))
         
-        # Process interactions
-        for line in lines[1:] if fixed_lines else lines:
+        for line in lines:
             original_line = line
-            line = line.strip()
+            line_stripped = line.strip()
             
-            if not line or line.startswith('```') or line.lower().startswith('sequencediagram'):
+            # Skip empty, markdown, duplicate headers
+            if not line_stripped or line_stripped.startswith('```'):
+                continue
+            if line_stripped.lower() == 'sequencediagram':
+                if seen_header:
+                    continue
+                seen_header = True
+                continue  # Already added header
+            
+            # Track block nesting
+            line_lower = line_stripped.lower()
+            if any(line_lower.startswith(kw) for kw in ['loop', 'alt', 'opt', 'par', 'rect', 'critical', 'box']):
+                in_block += 1
+            elif line_lower == 'end':
+                in_block = max(0, in_block - 1)
+                fixed_lines.append('    end')
                 continue
             
-            # Fix: Invalid arrow syntax
-            # "A -> B" should be "A->>B" or "A->>B: message"
-            if ' -> ' in line and '->>' not in line and '-->' not in line:
-                line = line.replace(' -> ', '->>').replace('->> ', '->>')
-                self.errors_fixed.append("Fixed arrow syntax: -> to ->>")
+            # REJECT explanatory AI text
+            ai_text_patterns = [
+                r'^(This|The|Here|Below|Above|I\'ve|Let me|Hope|Feel free|As requested|Sure|Certainly|Of course)',
+                r'^[A-Z][a-z]+.*:\s*$',
+                r'^\d+\.\s+[A-Z]',
+            ]
+            is_ai_junk = any(re.match(p, line_stripped, re.IGNORECASE) for p in ai_text_patterns)
+            if is_ai_junk:
+                self.errors_fixed.append(f"Removed AI text: {line_stripped[:40]}...")
+                continue
             
-            # Fix: Missing colon in message
-            # "A->>B Hello" should be "A->>B: Hello"
-            arrow_without_colon = re.match(r'^(\w+\s*->>-?\s*\w+)\s+([^:].+)$', line)
-            if arrow_without_colon:
-                line = f'{arrow_without_colon.group(1)}: {arrow_without_colon.group(2)}'
-                self.errors_fixed.append("Added missing colon after arrow")
+            # Fix invalid arrow syntax: " -> " should be "->>" for sequence diagrams
+            if ' -> ' in line_stripped and '->>' not in line_stripped and '-->' not in line_stripped:
+                line_stripped = line_stripped.replace(' -> ', '->>')
+                self.errors_fixed.append("Fixed -> to ->> for sequence diagram")
             
-            # Fix: Participant with unquoted alias containing spaces
-            # "participant A as User Service" -> "participant A as UserService"
-            participant_alias_match = re.match(r'^participant\s+(\w+)\s+as\s+(.+)$', line, re.IGNORECASE)
-            if participant_alias_match:
-                alias = participant_alias_match.group(2)
-                if ' ' in alias and not (alias.startswith('"') or alias.startswith("'")):
-                    # Wrap in quotes
-                    line = f'participant {participant_alias_match.group(1)} as "{alias}"'
-                    self.errors_fixed.append("Quoted participant alias with spaces")
+            # Check if line is a valid keyword line
+            is_keyword_line = any(line_lower.startswith(kw) for kw in valid_keywords)
             
-            # Fix: Actor with spaces in name
-            actor_match = re.match(r'^actor\s+(.+)$', line, re.IGNORECASE)
-            if actor_match:
-                name = actor_match.group(1).strip()
-                if ' ' in name and not (name.startswith('"') or name.startswith("'")):
-                    line = f'actor "{name}"'
-                    self.errors_fixed.append("Quoted actor name with spaces")
+            # Check if line is an arrow/message
+            has_arrow = any(x in line_stripped for x in ['->>', '-->>',  '->', '-->', '-x', '--x'])
             
-            # Fix: Note syntax
-            # "Note: some text" -> "Note right of A: some text"
-            if line.lower().startswith('note:') or line.lower().startswith('note '):
-                if 'right of' not in line.lower() and 'left of' not in line.lower() and 'over' not in line.lower():
-                    # Need to add positioning - use first participant
-                    if participants:
-                        first_participant = sorted(participants)[0]
-                        note_text = re.sub(r'^note:?\s*', '', line, flags=re.IGNORECASE)
-                        line = f'Note right of {first_participant}: {note_text}'
-                        self.errors_fixed.append("Added note positioning")
+            # Check if it's a valid participant/actor declaration
+            participant_match = re.match(r'^(participant|actor)\s+\w+', line_stripped, re.IGNORECASE)
             
-            # Fix: Activate/Deactivate without participant
-            if line.lower().startswith('activate') or line.lower().startswith('deactivate'):
-                parts = line.split()
-                if len(parts) == 1:
-                    # No participant specified - skip or use first one
-                    if participants:
-                        line = f'{parts[0]} {sorted(participants)[0]}'
-                        self.errors_fixed.append(f"Added participant to {parts[0]}")
+            # Check if it's a note
+            note_match = re.match(r'^note\s+(right\s+of|left\s+of|over)\s+\w+', line_stripped, re.IGNORECASE)
             
-            # Fix: Loop/Alt/Opt without proper label
-            for keyword in ['loop', 'alt', 'opt', 'par']:
-                if line.lower().startswith(keyword) and ':' not in line and len(line.split()) == 1:
-                    line = f'{keyword} [condition]'
-                    self.errors_fixed.append(f"Added placeholder condition to {keyword}")
-            
-            # Add participant declarations
-            if line.lower().startswith('participant') or line.lower().startswith('actor'):
-                fixed_lines.append('    ' + line)
-            # Arrows
-            elif '->' in line or '-->>' in line or '-->' in line:
-                fixed_lines.append('    ' + line)
-            # Notes
-            elif line.lower().startswith('note'):
-                fixed_lines.append('    ' + line)
-            # Control flow
-            elif any(kw in line.lower() for kw in ['loop', 'alt', 'opt', 'par', 'end', 'activate', 'deactivate', 'rect', 'else']):
-                fixed_lines.append('    ' + line)
-            # Unknown line
+            # Accept valid lines
+            if is_keyword_line or has_arrow or participant_match or note_match or in_block > 0:
+                # Fix missing colon in message
+                if has_arrow:
+                    arrow_without_colon = re.match(r'^(\w+\s*(?:->>|-->>|->|-->|-x|--x)\s*\w+)\s+([^:].+)$', line_stripped)
+                    if arrow_without_colon:
+                        line_stripped = f'{arrow_without_colon.group(1)}: {arrow_without_colon.group(2)}'
+                        self.errors_fixed.append("Added missing colon after arrow")
+                
+                # Fix participant alias with spaces
+                if participant_match:
+                    alias_match = re.match(r'^(participant|actor)\s+(\w+)\s+as\s+(.+)$', line_stripped, re.IGNORECASE)
+                    if alias_match:
+                        alias = alias_match.group(3)
+                        if ' ' in alias and not (alias.startswith('"') or alias.startswith("'")):
+                            line_stripped = f'{alias_match.group(1)} {alias_match.group(2)} as "{alias}"'
+                            self.errors_fixed.append("Quoted alias with spaces")
+                
+                # Ensure indentation
+                if not line_stripped.startswith(' '):
+                    line_stripped = '    ' + line_stripped
+                fixed_lines.append(line_stripped)
             else:
-                fixed_lines.append('    ' + line)
+                self.errors_fixed.append(f"Removed invalid sequence line: {line_stripped[:40]}...")
         
+        # Ensure we have content
         if len(fixed_lines) <= 1:
             self.errors_fixed.append("Sequence diagram appears empty - added sample")
             fixed_lines.extend([
@@ -678,99 +703,205 @@ class UniversalDiagramFixer:
         return '\n'.join(fixed_lines)
     
     def _fix_class_diagram(self, content: str) -> str:
-        """Fix class diagram syntax"""
+        """Fix class diagram syntax with STRICT validation.
+        
+        Valid class diagram syntax:
+        - classDiagram (header)
+        - class ClassName { ... }
+        - ClassName : +method()
+        - ClassName : -attribute
+        - ClassA <|-- ClassB (inheritance)
+        - ClassA *-- ClassB (composition)
+        - ClassA o-- ClassB (aggregation)
+        - ClassA --> ClassB (association)
+        - ClassA ..> ClassB (dependency)
+        - ClassA <.. ClassB (reverse dependency)
+        - <<interface>> ClassName
+        - note "text"
+        
+        REMOVES any line that doesn't match valid patterns.
+        """
+        import re
         lines = content.strip().split('\n')
-        fixed_lines = []
+        fixed_lines = ['classDiagram']
+        in_class_body = False
+        seen_header = False
         
-        # Collect defined class names for validation
-        defined_classes = set()
+        # Valid class diagram patterns
+        valid_patterns = [
+            r'^class\s+\w+',  # Class declaration
+            r'^<<\w+>>\s*\w+',  # Stereotype
+            r'^[\+\-\#\~]',  # Visibility markers for members
+            r'^\w+\s+:\s+[\+\-\#\~]',  # ClassName : +method()
+            r'^\w+\s*<\|--\s*\w+',  # Inheritance
+            r'^\w+\s*\*--\s*\w+',  # Composition  
+            r'^\w+\s*o--\s*\w+',  # Aggregation
+            r'^\w+\s*-->?\s*\w+',  # Association
+            r'^\w+\s*\.\.>?\s*\w+',  # Dependency
+            r'^\w+\s*<\.\.?\s*\w+',  # Reverse dependency
+            r'^\w+\s*--\s*\w+',  # Link
+            r'^note\s+',  # Note
+            r'^link\s+',  # Link
+            r'^direction\s+',  # Direction
+            r'^namespace\s+',  # Namespace
+            r'^\}',  # Closing brace
+            r'^\{',  # Opening brace (on separate line)
+            r'^%%',  # Comment
+        ]
         
-        # First pass: collect class definitions
         for line in lines:
+            original_line = line
             line_stripped = line.strip()
-            # Match "class ClassName" or "class ClassName {"
-            class_match = re.match(r'^class\s+(\w+)', line_stripped)
-            if class_match:
-                defined_classes.add(class_match.group(1))
-        
-        # Ensure header
-        if not lines[0].strip().lower().startswith('classdiagram'):
-            fixed_lines.append('classDiagram')
-            self.errors_fixed.append("Added missing classDiagram header")
-        else:
-            fixed_lines.append('classDiagram')
-        
-        # Process class definitions and relationships
-        for line in lines[1:] if fixed_lines else lines:
-            line = line.strip()
             
-            if not line or line.startswith('```') or line.lower().startswith('classdiagram'):
+            # Skip empty, markdown
+            if not line_stripped or line_stripped.startswith('```'):
                 continue
             
-            # Fix invalid relationship syntax
-            original_line = line
+            # Skip duplicate headers
+            if line_stripped.lower() == 'classdiagram':
+                if seen_header:
+                    continue
+                seen_header = True
+                continue
             
-            # Fix mixed inheritance/composition: <|--* should be <|-- or *--
-            line = re.sub(r'<\|--\*', '<|--', line)
-            line = re.sub(r'\*--<\|', '<|--', line)
+            # Track class body
+            if '{' in line_stripped and not '}' in line_stripped:
+                in_class_body = True
+            elif '}' in line_stripped:
+                in_class_body = False
+                fixed_lines.append('    }')
+                continue
             
-            # Fix triple arrows: *---> should be *-->
-            line = re.sub(r'\*---+>', '*-->', line)
-            line = re.sub(r'o---+>', 'o-->', line)
-            line = re.sub(r'---+>', '-->', line)
+            # REJECT AI explanatory text
+            ai_text_patterns = [
+                r'^(This|The|Here|Below|Above|I\'ve|Let me|Hope|Feel free|As requested|Sure|Certainly|Of course)',
+                r'^[A-Z][a-z]+.*:\s*$',
+                r'^\d+\.\s+[A-Z]',
+            ]
+            is_ai_junk = any(re.match(p, line_stripped, re.IGNORECASE) for p in ai_text_patterns)
+            if is_ai_junk:
+                self.errors_fixed.append(f"Removed AI text: {line_stripped[:40]}...")
+                continue
             
-            # Fix reversed triple arrows
-            line = re.sub(r'<---+\*', '<--*', line)
-            line = re.sub(r'<---+o', '<--o', line)
-            line = re.sub(r'<---+', '<--', line)
+            # Fix common relationship syntax errors
+            line_stripped = re.sub(r'<\|--\*', '<|--', line_stripped)
+            line_stripped = re.sub(r'\*--<\|', '<|--', line_stripped)
+            line_stripped = re.sub(r'---+>', '-->', line_stripped)
+            line_stripped = re.sub(r'<---+', '<--', line_stripped)
+            line_stripped = re.sub(r'\.\.+->+', '..>', line_stripped)
             
-            # Fix invalid dependency arrows: ..-> should be ..>
-            line = re.sub(r'\.\.+->+', '..>', line)
-            line = re.sub(r'<-+\.\.+', '<..', line)
+            if original_line.strip() != line_stripped:
+                self.errors_fixed.append(f"Fixed relationship syntax: {original_line.strip()[:30]}...")
             
-            # Fix missing spaces around relationships
-            # But be careful not to break valid syntax
+            # Check if line matches valid patterns or is inside class body
+            is_valid = any(re.match(p, line_stripped, re.IGNORECASE) for p in valid_patterns)
+            has_relationship = any(x in line_stripped for x in ['<|--', '*--', 'o--', '-->', '..>', '<..', '--'])
             
-            if original_line != line:
-                self.errors_fixed.append(f"Fixed invalid class relationship syntax: {original_line} -> {line}")
-            
-            # Class definitions
-            if line.startswith('class ') or ('{' in line and '}' not in line):
-                fixed_lines.append('    ' + line)
-            # Class body content (inside braces)
-            elif line.startswith('-') or line.startswith('+') or line.startswith('#') or line.startswith('}'):
-                fixed_lines.append('    ' + line)
-            # Relationships - check if both classes exist, but still include invalid ones (they might render)
-            elif any(rel in line for rel in ['<|--', '*--', 'o--', '-->', '<..', '..>', '--', '<|', '|>']):
-                fixed_lines.append('    ' + line)
-            # classDef statements
-            elif line.startswith('classDef'):
-                fixed_lines.append('    ' + line)
+            if is_valid or has_relationship or in_class_body:
+                if not line_stripped.startswith(' '):
+                    line_stripped = '    ' + line_stripped
+                fixed_lines.append(line_stripped)
             else:
-                fixed_lines.append('    ' + line)
+                self.errors_fixed.append(f"Removed invalid class line: {line_stripped[:40]}...")
+        
+        # Ensure we have content
+        if len(fixed_lines) <= 1:
+            self.errors_fixed.append("Class diagram appears empty - added sample")
+            fixed_lines.extend([
+                '    class SampleClass {',
+                '        +method()',
+                '    }'
+            ])
         
         return '\n'.join(fixed_lines)
     
     def _fix_state_diagram(self, content: str) -> str:
-        """Fix state diagram syntax"""
+        """Fix state diagram syntax with STRICT validation.
+        
+        Valid state diagram syntax:
+        - stateDiagram-v2 (header)
+        - [*] --> StateA (start)
+        - StateA --> [*] (end)
+        - StateA --> StateB : transition
+        - state "Description" as StateA
+        - state StateA { ... } (composite)
+        - note right/left of StateA
+        
+        REMOVES any line that doesn't match valid patterns.
+        """
+        import re
         lines = content.strip().split('\n')
-        fixed_lines = []
+        fixed_lines = ['stateDiagram-v2']
+        in_state_body = 0
+        seen_header = False
         
-        # Ensure header
-        if not lines[0].strip().lower().startswith('statediagram'):
-            fixed_lines.append('stateDiagram-v2')
-            self.errors_fixed.append("Added missing stateDiagram header")
-        else:
-            fixed_lines.append(lines[0].strip())
+        # Valid state diagram patterns
+        valid_patterns = [
+            r'^\[\*\]\s*-->\s*\w+',  # Start state
+            r'^\w+\s*-->\s*\[\*\]',  # End state
+            r'^\w+\s*-->\s*\w+',  # Transition
+            r'^state\s+',  # State declaration
+            r'^note\s+(right|left)\s+of\s+',  # Notes
+            r'^direction\s+',  # Direction
+            r'^\[\*\]',  # Start/end marker
+            r'^\}',  # Closing brace
+            r'^\{',  # Opening brace
+            r'^--',  # Comment or divider
+            r'^%%',  # Mermaid comment
+        ]
         
-        # Process states and transitions
-        for line in lines[1:] if fixed_lines else lines:
-            line = line.strip()
+        for line in lines:
+            line_stripped = line.strip()
             
-            if not line or line.startswith('```') or line.lower().startswith('statediagram'):
+            # Skip empty, markdown
+            if not line_stripped or line_stripped.startswith('```'):
                 continue
             
-            fixed_lines.append('    ' + line)
+            # Skip duplicate headers
+            if line_stripped.lower().startswith('statediagram'):
+                if seen_header:
+                    continue
+                seen_header = True
+                continue
+            
+            # Track composite state nesting
+            if '{' in line_stripped and 'state' in line_stripped.lower():
+                in_state_body += 1
+            elif line_stripped == '}':
+                in_state_body = max(0, in_state_body - 1)
+                fixed_lines.append('    }')
+                continue
+            
+            # REJECT AI explanatory text
+            ai_text_patterns = [
+                r'^(This|The|Here|Below|Above|I\'ve|Let me|Hope|Feel free|As requested|Sure|Certainly|Of course)',
+                r'^[A-Z][a-z]+.*:\s*$',
+                r'^\d+\.\s+[A-Z]',
+            ]
+            is_ai_junk = any(re.match(p, line_stripped, re.IGNORECASE) for p in ai_text_patterns)
+            if is_ai_junk:
+                self.errors_fixed.append(f"Removed AI text: {line_stripped[:40]}...")
+                continue
+            
+            # Check if line matches valid patterns
+            is_valid = any(re.match(p, line_stripped, re.IGNORECASE) for p in valid_patterns)
+            has_transition = '-->' in line_stripped
+            
+            if is_valid or has_transition or in_state_body > 0:
+                if not line_stripped.startswith(' '):
+                    line_stripped = '    ' + line_stripped
+                fixed_lines.append(line_stripped)
+            else:
+                self.errors_fixed.append(f"Removed invalid state line: {line_stripped[:40]}...")
+        
+        # Ensure we have content
+        if len(fixed_lines) <= 1:
+            self.errors_fixed.append("State diagram appears empty - added sample")
+            fixed_lines.extend([
+                '    [*] --> StateA',
+                '    StateA --> StateB : action',
+                '    StateB --> [*]'
+            ])
         
         return '\n'.join(fixed_lines)
     
@@ -912,72 +1043,357 @@ class UniversalDiagramFixer:
         return '\n'.join(fixed_lines)
     
     def _fix_pie_diagram(self, content: str) -> str:
-        """Fix pie chart syntax"""
+        """Fix pie chart syntax with STRICT validation.
+        
+        Valid pie syntax:
+        - pie (header)
+        - pie showData (header with data display)
+        - title Chart Title
+        - "Label" : value
+        
+        REMOVES any line that doesn't match valid patterns.
+        """
+        import re
         lines = content.strip().split('\n')
-        fixed_lines = ['pie']
+        fixed_lines = []
+        seen_header = False
         
-        for line in lines[1:]:
-            line = line.strip()
-            if not line or line.startswith('```') or line.lower() == 'pie':
-                continue
-            fixed_lines.append('    ' + line)
-        
-        return '\n'.join(fixed_lines)
-    
-    def _fix_journey_diagram(self, content: str) -> str:
-        """Fix user journey diagram syntax."""
-        lines = content.strip().split('\n')
-        fixed_lines = ['journey']
-        
-        for line in lines[1:]:
-            line = line.strip()
-            if not line or line.startswith('```') or line.lower() == 'journey':
-                continue
-            fixed_lines.append('    ' + line)
-        
-        return '\n'.join(fixed_lines)
-    
-    def _fix_gitgraph_diagram(self, content: str) -> str:
-        """Fix Git Graph diagram syntax issues, especially label syntax."""
-        lines = content.split('\n')
-        cleaned_lines = []
+        # Valid pie patterns
+        valid_patterns = [
+            r'^pie\s*(showdata)?',  # Header
+            r'^title\s+',  # Title
+            r'^"[^"]+"\s*:\s*[\d\.]+',  # Data entry: "Label" : 100
+            r'^%%',  # Comment
+        ]
         
         for line in lines:
             line_stripped = line.strip()
             
-            # Fix invalid label syntax: A[label="text"] -> just remove the invalid assignment
-            # Git graph commits don't use label="text" syntax like flowcharts
-            if re.match(r'^\s*[A-Z]\[.*label=.*\]', line):
-                # This is invalid - Git Graph uses id: "label" or just commit statements
-                # Remove these standalone label assignments
-                self.errors_fixed.append(f"Removed invalid Git Graph label assignment: {line_stripped[:50]}")
+            if not line_stripped or line_stripped.startswith('```'):
                 continue
             
-            # Fix missing equals in label syntax: K[label"text"] -> skip entirely
-            if re.search(r'\[label"[^"]+"\]', line):
-                self.errors_fixed.append(f"Removed invalid Git Graph label (missing =): {line_stripped[:50]}")
+            # Handle header
+            if line_stripped.lower().startswith('pie'):
+                if seen_header:
+                    continue
+                fixed_lines.append(line_stripped)
+                seen_header = True
                 continue
             
-            # Proper Git Graph syntax examples:
-            # commit id: \"Initial Commit\"
-            # branch develop
-            # checkout develop
-            # commit id: \"Feature A\"
-            # merge develop
+            if not seen_header:
+                fixed_lines.append('pie')
+                seen_header = True
             
-            cleaned_lines.append(line)
+            # REJECT AI explanatory text
+            ai_text_patterns = [
+                r'^(This|The|Here|Below|Above|I\'ve|Let me|Hope|Feel free|As requested|Sure|Certainly|Of course)',
+                r'^\d+\.\s+[A-Z]',
+            ]
+            is_ai_junk = any(re.match(p, line_stripped, re.IGNORECASE) for p in ai_text_patterns)
+            if is_ai_junk:
+                self.errors_fixed.append(f"Removed AI text: {line_stripped[:40]}...")
+                continue
+            
+            # Check if valid pie data format
+            is_valid = any(re.match(p, line_stripped, re.IGNORECASE) for p in valid_patterns)
+            has_data = re.match(r'^"[^"]+"\s*:\s*\d', line_stripped)
+            
+            if is_valid or has_data or line_stripped.lower().startswith('title'):
+                if not line_stripped.startswith(' '):
+                    line_stripped = '    ' + line_stripped
+                fixed_lines.append(line_stripped)
+            else:
+                self.errors_fixed.append(f"Removed invalid pie line: {line_stripped[:40]}...")
         
-        return '\\n'.join(cleaned_lines)
+        if len(fixed_lines) <= 1:
+            self.errors_fixed.append("Pie chart appears empty - added sample")
+            fixed_lines.extend([
+                '    title Sample Chart',
+                '    "Category A" : 40',
+                '    "Category B" : 60'
+            ])
+        
+        return '\n'.join(fixed_lines)
+    
+    def _fix_journey_diagram(self, content: str) -> str:
+        """Fix user journey diagram syntax with STRICT validation.
+        
+        Valid journey syntax:
+        - journey (header)
+        - title Journey Title
+        - section Section Name
+        - Task Name: score: actor1, actor2
+        
+        REMOVES any line that doesn't match valid patterns.
+        """
+        import re
+        lines = content.strip().split('\n')
+        fixed_lines = ['journey']
+        seen_header = False
+        
+        # Valid journey patterns
+        valid_patterns = [
+            r'^title\s+',  # Title
+            r'^section\s+',  # Section
+            r'^[^:]+:\s*\d+:\s*',  # Task: score: actors
+            r'^%%',  # Comment
+        ]
+        
+        for line in lines:
+            line_stripped = line.strip()
+            
+            if not line_stripped or line_stripped.startswith('```'):
+                continue
+            
+            if line_stripped.lower() == 'journey':
+                if seen_header:
+                    continue
+                seen_header = True
+                continue
+            
+            # REJECT AI explanatory text
+            ai_text_patterns = [
+                r'^(This|The|Here|Below|Above|I\'ve|Let me|Hope|Feel free|As requested|Sure|Certainly|Of course)',
+                r'^\d+\.\s+[A-Z]',
+            ]
+            is_ai_junk = any(re.match(p, line_stripped, re.IGNORECASE) for p in ai_text_patterns)
+            if is_ai_junk:
+                self.errors_fixed.append(f"Removed AI text: {line_stripped[:40]}...")
+                continue
+            
+            # Check if valid
+            is_valid = any(re.match(p, line_stripped, re.IGNORECASE) for p in valid_patterns)
+            is_task = re.match(r'^[^:]+:\s*\d', line_stripped)
+            is_section = line_stripped.lower().startswith('section')
+            is_title = line_stripped.lower().startswith('title')
+            
+            if is_valid or is_task or is_section or is_title:
+                if not line_stripped.startswith(' '):
+                    line_stripped = '    ' + line_stripped
+                fixed_lines.append(line_stripped)
+            else:
+                self.errors_fixed.append(f"Removed invalid journey line: {line_stripped[:40]}...")
+        
+        if len(fixed_lines) <= 1:
+            self.errors_fixed.append("Journey appears empty - added sample")
+            fixed_lines.extend([
+                '    title Sample Journey',
+                '    section Start',
+                '    First step: 5: User'
+            ])
+        
+        return '\n'.join(fixed_lines)
+    
+    def _fix_gitgraph_diagram(self, content: str) -> str:
+        """Fix Git Graph diagram syntax with STRICT validation.
+        
+        Valid gitgraph syntax:
+        - gitGraph (header)
+        - commit id: "message" tag: "v1.0"
+        - branch branchName
+        - checkout branchName
+        - merge branchName
+        
+        REMOVES any line that doesn't match valid patterns.
+        """
+        import re
+        lines = content.strip().split('\n')
+        fixed_lines = ['gitGraph']
+        seen_header = False
+        
+        # Valid gitgraph patterns
+        valid_patterns = [
+            r'^commit\s*',  # Commit
+            r'^branch\s+\w+',  # Branch
+            r'^checkout\s+\w+',  # Checkout
+            r'^merge\s+\w+',  # Merge
+            r'^cherry-pick\s+',  # Cherry-pick
+            r'^options\s*$',  # Options block
+            r'^end\s*$',  # End options
+            r'^%%',  # Comment
+        ]
+        
+        for line in lines:
+            line_stripped = line.strip()
+            
+            if not line_stripped or line_stripped.startswith('```'):
+                continue
+            
+            if line_stripped.lower() == 'gitgraph':
+                if seen_header:
+                    continue
+                seen_header = True
+                continue
+            
+            # REJECT invalid label syntax from flowchart (common AI mistake)
+            if re.match(r'^\s*[A-Z]\[.*label=.*\]', line_stripped):
+                self.errors_fixed.append(f"Removed invalid label syntax: {line_stripped[:40]}...")
+                continue
+            
+            # REJECT AI explanatory text
+            ai_text_patterns = [
+                r'^(This|The|Here|Below|Above|I\'ve|Let me|Hope|Feel free|As requested|Sure|Certainly|Of course)',
+                r'^\d+\.\s+[A-Z]',
+            ]
+            is_ai_junk = any(re.match(p, line_stripped, re.IGNORECASE) for p in ai_text_patterns)
+            if is_ai_junk:
+                self.errors_fixed.append(f"Removed AI text: {line_stripped[:40]}...")
+                continue
+            
+            # Check if valid
+            is_valid = any(re.match(p, line_stripped, re.IGNORECASE) for p in valid_patterns)
+            
+            if is_valid:
+                if not line_stripped.startswith(' '):
+                    line_stripped = '    ' + line_stripped
+                fixed_lines.append(line_stripped)
+            else:
+                self.errors_fixed.append(f"Removed invalid gitgraph line: {line_stripped[:40]}...")
+        
+        if len(fixed_lines) <= 1:
+            self.errors_fixed.append("Gitgraph appears empty - added sample")
+            fixed_lines.extend([
+                '    commit',
+                '    branch develop',
+                '    commit',
+                '    checkout main',
+                '    merge develop'
+            ])
+        
+        return '\n'.join(fixed_lines)
     
     def _fix_mindmap_diagram(self, content: str) -> str:
-        """Fix Mindmap diagram syntax issues."""
-        # Mindmap is relatively simple, just ensure proper indentation
-        return content
+        """Fix Mindmap diagram syntax with STRICT validation.
+        
+        Valid mindmap syntax:
+        - mindmap (header)
+        - root((Root))
+        - Indented children with proper spacing
+        
+        REMOVES any line that doesn't match valid patterns.
+        """
+        import re
+        lines = content.strip().split('\n')
+        fixed_lines = ['mindmap']
+        seen_header = False
+        has_root = False
+        
+        for line in lines:
+            line_stripped = line.strip()
+            original_indent = len(line) - len(line.lstrip())
+            
+            if not line_stripped or line_stripped.startswith('```'):
+                continue
+            
+            if line_stripped.lower() == 'mindmap':
+                if seen_header:
+                    continue
+                seen_header = True
+                continue
+            
+            # REJECT AI explanatory text
+            ai_text_patterns = [
+                r'^(This|The|Here|Below|Above|I\'ve|Let me|Hope|Feel free|As requested|Sure|Certainly|Of course)',
+                r'^\d+\.\s+[A-Z]',
+            ]
+            is_ai_junk = any(re.match(p, line_stripped, re.IGNORECASE) for p in ai_text_patterns)
+            if is_ai_junk:
+                self.errors_fixed.append(f"Removed AI text: {line_stripped[:40]}...")
+                continue
+            
+            # First content line should be root
+            if not has_root:
+                if line_stripped.lower().startswith('root'):
+                    fixed_lines.append('    ' + line_stripped)
+                    has_root = True
+                else:
+                    # Make it a root
+                    fixed_lines.append(f'    root(({line_stripped}))')
+                    has_root = True
+                    self.errors_fixed.append("Converted first line to root node")
+            else:
+                # Preserve indentation for children
+                indent = '    ' + '  ' * (original_indent // 2)
+                fixed_lines.append(indent + line_stripped)
+        
+        if len(fixed_lines) <= 1:
+            self.errors_fixed.append("Mindmap appears empty - added sample")
+            fixed_lines.extend([
+                '    root((Main Topic))',
+                '      Child 1',
+                '      Child 2'
+            ])
+        
+        return '\n'.join(fixed_lines)
     
     def _fix_timeline_diagram(self, content: str) -> str:
-        """Fix Timeline diagram syntax issues."""
-        # Timeline uses section-based syntax, minimal fixes needed
-        return content
+        """Fix Timeline diagram syntax with STRICT validation.
+        
+        Valid timeline syntax:
+        - timeline (header)
+        - title Timeline Title
+        - section Period Name
+        - Event : Description
+        
+        REMOVES any line that doesn't match valid patterns.
+        """
+        import re
+        lines = content.strip().split('\n')
+        fixed_lines = ['timeline']
+        seen_header = False
+        
+        # Valid timeline patterns
+        valid_patterns = [
+            r'^title\s+',  # Title
+            r'^section\s+',  # Section/Period
+            r'^[^:]+\s*:\s*',  # Event : description
+            r'^\d{4}',  # Year-based entry
+            r'^%%',  # Comment
+        ]
+        
+        for line in lines:
+            line_stripped = line.strip()
+            
+            if not line_stripped or line_stripped.startswith('```'):
+                continue
+            
+            if line_stripped.lower() == 'timeline':
+                if seen_header:
+                    continue
+                seen_header = True
+                continue
+            
+            # REJECT AI explanatory text
+            ai_text_patterns = [
+                r'^(This|The|Here|Below|Above|I\'ve|Let me|Hope|Feel free|As requested|Sure|Certainly|Of course)',
+                r'^\d+\.\s+[A-Z]',
+            ]
+            is_ai_junk = any(re.match(p, line_stripped, re.IGNORECASE) for p in ai_text_patterns)
+            if is_ai_junk:
+                self.errors_fixed.append(f"Removed AI text: {line_stripped[:40]}...")
+                continue
+            
+            # Check if valid
+            is_valid = any(re.match(p, line_stripped, re.IGNORECASE) for p in valid_patterns)
+            is_section = line_stripped.lower().startswith('section')
+            is_title = line_stripped.lower().startswith('title')
+            
+            if is_valid or is_section or is_title or ':' in line_stripped:
+                if not line_stripped.startswith(' '):
+                    line_stripped = '    ' + line_stripped
+                fixed_lines.append(line_stripped)
+            else:
+                self.errors_fixed.append(f"Removed invalid timeline line: {line_stripped[:40]}...")
+        
+        if len(fixed_lines) <= 1:
+            self.errors_fixed.append("Timeline appears empty - added sample")
+            fixed_lines.extend([
+                '    title Sample Timeline',
+                '    section 2024',
+                '    Event : Description'
+            ])
+        
+        return '\n'.join(fixed_lines)
     
     def _general_cleanup(self, content: str) -> str:
         """Apply general cleanup to all diagram types"""

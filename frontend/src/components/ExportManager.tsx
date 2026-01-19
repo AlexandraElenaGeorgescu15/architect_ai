@@ -21,8 +21,8 @@ interface ExtendedExportOption extends ExportOption {
 const exportOptions: ExtendedExportOption[] = [
   { format: 'markdown', label: 'Markdown', icon: FileText, description: 'Export as Markdown document', mimeType: 'text/markdown', enabled: true },
   { format: 'svg', label: 'SVG', icon: Image, description: 'Export as SVG image (for diagrams)', mimeType: 'image/svg+xml', enabled: true },
-  { format: 'png', label: 'PNG', icon: Image, description: 'Export as PNG image (Coming Soon)', mimeType: 'image/png', enabled: false, comingSoon: true },
-  { format: 'pdf', label: 'PDF', icon: FileText, description: 'Export as PDF document (Coming Soon)', mimeType: 'application/pdf', enabled: false, comingSoon: true },
+  { format: 'png', label: 'PNG', icon: Image, description: 'Export as PNG image (for diagrams)', mimeType: 'image/png', enabled: true },
+  { format: 'pdf', label: 'PDF', icon: FileText, description: 'Export as PDF document', mimeType: 'application/pdf', enabled: true },
   { format: 'code', label: 'Code File', icon: FileCode, description: 'Export as code file', mimeType: 'text/plain', enabled: true },
   { format: 'confluence', label: 'Confluence', icon: FileJson, description: 'Confluence integration (Coming Soon)', mimeType: 'application/json', enabled: false, comingSoon: true },
   { format: 'jira', label: 'Jira', icon: FileJson, description: 'Jira integration (Coming Soon)', mimeType: 'application/json', enabled: false, comingSoon: true },
