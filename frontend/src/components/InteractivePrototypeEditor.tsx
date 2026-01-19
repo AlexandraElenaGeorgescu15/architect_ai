@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { Loader2, MessageSquare, Code, Eye, Send, Sparkles, RefreshCw, PanelRightClose, PanelRightOpen, X } from 'lucide-react'
+import { Loader2, MessageSquare, Code, Eye, Send, Sparkles, RefreshCw, PanelRightClose, PanelRightOpen, X, Save } from 'lucide-react'
 import { useArtifactStore } from '../stores/artifactStore'
 import { useUIStore } from '../stores/uiStore'
 import { sendChatMessage } from '../services/chatService'
@@ -660,9 +660,9 @@ Return ONLY the complete modified HTML. No explanations or markdown.`
               title="Save current version"
             >
               {isSaving ? (
-                <RefreshCw size={16} className="animate-spin" />
+                <Loader2 size={16} className="animate-spin" />
               ) : (
-                <RefreshCw size={16} />
+                <Save size={16} />
               )}
             </button>
             <div className="w-px h-6 bg-border mx-2"></div>

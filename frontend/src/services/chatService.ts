@@ -21,6 +21,8 @@ export interface ChatRequest {
   include_project_context?: boolean
   session_id?: string  // For persistent context across messages
   write_mode?: boolean  // Enable write tools in agentic mode
+  folder_id?: string  // Current meeting notes folder for context
+  meeting_notes_content?: string  // Optional meeting notes content to include
 }
 
 // Session management for conversation persistence

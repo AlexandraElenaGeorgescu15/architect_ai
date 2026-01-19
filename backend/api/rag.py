@@ -117,6 +117,85 @@ async def get_index_stats():
     }
 
 
+@router.post("/reindex-user-projects", response_model=dict)
+@limiter.limit("2/minute")
+async def reindex_user_projects(
+    request: Request,
+    background_tasks: BackgroundTasks
+):
+    """
+    Re-index ALL user project directories (excludes Architect.AI).
+    
+    This endpoint:
+    1. Clears the existing RAG index
+    2. Re-indexes ONLY user project directories (frontend, backend, etc.)
+    3. Excludes Architect.AI tool files
+    
+    Use this when the index contains wrong files or hasn't picked up your projects.
+    """
+    from backend.utils.tool_detector import get_user_project_directories, detect_tool_directory
+    from backend.services.universal_context import get_universal_context_service
+    
+    user_dirs = get_user_project_directories()
+    tool_dir = detect_tool_directory()
+    
+    if not user_dirs:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No user project directories found. Make sure your projects are in the same parent folder as Architect.AI."
+        )
+    
+    ingester = get_ingester()
+    
+    # Background task to clear and reindex
+    async def reindex_task():
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        try:
+            logger.info(f"🔄 [RAG] Starting full reindex of {len(user_dirs)} user project directories...")
+            
+            # Step 1: Clear existing index
+            logger.info("🗑️ [RAG] Clearing existing index...")
+            try:
+                ingester.clear_index()
+                logger.info("✅ [RAG] Index cleared")
+            except Exception as e:
+                logger.warning(f"Could not clear index (may not exist): {e}")
+            
+            # Step 2: Index each user project
+            for i, directory in enumerate(user_dirs, 1):
+                if directory == tool_dir:
+                    logger.info(f"⏭️ [RAG] Skipping tool directory: {directory.name}")
+                    continue
+                    
+                logger.info(f"📂 [RAG] Indexing [{i}/{len(user_dirs)}] {directory.name}...")
+                try:
+                    await ingester.index_directory(directory, recursive=True)
+                    logger.info(f"✅ [RAG] Indexed {directory.name}")
+                except Exception as e:
+                    logger.error(f"❌ [RAG] Failed to index {directory.name}: {e}")
+            
+            # Step 3: Rebuild universal context
+            logger.info("🔨 [RAG] Rebuilding Universal Context...")
+            uc_service = get_universal_context_service()
+            await uc_service.build_universal_context(force_rebuild=True)
+            
+            logger.info(f"✅ [RAG] Reindex complete! Indexed {len(user_dirs)} directories.")
+            
+        except Exception as e:
+            logger.error(f"❌ [RAG] Reindex failed: {e}", exc_info=True)
+    
+    background_tasks.add_task(reindex_task)
+    
+    return {
+        "success": True,
+        "message": f"Reindexing started for {len(user_dirs)} user project(s)",
+        "directories": [d.name for d in user_dirs],
+        "excluded": tool_dir.name if tool_dir else None
+    }
+
+
 @router.get("/status", response_model=dict)
 async def get_rag_status():
     """

@@ -446,7 +446,9 @@ async def send_message(
             conversation_history=body.conversation_history,
             include_project_context=body.include_project_context,
             stream=False,
-            session_id=body.session_id
+            session_id=body.session_id,
+            folder_id=body.folder_id,
+            meeting_notes_content=body.meeting_notes_content
         ):
             if chunk.get("type") == "complete":
                 response_content = chunk.get("content", "")
@@ -492,7 +494,9 @@ async def send_message_stream(
                 conversation_history=request.conversation_history,
                 include_project_context=request.include_project_context,
                 stream=True,
-                session_id=request.session_id
+                session_id=request.session_id,
+                folder_id=request.folder_id,
+                meeting_notes_content=request.meeting_notes_content
             ):
                 yield f"data: {json.dumps(chunk)}\n\n"
         except Exception as e:
@@ -557,7 +561,9 @@ async def stream_agentic_chat(
                 message=body.message,
                 conversation_history=body.conversation_history,
                 session_id=body.session_id,
-                write_mode=write_mode
+                write_mode=write_mode,
+                folder_id=body.folder_id,
+                meeting_notes_content=body.meeting_notes_content
             ):
                 yield f"data: {json.dumps(chunk)}\n\n"
         except Exception as e:

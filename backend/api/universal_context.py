@@ -22,13 +22,34 @@ async def get_universal_context_status(request: Request) -> Dict[str, Any]:
         Universal context status and statistics
     """
     try:
+        from pathlib import Path
+        from backend.utils.tool_detector import get_user_project_directories, detect_tool_directory
+        
         service = get_universal_context_service()
         universal_ctx = await service.get_universal_context()
+        
+        # Get ALL detected user project directories (what SHOULD be indexed)
+        detected_user_dirs = get_user_project_directories()
+        tool_dir = detect_tool_directory()
+        
+        # Format the directories for display
+        indexed_dirs = universal_ctx.get("project_directories", [])
+        indexed_names = [Path(d).name for d in indexed_dirs]
+        detected_names = [d.name for d in detected_user_dirs]
         
         return {
             "status": "available",
             "built_at": universal_ctx.get("built_at"),
-            "project_directories": universal_ctx.get("project_directories", []),
+            # Show what's actually indexed
+            "project_directories": indexed_dirs,
+            "project_names": indexed_names,
+            # Show what SHOULD be indexed (all detected user projects)
+            "detected_user_projects": detected_names,
+            "detected_user_project_paths": [str(d) for d in detected_user_dirs],
+            # Show the tool directory (for reference - this is EXCLUDED)
+            "tool_directory": str(tool_dir) if tool_dir else None,
+            "tool_name": tool_dir.name if tool_dir else None,
+            # Stats
             "total_files": universal_ctx.get("total_files", 0),
             "kg_nodes": universal_ctx.get("knowledge_graph", {}).get("total_nodes", 0),
             "kg_edges": universal_ctx.get("knowledge_graph", {}).get("total_edges", 0),

@@ -122,6 +122,26 @@ AGENT_TOOLS = [
             },
             "required": []
         }
+    },
+    {
+        "name": "get_project_overview",
+        "description": "Get a comprehensive overview of the entire project - all files, classes, services, and architecture. Use this to get Wikipedia-like knowledge about the codebase.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "include_file_list": {
+                    "type": "boolean",
+                    "description": "Include full list of important files (default: true)",
+                    "default": True
+                },
+                "include_entities": {
+                    "type": "boolean",
+                    "description": "Include list of all classes, services, components (default: true)",
+                    "default": True
+                }
+            },
+            "required": []
+        }
     }
 ]
 
@@ -460,6 +480,92 @@ class AgenticChatService:
             logger.error(f"Get patterns error: {e}")
             return {"success": False, "error": str(e)}
     
+    async def _tool_get_project_overview(
+        self, 
+        include_file_list: bool = True, 
+        include_entities: bool = True
+    ) -> Dict[str, Any]:
+        """Get comprehensive project overview - Wikipedia-like knowledge."""
+        try:
+            from backend.services.universal_context import get_universal_context_service
+            from pathlib import Path
+            
+            universal_service = get_universal_context_service()
+            universal_ctx = await universal_service.get_universal_context()
+            
+            if not universal_ctx:
+                return {"success": False, "message": "Universal context not available. Please rebuild it."}
+            
+            result = {
+                "success": True,
+                "overview": {}
+            }
+            
+            # Project info
+            dirs = universal_ctx.get("project_directories", [])
+            result["overview"]["projects"] = [Path(d).name for d in dirs]
+            result["overview"]["total_files"] = universal_ctx.get("total_files", 0)
+            result["overview"]["built_at"] = universal_ctx.get("built_at", "unknown")
+            
+            # Key entities (classes, services, components)
+            if include_entities:
+                key_entities = universal_ctx.get("key_entities", [])
+                entities_by_type = {}
+                for entity in key_entities:
+                    etype = entity.get("type", "other")
+                    if etype not in entities_by_type:
+                        entities_by_type[etype] = []
+                    entities_by_type[etype].append({
+                        "name": entity.get("name"),
+                        "file": Path(entity.get("file", "")).name if entity.get("file") else ""
+                    })
+                
+                result["overview"]["entities"] = {
+                    "total_count": len(key_entities),
+                    "by_type": {
+                        etype: {"count": len(items), "items": items[:20]}
+                        for etype, items in entities_by_type.items()
+                    }
+                }
+            
+            # Important files
+            if include_file_list:
+                proj_map = universal_ctx.get("project_map", {})
+                key_files = proj_map.get("key_files", [])
+                result["overview"]["important_files"] = [Path(f).name for f in key_files[:30]]
+                
+                # File types breakdown
+                file_types = proj_map.get("file_types", {})
+                result["overview"]["file_types"] = {
+                    ext: count for ext, count in sorted(
+                        file_types.items(), key=lambda x: x[1], reverse=True
+                    )[:15]
+                }
+            
+            # Knowledge graph stats
+            kg = universal_ctx.get("knowledge_graph", {})
+            if kg:
+                result["overview"]["knowledge_graph"] = {
+                    "nodes": kg.get("total_nodes", 0),
+                    "edges": kg.get("total_edges", 0)
+                }
+            
+            # Patterns summary
+            patterns = universal_ctx.get("patterns", {})
+            if patterns:
+                result["overview"]["patterns"] = {
+                    "total": len(patterns.get("patterns", [])),
+                    "code_smells": len(patterns.get("code_smells", [])),
+                    "security_issues": len(patterns.get("security_issues", []))
+                }
+            
+            logger.info(f"[AGENTIC_CHAT] Project overview generated: {result['overview']['total_files']} files")
+            return result
+            
+        except Exception as e:
+            logger.error(f"Get project overview error: {e}")
+            return {"success": False, "error": str(e)}
+    
     # =========================================================================
     # WRITE TOOL IMPLEMENTATIONS (only available in write_mode)
     # =========================================================================
@@ -590,7 +696,8 @@ class AgenticChatService:
             "read_file": self._tool_read_file,
             "list_files": self._tool_list_files,
             "query_knowledge_graph": self._tool_query_knowledge_graph,
-            "get_project_patterns": self._tool_get_project_patterns
+            "get_project_patterns": self._tool_get_project_patterns,
+            "get_project_overview": self._tool_get_project_overview
         }
         
         # Write tools (only available when write_mode is enabled)
@@ -624,7 +731,9 @@ class AgenticChatService:
         message: str,
         conversation_history: Optional[List[Any]] = None,
         session_id: Optional[str] = None,
-        write_mode: bool = False
+        write_mode: bool = False,
+        folder_id: Optional[str] = None,
+        meeting_notes_content: Optional[str] = None
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Agentic chat that can use tools to find information.
@@ -640,12 +749,71 @@ class AgenticChatService:
             conversation_history: Previous conversation messages
             session_id: Optional session identifier
             write_mode: If True, enables write tools (update_artifact, create_artifact, save_to_outputs)
+            folder_id: Optional meeting notes folder ID for context
+            meeting_notes_content: Optional meeting notes content to include
         """
         from backend.core.config import settings
         import httpx
         
-        # Build conversation context
-        messages = self._build_messages(message, conversation_history)
+        # Load meeting notes if folder_id provided
+        notes_context = meeting_notes_content or ""
+        if folder_id and not notes_context:
+            try:
+                from backend.services.meeting_notes_service import get_meeting_notes_service
+                notes_service = get_meeting_notes_service()
+                notes = notes_service.get_notes_by_folder(folder_id)
+                if notes:
+                    notes_context = "\n\n---\n\n".join([
+                        f"**{n.get('title', 'Meeting Note')}**\n{n.get('content', '')}"
+                        for n in notes
+                    ])
+                    logger.info(f"[AGENTIC_CHAT] Loaded {len(notes)} meeting notes from folder: {folder_id}")
+            except Exception as e:
+                logger.warning(f"[AGENTIC_CHAT] Could not load meeting notes from folder {folder_id}: {e}")
+        
+        # Load Universal Context for comprehensive project knowledge (Wikipedia-like)
+        project_overview = ""
+        try:
+            from backend.services.universal_context import get_universal_context_service
+            from pathlib import Path
+            
+            universal_service = get_universal_context_service()
+            universal_ctx = await universal_service.get_universal_context()
+            
+            if universal_ctx:
+                overview_parts = []
+                
+                # Project directories
+                dirs = universal_ctx.get("project_directories", [])
+                if dirs:
+                    dir_names = [Path(d).name for d in dirs]
+                    overview_parts.append(f"**Projects:** {', '.join(dir_names)}")
+                    overview_parts.append(f"**Total Files:** {universal_ctx.get('total_files', 'unknown')}")
+                
+                # Key entities (classes, services, components)
+                key_entities = universal_ctx.get("key_entities", [])
+                if key_entities:
+                    overview_parts.append("\n**Key Components:**")
+                    for entity in key_entities[:25]:  # Top 25
+                        entity_type = entity.get('type', 'unknown')
+                        entity_name = entity.get('name', 'unknown')
+                        entity_file = Path(entity.get('file', '')).name if entity.get('file') else ''
+                        overview_parts.append(f"- `{entity_name}` ({entity_type}) in {entity_file}")
+                
+                # Project structure
+                proj_map = universal_ctx.get("project_map", {})
+                if proj_map and proj_map.get("key_files"):
+                    overview_parts.append("\n**Important Files:**")
+                    for kf in proj_map.get("key_files", [])[:15]:
+                        overview_parts.append(f"- `{Path(kf).name}`")
+                
+                project_overview = "\n".join(overview_parts)
+                logger.info(f"[AGENTIC_CHAT] Loaded universal context: {len(key_entities)} entities, {universal_ctx.get('total_files', 0)} files")
+        except Exception as e:
+            logger.warning(f"[AGENTIC_CHAT] Could not load universal context: {e}")
+        
+        # Build conversation context (include meeting notes AND project overview)
+        messages = self._build_messages(message, conversation_history, notes_context, project_overview)
         tool_results = []
         iterations = 0
         
@@ -704,34 +872,63 @@ class AgenticChatService:
         async for chunk in self._generate_final_response(messages, tool_results):
             yield chunk
     
-    def _build_messages(self, message: str, conversation_history: Optional[List[Any]]) -> List[Dict[str, str]]:
+    def _build_messages(self, message: str, conversation_history: Optional[List[Any]], notes_context: str = "", project_overview: str = "") -> List[Dict[str, str]]:
         """Build message list for the LLM."""
         from backend.utils.target_project import get_target_project_name
         
         project_name = get_target_project_name()
         
-        system_message = f"""You are Architect.AI, an intelligent assistant analyzing the "{project_name}" codebase.
+        # Build meeting notes section if available
+        notes_section = ""
+        if notes_context:
+            notes_section = f"""
 
-You have access to tools that let you explore the codebase. Use them when you need more information to answer the user's question.
+## MEETING NOTES / PROJECT REQUIREMENTS:
+The user has provided these meeting notes describing their project:
+
+{notes_context}
+
+Use this information to understand what the user is building and answer questions about their specific project requirements.
+"""
+
+        # Build project overview section (Wikipedia-like knowledge)
+        overview_section = ""
+        if project_overview:
+            overview_section = f"""
+
+## 📚 PROJECT KNOWLEDGE BASE (What You Already Know):
+{project_overview}
+
+You already have this knowledge about the project. Reference it directly when answering questions.
+For more specific details, use the tools available.
+"""
+        
+        system_message = f"""You are Architect.AI, an intelligent assistant with COMPLETE KNOWLEDGE of the "{project_name}" codebase.
+{notes_section}{overview_section}
+You have encyclopedic knowledge of the user's project AND tools to dig deeper when needed.
 
 AVAILABLE TOOLS:
 - search_codebase: Search for code by topic/concept
-- read_file: Read a specific file's contents
+- read_file: Read a specific file's contents  
 - list_files: List files in a directory
 - query_knowledge_graph: Find relationships between components
 - get_project_patterns: Get detected patterns and issues
+- get_project_overview: Get comprehensive project summary (all files, classes, architecture)
 
 WHEN TO USE TOOLS:
-- User asks about specific functionality → search_codebase or read_file
-- User asks "what files/components exist" → list_files or search_codebase
+- You need SPECIFIC CODE content → read_file
+- You want to find WHERE something is implemented → search_codebase
+- User asks "what's in this project?" → get_project_overview
 - User asks about dependencies/relationships → query_knowledge_graph
 - User asks about code quality/patterns → get_project_patterns
-- You're unsure about something → use a tool to verify
+- You need to verify or get more details → use appropriate tool
 
-RESPONSE FORMAT:
-When you have enough information, provide a helpful, specific answer.
-Reference actual files and code you found through your searches.
-Be conversational and helpful."""
+RESPONSE GUIDELINES:
+- Answer questions using your existing knowledge when possible
+- Reference actual files, classes, and functions by name
+- Be specific: mention `ClassName`, `fileName.ts`, `functionName()`
+- Use tools to get exact code snippets when needed
+- Be conversational and helpful - you're the project expert!"""
 
         messages = [{"role": "system", "content": system_message}]
         

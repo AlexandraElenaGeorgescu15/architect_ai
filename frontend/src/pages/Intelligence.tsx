@@ -26,6 +26,7 @@ export default function Intelligence() {
   // Universal Context state
   const [universalContextStatus, setUniversalContextStatus] = useState<any>(null)
   const [isLoadingUniversalContext, setIsLoadingUniversalContext] = useState(false)
+  const [isReindexing, setIsReindexing] = useState(false)
   
   // Knowledge Graph and Pattern Mining state
   const [kgData, setKgData] = useState<any>(null)
@@ -161,6 +162,39 @@ export default function Intelligence() {
       console.error('Universal Context rebuild error:', error)
       addNotification('error', 'Failed to rebuild Universal Context. Check console for details.')
       setIsLoadingUniversalContext(false)
+    }
+  }
+  
+  // Reindex user projects (clears and rebuilds RAG from scratch)
+  const reindexUserProjects = async () => {
+    setIsReindexing(true)
+    try {
+      const backendUrl = getBackendUrl()
+      const response = await fetch(`${backendUrl}/api/rag/reindex-user-projects`, { 
+        method: 'POST',
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      })
+      if (response.ok) {
+        const data = await response.json()
+        addNotification('success', `Reindexing ${data.directories?.length || 0} project(s): ${data.directories?.join(', ') || 'unknown'}`)
+        
+        // Wait for reindexing to complete then refresh status
+        setTimeout(async () => {
+          await loadUniversalContext()
+          await loadKnowledgeGraph()
+          await loadPatternMining()
+          setIsReindexing(false)
+          addNotification('success', 'Project reindexing complete! Your projects are now indexed.')
+        }, 10000) // Give it 10 seconds to complete
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        addNotification('error', errorData.detail || 'Failed to start reindexing')
+        setIsReindexing(false)
+      }
+    } catch (error) {
+      console.error('Reindex error:', error)
+      addNotification('error', 'Failed to reindex. Check console for details.')
+      setIsReindexing(false)
     }
   }
   
@@ -452,14 +486,25 @@ export default function Intelligence() {
               <p className="text-sm text-foreground mt-1">Knows your entire project by heart - baseline context for everything</p>
             </div>
           </div>
-          <button
-            onClick={rebuildUniversalContext}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium"
-            disabled={isLoadingUniversalContext}
-          >
-            <RefreshCw className={`w-4 h-4 ${isLoadingUniversalContext ? 'animate-spin' : ''}`} />
-            Rebuild
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={reindexUserProjects}
+              className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors font-medium"
+              disabled={isReindexing || isLoadingUniversalContext}
+              title="Clear index and re-index your project files (use if index shows wrong files)"
+            >
+              <Database className={`w-4 h-4 ${isReindexing ? 'animate-pulse' : ''}`} />
+              {isReindexing ? 'Reindexing...' : 'Reindex Projects'}
+            </button>
+            <button
+              onClick={rebuildUniversalContext}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors font-medium"
+              disabled={isLoadingUniversalContext || isReindexing}
+            >
+              <RefreshCw className={`w-4 h-4 ${isLoadingUniversalContext ? 'animate-spin' : ''}`} />
+              Rebuild
+            </button>
+          </div>
         </div>
         
         {isLoadingUniversalContext && !universalContextStatus ? (
@@ -500,14 +545,45 @@ export default function Intelligence() {
               </div>
             </div>
 
-            {/* Project Directories */}
-            {universalContextStatus.project_directories && universalContextStatus.project_directories.length > 0 && (
+            {/* Project Directories - What's Being Indexed */}
+            {universalContextStatus.detected_user_projects && universalContextStatus.detected_user_projects.length > 0 && (
               <div className="bg-card/30 rounded-xl p-4 border border-border/50">
                 <div className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
                   <Database className="w-4 h-4" />
-                  Project Directories Indexed
+                  📚 Your Projects (What AI Can See)
                 </div>
                 <div className="space-y-2">
+                  {/* Show detected user projects */}
+                  {universalContextStatus.detected_user_projects.map((name: string, idx: number) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                      <div className="text-sm font-semibold text-foreground">{name}</div>
+                      <span className="text-xs text-green-500">✓ Indexed</span>
+                    </div>
+                  ))}
+                  {/* Show tool directory (excluded) */}
+                  {universalContextStatus.tool_name && (
+                    <div className="flex items-center gap-2 opacity-50">
+                      <div className="w-2 h-2 rounded-full bg-gray-500"></div>
+                      <div className="text-sm text-muted-foreground">{universalContextStatus.tool_name}</div>
+                      <span className="text-xs text-muted-foreground">(Architect.AI - excluded)</span>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-3 text-xs text-muted-foreground">
+                  💡 The AI chat can see and answer questions about these projects
+                </div>
+              </div>
+            )}
+            
+            {/* Full Paths (collapsed) */}
+            {universalContextStatus.project_directories && universalContextStatus.project_directories.length > 0 && (
+              <details className="bg-card/30 rounded-xl p-4 border border-border/50">
+                <summary className="text-sm font-bold text-foreground mb-3 flex items-center gap-2 cursor-pointer">
+                  <Database className="w-4 h-4" />
+                  Full Paths (click to expand)
+                </summary>
+                <div className="space-y-2 mt-3">
                   {universalContextStatus.project_directories.map((dir: string, idx: number) => (
                     <div key={idx} className="text-xs font-mono text-muted-foreground bg-card/50 px-3 py-2 rounded border border-border/30">
                       {dir}

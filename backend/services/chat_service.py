@@ -78,7 +78,9 @@ class ProjectAwareChatService:
         conversation_history: Optional[List[Any]] = None,
         include_project_context: bool = True,
         stream: bool = False,
-        session_id: Optional[str] = None
+        session_id: Optional[str] = None,
+        folder_id: Optional[str] = None,
+        meeting_notes_content: Optional[str] = None
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Generate AI response with DEEP project context and session memory.
@@ -89,6 +91,8 @@ class ProjectAwareChatService:
             include_project_context: Whether to include RAG + KG + Pattern Mining
             stream: Whether to stream response
             session_id: Optional session ID for context persistence
+            folder_id: Optional meeting notes folder ID for context
+            meeting_notes_content: Optional meeting notes content to include
         
         Yields:
             Dictionary with response chunks or final response
@@ -103,15 +107,55 @@ class ProjectAwareChatService:
         
         # Build comprehensive project context
         project_context = ""
+        meeting_notes_context = ""
+        
+        # Include meeting notes if provided (either directly or by folder_id)
+        if meeting_notes_content:
+            meeting_notes_context = meeting_notes_content
+        elif folder_id:
+            # Load meeting notes from folder
+            try:
+                from backend.services.meeting_notes_service import get_meeting_notes_service
+                notes_service = get_meeting_notes_service()
+                notes = notes_service.get_notes_by_folder(folder_id)
+                if notes:
+                    meeting_notes_context = "\n\n---\n\n".join([
+                        f"**{n.get('title', 'Meeting Note')}**\n{n.get('content', '')}"
+                        for n in notes
+                    ])
+                    logger.info(f"[CHAT] Loaded {len(notes)} meeting notes from folder: {folder_id}")
+            except Exception as e:
+                logger.warning(f"[CHAT] Could not load meeting notes from folder {folder_id}: {e}")
+        
         if include_project_context:
             try:
-                # Get RAG context (most relevant code snippets)
-                # ENHANCED: Retrieve 30 chunks, use top 12 for comprehensive chat context
-                rag_results = await self.rag_retriever.retrieve(
+                # Import Universal Context Service for comprehensive project knowledge
+                from backend.services.universal_context import get_universal_context_service
+                from backend.utils.target_project import get_target_project_path, get_target_project_name
+                
+                # Log which project we're analyzing (should be USER's project, NOT Architect.AI)
+                target_project = get_target_project_path()
+                target_name = get_target_project_name()
+                logger.info(f"[CHAT] Target project: {target_name} at {target_project}")
+                
+                # Get SMART context - Universal baseline + targeted retrieval (Wikipedia-like knowledge)
+                universal_service = get_universal_context_service()
+                smart_context = await universal_service.get_smart_context_for_query(
                     query=message,
-                    k=30,  # Retrieve more, filter to best 12
-                    artifact_type=None  # General context
+                    artifact_type=None,
+                    k=30  # Get 30 targeted snippets
                 )
+                
+                # Extract components from smart context
+                rag_results = smart_context.get("targeted_snippets", [])
+                universal_ctx = smart_context.get("universal_context", {})
+                key_entities = smart_context.get("key_entities", [])
+                project_map = smart_context.get("project_map", {})
+                
+                # Log what was retrieved
+                indexed_dirs = universal_ctx.get("project_directories", [])
+                logger.info(f"[CHAT] Universal context directories: {[Path(d).name for d in indexed_dirs]}")
+                logger.info(f"[CHAT] RAG results: {len(rag_results)} snippets from user project")
                 
                 # Get Knowledge Graph insights
                 kg_context = await self._get_kg_insights(message)
@@ -179,8 +223,47 @@ class ProjectAwareChatService:
                 if pattern_context:
                     project_context_parts.append(f"\n## Pattern Mining Insights:\n{pattern_context}")
                 
+                # Include meeting notes context (most important for user's specific project)
+                if meeting_notes_context:
+                    # Put meeting notes FIRST as it's the most relevant context
+                    project_context_parts.insert(0, f"## Meeting Notes (Your Project Requirements):\n{meeting_notes_context}\n")
+                
+                # Add PROJECT OVERVIEW from Universal Context (Wikipedia-like knowledge)
+                if universal_ctx:
+                    overview_parts = []
+                    overview_parts.append(f"## 📚 PROJECT OVERVIEW: {target_name}")
+                    overview_parts.append(f"*You have complete knowledge of the user's project: **{target_name}***")
+                    
+                    # Project directories
+                    dirs = universal_ctx.get("project_directories", [])
+                    if dirs:
+                        dir_names = [Path(d).name for d in dirs]
+                        # Filter out architect_ai from the display
+                        user_dirs = [d for d in dir_names if 'architect' not in d.lower()]
+                        overview_parts.append(f"\n**User Project(s):** {', '.join(user_dirs) if user_dirs else dir_names[0]}")
+                        overview_parts.append(f"**Total Files Indexed:** {universal_ctx.get('total_files', 'unknown')}")
+                    
+                    # Key entities (classes, services, components)
+                    if key_entities:
+                        overview_parts.append("\n**Key Components You Can Ask About:**")
+                        for entity in key_entities[:20]:  # Top 20 entities
+                            entity_type = entity.get('type', 'unknown')
+                            entity_name = entity.get('name', 'unknown')
+                            entity_file = Path(entity.get('file', '')).name if entity.get('file') else ''
+                            overview_parts.append(f"  - `{entity_name}` ({entity_type}) in {entity_file}")
+                    
+                    # Project structure map
+                    if project_map and project_map.get("key_files"):
+                        overview_parts.append("\n**Important Files:**")
+                        for kf in project_map.get("key_files", [])[:10]:
+                            overview_parts.append(f"  - `{Path(kf).name}`")
+                    
+                    # Insert at position 1 (after meeting notes if present, or first)
+                    insert_pos = 1 if meeting_notes_context else 0
+                    project_context_parts.insert(insert_pos, "\n".join(overview_parts) + "\n")
+                
                 project_context = "\n".join(project_context_parts)
-                logger.info(f"Chat context built: {len(project_context)} chars, {len(rag_results) if rag_results else 0} RAG snippets")
+                logger.info(f"Chat context built: {len(project_context)} chars, {len(rag_results) if rag_results else 0} RAG snippets, has_meeting_notes={bool(meeting_notes_context)}, has_universal={bool(universal_ctx)}")
                 
             except Exception as e:
                 logger.warning(f"Error building project context: {e}")

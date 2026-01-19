@@ -12,6 +12,7 @@ import {
   clearChatSession,
   ChatMessage as ServiceChatMessage
 } from '../services/chatService'
+import { useArtifactStore } from '../stores/artifactStore'
 
 interface Message {
   id: string
@@ -63,6 +64,9 @@ function FloatingChat() {
   const [summaryLoaded, setSummaryLoaded] = useState(false)
   const [sessionId] = useState<string>(() => getOrCreateSessionId())
   const [messagesLoaded, setMessagesLoaded] = useState(false)
+  
+  // Get current folder ID from artifact store for meeting notes context
+  const { currentFolderId } = useArtifactStore()
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -230,11 +234,13 @@ function FloatingChat() {
         
         // Pass session_id for persistent context across messages
         // Use agentic mode if enabled, and write mode if both agentic and write are enabled
+        // Include folder_id for meeting notes context
         for await (const chunk of streamChatMessage({
           message: currentInput,
           conversation_history: conversationHistory,
           include_project_context: true,
-          session_id: sessionId
+          session_id: sessionId,
+          folder_id: currentFolderId || undefined
         }, agenticMode, writeMode)) {
           if (chunk.type === 'status') {
             // Tool status update - show what the agent is doing
@@ -259,7 +265,8 @@ function FloatingChat() {
           message: currentInput,
           conversation_history: conversationHistory,
           include_project_context: true,
-          session_id: sessionId
+          session_id: sessionId,
+          folder_id: currentFolderId || undefined
         })
         setMessages((prev) => prev.map(msg =>
           msg.id === assistantMessageId
@@ -340,9 +347,9 @@ function FloatingChat() {
                   )}
                 </div>
               ) : (
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-                  Always Online
+                <p className="text-[10px] text-amber-500 uppercase tracking-widest font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  ⚠️ Not indexed - Go to Intelligence → Reindex Projects
                 </p>
               )}
             </div>

@@ -1217,7 +1217,7 @@ ERROR MESSAGE FROM RENDERER:
         
         # Diagram-type-specific syntax guidance - COMPREHENSIVE for ALL types
         syntax_guide = _get_syntax_guide_for_diagram_type(diagram_type)
-        
+
         prompt = f"""Fix this broken Mermaid {diagram_type} diagram.
 {syntax_guide}
 BROKEN CODE:
