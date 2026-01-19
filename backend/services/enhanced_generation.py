@@ -817,19 +817,117 @@ CRITICAL OUTPUT RULES:
 - Output ONLY the Mermaid diagram code
 - Start directly with the diagram type keyword (erDiagram, flowchart, classDiagram, etc.)
 - Do NOT include explanations, notes, or comments
-- Do NOT wrap in markdown code blocks
+- Do NOT wrap in markdown code blocks (no ```)
 - Do NOT say "Here is", "Let me know", or similar phrases
 - Do NOT include numbered lists or bullet points
+- Your first character MUST be the diagram type (e, f, g, c, s, etc.)
+- Your last character MUST be } or end or a diagram element
 - Just the raw Mermaid code, nothing else"""
+
+        # ERD-specific syntax guide
+        erd_syntax_guide = """
+
+ERD SYNTAX REQUIREMENTS:
+Valid format:
+erDiagram
+    ENTITY_NAME {
+        type fieldname KEY
+    }
+    ENTITY1 ||--o{ ENTITY2 : relationship_label
+
+Example:
+erDiagram
+    USER {
+        int id PK
+        string name
+        string email
+    }
+    ORDER {
+        int id PK
+        int user_id FK
+        datetime created_at
+    }
+    USER ||--o{ ORDER : places
+
+RELATIONSHIP SYMBOLS:
+- ||--|| : one to one
+- ||--o{ : one to many
+- }o--o{ : many to many
+- ||--o| : one to zero or one
+
+NEVER USE: class, ->, depend, quotes around entity names"""
         
         messages = {
             # Mermaid Diagrams
-            ArtifactType.MERMAID_ERD: f"{base_message} Generate a clean, correct Entity-Relationship Diagram in Mermaid syntax. Include all entities, relationships, and cardinalities. Ensure syntax is valid and the diagram clearly represents the data model.{mermaid_output_rules}",
-            ArtifactType.MERMAID_ARCHITECTURE: f"{base_message} Generate a comprehensive System Architecture Diagram in Mermaid syntax. Show components, their relationships, data flow, and system boundaries. Use proper Mermaid syntax for architecture diagrams.{mermaid_output_rules}",
-            ArtifactType.MERMAID_SEQUENCE: f"{base_message} Generate a detailed Sequence Diagram in Mermaid syntax. Show all actors, objects, and message flows with proper lifelines and activation boxes.{mermaid_output_rules}",
-            ArtifactType.MERMAID_CLASS: f"{base_message} Generate a Class Diagram in Mermaid syntax. Include classes, attributes, methods, and relationships (inheritance, composition, association). Use valid relationship syntax: <|-- for inheritance, *-- for composition, o-- for aggregation, --> for association.{mermaid_output_rules}",
-            ArtifactType.MERMAID_STATE: f"{base_message} Generate a State Diagram in Mermaid syntax. Show all states, transitions, and state entry/exit actions.{mermaid_output_rules}",
-            ArtifactType.MERMAID_FLOWCHART: f"{base_message} Generate a Flowchart in Mermaid syntax. Use proper shapes for decisions, processes, and start/end points. Use valid arrow syntax: --> for arrows, -->|label| for labeled arrows (NOT -->|label|>).{mermaid_output_rules}",
+            ArtifactType.MERMAID_ERD: f"{base_message} Generate a clean, correct Entity-Relationship Diagram in Mermaid syntax. Include all entities, relationships, and cardinalities.{erd_syntax_guide}{mermaid_output_rules}",
+            ArtifactType.MERMAID_ARCHITECTURE: f"""{base_message} Generate a comprehensive System Architecture Diagram in Mermaid syntax. Show components, their relationships, data flow, and system boundaries.
+
+FLOWCHART SYNTAX FOR ARCHITECTURE:
+flowchart TD
+    subgraph Frontend
+        UI[User Interface]
+        API_Gateway[API Gateway]
+    end
+    subgraph Backend
+        Service[Service Layer]
+        DB[(Database)]
+    end
+    UI --> API_Gateway --> Service --> DB
+
+Use subgraphs for system boundaries.{mermaid_output_rules}""",
+            ArtifactType.MERMAID_SEQUENCE: f"""{base_message} Generate a detailed Sequence Diagram in Mermaid syntax. Show all actors, objects, and message flows.
+
+SEQUENCE SYNTAX:
+sequenceDiagram
+    participant U as User
+    participant S as Server
+    participant DB as Database
+    U->>S: Request
+    S->>DB: Query
+    DB-->>S: Results
+    S-->>U: Response
+
+Use ->> for solid arrows, -->> for dashed arrows.
+Always include : for messages.{mermaid_output_rules}""",
+            ArtifactType.MERMAID_CLASS: f"""{base_message} Generate a Class Diagram in Mermaid syntax.
+
+CLASS DIAGRAM SYNTAX:
+classDiagram
+    class ClassName {{
+        +type attribute
+        +method() returnType
+    }}
+    Parent <|-- Child : inherits
+    Container *-- Component : contains
+    Owner o-- Owned : aggregates
+    A --> B : uses
+
+Relationships: <|-- inheritance, *-- composition, o-- aggregation, --> association{mermaid_output_rules}""",
+            ArtifactType.MERMAID_STATE: f"""{base_message} Generate a State Diagram in Mermaid syntax.
+
+STATE DIAGRAM SYNTAX:
+stateDiagram-v2
+    [*] --> State1
+    State1 --> State2 : trigger
+    State2 --> [*]
+    state State1 {{
+        [*] --> SubState
+    }}
+
+Use [*] for start/end, --> for transitions.{mermaid_output_rules}""",
+            ArtifactType.MERMAID_FLOWCHART: f"""{base_message} Generate a Flowchart in Mermaid syntax.
+
+FLOWCHART SYNTAX:
+flowchart TD
+    A[Start] --> B{{Decision}}
+    B -->|Yes| C[Process]
+    B -->|No| D[Other]
+    C --> E[End]
+    D --> E
+
+Shapes: [text] rectangle, (text) rounded, {{text}} diamond, [(text)] stadium.
+Arrows: --> solid, -.-> dotted, ==> thick.
+Labels: -->|label| (NOT |>).{mermaid_output_rules}""",
             ArtifactType.MERMAID_DATA_FLOW: f"{base_message} Generate a Data Flow Diagram in Mermaid syntax. Show processes, data stores, external entities, and data flows.{mermaid_output_rules}",
             ArtifactType.MERMAID_USER_FLOW: f"{base_message} Generate a User Flow Diagram in Mermaid syntax. Show user actions, decision points, and flow paths.{mermaid_output_rules}",
             ArtifactType.MERMAID_COMPONENT: f"{base_message} Generate a Component Diagram in Mermaid syntax. Show components, interfaces, and dependencies.{mermaid_output_rules}",

@@ -133,6 +133,79 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
     }
   }
 
+  // Client-side diagram fixer - quick fixes before rendering
+  const fixDiagramClientSide = useCallback((diagramContent: string): string => {
+    let fixed = diagramContent
+    
+    // Remove common AI preambles
+    const aiPreambles = [
+      /^(?:Here(?:'s| is).*?:?\s*\n)/i,
+      /^(?:Sure(?:,| thing)?.*?:?\s*\n)/i,
+      /^(?:Of course.*?:?\s*\n)/i,
+      /^(?:I've.*?:?\s*\n)/i,
+      /^(?:The (?:corrected|fixed|improved).*?:?\s*\n)/i,
+    ]
+    for (const pattern of aiPreambles) {
+      fixed = fixed.replace(pattern, '')
+    }
+    
+    // Remove markdown code fences
+    fixed = fixed.replace(/^```(?:mermaid)?\s*\n?/gm, '')
+    fixed = fixed.replace(/\n?```\s*$/gm, '')
+    
+    // Remove trailing explanatory text (common AI pattern)
+    const explanationPatterns = [
+      /\n+\*{2}(?:Explanation|Note|Key|Changes).*$/s,
+      /\n+(?:Explanation|Note|This diagram).*$/s,
+      /\n+(?:1\.\s+\*{2}|#+ ).*$/s,  // Numbered lists or headers after diagram
+    ]
+    for (const pattern of explanationPatterns) {
+      fixed = fixed.replace(pattern, '')
+    }
+    
+    // Fix common syntax errors
+    // Fix |> arrow syntax (should be -->|label| or just -->)
+    fixed = fixed.replace(/\|>/g, '>')
+    
+    // Fix missing spaces around arrows in flowcharts
+    fixed = fixed.replace(/(\w)-->/g, '$1 -->')
+    fixed = fixed.replace(/-->(\w)/g, '--> $1')
+    
+    // Fix ERD relationship syntax: remove quotes around entity names
+    if (fixed.includes('erDiagram')) {
+      fixed = fixed.replace(/"(\w+)"\s*(\|\||--|{|}|o|{o|o{)/g, '$1 $2')
+      fixed = fixed.replace(/(\|\||--|{|}|o|{o|o{)\s*"(\w+)"/g, '$1 $2')
+    }
+    
+    // Gantt: Remove invalid "depend" lines
+    if (fixed.toLowerCase().includes('gantt')) {
+      const lines = fixed.split('\n')
+      fixed = lines.filter(line => {
+        const lower = line.toLowerCase()
+        // Remove lines containing "depend" that aren't section headers
+        if (lower.includes('depend') && !lower.trim().startsWith('section')) {
+          return false
+        }
+        return true
+      }).join('\n')
+    }
+    
+    // Fix sequence diagram arrows
+    if (fixed.includes('sequenceDiagram')) {
+      // Fix -> to ->>
+      fixed = fixed.replace(/(\w+)\s*->\s*(\w+)/g, '$1->>$2')
+      // Ensure colons in messages
+      fixed = fixed.replace(/(\w+\s*->>?\s*\w+)([^:\n]+)$/gm, (match, actors, msg) => {
+        if (!msg.includes(':')) {
+          return `${actors}: ${msg.trim()}`
+        }
+        return match
+      })
+    }
+    
+    return fixed.trim()
+  }, [])
+
   // Validate Mermaid content before rendering
   const validateMermaidContent = useCallback((diagramContent: string): { isValid: boolean; errors: string[]; warnings: string[] } => {
     const errors: string[] = []
@@ -143,26 +216,37 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
       return { isValid: false, errors, warnings }
     }
     
-    // Check for diagram type declaration
+    // Check for diagram type declaration (case-insensitive for flexibility)
     const diagramTypes = [
       'erDiagram', 'flowchart', 'graph', 'sequenceDiagram',
       'classDiagram', 'stateDiagram', 'gantt', 'pie', 'journey',
-      'gitgraph', 'mindmap', 'timeline'
+      'gitgraph', 'mindmap', 'timeline', 'C4Context', 'C4Container'
     ]
-    const hasDiagramType = diagramTypes.some(dt => diagramContent.includes(dt))
+    const hasDiagramType = diagramTypes.some(dt => 
+      diagramContent.toLowerCase().includes(dt.toLowerCase())
+    )
     if (!hasDiagramType) {
-      errors.push('Missing Mermaid diagram type declaration (erDiagram, flowchart, etc.)')
+      // Only error if content doesn't look like a diagram at all
+      if (!diagramContent.includes('-->') && !diagramContent.includes('--') && !diagramContent.includes('||')) {
+        errors.push('Missing Mermaid diagram type declaration (erDiagram, flowchart, etc.)')
+      } else {
+        warnings.push('Diagram type not detected - will attempt to render anyway')
+      }
     }
     
-    // Check for balanced brackets
-    if (diagramContent.split('{').length !== diagramContent.split('}').length) {
-      errors.push('Unbalanced curly braces {}')
+    // Check for balanced brackets (only error if severely unbalanced)
+    const openCurly = (diagramContent.match(/\{/g) || []).length
+    const closeCurly = (diagramContent.match(/\}/g) || []).length
+    if (Math.abs(openCurly - closeCurly) > 2) {
+      errors.push(`Unbalanced curly braces {} (${openCurly} open, ${closeCurly} close)`)
+    } else if (openCurly !== closeCurly) {
+      warnings.push('Possibly unbalanced curly braces {}')
     }
-    if (diagramContent.split('[').length !== diagramContent.split(']').length) {
-      errors.push('Unbalanced square brackets []')
-    }
-    if (diagramContent.split('(').length !== diagramContent.split(')').length) {
-      warnings.push('Possibly unbalanced parentheses ()')
+    
+    const openSquare = (diagramContent.match(/\[/g) || []).length
+    const closeSquare = (diagramContent.match(/\]/g) || []).length
+    if (Math.abs(openSquare - closeSquare) > 2) {
+      errors.push(`Unbalanced square brackets [] (${openSquare} open, ${closeSquare} close)`)
     }
     
     // Check for common syntax issues
@@ -170,10 +254,13 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
       warnings.push('ERD diagram contains class diagram syntax - may need conversion')
     }
     
-    // Check for empty entity definitions
-    const emptyEntityPattern = /\w+\s*\{\s*\}/g
-    if (emptyEntityPattern.test(diagramContent)) {
-      warnings.push('Some entities have no attributes defined')
+    // Check for AI text pollution
+    const aiMarkers = ['here is the', 'i\'ve created', 'let me know', 'hope this helps']
+    for (const marker of aiMarkers) {
+      if (diagramContent.toLowerCase().includes(marker)) {
+        warnings.push('Diagram may contain AI explanatory text')
+        break
+      }
     }
     
     return {
@@ -353,7 +440,7 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
           
           // If content contains a diagram type, extract from there
           for (const dt of diagramTypes) {
-            const idx = diagramContent.indexOf(dt)
+            const idx = diagramContent.toLowerCase().indexOf(dt.toLowerCase())
             if (idx !== -1) {
               let extracted = diagramContent.substring(idx).trim()
               
@@ -389,6 +476,11 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
             }
           }
         }
+        
+        // Apply client-side fixes BEFORE validation and rendering
+        console.log('🔧 [MermaidRenderer] Applying client-side fixes...')
+        diagramContent = fixDiagramClientSide(diagramContent)
+        console.log('🔧 [MermaidRenderer] Fixed content length:', diagramContent.length)
         
         // Fix ERD syntax if it's using class diagram syntax (client-side safety net)
         if (diagramContent.includes('erDiagram') && (diagramContent.includes('class ') || diagramContent.includes('CLASS '))) {

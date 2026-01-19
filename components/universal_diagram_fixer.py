@@ -37,22 +37,36 @@ class UniversalDiagramFixer:
         'timeline': 'timeline'
     }
     
-    def __init__(self):
+    def __init__(self, strict_mode: bool = True):
+        """
+        Initialize the diagram fixer.
+        
+        Args:
+            strict_mode: If True, aggressively removes invalid lines.
+                        If False, tries to preserve more content with minimal fixes.
+        """
         self.current_type = None
         self.errors_fixed = []
+        self.strict_mode = strict_mode
     
-    def fix_diagram(self, content: str, max_passes: int = 3) -> Tuple[str, List[str]]:
+    def fix_diagram(self, content: str, max_passes: int = 3, lenient: bool = False) -> Tuple[str, List[str]]:
         """
         Fix any Mermaid diagram syntax issues with MULTIPLE validation passes.
         
         Args:
             content: Raw Mermaid diagram content (possibly with errors)
             max_passes: Maximum number of correction passes (default: 3 for aggressive fixing)
+            lenient: If True, apply minimal fixes only (less aggressive)
             
         Returns:
             Tuple of (fixed_content, list_of_fixes_applied)
         """
         self.errors_fixed = []
+        
+        # LENIENT MODE: Apply minimal fixes only
+        if lenient:
+            return self._fix_diagram_lenient(content)
+        
         previous_content = None
         
         # MULTIPLE PASSES for stubborn syntax errors
@@ -115,6 +129,104 @@ class UniversalDiagramFixer:
             print(f"[MERMAID_FIX] Applied {len(self.errors_fixed)} fixes across {min(pass_num + 1, max_passes)} passes")
         
         return content, self.errors_fixed
+    
+    def _fix_diagram_lenient(self, content: str) -> Tuple[str, List[str]]:
+        """
+        Apply MINIMAL fixes to a diagram - preserves most content.
+        
+        Only fixes critical issues:
+        - Removes markdown code blocks
+        - Removes AI preambles
+        - Fixes |> arrow syntax
+        - Removes lines with 'depend' for Gantt
+        - Fixes very basic syntax issues
+        
+        Args:
+            content: Raw diagram content
+            
+        Returns:
+            Tuple of (fixed_content, list_of_fixes)
+        """
+        import re
+        fixes = []
+        original_content = content
+        
+        # Step 1: Remove markdown blocks
+        content = re.sub(r'^```(?:mermaid)?\s*\n?', '', content, flags=re.MULTILINE)
+        content = re.sub(r'\n?```\s*$', '', content)
+        content = content.strip()
+        if content != original_content:
+            fixes.append("Removed markdown code blocks")
+        
+        # Step 2: Remove AI preambles (single line at start)
+        ai_preambles = [
+            r'^Here(?:\'s| is).*?:\s*\n',
+            r'^Sure(?:,| thing)?.*?:\s*\n',
+            r'^Of course.*?:\s*\n',
+            r'^I\'ve.*?:\s*\n',
+            r'^The (?:corrected|fixed).*?:\s*\n',
+        ]
+        for pattern in ai_preambles:
+            before = content
+            content = re.sub(pattern, '', content, flags=re.IGNORECASE)
+            if content != before:
+                fixes.append("Removed AI preamble")
+                break
+        
+        # Step 3: Remove trailing AI explanations
+        explanation_patterns = [
+            r'\n\n+\*{2}(?:Explanation|Note|Key).*$',
+            r'\n\n+(?:Explanation|Note):.*$',
+        ]
+        for pattern in explanation_patterns:
+            before = content
+            content = re.sub(pattern, '', content, flags=re.DOTALL)
+            if content != before:
+                fixes.append("Removed trailing explanation")
+                break
+        
+        # Step 4: Fix |> arrow syntax (very common error)
+        if '|>' in content:
+            content = content.replace('|>', '>')
+            fixes.append("Fixed |> arrow syntax")
+        
+        # Step 5: For Gantt diagrams, remove "depend" lines
+        if 'gantt' in content.lower():
+            lines = content.split('\n')
+            new_lines = []
+            for line in lines:
+                if 'depend' in line.lower() and not line.strip().lower().startswith('section'):
+                    fixes.append("Removed invalid 'depend' line")
+                    continue
+                new_lines.append(line)
+            content = '\n'.join(new_lines)
+        
+        # Step 6: Fix -.- to -.- (dotted arrows sometimes malformed)
+        content = re.sub(r'-\.-+', '-.-', content)
+        
+        # Step 7: Ensure diagram type declaration exists
+        diagram_types = [
+            'erdiagram', 'flowchart', 'graph', 'sequencediagram',
+            'classdiagram', 'statediagram', 'gantt', 'pie', 'journey',
+            'gitgraph', 'mindmap', 'timeline'
+        ]
+        first_line = content.split('\n')[0].strip().lower() if content else ''
+        has_type = any(first_line.startswith(dt) for dt in diagram_types)
+        
+        if not has_type:
+            # Try to detect from content
+            if '||' in content or '}o' in content or 'o{' in content:
+                content = 'erDiagram\n' + content
+                fixes.append("Added erDiagram header")
+            elif '-->' in content or '---' in content:
+                content = 'flowchart TD\n' + content
+                fixes.append("Added flowchart TD header")
+            elif '->>' in content or 'participant' in content.lower():
+                content = 'sequenceDiagram\n' + content
+                fixes.append("Added sequenceDiagram header")
+        
+        self.errors_fixed = fixes
+        return content.strip(), fixes
     
     def _remove_markdown_blocks(self, content: str) -> str:
         """Remove markdown code blocks (```mermaid, ```html, etc.) and RAG context pollution"""

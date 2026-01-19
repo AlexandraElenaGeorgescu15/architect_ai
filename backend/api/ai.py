@@ -969,14 +969,39 @@ async def repair_diagram(
             return True, "Valid"
         
         # ============================================================
-        # ATTEMPT 1: Rule-based repair (fast, no AI)
-        # ONLY return early if NO frontend error was reported
+        # ATTEMPT 1a: Lenient rule-based repair (minimal fixes, preserve content)
+        # Try lenient mode first - less aggressive, preserves more content
         # ============================================================
         rule_based_fixed_code = original_code
         try:
             from components.universal_diagram_fixer import UniversalDiagramFixer
             fixer = UniversalDiagramFixer()
-            rule_based_fixed_code, fixes_applied = fixer.fix_diagram(original_code, max_passes=5)
+            
+            # First try LENIENT mode - minimal fixes
+            lenient_code, lenient_fixes = fixer.fix_diagram(original_code, lenient=True)
+            is_valid, reason = validate_mermaid(lenient_code)
+            attempts.append(f"Lenient: {is_valid} ({reason})")
+            
+            if is_valid and not frontend_reported_error:
+                logger.info(f"✅ Lenient repair successful: {len(lenient_fixes)} fixes")
+                return DiagramImproveResponse(
+                    success=True,
+                    improved_code=lenient_code,
+                    improvements_made=[f"Lenient: {f}" for f in lenient_fixes[:5]] if lenient_fixes else ["Diagram validated"],
+                    error=None
+                )
+            else:
+                # Lenient mode didn't work, try aggressive mode
+                rule_based_fixed_code = lenient_code  # Start from lenient-fixed code
+        except Exception as e:
+            attempts.append(f"Lenient: Failed ({e})")
+            logger.warning(f"Lenient repair failed: {e}")
+        
+        # ============================================================
+        # ATTEMPT 1b: Aggressive rule-based repair (full fix)
+        # ============================================================
+        try:
+            rule_based_fixed_code, fixes_applied = fixer.fix_diagram(rule_based_fixed_code, max_passes=5)
             
             is_valid, reason = validate_mermaid(rule_based_fixed_code)
             attempts.append(f"Rule-based: {is_valid} ({reason})")
