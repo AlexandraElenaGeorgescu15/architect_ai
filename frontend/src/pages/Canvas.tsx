@@ -27,7 +27,7 @@ export default function Canvas() {
   // Only show Mermaid diagrams (exclude HTML), filtered by current folder
   const diagramArtifacts = artifacts
     .filter(a => a.type.startsWith('mermaid_'))
-    .filter(a => !currentFolderId || (a as any).folder_id === currentFolderId)  // Filter by folder
+    .filter(a => !currentFolderId || a.folder_id === currentFolderId)  // Filter by folder
     .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
 
   // FIXED: If ID is set but not found, fall back to type-based or first diagram

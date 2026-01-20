@@ -30,7 +30,7 @@ export default function ArtifactTabs({ searchQuery = '' }: ArtifactTabsProps) {
     
     // Apply folder filter first
     if (currentFolderId) {
-      filtered = filtered.filter((artifact) => (artifact as any).folder_id === currentFolderId)
+      filtered = filtered.filter((artifact) => artifact.folder_id === currentFolderId)
     }
     
     // Apply tab filter
@@ -79,7 +79,7 @@ export default function ArtifactTabs({ searchQuery = '' }: ArtifactTabsProps) {
                {tab.label} <span className="opacity-50 ml-1 text-[10px]">{(() => {
                   // Filter by folder first if one is selected
                   const folderFiltered = currentFolderId 
-                    ? artifacts.filter(a => (a as any).folder_id === currentFolderId)
+                    ? artifacts.filter(a => a.folder_id === currentFolderId)
                     : artifacts
                   
                   if (tab.value === 'all') return folderFiltered.length

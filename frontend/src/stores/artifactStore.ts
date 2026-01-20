@@ -94,17 +94,17 @@ export const useArtifactStore = create<ArtifactStore>((set, get) => ({
     return get().artifacts.find((a) => a.id === id)
   },
 
-  // Filter artifacts by folder ID
-  getArtifactsByFolder: (folderId) => {
-    const artifacts = get().artifacts
-    if (!folderId) {
-      // If no folder specified, return all artifacts
-      return artifacts.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
-    }
-    return artifacts
-      .filter((a) => (a as any).folder_id === folderId)
-      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
-  },
+      // Filter artifacts by folder ID
+      getArtifactsByFolder: (folderId) => {
+        const artifacts = get().artifacts
+        if (!folderId) {
+          // If no folder specified, return all artifacts
+          return artifacts.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+        }
+        return artifacts
+          .filter((a) => a.folder_id === folderId)
+          .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+      },
 
   // Reset store to initial state (call on cleanup/logout)
   reset: () => set({
