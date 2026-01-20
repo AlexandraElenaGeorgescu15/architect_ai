@@ -467,9 +467,9 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
   const [isBulkDialogOpen, setBulkDialogOpen] = useState(false)
   const [isBulkGenerating, setIsBulkGenerating] = useState(false)
   
-  // Meeting notes folder selection state
+  // Meeting notes folder selection state - sync with global store
   const [folders, setFolders] = useState<Array<{ id: string; name: string; notes_count: number }>>([])
-  const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null)
+  const { currentFolderId, setCurrentFolderId } = useArtifactStore()
   
   // Import useSystemStatus to check backend readiness
   const { isReady: backendReady } = useSystemStatus()
@@ -493,15 +493,15 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
   }
 
   const handleBuildContext = useCallback(async () => {
-    if (!selectedFolderId && props.meetingNotes.length < 10) {
+    if (!currentFolderId && props.meetingNotes.length < 10) {
       alert('Please select a folder or provide meeting notes (at least 10 characters)')
       return
     }
 
     try {
       const response = await props.build({
-        meeting_notes: selectedFolderId ? undefined : props.meetingNotes,
-        folder_id: selectedFolderId || undefined,
+        meeting_notes: currentFolderId ? undefined : props.meetingNotes,
+        folder_id: currentFolderId || undefined,
         include_rag: true,
         include_kg: true,
         include_patterns: true,
@@ -520,11 +520,11 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
       addNotification('error', `Context build failed: ${errorMsg}. You can still generate directly.`)
       // Don't throw - allow generation to proceed without context
     }
-  }, [props, selectedFolderId])
+  }, [props, currentFolderId])
 
   const handleGenerate = useCallback(async () => {
     // Allow generation even without context - it will build context on-the-fly
-    if (!selectedFolderId && props.meetingNotes.length < 10) {
+    if (!currentFolderId && props.meetingNotes.length < 10) {
       alert('Please provide meeting notes (at least 10 characters) or select a folder')
       return
     }
@@ -532,8 +532,8 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
     try {
       await props.generate({
         context_id: props.contextId || undefined,
-        meeting_notes: (!props.contextId && !selectedFolderId) ? props.meetingNotes : undefined,
-        folder_id: (!props.contextId && selectedFolderId) ? selectedFolderId : undefined,
+        meeting_notes: (!props.contextId && !currentFolderId) ? props.meetingNotes : undefined,
+        folder_id: (!props.contextId && currentFolderId) ? currentFolderId : undefined,
         artifact_type: props.selectedArtifactType,
         options: {
           max_retries: 3,
@@ -545,7 +545,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
       console.error('Generation error:', error)
       addNotification('error', error?.response?.data?.detail || error?.message || 'Failed to generate artifact. Please try again.')
     }
-  }, [props, selectedFolderId, addNotification])
+  }, [props, currentFolderId, addNotification])
 
   const handleAskAi = useCallback(async (question: string) => {
     if (!question.trim()) return
@@ -571,7 +571,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
   const handleBulkGenerate = useCallback(async (selectedArtifacts: ArtifactType[]) => {
     const trimmedNotes = props.meetingNotes.trim()
     const useNotes = trimmedNotes.length >= 10 ? trimmedNotes : undefined
-    const hasFolder = !!selectedFolderId
+    const hasFolder = !!currentFolderId
     const hasContext = !!props.contextId
 
     if (!useNotes && !hasFolder && !hasContext) {
@@ -586,7 +586,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
           artifact_type,
           meeting_notes: useNotes,
           context_id: hasContext ? props.contextId || undefined : undefined,
-          folder_id: !useNotes && hasFolder ? selectedFolderId || undefined : undefined,
+          folder_id: !useNotes && hasFolder ? currentFolderId || undefined : undefined,
         }))
       )
       response.forEach((item) => {
@@ -601,7 +601,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
     } finally {
       setIsBulkGenerating(false)
     }
-  }, [addArtifact, addNotification, props.contextId, props.meetingNotes, selectedFolderId])
+  }, [addArtifact, addNotification, props.contextId, props.meetingNotes, currentFolderId])
 
   const keyboardShortcuts = useMemo(
     () => [
@@ -708,8 +708,8 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                         Data Source
                       </label>
                       <select
-                        value={selectedFolderId || ''}
-                        onChange={(e) => setSelectedFolderId(e.target.value || null)}
+                        value={currentFolderId || ''}
+                        onChange={(e) => setCurrentFolderId(e.target.value || null)}
                         className="w-full px-4 py-3 text-sm glass-input rounded-xl text-foreground outline-none focus:border-primary focus:shadow-lg focus:shadow-primary/10 transition-all duration-300 shadow-sm hover:shadow-md truncate-with-ellipsis"
                       >
                         <option value="" className="bg-card text-foreground">📝 Quick Notes (Below)</option>
@@ -732,14 +732,14 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                         onChange={(e) => props.setMeetingNotes(e.target.value)}
                         placeholder="Describe what you want to build..."
                         className="w-full h-32 p-4 text-sm glass-input rounded-xl text-foreground resize-none outline-none focus:border-primary focus:shadow-lg focus:shadow-primary/10 transition-all duration-300 shadow-sm hover:shadow-md"
-                        disabled={!!selectedFolderId}
+                        disabled={!!currentFolderId}
                       />
                     </div>
 
                     <div className="flex gap-3">
                       <button
                         onClick={handleBuildContext}
-                        disabled={props.isBuilding || (!selectedFolderId && props.meetingNotes.length < 10)}
+                        disabled={props.isBuilding || (!currentFolderId && props.meetingNotes.length < 10)}
                         className="flex-1 py-3 glass-button text-foreground text-sm font-bold rounded-xl flex items-center justify-center gap-2 hover:text-primary hover:bg-primary/10 hover:shadow-lg transition-all duration-300 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent"
                       >
                         {props.isBuilding ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4 text-primary" />}
@@ -805,7 +805,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
 
                     <button
                       onClick={handleGenerate}
-                      disabled={props.isGenerating || (!selectedFolderId && props.meetingNotes.length < 10)}
+                      disabled={props.isGenerating || (!currentFolderId && props.meetingNotes.length < 10)}
                       className="w-full py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground rounded-xl font-black uppercase tracking-widest shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 flex items-center justify-center gap-3 transform hover:-translate-y-1 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                     >
                       {props.isGenerating ? (

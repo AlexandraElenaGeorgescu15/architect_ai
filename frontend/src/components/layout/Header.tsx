@@ -4,6 +4,7 @@ import { useUIStore } from '../../stores/uiStore'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Template, listTemplates, applyTemplate } from '../../services/templateService'
 import ProjectIndicator from './ProjectIndicator'
+import FolderSelector from '../FolderSelector'
 import api from '../../services/api'
 
 // Assistant types
@@ -182,9 +183,11 @@ export default function Header() {
         <h1 className="text-base font-bold text-foreground">{getPageTitle()}</h1>
       </div>
 
-      {/* Center: Project Indicator - Shows all indexed projects */}
-      <div className="hidden md:block mx-4">
+      {/* Center: Project Indicator + Folder Selector */}
+      <div className="hidden md:flex items-center gap-3 mx-4">
         <ProjectIndicator />
+        <div className="h-4 w-px bg-border" />
+        <FolderSelector />
       </div>
 
       <div className="flex-1" />

@@ -23,10 +23,15 @@ interface ArtifactTabsProps {
 
 export default function ArtifactTabs({ searchQuery = '' }: ArtifactTabsProps) {
   const [activeTab, setActiveTab] = useState<TabType>('all')
-  const { artifacts, currentArtifact, setCurrentArtifact } = useArtifactStore()
+  const { artifacts, currentArtifact, setCurrentArtifact, currentFolderId } = useArtifactStore()
 
   const filteredArtifacts = useMemo(() => {
     let filtered = artifacts
+    
+    // Apply folder filter first
+    if (currentFolderId) {
+      filtered = filtered.filter((artifact) => (artifact as any).folder_id === currentFolderId)
+    }
     
     // Apply tab filter
     if (activeTab !== 'all') {
@@ -54,7 +59,7 @@ export default function ArtifactTabs({ searchQuery = '' }: ArtifactTabsProps) {
     }
     
     return filtered
-  }, [artifacts, activeTab, searchQuery])
+  }, [artifacts, activeTab, searchQuery, currentFolderId])
 
   return (
     <div className="space-y-6 h-full flex flex-col" data-tour="artifacts-panel">
@@ -71,15 +76,23 @@ export default function ArtifactTabs({ searchQuery = '' }: ArtifactTabsProps) {
                    : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
                }`}
              >
-               {tab.label} <span className="opacity-50 ml-1 text-[10px]">{tab.value === 'all' ? artifacts.length : artifacts.filter(a => {
-                  if (tab.value === 'diagrams') return a.type.startsWith('mermaid_')
-                  if (tab.value === 'html') return a.type.startsWith('html_')
-                  if (tab.value === 'code') return a.type === 'code_prototype'
-                  if (tab.value === 'prototypes') return ['visual_prototype', 'interactive_prototype', 'html_component'].includes(a.type)
-                  if (tab.value === 'docs') return a.type === 'api_docs'
-                  if (tab.value === 'pm') return ['jira', 'workflows', 'backlog', 'personas', 'estimations', 'feature_scoring'].includes(a.type)
-                  return true
-               }).length}</span>
+               {tab.label} <span className="opacity-50 ml-1 text-[10px]">{(() => {
+                  // Filter by folder first if one is selected
+                  const folderFiltered = currentFolderId 
+                    ? artifacts.filter(a => (a as any).folder_id === currentFolderId)
+                    : artifacts
+                  
+                  if (tab.value === 'all') return folderFiltered.length
+                  return folderFiltered.filter(a => {
+                    if (tab.value === 'diagrams') return a.type.startsWith('mermaid_')
+                    if (tab.value === 'html') return a.type.startsWith('html_')
+                    if (tab.value === 'code') return a.type === 'code_prototype'
+                    if (tab.value === 'prototypes') return ['visual_prototype', 'interactive_prototype', 'html_component'].includes(a.type)
+                    if (tab.value === 'docs') return a.type === 'api_docs'
+                    if (tab.value === 'pm') return ['jira', 'workflows', 'backlog', 'personas', 'estimations', 'feature_scoring'].includes(a.type)
+                    return true
+                  }).length
+                })()}</span>
              </button>
            ))}
          </div>

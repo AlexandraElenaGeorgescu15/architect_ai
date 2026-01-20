@@ -2,11 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import { useLocation, useSearchParams } from 'react-router-dom'
 import { useArtifactStore } from '../stores/artifactStore'
 import { useDiagramStore } from '../stores/diagramStore'
-import { FileCode, Sparkles, ChevronDown } from 'lucide-react'
+import { FileCode, Sparkles, ChevronDown, FolderOpen } from 'lucide-react'
 import EnhancedDiagramEditor from '../components/EnhancedDiagramEditor'
 
 export default function Canvas() {
-  const { artifacts } = useArtifactStore()
+  const { artifacts, currentFolderId } = useArtifactStore()
   const { resetState: resetDiagramState } = useDiagramStore()
   const location = useLocation()
   const [searchParams] = useSearchParams()
@@ -24,9 +24,10 @@ export default function Canvas() {
     }
   }, [resetDiagramState])
   
-  // Only show Mermaid diagrams (exclude HTML)
+  // Only show Mermaid diagrams (exclude HTML), filtered by current folder
   const diagramArtifacts = artifacts
     .filter(a => a.type.startsWith('mermaid_'))
+    .filter(a => !currentFolderId || (a as any).folder_id === currentFolderId)  // Filter by folder
     .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
 
   // FIXED: If ID is set but not found, fall back to type-based or first diagram
@@ -137,7 +138,14 @@ export default function Canvas() {
   return (
     <div className="w-full h-[calc(100vh-32px)] flex flex-col animate-fade-in-up overflow-hidden">
       
-      {/* Compact Diagram Selector */}
+      {/* Folder Indicator + Compact Diagram Selector */}
+      {currentFolderId && (
+        <div className="mx-4 mb-2 flex items-center gap-2 text-xs text-primary bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20">
+          <FolderOpen className="w-4 h-4" />
+          <span className="font-medium">Viewing diagrams from: <strong>{currentFolderId}</strong></span>
+        </div>
+      )}
+      
       {diagramArtifacts.length > 1 && (
         <div ref={selectorRef} className="mb-3 mx-4 relative flex-shrink-0 z-50">
           <button

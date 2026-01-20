@@ -52,11 +52,9 @@ class DatasetService:
         # Load existing datasets
         self._load_datasets()
         
-        # Initialize dataset builder if available
-        if DATASET_BUILDER_AVAILABLE:
-            self.dataset_builder = FineTuningDatasetBuilder()
-        else:
-            self.dataset_builder = None
+        # Dataset builder is initialized lazily when needed (requires meeting_notes)
+        self.dataset_builder = None
+        self._dataset_builder_available = DATASET_BUILDER_AVAILABLE
         
         logger.info("Dataset Service initialized")
     
