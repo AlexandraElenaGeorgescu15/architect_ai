@@ -317,10 +317,8 @@ personas:
   primary_model: ollama:dolphin-llama3:latest
 test_plan:
   enabled: true
-  fallback_models:
-  - ollama:codellama:7b-instruct
-  - groq:llama-3.3-70b-versatile
-  primary_model: ollama:llama3:latest
+  fallback_models: []
+  primary_model: groq:llama-3.3-70b-versatile
 workflows:
   enabled: true
   fallback_models:

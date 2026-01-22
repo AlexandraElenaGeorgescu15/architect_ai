@@ -188,6 +188,34 @@
       "is_valid": true
     },
     "created_at": "2025-12-18T11:57:30.831918",
+    "is_current": false
+  },
+  {
+    "version": 12,
+    "artifact_id": "mermaid_api_sequence",
+    "artifact_type": "mermaid_api_sequence",
+    "content": "sequenceDiagram\n  participant User\n  participant Frontend\n  participant Backend\n  participant Database\n  participant Modal\n\n  User->>Frontend: Click Request Phone Swap button\n  Frontend->>Modal: Trigger modal pop-up\n  Modal->>User: Display form with fields\n  User->>Modal: Fill out form and submit request\n  Modal->>Frontend: Send form data to Frontend\n  Frontend->>Backend: POST /api/phone-swaps with form data\n  Backend->>Database: Store swap request in database table\n  Backend->>Frontend: Validate user ownership of offered phone\n  Frontend->>User: Display confirmation message upon successful submission\n  User->>Frontend: Close modal pop-up\n",
+    "metadata": {
+      "updated_by": "default",
+      "update_type": "manual_edit",
+      "folder_id": null,
+      "artifact_type": "mermaid_api_sequence"
+    },
+    "created_at": "2026-01-22T12:09:48.705016",
+    "is_current": false
+  },
+  {
+    "version": 13,
+    "artifact_id": "mermaid_api_sequence",
+    "artifact_type": "mermaid_api_sequence",
+    "content": "sequenceDiagram\n  participant User\n  participant Frontend\n  participant Backend\n  participant Database\n  participant Modal\n\n  User->>Frontend: Click Request Phone Swap button\n  Frontend->>Modal: Trigger modal pop-up\n  Modal->>User: Display form with fields\n  User->>Modal: Fill out form and submit request\n  Modal->>Frontend: Send form data to Frontend\n  Frontend->>Backend: POST /api/phone-swaps with form data\n  Backend->>Database: Store swap request in database table\n  Backend->>Frontend: Validate user ownership of offered phone\n  Frontend->>User: Display confirmation message upon successful submission\n  User->>Frontend: Close modal pop-up\n",
+    "metadata": {
+      "source": "canvas_editor",
+      "model_used": "manual_edit",
+      "validation_score": 100,
+      "is_valid": true
+    },
+    "created_at": "2026-01-22T12:09:48.877526",
     "is_current": true
   }
 ]
