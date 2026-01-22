@@ -1072,50 +1072,76 @@ JSON response:"""
         """
         import re
         
+        logger.info(f"🔍 [VALIDATION] ========== AUTO-REPAIR STARTED ==========")
+        logger.info(f"🔍 [VALIDATION] Step 1: Initializing auto-repair")
+        logger.info(f"🔍 [VALIDATION] Step 1.1: Input content length={len(content)}, max_attempts={max_attempts}")
+        logger.info(f"🔍 [VALIDATION] Step 1.2: Input preview (first 200 chars): {content[:200]}...")
+        
         all_fixes = []
         current_content = content
         
         for attempt in range(max_attempts):
+            logger.info(f"🔍 [VALIDATION] Step 2.{attempt + 1}: Starting repair attempt {attempt + 1}/{max_attempts}")
+            
             # Validate current state
+            logger.info(f"🔍 [VALIDATION] Step 2.{attempt + 1}.1: Validating current diagram state")
             errors = self._validate_mermaid(current_content)
             critical_errors = [e for e in errors if e.startswith("CRITICAL:")]
+            non_critical_errors = [e for e in errors if not e.startswith("CRITICAL:")]
+            
+            logger.info(f"🔍 [VALIDATION] Step 2.{attempt + 1}.2: Validation result: {len(critical_errors)} critical errors, {len(non_critical_errors)} warnings")
+            if critical_errors:
+                logger.info(f"🔍 [VALIDATION] Step 2.{attempt + 1}.2.1: Critical errors: {critical_errors[:3]}...")  # Show first 3
             
             if not critical_errors:
                 # No critical errors - diagram should render
                 if errors:
-                    logger.info(f"✅ [VALIDATION] Diagram valid after {attempt + 1} repair passes ({len(errors)} non-critical warnings)")
+                    logger.info(f"✅ [VALIDATION] Step 2.{attempt + 1}.3: Diagram valid after {attempt + 1} repair passes ({len(errors)} non-critical warnings)")
+                else:
+                    logger.info(f"✅ [VALIDATION] Step 2.{attempt + 1}.3: Diagram valid after {attempt + 1} repair passes (no errors)")
+                logger.info(f"🔍 [VALIDATION] ========== AUTO-REPAIR COMPLETE (SUCCESS) ==========")
                 return current_content, True, all_fixes
             
             # Apply targeted fixes based on errors
+            logger.info(f"🔍 [VALIDATION] Step 2.{attempt + 1}.3: Applying targeted fixes for {len(critical_errors)} critical errors")
             fixes_this_pass = []
             
-            for error in critical_errors:
+            for error_idx, error in enumerate(critical_errors):
                 error_lower = error.lower()
+                logger.info(f"🔍 [VALIDATION] Step 2.{attempt + 1}.3.{error_idx + 1}: Fixing error: {error[:100]}...")
                 
                 # Fix unbalanced curly braces
                 if "unbalanced curly braces" in error_lower:
+                    logger.info(f"🔍 [VALIDATION] Step 2.{attempt + 1}.3.{error_idx + 1}.1: Fixing unbalanced curly braces")
                     open_count = current_content.count('{')
                     close_count = current_content.count('}')
+                    logger.info(f"🔍 [VALIDATION] Step 2.{attempt + 1}.3.{error_idx + 1}.2: Count: {open_count} open, {close_count} close")
                     
                     if open_count > close_count:
                         # Add missing closing braces
                         diff = open_count - close_count
+                        logger.info(f"🔍 [VALIDATION] Step 2.{attempt + 1}.3.{error_idx + 1}.3: Adding {diff} missing closing braces")
                         current_content = current_content.rstrip() + '\n' + '}\n' * diff
                         fixes_this_pass.append(f"Added {diff} missing closing braces")
+                        logger.info(f"🔍 [VALIDATION] Step 2.{attempt + 1}.3.{error_idx + 1}.4: Fixed - added {diff} closing braces")
                     elif close_count > open_count:
                         # Remove extra closing braces (from end)
+                        logger.info(f"🔍 [VALIDATION] Step 2.{attempt + 1}.3.{error_idx + 1}.3: Removing {close_count - open_count} extra closing braces")
                         lines = current_content.split('\n')
                         to_remove = close_count - open_count
+                        removed = 0
                         while to_remove > 0 and lines:
                             if '}' in lines[-1] and '{' not in lines[-1]:
                                 lines[-1] = lines[-1].replace('}', '', 1)
                                 to_remove -= 1
+                                removed += 1
                                 if not lines[-1].strip():
                                     lines.pop()
                             else:
                                 break
                         current_content = '\n'.join(lines)
                         fixes_this_pass.append(f"Removed {close_count - open_count} extra closing braces")
+                        logger.info(f"🔍 [VALIDATION] Step 2.{attempt + 1}.3.{error_idx + 1}.4: Fixed - removed {removed} closing braces")
                 
                 # Fix unbalanced square brackets
                 elif "unbalanced square brackets" in error_lower:
@@ -1164,13 +1190,16 @@ JSON response:"""
                         # Remove all quotes (safest fix)
                         current_content = current_content.replace('"', '')
                         fixes_this_pass.append("Removed unbalanced quotes")
+                        logger.info(f"🔍 [VALIDATION] Step 2.{attempt + 1}.3.{error_idx + 1}.4: Fixed - removed unbalanced quotes")
                 
                 # Fix missing diagram type
                 elif "missing mermaid diagram type" in error_lower:
+                    logger.info(f"🔍 [VALIDATION] Step 2.{attempt + 1}.3.{error_idx + 1}.3: Adding missing diagram type")
                     # Try to detect what type it should be
                     if '||--' in current_content or '}|--' in current_content:
                         current_content = 'erDiagram\n' + current_content
                         fixes_this_pass.append("Added missing erDiagram declaration")
+                        logger.info(f"🔍 [VALIDATION] Step 2.{attempt + 1}.3.{error_idx + 1}.4: Fixed - added erDiagram declaration")
                     elif '->>-' in current_content or '->>' in current_content:
                         current_content = 'sequenceDiagram\n' + current_content
                         fixes_this_pass.append("Added missing sequenceDiagram declaration")
@@ -1179,21 +1208,33 @@ JSON response:"""
                         fixes_this_pass.append("Added missing flowchart declaration")
             
             all_fixes.extend(fixes_this_pass)
+            logger.info(f"🔍 [VALIDATION] Step 2.{attempt + 1}.4: Applied {len(fixes_this_pass)} fixes in this pass: {fixes_this_pass[:3]}...")  # Show first 3
             
             if not fixes_this_pass:
                 # No fixes applied this pass - we're stuck
-                logger.warning(f"⚠️ [VALIDATION] No fixes applied on pass {attempt + 1}, stopping repair")
+                logger.warning(f"🔍 [VALIDATION] Step 2.{attempt + 1}.5: No fixes applied on pass {attempt + 1}, stopping repair")
                 break
+            
+            # Check if we made progress
+            if current_content == content:
+                logger.warning(f"🔍 [VALIDATION] Step 2.{attempt + 1}.5: No changes made in this pass, stopping")
+                break
+            
+            current_content = content
+            logger.info(f"🔍 [VALIDATION] Step 2.{attempt + 1}.5: Pass {attempt + 1} complete: {len(fixes_this_pass)} fixes, content_length={len(current_content)}")
         
         # Final validation
+        logger.info(f"🔍 [VALIDATION] Step 3: Final validation after {attempt + 1} repair attempts")
         final_errors = self._validate_mermaid(current_content)
         critical_errors = [e for e in final_errors if e.startswith("CRITICAL:")]
         is_valid = len(critical_errors) == 0
         
         if is_valid:
-            logger.info(f"✅ [VALIDATION] Diagram repaired after {attempt + 1} passes, {len(all_fixes)} total fixes")
+            logger.info(f"✅ [VALIDATION] Step 3.1: Diagram valid after {attempt + 1} repair passes ({len(final_errors)} non-critical warnings, {len(all_fixes)} total fixes)")
+            logger.info(f"🔍 [VALIDATION] ========== AUTO-REPAIR COMPLETE (SUCCESS) ==========")
         else:
-            logger.warning(f"⚠️ [VALIDATION] Could not fully repair diagram: {critical_errors[:3]}")
+            logger.warning(f"⚠️ [VALIDATION] Step 3.1: Diagram still has {len(critical_errors)} critical errors after {attempt + 1} attempts: {critical_errors[:3]}")
+            logger.info(f"🔍 [VALIDATION] ========== AUTO-REPAIR COMPLETE (PARTIAL) ==========")
         
         return current_content, is_valid, all_fixes
     

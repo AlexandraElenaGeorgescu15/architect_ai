@@ -105,16 +105,25 @@ class ContextBuilder:
         Returns:
             Dictionary with assembled context
         """
+        logger.info(f"🏗️ [CONTEXT] ========== CONTEXT BUILD STARTED ==========")
+        logger.info(f"🏗️ [CONTEXT] Step 1: Initializing context build")
+        logger.info(f"🏗️ [CONTEXT] Step 1.1: meeting_notes_length={len(meeting_notes)}, artifact_type={artifact_type}")
+        logger.info(f"🏗️ [CONTEXT] Step 1.2: include_rag={include_rag}, include_kg={include_kg}, include_patterns={include_patterns}, include_ml_features={include_ml_features}")
+        logger.info(f"🏗️ [CONTEXT] Step 1.3: max_rag_chunks={max_rag_chunks}, kg_depth={kg_depth}, force_refresh={force_refresh}")
+        
         # 🚀 STEP 1: Get Universal Context (baseline project knowledge)
-        logger.info("🚀 Getting Universal Context - The baseline that knows your entire project by heart")
+        logger.info(f"🏗️ [CONTEXT] Step 2: Getting Universal Context (baseline project knowledge)")
         
         try:
+            logger.info(f"🏗️ [CONTEXT] Step 2.1: Calling universal context service")
             universal_ctx = await self.universal_context_service.get_universal_context()
             if not universal_ctx:
                 raise ValueError("Universal context service returned None")
+            logger.info(f"🏗️ [CONTEXT] Step 2.2: Universal context retrieved successfully")
         except Exception as e:
-            logger.error(f"Failed to get universal context: {e}", exc_info=True)
+            logger.error(f"🏗️ [CONTEXT] Step 2.ERROR: Failed to get universal context: {e}", exc_info=True)
             # Fallback to empty universal context
+            logger.warning(f"🏗️ [CONTEXT] Step 2.3: Using fallback empty universal context")
             universal_ctx = {
                 "project_directories": [],
                 "total_files": 0,
@@ -124,6 +133,7 @@ class ContextBuilder:
                 "patterns": []
             }
         
+        logger.info(f"🏗️ [CONTEXT] Step 3: Building context structure")
         context = {
             "meeting_notes": meeting_notes,
             "repo_id": repo_id,
@@ -137,17 +147,20 @@ class ContextBuilder:
             "sources": {}
         }
         
-        logger.info(f"✅ Universal Context loaded: {universal_ctx.get('total_files', 0)} files, {len(universal_ctx.get('key_entities', []))} key entities")
+        logger.info(f"🏗️ [CONTEXT] Step 3.1: Universal Context loaded: {universal_ctx.get('total_files', 0)} files, {len(universal_ctx.get('key_entities', []))} key entities")
         
         # Check cache first (unless force_refresh is True)
+        logger.info(f"🏗️ [CONTEXT] Step 4: Checking cache")
         if not force_refresh:
+            logger.info(f"🏗️ [CONTEXT] Step 4.1: Cache check enabled")
             cache_key = self._get_cache_key(meeting_notes, repo_id, include_rag, include_kg, include_patterns)
             cached_context = self.rag_cache.get_context(meeting_notes)
             
             if cached_context and not include_ml_features:
-                logger.info("Using cached targeted context (with universal baseline)")
+                logger.info(f"🏗️ [CONTEXT] Step 4.2: Cache HIT - Using cached targeted context")
+                logger.info(f"🏗️ [CONTEXT] Step 4.2.1: Cached context length={len(cached_context)}")
                 # Parse cached context to extract RAG data properly
-                return {
+                cached_result = {
                     **context,
                     "sources": {
                         "rag": {
@@ -160,55 +173,82 @@ class ContextBuilder:
                     "from_cache": True,
                     "rag": cached_context  # Also include at top level for compatibility
                 }
+                logger.info(f"🏗️ [CONTEXT] Step 4.2.2: Found {cached_result['sources']['rag']['num_snippets']} snippets in cache")
+                # FIX: Ensure assembled_context is properly set even from cache
+                # Re-assemble to ensure meeting notes are included
+                if cached_result.get("assembled_context"):
+                    logger.info(f"🏗️ [CONTEXT] Step 4.2.3: Re-assembling context to include meeting notes")
+                    # Meeting notes should already be in context dict, but ensure they're in assembled
+                    assembly_result = self._assemble_context(cached_result)
+                    cached_result["assembled_context"] = assembly_result.get("content", cached_context)
+                logger.info(f"🏗️ [CONTEXT] ========== CONTEXT BUILD COMPLETE (FROM CACHE) ==========")
+                return cached_result
+            else:
+                logger.info(f"🏗️ [CONTEXT] Step 4.2: Cache MISS - will build fresh context")
         else:
-            logger.info("🔄 Force refresh requested - bypassing cache")
+            logger.info(f"🏗️ [CONTEXT] Step 4.1: Force refresh requested - bypassing cache")
         
         # 🎯 STEP 2: Build targeted context on top of universal baseline
-        logger.info("🎯 Building targeted context for this specific query")
+        logger.info(f"🏗️ [CONTEXT] Step 5: Building targeted context for this specific query")
         tasks = []
         task_names = []
         
         if include_rag:
+            logger.info(f"🏗️ [CONTEXT] Step 5.1: Adding RAG context task")
             # Use smart context that combines universal + targeted
             tasks.append(self._build_smart_rag_context(meeting_notes, max_rag_chunks, artifact_type))
             task_names.append("rag")
         
         if include_kg:
+            logger.info(f"🏗️ [CONTEXT] Step 5.2: Adding Knowledge Graph context task")
             tasks.append(self._build_kg_context(meeting_notes, kg_depth))
             task_names.append("kg")
         
         if include_patterns:
+            logger.info(f"🏗️ [CONTEXT] Step 5.3: Adding Pattern Mining context task")
             tasks.append(self._build_pattern_context(meeting_notes))
             task_names.append("patterns")
         
         if include_ml_features:
+            logger.info(f"🏗️ [CONTEXT] Step 5.4: Adding ML Features context task")
             tasks.append(self._build_ml_features_context(meeting_notes))
             task_names.append("ml_features")
         
+        logger.info(f"🏗️ [CONTEXT] Step 6: Executing {len(tasks)} context building tasks in parallel")
         # Execute all tasks in parallel
         results = await asyncio.gather(*tasks, return_exceptions=True)
+        logger.info(f"🏗️ [CONTEXT] Step 6.1: All tasks completed")
         
         # Process results
+        logger.info(f"🏗️ [CONTEXT] Step 7: Processing task results")
         for i, result in enumerate(results):
             if isinstance(result, Exception):
-                logger.error(f"Error building context source {task_names[i]}: {result}", exc_info=result)
+                logger.error(f"🏗️ [CONTEXT] Step 7.{i+1}.ERROR: Error building context source {task_names[i]}: {result}", exc_info=result)
                 continue
             
             source_name = task_names[i]
             if result:
                 context["sources"][source_name] = result
+                logger.info(f"🏗️ [CONTEXT] Step 7.{i+1}: {source_name} context built successfully")
+            else:
+                logger.warning(f"🏗️ [CONTEXT] Step 7.{i+1}: {source_name} context returned empty")
         
+        logger.info(f"🏗️ [CONTEXT] Step 8: Assembling final context")
         # Assemble final context (returns dict with content and truncation_info)
         assembly_result = self._assemble_context(context)
         assembled_context = assembly_result["content"]
         truncation_info = assembly_result["truncation_info"]
+        logger.info(f"🏗️ [CONTEXT] Step 8.1: Context assembled: length={len(assembled_context)}, truncation_info={truncation_info}")
         
         # Cache the assembled context
+        logger.info(f"🏗️ [CONTEXT] Step 9: Caching assembled context")
         if include_rag and "rag" in context["sources"]:
             rag_context = context["sources"]["rag"].get("context", "")
             if rag_context:
                 self.rag_cache.set_context(meeting_notes, rag_context)
+                logger.info(f"🏗️ [CONTEXT] Step 9.1: RAG context cached")
         
+        logger.info(f"🏗️ [CONTEXT] Step 10: Building final context object")
         final_context = {
             **context,
             "assembled_context": assembled_context,
@@ -220,10 +260,12 @@ class ContextBuilder:
         # Store context for retrieval by ID
         context_id = final_context["context_id"]
         self._context_store[context_id] = final_context
+        logger.info(f"🏗️ [CONTEXT] Step 10.1: Context stored with ID: {context_id}")
         
         # FIX: Cleanup old contexts to prevent memory leak
         self._cleanup_old_contexts()
         
+        logger.info(f"🏗️ [CONTEXT] ========== CONTEXT BUILD COMPLETE ==========")
         return final_context
     
     async def _build_smart_rag_context(self, meeting_notes: str, max_chunks: int, artifact_type: Optional[str] = None) -> Dict[str, Any]:

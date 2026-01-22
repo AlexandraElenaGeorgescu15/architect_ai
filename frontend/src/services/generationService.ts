@@ -206,3 +206,14 @@ export async function updateArtifact(
   return extractData(response)
 }
 
+/**
+ * Delete an artifact and all its versions.
+ */
+export async function deleteArtifact(
+  artifactId: string
+): Promise<{ success: boolean; message: string; artifact_id: string }> {
+  const response = await api.delete<{ success: boolean; message: string; artifact_id: string }>(
+    `/api/generation/artifacts/${artifactId}`
+  )
+  return extractData(response)
+}

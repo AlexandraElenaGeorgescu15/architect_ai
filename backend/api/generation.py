@@ -539,14 +539,22 @@ async def update_artifact(
         "metadata": {"optional": "metadata"}
     }
     """
+    logger.info(f"✏️ [INTERACTIVE_EDITOR] ========== UPDATE ARTIFACT REQUEST ==========")
+    logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 1: Received update request")
+    logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 1.1: artifact_id={artifact_id}, content_length={len(body.get('content', ''))}, has_metadata={bool(body.get('metadata'))}")
+    logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 1.2: user={current_user.username}, metadata_source={body.get('metadata', {}).get('source', 'unknown')}")
+    
     if "content" not in body:
+        logger.error(f"✏️ [INTERACTIVE_EDITOR] Step 1.ERROR: Missing content field")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="content field is required"
         )
     
+    logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 2: Calling generation service to update artifact")
     service = get_service()
     updated = service.update_artifact(artifact_id, body.get("content"), body.get("metadata"))
+    logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 2.1: Service update complete: found={bool(updated)}")
     
     if not updated:
         raise HTTPException(
@@ -555,51 +563,66 @@ async def update_artifact(
         )
     
     # Create new version
+    logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 3: Creating new version for updated artifact")
     try:
         from backend.services.version_service import get_version_service
         version_service = get_version_service()
         
         # Intelligent artifact_type fallback logic
+        logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 3.1: Determining artifact_type")
         artifact_type = updated.get("artifact_type")
+        logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 3.1.1: artifact_type from updated={artifact_type}")
         
         # If not in updated artifact, check existing versions
         if not artifact_type or artifact_type == "unknown":
+            logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 3.1.2: Checking existing versions for artifact_type")
             if artifact_id in version_service.versions:
                 versions = version_service.versions[artifact_id]
                 if versions:
                     # Get artifact_type from latest version
                     artifact_type = versions[-1].get("artifact_type")
+                    logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 3.1.3: Found artifact_type from version: {artifact_type}")
         
         # If still unknown, try to infer from artifact_id pattern
         if not artifact_type or artifact_type == "unknown":
+            logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 3.1.4: Inferring artifact_type from artifact_id pattern")
             # Check if artifact_id matches an ArtifactType enum value
             try:
                 from backend.models.dto import ArtifactType
                 try:
                     artifact_type_enum = ArtifactType(artifact_id)
                     artifact_type = artifact_type_enum.value
+                    logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 3.1.5: Matched ArtifactType enum: {artifact_type}")
                 except ValueError:
                     # Try to extract type from ID pattern like "mermaid_erd_20231209_123456"
                     for art_type in ArtifactType:
                         if artifact_id.startswith(art_type.value):
                             artifact_type = art_type.value
+                            logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 3.1.5: Matched pattern: {artifact_type}")
                             break
             except ImportError:
+                logger.warning(f"✏️ [INTERACTIVE_EDITOR] Step 3.1.5: Could not import ArtifactType")
                 pass
         
         # Final fallback
         if not artifact_type or artifact_type == "unknown":
             artifact_type = "unknown"
+            logger.warning(f"✏️ [INTERACTIVE_EDITOR] Step 3.1.6: Using fallback artifact_type='unknown'")
+        
+        logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 3.2: Final artifact_type={artifact_type}")
         
         # BUGFIX: Preserve folder_id from previous version
         # This ensures artifacts remain associated with their folder after manual edits
+        logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 3.3: Preserving folder_id from previous version")
         previous_folder_id = None
         if artifact_id in version_service.versions:
             versions = version_service.versions[artifact_id]
             if versions:
                 previous_metadata = versions[-1].get("metadata", {})
                 previous_folder_id = previous_metadata.get("folder_id")
+                logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 3.3.1: Found previous_folder_id={previous_folder_id}")
         
+        logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 3.4: Creating version with artifact_type={artifact_type}, folder_id={previous_folder_id}")
         version_service.create_version(
             artifact_id=artifact_id,
             artifact_type=artifact_type,
@@ -612,8 +635,9 @@ async def update_artifact(
                 **(body.get("metadata") or {})
             }
         )
+        logger.info(f"✏️ [INTERACTIVE_EDITOR] Step 3.5: Version created successfully")
     except Exception as e:
-        logger.warning(f"Failed to create version for updated artifact: {e}")
+        logger.warning(f"✏️ [INTERACTIVE_EDITOR] Step 3.ERROR: Failed to create version: {e}", exc_info=True)
     
     return {
         "success": True,
@@ -1121,6 +1145,62 @@ async def get_artifact(
         status_code=status.HTTP_404_NOT_FOUND,
         detail=f"Artifact {artifact_id} not found"
     )
+
+
+@router.delete("/artifacts/{artifact_id}", response_model=dict, summary="Delete artifact")
+@limiter.limit("20/minute")
+async def delete_artifact(
+    request: Request,
+    artifact_id: str,
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """
+    Delete an artifact and all its versions.
+    
+    Args:
+        artifact_id: Artifact identifier to delete
+    
+    Returns:
+        Deletion confirmation
+    """
+    logger.info(f"🗑️ [DELETE_ARTIFACT] Request to delete artifact: {artifact_id}")
+    
+    deleted_from_jobs = False
+    deleted_from_versions = False
+    
+    # Check active jobs (in-memory)
+    service = get_service()
+    if artifact_id in service.active_jobs:
+        del service.active_jobs[artifact_id]
+        deleted_from_jobs = True
+        logger.info(f"✅ [DELETE_ARTIFACT] Deleted from active jobs: {artifact_id}")
+    
+    # Check VersionService (persistent storage)
+    try:
+        from backend.services.version_service import get_version_service
+        version_service = get_version_service()
+        
+        if artifact_id in version_service.versions:
+            result = version_service.delete_all_versions(artifact_id)
+            if result.get("success"):
+                deleted_from_versions = True
+                logger.info(f"✅ [DELETE_ARTIFACT] Deleted {result.get('versions_deleted', 0)} versions from VersionService: {artifact_id}")
+    except Exception as e:
+        logger.warning(f"⚠️ [DELETE_ARTIFACT] Failed to delete from VersionService: {e}")
+    
+    if not deleted_from_jobs and not deleted_from_versions:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Artifact {artifact_id} not found"
+        )
+    
+    return {
+        "success": True,
+        "message": f"Artifact {artifact_id} deleted successfully",
+        "artifact_id": artifact_id,
+        "deleted_from_jobs": deleted_from_jobs,
+        "deleted_from_versions": deleted_from_versions
+    }
 
 
 # ============================================================================

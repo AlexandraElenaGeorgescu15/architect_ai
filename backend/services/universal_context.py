@@ -171,42 +171,63 @@ class UniversalContextService:
         Returns:
             Universal context dictionary with complete project knowledge
         """
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] ========== BUILD UNIVERSAL CONTEXT STARTED ==========")
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 1: Checking cache")
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 1.1: force_rebuild={force_rebuild}, has_cached_context={bool(self._universal_context)}")
+        
         # Check if cache is still fresh
         if (not force_rebuild and 
             self._universal_context and 
             self._last_build and 
             (datetime.now() - self._last_build) < self._cache_ttl):
-            logger.info("✅ Using cached universal context (still fresh)")
+            logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 1.2: Cache HIT - Using cached universal context (still fresh)")
+            logger.info(f"🚀 [UNIVERSAL_CONTEXT] ========== BUILD UNIVERSAL CONTEXT COMPLETE (FROM CACHE) ==========")
             return self._universal_context
         
-        logger.info("🔨 Building universal project context - this will take a moment...")
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 1.2: Cache MISS or expired - building fresh context")
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 2: Building universal project context - this will take a moment...")
         metrics.increment("universal_context_builds")
         
         start_time = datetime.now()
         
         # Get all user project directories (everything except tool)
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 3: Getting user project directories")
         user_dirs = get_user_project_directories()
-        logger.info(f"📂 Analyzing {len(user_dirs)} user project directories")
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 3.1: Found {len(user_dirs)} user project directories: {[str(d.name) for d in user_dirs]}")
         
         # Step 1: Ensure RAG index is complete
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 4: Ensuring RAG index is complete")
         await self._ensure_complete_index(user_dirs)
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 4.1: RAG index complete")
         
         # Step 2: Build file importance map
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 5: Building file importance map")
         await self._build_importance_map(user_dirs)
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 5.1: File importance map built: {len(self._file_importance)} files")
         
         # Step 3: Build project structure map
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 6: Building project structure map")
         await self._build_project_map(user_dirs)
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 6.1: Project structure map built")
         
         # Step 4: Build Knowledge Graph for all directories
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 7: Building Knowledge Graph")
         kg_context = await self._build_complete_kg(user_dirs)
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 7.1: Knowledge Graph built: {kg_context.get('total_nodes', 0)} nodes, {kg_context.get('total_edges', 0)} edges")
         
         # Step 5: Run Pattern Mining on all directories
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 8: Running Pattern Mining")
         pm_context = await self._build_complete_patterns(user_dirs)
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 8.1: Pattern Mining complete: {len(pm_context.get('patterns', []))} patterns found")
         
         # Step 6: Extract key entities and relationships
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 9: Extracting key entities")
         key_entities = self._extract_key_entities(kg_context)
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 9.1: Extracted {len(key_entities)} key entities")
         
         # Step 7: Build universal context summary
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 10: Building universal context summary")
+        build_duration = (datetime.now() - start_time).total_seconds()
         universal_context = {
             "built_at": datetime.now().isoformat(),
             "project_directories": [str(d) for d in user_dirs],
@@ -216,10 +237,12 @@ class UniversalContextService:
             "knowledge_graph": kg_context,
             "patterns": pm_context,
             "importance_scores": self._file_importance,
-            "build_duration_seconds": (datetime.now() - start_time).total_seconds()
+            "build_duration_seconds": build_duration
         }
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 10.1: Universal context summary built")
         
         # Cache the universal context
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 11: Caching universal context")
         self._universal_context = universal_context
         self._last_build = datetime.now()
         
@@ -229,11 +252,13 @@ class UniversalContextService:
             universal_context,
             ttl=int(self._cache_ttl.total_seconds())
         )
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 11.1: Universal context cached (TTL={self._cache_ttl.total_seconds()}s)")
         
-        logger.info(f"✅ Universal context built in {universal_context['build_duration_seconds']:.2f}s")
-        logger.info(f"   📊 Total files: {universal_context['total_files']}")
-        logger.info(f"   🏗️ KG nodes: {kg_context.get('total_nodes', 0)}")
-        logger.info(f"   🔍 Patterns: {len(pm_context.get('patterns', []))}")
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] ========== BUILD UNIVERSAL CONTEXT COMPLETE ==========")
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT] ✅ Universal context built in {build_duration:.2f}s")
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT]    📊 Total files: {universal_context['total_files']}")
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT]    🏗️ KG nodes: {kg_context.get('total_nodes', 0)}")
+        logger.info(f"🚀 [UNIVERSAL_CONTEXT]    🔍 Patterns: {len(pm_context.get('patterns', []))}")
         
         return universal_context
     

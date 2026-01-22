@@ -132,14 +132,28 @@ class EnhancedGenerationService:
         # Build context if not provided (with artifact-specific RAG targeting)
         logger.info(f"🏗️ [ENHANCED_GEN] Building context (artifact_type={artifact_type_str})")
         with metrics.timer("context_building", tags={"artifact_type": artifact_type_str}):
-            if context_id:
-                logger.info(f"♻️ [ENHANCED_GEN] Attempting to use pre-built context: {context_id}")
-                # Try to get context by ID
-                context = await self.context_builder.get_context_by_id(context_id)
-                if not context:
-                    logger.warning(f"⚠️ [ENHANCED_GEN] Context {context_id} not found, building new context")
-                    if progress_callback:
-                        await progress_callback(15.0, "Context not found, building new context...")
+            try:
+                if context_id:
+                    logger.info(f"♻️ [ENHANCED_GEN] Attempting to use pre-built context: {context_id}")
+                    # Try to get context by ID
+                    context = await self.context_builder.get_context_by_id(context_id)
+                    if not context:
+                        logger.warning(f"⚠️ [ENHANCED_GEN] Context {context_id} not found, building new context")
+                        if progress_callback:
+                            await progress_callback(15.0, "Context not found, building new context...")
+                        context = await self.context_builder.build_context(
+                            meeting_notes=meeting_notes,
+                            include_rag=True,
+                            include_kg=True,
+                            include_patterns=True,
+                            artifact_type=artifact_type_str,  # Pass artifact type for targeted RAG
+                            force_refresh=True  # Always get fresh context for generation
+                        )
+                        logger.info(f"✅ [ENHANCED_GEN] New context built successfully")
+                    else:
+                        logger.info(f"✅ [ENHANCED_GEN] Using cached context: {context_id}")
+                else:
+                    logger.info(f"🏗️ [ENHANCED_GEN] Building new context from repository")
                     context = await self.context_builder.build_context(
                         meeting_notes=meeting_notes,
                         include_rag=True,
@@ -148,28 +162,45 @@ class EnhancedGenerationService:
                         artifact_type=artifact_type_str,  # Pass artifact type for targeted RAG
                         force_refresh=True  # Always get fresh context for generation
                     )
-                    logger.info(f"✅ [ENHANCED_GEN] New context built successfully")
-                else:
-                    logger.info(f"✅ [ENHANCED_GEN] Using cached context: {context_id}")
-            else:
-                logger.info(f"🏗️ [ENHANCED_GEN] Building new context from repository")
-                context = await self.context_builder.build_context(
-                    meeting_notes=meeting_notes,
-                    include_rag=True,
-                    include_kg=True,
-                    include_patterns=True,
-                    artifact_type=artifact_type_str,  # Pass artifact type for targeted RAG
-                    force_refresh=True  # Always get fresh context for generation
-                )
-                logger.info(f"✅ [ENHANCED_GEN] Context built successfully")
+                    logger.info(f"✅ [ENHANCED_GEN] Context built successfully")
+            except Exception as e:
+                logger.error(f"❌ [ENHANCED_GEN] Context building failed: {e}", exc_info=True)
+                # FIX: Don't fail generation if context building fails - use minimal context
+                logger.warning(f"⚠️ [ENHANCED_GEN] Continuing with minimal context (meeting notes only)")
+                context = {
+                    "meeting_notes": meeting_notes,
+                    "assembled_context": f"## Requirements\n{meeting_notes}",
+                    "sources": {},
+                    "created_at": datetime.now().isoformat()
+                }
+                if progress_callback:
+                    await progress_callback(30.0, "Using minimal context (context building had issues)")
         
         # Progress: Context ready (30%)
         if progress_callback:
             await progress_callback(30.0, "Context built successfully")
         
         assembled_context = context.get("assembled_context", "")
+        
+        # FIX: Ensure meeting notes are in context if missing (for retrieved contexts)
+        if not context.get("meeting_notes") and meeting_notes:
+            context["meeting_notes"] = meeting_notes
+            logger.info(f"🔧 [ENHANCED_GEN] Added meeting notes to retrieved context")
+        
+        # FIX: If assembled_context is empty or missing, rebuild it with current meeting notes
+        if not assembled_context or len(assembled_context.strip()) < 100:
+            logger.warning(f"⚠️ [ENHANCED_GEN] Assembled context is empty or too short, rebuilding...")
+            # Re-assemble context with current meeting notes
+            context["meeting_notes"] = meeting_notes
+            assembly_result = self.context_builder._assemble_context(context)
+            assembled_context = assembly_result.get("content", "")
+            context["assembled_context"] = assembled_context
+            logger.info(f"✅ [ENHANCED_GEN] Rebuilt assembled context: length={len(assembled_context)}")
+        
         logger.info(f"📊 [ENHANCED_GEN] Context assembled: length={len(assembled_context)}, "
-                   f"has_rag={bool(context.get('rag'))}, has_kg={bool(context.get('knowledge_graph'))}")
+                   f"has_rag={bool(context.get('rag') or context.get('sources', {}).get('rag'))}, "
+                   f"has_kg={bool(context.get('knowledge_graph') or context.get('sources', {}).get('kg'))}, "
+                   f"has_meeting_notes={bool(context.get('meeting_notes'))}")
         
         # ========================================================================
         # STEP 0: Check if user has a CLOUD model preference (highest priority)
@@ -341,19 +372,22 @@ class EnhancedGenerationService:
                     )
                 try:
                     logger.info(f"🔄 [ENHANCED_GEN] Model attempt {retry + 1}/{opts['max_retries'] + 1}: {model_name} ({provider})")
+                    logger.info(f"📋 [ENHANCED_GEN] Step 3.{model_idx + 1}.{retry + 1}: Building prompt with meeting_notes_length={len(meeting_notes)}, assembled_context_length={len(assembled_context)}")
                     
                     # Build prompt with context (use custom template if available)
                     prompt = self._build_prompt(meeting_notes, assembled_context, artifact_type, custom_prompt_template)
-                    logger.debug(f"📝 [ENHANCED_GEN] Prompt built: length={len(prompt)}, custom_template={bool(custom_prompt_template)}")
+                    logger.info(f"📝 [ENHANCED_GEN] Step 3.{model_idx + 1}.{retry + 1}.1: Prompt built: length={len(prompt)}, custom_template={bool(custom_prompt_template)}")
+                    logger.info(f"📝 [ENHANCED_GEN] Step 3.{model_idx + 1}.{retry + 1}.2: Prompt preview (first 200 chars): {prompt[:200]}...")
                     
                     # Generate based on provider
                     if provider == "ollama":
                         # Load model (with VRAM management)
+                        logger.info(f"📋 [ENHANCED_GEN] Step 3.{model_idx + 1}.{retry + 1}.3: Ensuring Ollama model {model_name} is available...")
                         await self.ollama_client.ensure_model_available(model_name)
-                        logger.debug(f"✅ [ENHANCED_GEN] Model {model_name} is available")
+                        logger.info(f"✅ [ENHANCED_GEN] Step 3.{model_idx + 1}.{retry + 1}.4: Model {model_name} is available and loaded")
                         
                         # Generate with context window from centralized config
-                        logger.info(f"⚡ [ENHANCED_GEN] Generating with {model_name}...")
+                        logger.info(f"⚡ [ENHANCED_GEN] Step 3.{model_idx + 1}.{retry + 1}.5: Generating with {model_name} (temperature={opts['temperature']}, num_ctx={settings.local_model_context_window})...")
                         response = await self.ollama_client.generate(
                             model_name=model_name,
                             prompt=prompt,
@@ -363,7 +397,8 @@ class EnhancedGenerationService:
                         )
                     elif provider == "huggingface":
                         # Use HuggingFace client
-                        logger.info(f"⚡ [ENHANCED_GEN] Generating with HuggingFace model: {hf_model_id or model_name}...")
+                        logger.info(f"📋 [ENHANCED_GEN] Step 3.{model_idx + 1}.{retry + 1}.3: Loading HuggingFace model: {hf_model_id or model_name}...")
+                        logger.info(f"⚡ [ENHANCED_GEN] Step 3.{model_idx + 1}.{retry + 1}.4: Generating with HuggingFace model: {hf_model_id or model_name}...")
                         hf_response = await self.hf_client.generate(
                             model_id=hf_model_id or model_name,
                             prompt=prompt,
@@ -387,6 +422,7 @@ class EnhancedGenerationService:
                     
                     # Log AI call and token usage
                     if response.success:
+                        logger.info(f"✅ [ENHANCED_GEN] Step 3.{model_idx + 1}.{retry + 1}.6: Generation completed successfully: content_length={len(response.content) if response.content else 0}, duration={response.generation_time if hasattr(response, 'generation_time') else 0:.2f}s")
                         log_ai_call(
                             model=model_name,
                             prompt_length=len(prompt),
@@ -399,6 +435,7 @@ class EnhancedGenerationService:
                         
                         # Log token usage if available
                         if hasattr(response, 'tokens_generated') and response.tokens_generated:
+                            logger.info(f"🔢 [ENHANCED_GEN] Step 3.{model_idx + 1}.{retry + 1}.7: Token usage: input≈{len(prompt) // 4}, output={response.tokens_generated}, total≈{len(prompt) // 4 + response.tokens_generated}")
                             log_token_usage(
                                 model=f"{provider}:{model_name}",
                                 input_tokens=len(prompt) // 4,  # Rough estimate: 4 chars per token
@@ -425,7 +462,8 @@ class EnhancedGenerationService:
                         await progress_callback(75.0, f"Validating output from {model_name}...")
                     
                     # Validate
-                    logger.info(f"🔍 [ENHANCED_GEN] Validating output from {model_name}...")
+                    logger.info(f"🔍 [ENHANCED_GEN] Step 3.{model_idx + 1}.{retry + 1}.8: Validating output from {model_name}...")
+                    logger.info(f"📋 [ENHANCED_GEN] Step 3.{model_idx + 1}.{retry + 1}.8.1: Calling validation service with content_length={len(response.content)}")
                     validation_result = await self.validation_service.validate_artifact(
                         artifact_type=artifact_type,
                         content=response.content,
@@ -434,6 +472,7 @@ class EnhancedGenerationService:
                     )
                     
                     score = validation_result.score
+                    logger.info(f"📊 [ENHANCED_GEN] Step 3.{model_idx + 1}.{retry + 1}.8.2: Validation result: score={score:.1f}, is_valid={validation_result.is_valid}, threshold={opts['validation_threshold']}")
                     # Use raw content as default; may be refined later after a successful validation pass
                     cleaned_content = response.content
                     # Additional render-viability checks for diagrams/HTML
@@ -817,7 +856,13 @@ class EnhancedGenerationService:
     
     def _build_prompt(self, meeting_notes: str, rag_context: str, artifact_type: Union[ArtifactType, str], 
                        custom_prompt_template: Optional[str] = None) -> str:
-        """Build comprehensive prompt with all context."""
+        """
+        Build comprehensive prompt with all context.
+        
+        FIX: The rag_context (assembled_context) already includes meeting notes,
+        so we check if meeting notes are already in rag_context to avoid duplication.
+        However, we still include them separately for clarity and emphasis.
+        """
         # Import prompt sanitization to prevent injection attacks
         from rag.filters import sanitize_prompt_input
         
@@ -842,13 +887,17 @@ class EnhancedGenerationService:
         # Default prompt building for built-in types
         artifact_name = artifact_type_str.replace("_", " ").title()
         parts.append(f"Generate a {artifact_name} based on the following requirements and project context.")
-        parts.append("\n## Requirements")
         
-        # Sanitize user-provided meeting notes to prevent prompt injection
-        safe_notes = sanitize_prompt_input(meeting_notes, max_length=8000)
-        parts.append(safe_notes)
+        # FIX: Check if meeting notes are already in rag_context to avoid duplication
+        # The assembled_context includes meeting notes, but we still want them as a clear section
+        # So we include them, but note that they may also appear in the context section
+        if meeting_notes and meeting_notes.strip():
+            parts.append("\n## Requirements")
+            # Sanitize user-provided meeting notes to prevent prompt injection
+            safe_notes = sanitize_prompt_input(meeting_notes, max_length=8000)
+            parts.append(safe_notes)
         
-        if rag_context:
+        if rag_context and rag_context.strip():
             parts.append("\n## Project Context (from codebase)")
             # Sanitize RAG context (already from our own codebase, but still good practice)
             # FIX: Increased from 3000 to 12000 chars to preserve more important context
@@ -856,6 +905,8 @@ class EnhancedGenerationService:
             # Most LLMs can handle 8K+ context; Ollama/llama3 supports 8K tokens (~32K chars)
             safe_context = sanitize_prompt_input(rag_context, max_length=12000)
             parts.append(safe_context)
+        elif not rag_context or not rag_context.strip():
+            logger.warning(f"⚠️ [ENHANCED_GEN] RAG context is empty! This may result in generic outputs.")
         
         parts.append("\n## Instructions")
         parts.append("1. Ensure the output is complete and production-ready")
@@ -863,7 +914,14 @@ class EnhancedGenerationService:
         parts.append("3. Include all necessary details")
         parts.append("4. Validate syntax and correctness")
         
-        return "\n".join(parts)
+        final_prompt = "\n".join(parts)
+        
+        # Log prompt composition for debugging
+        logger.debug(f"📝 [ENHANCED_GEN] Prompt built: total_length={len(final_prompt)}, "
+                    f"meeting_notes_length={len(meeting_notes) if meeting_notes else 0}, "
+                    f"rag_context_length={len(rag_context) if rag_context else 0}")
+        
+        return final_prompt
     
     def _get_system_message(self, artifact_type: Union[ArtifactType, str]) -> str:
         """Get comprehensive system message for artifact type."""

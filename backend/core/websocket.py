@@ -71,30 +71,45 @@ class WebSocketManager:
             metadata: Optional connection metadata
             authenticated: Whether connection is authenticated
         """
+        logger.info(f"📡 [WEBSOCKET] ========== CONNECTION STARTED ==========")
+        logger.info(f"📡 [WEBSOCKET] Step 1: Accepting WebSocket connection")
+        logger.info(f"📡 [WEBSOCKET] Step 1.1: room_id={room_id}, authenticated={authenticated}, has_metadata={bool(metadata)}")
+        
         await websocket.accept()
+        logger.info(f"📡 [WEBSOCKET] Step 1.2: WebSocket accepted")
         
         # Add to room
+        logger.info(f"📡 [WEBSOCKET] Step 2: Adding connection to room")
         if room_id not in self.active_connections:
             self.active_connections[room_id] = set()
+            logger.info(f"📡 [WEBSOCKET] Step 2.1: Created new room: {room_id}")
         self.active_connections[room_id].add(websocket)
+        logger.info(f"📡 [WEBSOCKET] Step 2.2: Connection added to room: {room_id} ({len(self.active_connections[room_id])} connections in room)")
         
         # Track connection rooms
+        logger.info(f"📡 [WEBSOCKET] Step 3: Tracking connection rooms")
         if websocket not in self.connection_rooms:
             self.connection_rooms[websocket] = set()
         self.connection_rooms[websocket].add(room_id)
+        logger.info(f"📡 [WEBSOCKET] Step 3.1: Connection tracking updated")
         
         # Store metadata
+        logger.info(f"📡 [WEBSOCKET] Step 4: Storing connection metadata")
         self.connection_metadata[websocket] = metadata or {}
         self.connection_metadata[websocket]["connected_at"] = datetime.now().isoformat()
         self.connection_metadata[websocket]["authenticated"] = authenticated
         self.connection_metadata[websocket]["last_heartbeat"] = time.time()
+        logger.info(f"📡 [WEBSOCKET] Step 4.1: Metadata stored")
         
         # Start heartbeat task
+        logger.info(f"📡 [WEBSOCKET] Step 5: Starting heartbeat task")
         self.heartbeat_tasks[websocket] = asyncio.create_task(
             self._heartbeat_loop(websocket)
         )
+        logger.info(f"📡 [WEBSOCKET] Step 5.1: Heartbeat task started (interval={self.heartbeat_interval}s)")
         
-        logger.info(f"WebSocket connected to room '{room_id}' (total connections: {len(self.connection_rooms)})")
+        logger.info(f"📡 [WEBSOCKET] ========== CONNECTION COMPLETE ==========")
+        logger.info(f"📡 [WEBSOCKET] WebSocket connected to room '{room_id}' (total connections: {len(self.connection_rooms)})")
     
     def disconnect(self, websocket: WebSocket):
         """
@@ -171,20 +186,30 @@ class WebSocketManager:
             message: Message dictionary
             room_id: Room identifier
         """
+        logger.info(f"📡 [WEBSOCKET] Step 4.1.1: Broadcasting to room: {room_id}")
         if room_id not in self.active_connections:
+            logger.warning(f"📡 [WEBSOCKET] Step 4.1.2: Room '{room_id}' not found, no connections to broadcast to")
             return
         
+        connections = list(self.active_connections[room_id])
+        logger.info(f"📡 [WEBSOCKET] Step 4.1.2: Broadcasting to {len(connections)} connections in room '{room_id}'")
+        
         disconnected = []
-        for connection in self.active_connections[room_id]:
+        for idx, connection in enumerate(connections):
             try:
                 await connection.send_json(message)
+                logger.debug(f"📡 [WEBSOCKET] Step 4.1.2.{idx+1}: Message sent to connection {idx+1}/{len(connections)}")
             except Exception as e:
-                logger.error(f"Error broadcasting to room '{room_id}': {e}")
+                logger.error(f"📡 [WEBSOCKET] Step 4.1.2.{idx+1}.ERROR: Error broadcasting to room '{room_id}': {e}", exc_info=True)
                 disconnected.append(connection)
         
         # Clean up disconnected connections
-        for connection in disconnected:
-            self.disconnect(connection)
+        if disconnected:
+            logger.warning(f"📡 [WEBSOCKET] Step 4.1.3: Cleaning up {len(disconnected)} disconnected connections")
+            for connection in disconnected:
+                self.disconnect(connection)
+        else:
+            logger.info(f"📡 [WEBSOCKET] Step 4.1.3: All {len(connections)} connections received message successfully")
     
     async def emit_event(self, event_type: EventType, data: dict, room_id: Optional[str] = None):
         """
@@ -195,26 +220,41 @@ class WebSocketManager:
             data: Event data
             room_id: Optional room identifier (broadcasts to all if None)
         """
+        logger.info(f"📡 [WEBSOCKET] ========== EMIT EVENT ==========")
+        logger.info(f"📡 [WEBSOCKET] Step 1: Event type={event_type.value}, room_id={room_id}, data_keys={list(data.keys())}")
+        
         message = {
             "type": event_type.value,
             "data": data,
             "timestamp": datetime.now().isoformat()
         }
+        logger.info(f"📡 [WEBSOCKET] Step 2: Message built: type={event_type.value}, data_size={len(str(data))}")
         
         # Call registered event handlers
+        logger.info(f"📡 [WEBSOCKET] Step 3: Calling event handlers")
         if event_type in self.event_handlers:
-            for handler in self.event_handlers[event_type]:
+            handler_count = len(self.event_handlers[event_type])
+            logger.info(f"📡 [WEBSOCKET] Step 3.1: {handler_count} handlers registered for {event_type.value}")
+            for idx, handler in enumerate(self.event_handlers[event_type]):
                 try:
                     await handler(event_type, data, room_id)
+                    logger.info(f"📡 [WEBSOCKET] Step 3.{idx+2}: Handler {idx+1} executed successfully")
                 except Exception as e:
-                    logger.error(f"Event handler error: {e}")
+                    logger.error(f"📡 [WEBSOCKET] Step 3.{idx+2}.ERROR: Event handler error: {e}", exc_info=True)
+        else:
+            logger.info(f"📡 [WEBSOCKET] Step 3.1: No handlers registered for {event_type.value}")
         
+        logger.info(f"📡 [WEBSOCKET] Step 4: Broadcasting message")
         if room_id:
+            logger.info(f"📡 [WEBSOCKET] Step 4.1: Broadcasting to room: {room_id}")
             await self.broadcast_to_room(message, room_id)
         else:
             # Broadcast to all connections
-            for room in list(self.active_connections.keys()):
+            rooms = list(self.active_connections.keys())
+            logger.info(f"📡 [WEBSOCKET] Step 4.1: Broadcasting to all {len(rooms)} rooms")
+            for room in rooms:
                 await self.broadcast_to_room(message, room)
+        logger.info(f"📡 [WEBSOCKET] ========== EMIT EVENT COMPLETE ==========")
     
     def register_event_handler(self, event_type: EventType, handler: Callable):
         """

@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Artifact } from '../../types'
-import { FileCode, ExternalLink, ThumbsUp, ThumbsDown, History, X, Clock, Check, RefreshCw, Loader2 } from 'lucide-react'
+import { FileCode, ExternalLink, ThumbsUp, ThumbsDown, History, X, Clock, Check, RefreshCw, Loader2, Trash2 } from 'lucide-react'
 import { useArtifactStore } from '../../stores/artifactStore'
 import { useUIStore } from '../../stores/uiStore'
 import { submitFeedback } from '../../services/feedbackService'
-import { regenerateArtifact } from '../../services/generationService'
+import { regenerateArtifact, deleteArtifact } from '../../services/generationService'
 import api from '../../services/api'
 
 interface Version {
@@ -23,7 +23,7 @@ interface ArtifactCardProps {
 }
 
 export default function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
-  const { setCurrentArtifact, updateArtifact } = useArtifactStore()
+  const { setCurrentArtifact, updateArtifact, removeArtifact } = useArtifactStore()
   const { addNotification } = useUIStore()
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false)
   const [showVersionHistory, setShowVersionHistory] = useState(false)
@@ -31,6 +31,7 @@ export default function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
   const [isLoadingVersions, setIsLoadingVersions] = useState(false)
   const [isRestoring, setIsRestoring] = useState(false)
   const [isRegenerating, setIsRegenerating] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const handleClick = () => {
     setCurrentArtifact(artifact)
@@ -121,6 +122,26 @@ export default function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
       addNotification('error', 'Failed to restore version')
     } finally {
       setIsRestoring(false)
+    }
+  }
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    
+    if (!confirm(`Are you sure you want to delete "${artifact.type.replace(/_/g, ' ')}"? This action cannot be undone.`)) {
+      return
+    }
+    
+    setIsDeleting(true)
+    try {
+      await deleteArtifact(artifact.id)
+      removeArtifact(artifact.id)
+      addNotification('success', 'Artifact deleted successfully')
+    } catch (error: any) {
+      console.error('Delete error:', error)
+      addNotification('error', error?.response?.data?.detail || 'Failed to delete artifact')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -236,6 +257,18 @@ export default function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
             title="View version history"
           >
             <History className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={handleDelete}
+            disabled={isDeleting}
+            className="flex items-center gap-1 px-2 py-1.5 text-xs rounded-md hover:bg-red-500/20 hover:text-red-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Delete artifact"
+          >
+            {isDeleting ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="w-3.5 h-3.5" />
+            )}
           </button>
         </div>
       </div>

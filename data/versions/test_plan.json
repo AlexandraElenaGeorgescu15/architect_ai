@@ -1,0 +1,31 @@
+[
+  {
+    "version": 1,
+    "artifact_id": "test_plan",
+    "artifact_type": "test_plan",
+    "content": "# test_plan\n\nError: All generation attempts failed. Please check model availability and API keys.",
+    "metadata": {
+      "model_used": "failed",
+      "provider": "cloud",
+      "validation_score": 0.0,
+      "is_valid": false,
+      "meeting_notes": "User authentication system with login, logout, password reset functionality. The system should support OAuth 2.0 and JWT tokens.",
+      "html_content": null,
+      "quality_prediction": {
+        "label": "medium",
+        "confidence": 0.55,
+        "score": 0.55,
+        "reasons": {
+          "notes_depth": -0.15,
+          "notes_structure": 0.05,
+          "context_rag": 0.1
+        }
+      },
+      "job_id": "gen_462a6b9e",
+      "attempts": [],
+      "folder_id": null
+    },
+    "created_at": "2026-01-22T15:00:08.512785",
+    "is_current": true
+  }
+]

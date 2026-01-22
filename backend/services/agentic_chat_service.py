@@ -755,9 +755,16 @@ class AgenticChatService:
         from backend.core.config import settings
         import httpx
         
+        logger.info(f"🤖 [AGENTIC_CHAT] ========== AGENTIC CHAT REQUEST STARTED ==========")
+        logger.info(f"🤖 [AGENTIC_CHAT] Step 1: Initializing agentic chat")
+        logger.info(f"🤖 [AGENTIC_CHAT] Step 1.1: Message length={len(message)}, write_mode={write_mode}, session_id={session_id}")
+        logger.info(f"🤖 [AGENTIC_CHAT] Step 1.2: folder_id={folder_id}, has_meeting_notes={bool(meeting_notes_content)}")
+        
         # Load meeting notes if folder_id provided
+        logger.info(f"🤖 [AGENTIC_CHAT] Step 2: Loading meeting notes")
         notes_context = meeting_notes_content or ""
         if folder_id and not notes_context:
+            logger.info(f"🤖 [AGENTIC_CHAT] Step 2.1: Loading meeting notes from folder_id={folder_id}")
             try:
                 from backend.services.meeting_notes_service import get_meeting_notes_service
                 notes_service = get_meeting_notes_service()
@@ -767,20 +774,30 @@ class AgenticChatService:
                         f"**{n.get('title', 'Meeting Note')}**\n{n.get('content', '')}"
                         for n in notes
                     ])
-                    logger.info(f"[AGENTIC_CHAT] Loaded {len(notes)} meeting notes from folder: {folder_id}")
+                    logger.info(f"🤖 [AGENTIC_CHAT] Step 2.2: Loaded {len(notes)} meeting notes from folder: {folder_id} (total_length={len(notes_context)})")
+                else:
+                    logger.warning(f"🤖 [AGENTIC_CHAT] Step 2.2: No notes found in folder {folder_id}")
             except Exception as e:
-                logger.warning(f"[AGENTIC_CHAT] Could not load meeting notes from folder {folder_id}: {e}")
+                logger.warning(f"🤖 [AGENTIC_CHAT] Step 2.2: Could not load meeting notes from folder {folder_id}: {e}", exc_info=True)
+        elif notes_context:
+            logger.info(f"🤖 [AGENTIC_CHAT] Step 2.1: Using provided meeting notes (length={len(notes_context)})")
+        else:
+            logger.info(f"🤖 [AGENTIC_CHAT] Step 2.1: No meeting notes provided")
         
         # Load Universal Context for comprehensive project knowledge (Wikipedia-like)
+        logger.info(f"🤖 [AGENTIC_CHAT] Step 3: Loading universal context")
         project_overview = ""
         try:
             from backend.services.universal_context import get_universal_context_service
             from pathlib import Path
             
+            logger.info(f"🤖 [AGENTIC_CHAT] Step 3.1: Getting universal context service")
             universal_service = get_universal_context_service()
+            logger.info(f"🤖 [AGENTIC_CHAT] Step 3.2: Fetching universal context...")
             universal_ctx = await universal_service.get_universal_context()
             
             if universal_ctx:
+                logger.info(f"🤖 [AGENTIC_CHAT] Step 3.3: Universal context retrieved, building overview")
                 overview_parts = []
                 
                 # Project directories
@@ -789,6 +806,7 @@ class AgenticChatService:
                     dir_names = [Path(d).name for d in dirs]
                     overview_parts.append(f"**Projects:** {', '.join(dir_names)}")
                     overview_parts.append(f"**Total Files:** {universal_ctx.get('total_files', 'unknown')}")
+                    logger.info(f"🤖 [AGENTIC_CHAT] Step 3.3.1: Found {len(dirs)} project directories, {universal_ctx.get('total_files', 0)} total files")
                 
                 # Key entities (classes, services, components)
                 key_entities = universal_ctx.get("key_entities", [])
@@ -799,23 +817,32 @@ class AgenticChatService:
                         entity_name = entity.get('name', 'unknown')
                         entity_file = Path(entity.get('file', '')).name if entity.get('file') else ''
                         overview_parts.append(f"- `{entity_name}` ({entity_type}) in {entity_file}")
+                    logger.info(f"🤖 [AGENTIC_CHAT] Step 3.3.2: Found {len(key_entities)} key entities (including top 25 in overview)")
                 
                 # Project structure
                 proj_map = universal_ctx.get("project_map", {})
                 if proj_map and proj_map.get("key_files"):
                     overview_parts.append("\n**Important Files:**")
-                    for kf in proj_map.get("key_files", [])[:15]:
+                    key_files = proj_map.get("key_files", [])[:15]
+                    for kf in key_files:
                         overview_parts.append(f"- `{Path(kf).name}`")
+                    logger.info(f"🤖 [AGENTIC_CHAT] Step 3.3.3: Found {len(key_files)} key files")
                 
                 project_overview = "\n".join(overview_parts)
-                logger.info(f"[AGENTIC_CHAT] Loaded universal context: {len(key_entities)} entities, {universal_ctx.get('total_files', 0)} files")
+                logger.info(f"🤖 [AGENTIC_CHAT] Step 3.4: Universal context loaded: {len(key_entities)} entities, {universal_ctx.get('total_files', 0)} files, overview_length={len(project_overview)}")
+            else:
+                logger.warning(f"🤖 [AGENTIC_CHAT] Step 3.3: Universal context returned None")
         except Exception as e:
-            logger.warning(f"[AGENTIC_CHAT] Could not load universal context: {e}")
+            logger.warning(f"🤖 [AGENTIC_CHAT] Step 3.3: Could not load universal context: {e}", exc_info=True)
         
         # Build conversation context (include meeting notes AND project overview)
+        logger.info(f"🤖 [AGENTIC_CHAT] Step 4: Building conversation messages")
+        logger.info(f"🤖 [AGENTIC_CHAT] Step 4.1: Building message list with notes_length={len(notes_context)}, overview_length={len(project_overview)}, history_length={len(conversation_history) if conversation_history else 0}")
         messages = self._build_messages(message, conversation_history, notes_context, project_overview)
+        logger.info(f"🤖 [AGENTIC_CHAT] Step 4.2: Built {len(messages)} messages for LLM")
         tool_results = []
         iterations = 0
+        logger.info(f"🤖 [AGENTIC_CHAT] Step 5: Starting agentic iteration loop (max 5 iterations)")
         
         # Determine which tools to expose based on write_mode
         available_tools = AGENT_TOOLS.copy()
@@ -826,24 +853,29 @@ class AgenticChatService:
         # Agentic loop - let AI decide when to use tools
         while iterations < self.MAX_TOOL_ITERATIONS:
             iterations += 1
+            logger.info(f"🤖 [AGENTIC_CHAT] Step 5.{iterations}: Starting iteration {iterations}/{self.MAX_TOOL_ITERATIONS}")
             
             # Call LLM with tools
             try:
+                logger.info(f"🤖 [AGENTIC_CHAT] Step 5.{iterations}.1: Calling LLM with {len(available_tools)} available tools, {len(tool_results)} previous tool results")
                 tool_call = await self._call_llm_with_tools(messages, tool_results, available_tools)
                 
                 if tool_call is None:
                     # No tool call - AI is ready to answer
+                    logger.info(f"🤖 [AGENTIC_CHAT] Step 5.{iterations}.2: LLM returned no tool call - ready to answer")
                     break
                 
                 # Execute the tool
                 tool_name = tool_call.get("name")
                 tool_args = tool_call.get("arguments", {})
                 
-                logger.info(f"🔧 [AGENT] Calling tool: {tool_name} with args: {tool_args}")
+                logger.info(f"🤖 [AGENTIC_CHAT] Step 5.{iterations}.2: LLM requested tool: {tool_name}")
+                logger.info(f"🤖 [AGENTIC_CHAT] Step 5.{iterations}.2.1: Tool arguments: {json.dumps(tool_args)[:200]}...")
                 
                 # Yield status update
                 is_write_tool = tool_name in ["update_artifact", "create_artifact", "save_to_outputs"]
                 status_icon = "✏️" if is_write_tool else "🔍"
+                logger.info(f"🤖 [AGENTIC_CHAT] Step 5.{iterations}.3: Executing tool: {tool_name} (write_mode={is_write_tool})")
                 yield {
                     "type": "status",
                     "content": f"{status_icon} {'Writing' if is_write_tool else 'Searching'}: {tool_name}...",
@@ -853,6 +885,8 @@ class AgenticChatService:
                 
                 # Execute tool (pass write_mode for write tools)
                 result = await self.execute_tool(tool_name, tool_args, write_mode=write_mode)
+                logger.info(f"🤖 [AGENTIC_CHAT] Step 5.{iterations}.4: Tool execution complete: success={result.get('success', True)}, result_length={len(json.dumps(result))}")
+                
                 tool_results.append({
                     "tool": tool_name,
                     "arguments": tool_args,
@@ -860,17 +894,22 @@ class AgenticChatService:
                     "is_write_tool": is_write_tool
                 })
                 
-                logger.info(f"🔧 [AGENT] Tool result: {json.dumps(result)[:200]}...")
+                logger.info(f"🤖 [AGENTIC_CHAT] Step 5.{iterations}.5: Tool result preview: {json.dumps(result)[:200]}...")
                 
             except Exception as e:
-                logger.error(f"Tool execution error: {e}")
+                logger.error(f"🤖 [AGENTIC_CHAT] Step 5.{iterations}.ERROR: Tool execution error: {e}", exc_info=True)
                 break
         
+        logger.info(f"🤖 [AGENTIC_CHAT] Step 5.COMPLETE: Agentic loop finished after {iterations} iterations with {len(tool_results)} tool calls")
+        
         # Generate final response with all gathered context
-        logger.info(f"🤖 [AGENT] Generating final response after {iterations} iterations, {len(tool_results)} tool calls")
+        logger.info(f"🤖 [AGENTIC_CHAT] Step 6: Generating final response")
+        logger.info(f"🤖 [AGENTIC_CHAT] Step 6.1: After {iterations} iterations, {len(tool_results)} tool calls, {len(messages)} messages")
         
         async for chunk in self._generate_final_response(messages, tool_results):
             yield chunk
+        
+        logger.info(f"🤖 [AGENTIC_CHAT] ========== AGENTIC CHAT REQUEST COMPLETE ==========")
     
     def _build_messages(self, message: str, conversation_history: Optional[List[Any]], notes_context: str = "", project_overview: str = "") -> List[Dict[str, str]]:
         """Build message list for the LLM."""

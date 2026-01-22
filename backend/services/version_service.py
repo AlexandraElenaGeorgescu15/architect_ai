@@ -98,10 +98,19 @@ class VersionService:
         Returns:
             Version information
         """
+        logger.info(f"📦 [VERSION] ========== CREATE VERSION STARTED ==========")
+        logger.info(f"📦 [VERSION] Step 1: Initializing version creation")
+        logger.info(f"📦 [VERSION] Step 1.1: artifact_id={artifact_id}, artifact_type={artifact_type}, content_length={len(content)}")
+        logger.info(f"📦 [VERSION] Step 1.2: has_metadata={bool(metadata)}, metadata_keys={list(metadata.keys()) if metadata else []}")
+        
         if artifact_id not in self.versions:
             self.versions[artifact_id] = []
+            logger.info(f"📦 [VERSION] Step 2: Created new artifact entry: {artifact_id}")
+        else:
+            logger.info(f"📦 [VERSION] Step 2: Existing artifact entry: {artifact_id} ({len(self.versions[artifact_id])} existing versions)")
         
         version_number = len(self.versions[artifact_id]) + 1
+        logger.info(f"📦 [VERSION] Step 3: Creating version {version_number}")
         version = {
             "version": version_number,
             "artifact_id": artifact_id,
@@ -113,20 +122,34 @@ class VersionService:
         }
         
         # Mark previous versions as not current
+        logger.info(f"📦 [VERSION] Step 4: Marking previous versions as not current")
+        previous_count = 0
         for v in self.versions[artifact_id]:
-            v["is_current"] = False
+            if v.get("is_current", False):
+                v["is_current"] = False
+                previous_count += 1
+        logger.info(f"📦 [VERSION] Step 4.1: Marked {previous_count} previous versions as not current")
         
         # Add new version
+        logger.info(f"📦 [VERSION] Step 5: Adding new version to store")
         self.versions[artifact_id].append(version)
+        logger.info(f"📦 [VERSION] Step 5.1: Version added: total versions={len(self.versions[artifact_id])}")
         
         # Keep only last 50 versions per artifact
         if len(self.versions[artifact_id]) > 50:
+            removed = len(self.versions[artifact_id]) - 50
             self.versions[artifact_id] = self.versions[artifact_id][-50:]
+            logger.info(f"📦 [VERSION] Step 6: Trimmed versions: removed {removed} old versions, kept 50")
+        else:
+            logger.info(f"📦 [VERSION] Step 6: Version count within limit: {len(self.versions[artifact_id])}/50")
         
         # Save to disk
+        logger.info(f"📦 [VERSION] Step 7: Saving versions to disk")
         self._save_versions(artifact_id)
+        logger.info(f"📦 [VERSION] Step 7.1: Versions saved to disk")
         
-        logger.info(f"Created version {version_number} for artifact {artifact_id}")
+        logger.info(f"📦 [VERSION] ========== CREATE VERSION COMPLETE ==========")
+        logger.info(f"📦 [VERSION] Created version {version_number} for artifact {artifact_id}")
         return version
     
     def get_versions(self, artifact_id: str) -> List[Dict[str, Any]]:
@@ -399,20 +422,35 @@ class VersionService:
         Returns:
             Deletion result
         """
+        logger.info(f"📦 [VERSION] ========== DELETE ALL VERSIONS STARTED ==========")
+        logger.info(f"📦 [VERSION] Step 1: Checking if artifact exists")
+        logger.info(f"📦 [VERSION] Step 1.1: artifact_id={artifact_id}")
+        
         if artifact_id not in self.versions:
+            logger.warning(f"📦 [VERSION] Step 1.2: Artifact not found: {artifact_id}")
+            logger.info(f"📦 [VERSION] ========== DELETE ALL VERSIONS COMPLETE (NOT FOUND) ==========")
             return {"error": "Artifact not found"}
         
         version_count = len(self.versions[artifact_id])
+        logger.info(f"📦 [VERSION] Step 1.2: Artifact found: {version_count} versions to delete")
         
         # Remove from memory
+        logger.info(f"📦 [VERSION] Step 2: Removing from memory")
         del self.versions[artifact_id]
+        logger.info(f"📦 [VERSION] Step 2.1: Removed from memory")
         
         # Remove from disk
+        logger.info(f"📦 [VERSION] Step 3: Removing from disk")
         version_file = self.versions_dir / f"{artifact_id}.json"
         if version_file.exists():
+            logger.info(f"📦 [VERSION] Step 3.1: Deleting version file: {version_file}")
             version_file.unlink()
+            logger.info(f"📦 [VERSION] Step 3.2: Version file deleted")
+        else:
+            logger.warning(f"📦 [VERSION] Step 3.1: Version file not found on disk: {version_file}")
         
-        logger.info(f"Deleted all {version_count} versions for artifact {artifact_id}")
+        logger.info(f"📦 [VERSION] ========== DELETE ALL VERSIONS COMPLETE ==========")
+        logger.info(f"📦 [VERSION] Deleted all {version_count} versions for artifact {artifact_id}")
         return {
             "success": True,
             "artifact_id": artifact_id,

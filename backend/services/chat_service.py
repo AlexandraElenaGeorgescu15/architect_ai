@@ -98,22 +98,31 @@ class ProjectAwareChatService:
             Dictionary with response chunks or final response
         """
         metrics.increment("chat_requests_total")
+        logger.info(f"💬 [CHAT] ========== CHAT REQUEST STARTED ==========")
+        logger.info(f"💬 [CHAT] Step 1: Initializing chat request")
+        logger.info(f"💬 [CHAT] Step 1.1: Message length={len(message)}, has_history={bool(conversation_history)}, include_project_context={include_project_context}")
+        logger.info(f"💬 [CHAT] Step 1.2: Session ID={session_id}, folder_id={folder_id}, has_meeting_notes={bool(meeting_notes_content)}")
         
         # Generate session_id if not provided (for context persistence)
         if not session_id and conversation_history:
             # Create a simple hash from first message to track conversation
             first_msg = self._extract_content(conversation_history[0]) if conversation_history else ""
             session_id = f"chat_{hash(first_msg[:50]) % 100000}"
+            logger.info(f"💬 [CHAT] Step 1.3: Generated session_id={session_id} from conversation history")
         
         # Build comprehensive project context
         project_context = ""
         meeting_notes_context = ""
+        logger.info(f"💬 [CHAT] Step 2: Building project context")
         
         # Include meeting notes if provided (either directly or by folder_id)
+        logger.info(f"💬 [CHAT] Step 2.1: Loading meeting notes")
         if meeting_notes_content:
             meeting_notes_context = meeting_notes_content
+            logger.info(f"💬 [CHAT] Step 2.1.1: Using provided meeting notes (length={len(meeting_notes_content)})")
         elif folder_id:
             # Load meeting notes from folder
+            logger.info(f"💬 [CHAT] Step 2.1.2: Loading meeting notes from folder_id={folder_id}")
             try:
                 from backend.services.meeting_notes_service import get_meeting_notes_service
                 notes_service = get_meeting_notes_service()
@@ -123,28 +132,36 @@ class ProjectAwareChatService:
                         f"**{n.get('title', 'Meeting Note')}**\n{n.get('content', '')}"
                         for n in notes
                     ])
-                    logger.info(f"[CHAT] Loaded {len(notes)} meeting notes from folder: {folder_id}")
+                    logger.info(f"💬 [CHAT] Step 2.1.3: Loaded {len(notes)} meeting notes from folder: {folder_id} (total_length={len(meeting_notes_context)})")
+                else:
+                    logger.warning(f"💬 [CHAT] Step 2.1.3: No notes found in folder {folder_id}")
             except Exception as e:
-                logger.warning(f"[CHAT] Could not load meeting notes from folder {folder_id}: {e}")
+                logger.warning(f"💬 [CHAT] Step 2.1.3: Could not load meeting notes from folder {folder_id}: {e}", exc_info=True)
+        else:
+            logger.info(f"💬 [CHAT] Step 2.1.1: No meeting notes provided")
         
         if include_project_context:
+            logger.info(f"💬 [CHAT] Step 2.2: Building project context (include_project_context=True)")
             try:
                 # Import Universal Context Service for comprehensive project knowledge
                 from backend.services.universal_context import get_universal_context_service
                 from backend.utils.target_project import get_target_project_path, get_target_project_name
                 
                 # Log which project we're analyzing (should be USER's project, NOT Architect.AI)
+                logger.info(f"💬 [CHAT] Step 2.2.1: Getting target project information")
                 target_project = get_target_project_path()
                 target_name = get_target_project_name()
-                logger.info(f"[CHAT] Target project: {target_name} at {target_project}")
+                logger.info(f"💬 [CHAT] Step 2.2.2: Target project: {target_name} at {target_project}")
                 
                 # Get SMART context - Universal baseline + targeted retrieval (Wikipedia-like knowledge)
+                logger.info(f"💬 [CHAT] Step 2.2.3: Retrieving smart context for query (k=30 snippets)")
                 universal_service = get_universal_context_service()
                 smart_context = await universal_service.get_smart_context_for_query(
                     query=message,
                     artifact_type=None,
                     k=30  # Get 30 targeted snippets
                 )
+                logger.info(f"💬 [CHAT] Step 2.2.4: Smart context retrieved successfully")
                 
                 # Extract components from smart context
                 rag_results = smart_context.get("targeted_snippets", [])
@@ -154,8 +171,9 @@ class ProjectAwareChatService:
                 
                 # Log what was retrieved
                 indexed_dirs = universal_ctx.get("project_directories", [])
-                logger.info(f"[CHAT] Universal context directories: {[Path(d).name for d in indexed_dirs]}")
-                logger.info(f"[CHAT] RAG results: {len(rag_results)} snippets from user project")
+                logger.info(f"💬 [CHAT] Step 2.2.5: Universal context: {len(indexed_dirs)} directories, {len(key_entities)} key entities")
+                logger.info(f"💬 [CHAT] Step 2.2.6: RAG results: {len(rag_results)} snippets from user project")
+                logger.info(f"💬 [CHAT] Step 2.2.7: Universal context directories: {[Path(d).name for d in indexed_dirs]}")
                 
                 # Get Knowledge Graph insights
                 kg_context = await self._get_kg_insights(message)
@@ -263,35 +281,40 @@ class ProjectAwareChatService:
                     project_context_parts.insert(insert_pos, "\n".join(overview_parts) + "\n")
                 
                 project_context = "\n".join(project_context_parts)
-                logger.info(f"Chat context built: {len(project_context)} chars, {len(rag_results) if rag_results else 0} RAG snippets, has_meeting_notes={bool(meeting_notes_context)}, has_universal={bool(universal_ctx)}")
+                logger.info(f"💬 [CHAT] Step 2.3: Project context built: {len(project_context)} chars, {len(rag_results) if rag_results else 0} RAG snippets, has_meeting_notes={bool(meeting_notes_context)}, has_universal={bool(universal_ctx)}")
                 
             except Exception as e:
-                logger.warning(f"Error building project context: {e}")
+                logger.warning(f"💬 [CHAT] Step 2.3.ERROR: Error building project context: {e}", exc_info=True)
                 project_context = ""
         
         # Build system message
+        logger.info(f"💬 [CHAT] Step 3: Building system message and prompt")
         system_message = self._build_system_message(include_project_context)
+        logger.info(f"💬 [CHAT] Step 3.1: System message built: length={len(system_message)}")
         
         # Build prompt with conversation history AND session context
         prompt = self._build_prompt(message, conversation_history, project_context, session_id)
+        logger.info(f"💬 [CHAT] Step 3.2: Prompt built: length={len(prompt)}")
         
         # Calculate and log context sizes for debugging
         total_chars = len(system_message) + len(prompt)
         estimated_tokens = total_chars // 4  # Rough estimate: 4 chars per token
         
-        logger.info(f"[CHAT] Context stats:")
-        logger.info(f"  - System message: {len(system_message)} chars")
-        logger.info(f"  - Prompt: {len(prompt)} chars")
-        logger.info(f"  - Total: {total_chars} chars (~{estimated_tokens} tokens)")
-        logger.info(f"  - Session: {session_id}")
+        logger.info(f"💬 [CHAT] Step 3.3: Context stats:")
+        logger.info(f"💬 [CHAT] Step 3.3.1: System message: {len(system_message)} chars")
+        logger.info(f"💬 [CHAT] Step 3.3.2: Prompt: {len(prompt)} chars")
+        logger.info(f"💬 [CHAT] Step 3.3.3: Total: {total_chars} chars (~{estimated_tokens} tokens)")
+        logger.info(f"💬 [CHAT] Step 3.3.4: Session: {session_id}")
         
         if estimated_tokens > settings.local_model_context_window * 0.75:
-            logger.warning(f"⚠️ [CHAT] Large context ({estimated_tokens} tokens). Approaching limit of {settings.local_model_context_window}")
+            logger.warning(f"💬 [CHAT] Step 3.3.5: ⚠️ Large context ({estimated_tokens} tokens). Approaching limit of {settings.local_model_context_window}")
         
         # Generate response (try Ollama first, then cloud)
+        logger.info(f"💬 [CHAT] Step 4: Selecting models for chat generation")
         # Get models from model mapping configuration for chat
         chat_mapping = self.artifact_mapper.get_model_for_artifact(ArtifactType.CHAT.value)
         priority_models = chat_mapping.priority_models or [chat_mapping.base_model]
+        logger.info(f"💬 [CHAT] Step 4.1: Priority models from mapping: {priority_models}")
         
         # Extract base model names (remove :tag suffix for Ollama client)
         local_models_to_try = []
@@ -304,14 +327,22 @@ class ProjectAwareChatService:
         # Fallback to default models if mapping doesn't provide any
         if not local_models_to_try:
             local_models_to_try = ["llama3", "llama3.2", "mistral", "codellama"]
+            logger.info(f"💬 [CHAT] Step 4.2: Using fallback models: {local_models_to_try}")
+        else:
+            logger.info(f"💬 [CHAT] Step 4.2: Using mapped models: {local_models_to_try}")
         
+        logger.info(f"💬 [CHAT] Step 5: Attempting generation with local models")
         if self.ollama_client and OLLAMA_AVAILABLE:
-            for model_base_name in local_models_to_try:
+            for model_idx, model_base_name in enumerate(local_models_to_try):
+                logger.info(f"💬 [CHAT] Step 5.{model_idx + 1}: Trying model: {model_base_name}")
                 try:
                     # Check if model is available
+                    logger.info(f"💬 [CHAT] Step 5.{model_idx + 1}.1: Checking if model {model_base_name} is available")
                     await self.ollama_client.ensure_model_available(model_base_name)
+                    logger.info(f"💬 [CHAT] Step 5.{model_idx + 1}.2: Model {model_base_name} is available")
                     
                     # Try Ollama generation with context window from config
+                    logger.info(f"💬 [CHAT] Step 5.{model_idx + 1}.3: Generating with {model_base_name} (temperature=0.7, num_ctx={settings.local_model_context_window})")
                     response = await asyncio.wait_for(
                         self.ollama_client.generate(
                             model_name=model_base_name,
@@ -322,9 +353,10 @@ class ProjectAwareChatService:
                         ),
                         timeout=settings.generation_timeout  # From centralized config
                     )
+                    logger.info(f"💬 [CHAT] Step 5.{model_idx + 1}.4: Generation complete: success={response.success}, content_length={len(response.content) if response.content else 0}")
                     
                     if response.success and response.content and len(response.content.strip()) > 20:
-                        logger.info(f"Chat successful with {model_base_name}")
+                        logger.info(f"💬 [CHAT] Step 5.{model_idx + 1}.5: Chat successful with {model_base_name}, returning response")
                         if stream:
                             # Stream character by character for effect
                             content = response.content
@@ -354,20 +386,23 @@ class ProjectAwareChatService:
                             }
                             return  # Critical: return immediately after non-streaming complete
                     else:
-                        logger.warning(f"Model {model_base_name} returned empty/short response, trying next...")
+                        logger.warning(f"💬 [CHAT] Step 5.{model_idx + 1}.5: Model {model_base_name} returned empty/short response, trying next...")
                 except asyncio.TimeoutError:
-                    logger.warning(f"Timeout with {model_base_name}, trying next...")
+                    logger.warning(f"💬 [CHAT] Step 5.{model_idx + 1}.ERROR: Timeout with {model_base_name}, trying next...")
                 except Exception as e:
-                    logger.warning(f"Model {model_base_name} failed: {e}, trying next...")
+                    logger.warning(f"💬 [CHAT] Step 5.{model_idx + 1}.ERROR: Model {model_base_name} failed: {e}, trying next...", exc_info=True)
         
         # Fallback to cloud (Gemini preferred for chat)
+        logger.info(f"💬 [CHAT] Step 6: All local models failed, falling back to cloud")
         try:
+            logger.info(f"💬 [CHAT] Step 6.1: Calling cloud chat service")
             cloud_response = self._call_cloud_chat(
                 message=message,
                 system_message=system_message,
                 prompt=prompt,
                 stream=stream
             )
+            logger.info(f"💬 [CHAT] Step 6.2: Cloud chat response received")
             
             if stream:
                 async for chunk in cloud_response:
@@ -381,12 +416,14 @@ class ProjectAwareChatService:
                     yield final_chunk
                 
         except Exception as e:
-            logger.error(f"Cloud chat failed: {e}")
+            logger.error(f"💬 [CHAT] Step 6.ERROR: Cloud chat failed: {e}", exc_info=True)
             yield {
                 "type": "error",
                 "content": f"I apologize, but I encountered an error. Please try again.",
                 "error": str(e)
             }
+        
+        logger.info(f"💬 [CHAT] ========== CHAT REQUEST COMPLETE ==========")
     
     async def _get_kg_insights(self, query: str) -> str:
         """

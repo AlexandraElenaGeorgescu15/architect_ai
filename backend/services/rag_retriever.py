@@ -154,7 +154,13 @@ class RAGRetriever:
         Returns:
             List of (document, score) tuples
         """
+        logger.info(f"🔍 [RAG] ========== VECTOR SEARCH STARTED ==========")
+        logger.info(f"🔍 [RAG] Step 1: Initializing vector search")
+        logger.info(f"🔍 [RAG] Step 1.1: Query length={len(query)}, k={k}, has_metadata_filter={bool(metadata_filter)}")
+        logger.info(f"🔍 [RAG] Step 1.2: Query preview: {query[:100]}...")
+        
         try:
+            logger.info(f"🔍 [RAG] Step 2: Building query parameters")
             query_params = {
                 "query_texts": [query],
                 "n_results": k,
@@ -163,24 +169,34 @@ class RAGRetriever:
             
             if metadata_filter:
                 query_params["where"] = metadata_filter
+                logger.info(f"🔍 [RAG] Step 2.1: Added metadata filter: {metadata_filter}")
             
+            logger.info(f"🔍 [RAG] Step 3: Querying ChromaDB collection")
             res = self.collection.query(**query_params)
+            logger.info(f"🔍 [RAG] Step 3.1: ChromaDB query complete: {len(res.get('documents', [[]])[0])} results")
             
+            logger.info(f"🔍 [RAG] Step 4: Processing results")
             results = []
-            for doc, meta, dist in zip(
+            for idx, (doc, meta, dist) in enumerate(zip(
                 res["documents"][0],
                 res["metadatas"][0],
                 res["distances"][0]
-            ):
+            )):
+                similarity = 1.0 - float(dist)
                 results.append((
                     {"content": doc, "meta": meta or {}},
-                    1.0 - float(dist)  # Convert distance to similarity
+                    similarity
                 ))
+                if idx < 3:  # Log first 3 results
+                    file_path = meta.get("file_path", "unknown") if meta else "unknown"
+                    logger.info(f"🔍 [RAG] Step 4.{idx + 1}: Result {idx + 1}: file={file_path}, similarity={similarity:.3f}, content_length={len(doc)}")
             
+            logger.info(f"🔍 [RAG] Step 5: Vector search complete: {len(results)} results")
+            logger.info(f"🔍 [RAG] ========== VECTOR SEARCH COMPLETE ==========")
             return results
             
         except Exception as e:
-            logger.error(f"Vector search error: {e}", exc_info=True)
+            logger.error(f"🔍 [RAG] ERROR: Vector search error: {e}", exc_info=True)
             return []
     
     def bm25_search(self, query: str, k: int = 200) -> List[Tuple[Dict[str, Any], float]]:
@@ -194,24 +210,39 @@ class RAGRetriever:
         Returns:
             List of (document, score) tuples
         """
+        logger.info(f"🔍 [RAG] ========== BM25 SEARCH STARTED ==========")
+        logger.info(f"🔍 [RAG] Step 1: Initializing BM25 search")
+        logger.info(f"🔍 [RAG] Step 1.1: Query length={len(query)}, k={k}")
+        
         try:
+            logger.info(f"🔍 [RAG] Step 2: Loading BM25 index")
             bm25 = self._get_bm25_index()
             if not bm25:
+                logger.warning(f"🔍 [RAG] Step 2.1: BM25 index not available")
                 return []
+            logger.info(f"🔍 [RAG] Step 2.1: BM25 index loaded")
             
+            logger.info(f"🔍 [RAG] Step 3: Loading documents for BM25")
             docs = self._load_docs_for_bm25()
             if not docs:
+                logger.warning(f"🔍 [RAG] Step 3.1: No documents available for BM25")
                 return []
+            logger.info(f"🔍 [RAG] Step 3.1: Loaded {len(docs)} documents")
             
             # Tokenize query
+            logger.info(f"🔍 [RAG] Step 4: Tokenizing query")
             query_tokens = query.lower().split()
+            logger.info(f"🔍 [RAG] Step 4.1: Query tokens: {len(query_tokens)} tokens")
             
             # Get scores
+            logger.info(f"🔍 [RAG] Step 5: Computing BM25 scores")
             if hasattr(bm25, 'search'):
                 # Using our BM25Index wrapper
+                logger.info(f"🔍 [RAG] Step 5.1: Using BM25Index wrapper")
                 results = bm25.search(query, k=k)
             else:
                 # Using BM25Okapi directly
+                logger.info(f"🔍 [RAG] Step 5.1: Using BM25Okapi directly")
                 scores = bm25.get_scores(query_tokens)
                 top_indices = sorted(
                     range(len(scores)),
@@ -224,12 +255,16 @@ class RAGRetriever:
                     score = scores[idx]
                     if score > 0:
                         results.append((docs[idx], score))
-                return results
+                logger.info(f"🔍 [RAG] Step 5.2: Computed scores for {len(results)} results")
             
+            logger.info(f"🔍 [RAG] Step 6: BM25 search complete: {len(results)} results")
+            if results:
+                logger.info(f"🔍 [RAG] Step 6.1: Top result score: {results[0][1]:.3f}")
+            logger.info(f"🔍 [RAG] ========== BM25 SEARCH COMPLETE ==========")
             return results
             
         except Exception as e:
-            logger.error(f"BM25 search error: {e}", exc_info=True)
+            logger.error(f"🔍 [RAG] ERROR: BM25 search error: {e}", exc_info=True)
             return []
     
     def _create_smart_metadata_filter(self, artifact_type: Optional[str] = None) -> Optional[Dict[str, Any]]:
@@ -314,27 +349,54 @@ class RAGRetriever:
         Returns:
             List of (document, score) tuples, sorted by score
         """
+        logger.info(f"🔍 [RAG] ========== HYBRID SEARCH STARTED ==========")
+        logger.info(f"🔍 [RAG] Step 1: Initializing hybrid search")
+        logger.info(f"🔍 [RAG] Step 1.1: Query length={len(query)}, k_vector={k_vector}, k_bm25={k_bm25}, k_final={k_final}")
+        logger.info(f"🔍 [RAG] Step 1.2: artifact_type={artifact_type}, vector_weight={vector_weight}, bm25_weight={bm25_weight}")
+        
         # Enhance query based on artifact type for better targeting
+        logger.info(f"🔍 [RAG] Step 2: Enhancing query for artifact type")
         enhanced_query = self._enhance_query_for_artifact(query, artifact_type)
+        if enhanced_query != query:
+            logger.info(f"🔍 [RAG] Step 2.1: Query enhanced: {len(query)} → {len(enhanced_query)} chars")
+        else:
+            logger.info(f"🔍 [RAG] Step 2.1: Query unchanged")
         
         # Create smart metadata filter if no filter provided
+        logger.info(f"🔍 [RAG] Step 3: Creating metadata filter")
         if not metadata_filter and artifact_type:
             metadata_filter = self._create_smart_metadata_filter(artifact_type)
+            logger.info(f"🔍 [RAG] Step 3.1: Created smart metadata filter for {artifact_type}")
+        elif metadata_filter:
+            logger.info(f"🔍 [RAG] Step 3.1: Using provided metadata filter")
+        else:
+            logger.info(f"🔍 [RAG] Step 3.1: No metadata filter")
         
         # Log query
         self._log_query(enhanced_query, k_final)
         
         # Perform both searches with enhanced query
+        logger.info(f"🔍 [RAG] Step 4: Performing vector search")
         vec_hits = self.vector_search(enhanced_query, k=k_vector, metadata_filter=metadata_filter)
+        logger.info(f"🔍 [RAG] Step 4.1: Vector search returned {len(vec_hits)} results")
 
         # BM25 can be disabled via config; also allow callers to set k_bm25=0
+        logger.info(f"🔍 [RAG] Step 5: Performing BM25 search")
         if self._use_bm25 and k_bm25 > 0:
+            logger.info(f"🔍 [RAG] Step 5.1: BM25 enabled, performing search")
             bm25_hits = self.bm25_search(enhanced_query, k=k_bm25)
+            logger.info(f"🔍 [RAG] Step 5.2: BM25 search returned {len(bm25_hits)} results")
         else:
+            logger.info(f"🔍 [RAG] Step 5.1: BM25 disabled or k_bm25=0, skipping")
             bm25_hits = []
         
         # Merge and rerank using RRF
-        return self._merge_rerank(vec_hits, bm25_hits, k_final, vector_weight, bm25_weight)
+        logger.info(f"🔍 [RAG] Step 6: Merging and reranking results")
+        logger.info(f"🔍 [RAG] Step 6.1: Merging {len(vec_hits)} vector + {len(bm25_hits)} BM25 results → {k_final} final")
+        final_results = self._merge_rerank(vec_hits, bm25_hits, k_final, vector_weight, bm25_weight)
+        logger.info(f"🔍 [RAG] Step 6.2: Hybrid search complete: {len(final_results)} final results")
+        logger.info(f"🔍 [RAG] ========== HYBRID SEARCH COMPLETE ==========")
+        return final_results
     
     def _reciprocal_rank_fusion(
         self,
@@ -394,10 +456,16 @@ class RAGRetriever:
         Returns:
             Merged and reranked results
         """
+        logger.info(f"🔍 [RAG] Step 6.1.1: Starting merge/rerank with RRF")
+        logger.info(f"🔍 [RAG] Step 6.1.2: Input: {len(vec_hits)} vector hits, {len(bm25_hits)} BM25 hits")
+        
         # Try RRF first (more sophisticated)
+        logger.info(f"🔍 [RAG] Step 6.1.3: Computing RRF scores")
         rrf_scores = self._reciprocal_rank_fusion(vec_hits, bm25_hits)
+        logger.info(f"🔍 [RAG] Step 6.1.4: RRF scores computed for {len(rrf_scores)} unique documents")
         
         # Create document pool with RRF scores
+        logger.info(f"🔍 [RAG] Step 6.1.5: Building document pool")
         doc_pool = {}
         for doc, _ in vec_hits + bm25_hits:
             file_path = doc.get("meta", {}).get("file_path", "")
@@ -409,13 +477,19 @@ class RAGRetriever:
                     "doc": doc,
                     "rrf_score": rrf_scores.get(key, 0),
                 }
+        logger.info(f"🔍 [RAG] Step 6.1.6: Document pool: {len(doc_pool)} unique documents")
         
         # Sort by RRF score
+        logger.info(f"🔍 [RAG] Step 6.1.7: Sorting by RRF score, taking top {k_final}")
         sorted_docs = sorted(
             doc_pool.values(),
             key=lambda x: x["rrf_score"],
             reverse=True
         )[:k_final]
+        
+        logger.info(f"🔍 [RAG] Step 6.1.8: Merge complete: {len(sorted_docs)} final results")
+        if sorted_docs:
+            logger.info(f"🔍 [RAG] Step 6.1.9: Top result RRF score: {sorted_docs[0]['rrf_score']:.3f}")
         
         # Return as list of (doc, score) tuples
         return [(item["doc"], item["rrf_score"]) for item in sorted_docs]

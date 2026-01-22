@@ -61,73 +61,115 @@ class UniversalDiagramFixer:
         Returns:
             Tuple of (fixed_content, list_of_fixes_applied)
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"🔧 [DIAGRAM_FIXER] ========== DIAGRAM FIX STARTED ==========")
+        logger.info(f"🔧 [DIAGRAM_FIXER] Step 1: Initializing fixer")
+        logger.info(f"🔧 [DIAGRAM_FIXER] Step 1.1: Input content length={len(content)}, max_passes={max_passes}, lenient={lenient}, strict_mode={self.strict_mode}")
+        logger.info(f"🔧 [DIAGRAM_FIXER] Step 1.2: Input preview (first 200 chars): {content[:200]}...")
+        
         self.errors_fixed = []
         
         # LENIENT MODE: Apply minimal fixes only
         if lenient:
+            logger.info(f"🔧 [DIAGRAM_FIXER] Step 1.3: Using LENIENT mode (minimal fixes)")
             return self._fix_diagram_lenient(content)
         
+        logger.info(f"🔧 [DIAGRAM_FIXER] Step 1.3: Using STRICT mode (aggressive fixes)")
         previous_content = None
         
         # MULTIPLE PASSES for stubborn syntax errors
         for pass_num in range(max_passes):
+            logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}: Starting pass {pass_num + 1}/{max_passes}")
             if content == previous_content:
                 # No changes in this pass, we're done
                 if pass_num > 0:
                     self.errors_fixed.append(f"Converged after {pass_num + 1} passes")
+                    logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.1: Content unchanged, converged after {pass_num + 1} passes")
                 break
             
             previous_content = content
             pass_fixes = []
+            original_length = len(content)
             
             # Step 1: Clean markdown wrappers
+            logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.1: Removing markdown wrappers")
             content = self._remove_markdown_blocks(content)
+            if len(content) != original_length:
+                logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.1.1: Removed markdown wrappers: {original_length} → {len(content)} chars")
             
             # Step 2: Detect diagram type
+            logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.2: Detecting diagram type")
             diagram_type = self._detect_diagram_type(content)
             self.current_type = diagram_type
+            logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.2.1: Detected diagram type: {diagram_type}")
             
             if not diagram_type:
                 pass_fixes.append(f"[Pass {pass_num + 1}] Could not detect diagram type - added default flowchart header")
+                logger.warning(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.2.2: Could not detect diagram type, adding default flowchart header")
                 content = "flowchart TD\n" + content
                 diagram_type = 'flowchart'
                 self.current_type = 'flowchart'
             
             # Step 3: Apply type-specific fixes
+            logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.3: Applying type-specific fixes for {diagram_type}")
             if diagram_type == 'erdiagram':
                 content = self._fix_erd_diagram(content)
+                logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.3.1: Applied ERD-specific fixes")
             elif diagram_type in ['flowchart', 'graph']:
                 content = self._fix_flowchart_diagram(content)
+                logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.3.1: Applied flowchart-specific fixes")
             elif diagram_type == 'sequencediagram':
                 content = self._fix_sequence_diagram(content)
+                logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.3.1: Applied sequence diagram-specific fixes")
             elif diagram_type == 'classdiagram':
                 content = self._fix_class_diagram(content)
+                logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.3.1: Applied class diagram-specific fixes")
             elif diagram_type == 'statediagram':
                 content = self._fix_state_diagram(content)
+                logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.3.1: Applied state diagram-specific fixes")
             elif diagram_type == 'gantt':
                 content = self._fix_gantt_diagram(content)
+                logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.3.1: Applied Gantt chart-specific fixes")
             elif diagram_type == 'pie':
                 content = self._fix_pie_diagram(content)
+                logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.3.1: Applied pie chart-specific fixes")
             elif diagram_type == 'journey':
                 content = self._fix_journey_diagram(content)
+                logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.3.1: Applied journey diagram-specific fixes")
             elif diagram_type == 'gitgraph':
                 content = self._fix_gitgraph_diagram(content)
+                logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.3.1: Applied git graph-specific fixes")
             elif diagram_type == 'mindmap':
                 content = self._fix_mindmap_diagram(content)
+                logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.3.1: Applied mindmap-specific fixes")
             elif diagram_type == 'timeline':
                 content = self._fix_timeline_diagram(content)
+                logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.3.1: Applied timeline-specific fixes")
             
             # Step 4: General cleanup
+            logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.4: Applying general cleanup")
             content = self._general_cleanup(content)
+            logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.4.1: General cleanup complete: {len(content)} chars")
             
             # Collect fixes from this pass
             if pass_num == max_passes - 1 or content != previous_content:
                 pass_fixes.extend(self.errors_fixed)
             self.errors_fixed = pass_fixes
+            
+            if content != previous_content:
+                logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.5: Pass {pass_num + 1} complete: {len(pass_fixes)} fixes applied, content changed: {len(previous_content)} → {len(content)} chars")
+            else:
+                logger.info(f"🔧 [DIAGRAM_FIXER] Step 2.{pass_num + 1}.5: Pass {pass_num + 1} complete: no changes")
         
         if len(self.errors_fixed) > 0:
-            print(f"[MERMAID_FIX] Applied {len(self.errors_fixed)} fixes across {min(pass_num + 1, max_passes)} passes")
+            logger.info(f"🔧 [DIAGRAM_FIXER] Step 3: Fix complete - Applied {len(self.errors_fixed)} fixes across {min(pass_num + 1, max_passes)} passes")
+            logger.info(f"🔧 [DIAGRAM_FIXER] Step 3.1: Final content length={len(content)}, fixes={self.errors_fixed[:5]}...")  # Show first 5 fixes
+        else:
+            logger.info(f"🔧 [DIAGRAM_FIXER] Step 3: Fix complete - No fixes needed")
         
+        logger.info(f"🔧 [DIAGRAM_FIXER] ========== DIAGRAM FIX COMPLETE ==========")
         return content, self.errors_fixed
     
     def _fix_diagram_lenient(self, content: str) -> Tuple[str, List[str]]:

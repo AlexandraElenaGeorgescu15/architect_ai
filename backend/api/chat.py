@@ -433,9 +433,15 @@ async def send_message(
         "include_project_context": true
     }
     """
+    logger.info(f"💬 [CHAT_API] ========== CHAT API REQUEST ==========")
+    logger.info(f"💬 [CHAT_API] Step 1: Received chat request")
+    logger.info(f"💬 [CHAT_API] Step 1.1: Message length={len(body.message)}, has_history={bool(body.conversation_history)}, include_context={body.include_project_context}")
+    logger.info(f"💬 [CHAT_API] Step 1.2: session_id={body.session_id}, folder_id={body.folder_id}, has_meeting_notes={bool(body.meeting_notes_content)}")
+    
     service = get_chat_service()
     
     try:
+        logger.info(f"💬 [CHAT_API] Step 2: Calling chat service")
         # Generate response
         response_content = ""
         model_used = "unknown"
@@ -454,13 +460,16 @@ async def send_message(
                 response_content = chunk.get("content", "")
                 model_used = chunk.get("model", "unknown")
                 provider = chunk.get("provider", "unknown")
+                logger.info(f"💬 [CHAT_API] Step 3: Chat complete - response_length={len(response_content)}, model={model_used}, provider={provider}")
                 break
             elif chunk.get("type") == "error":
+                logger.error(f"💬 [CHAT_API] Step 3.ERROR: Chat error: {chunk.get('error')}")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=chunk.get("error", "Chat generation failed")
                 )
         
+        logger.info(f"💬 [CHAT_API] ========== CHAT API REQUEST COMPLETE ==========")
         return ChatResponse(
             message=response_content,
             model_used=model_used,
@@ -469,7 +478,7 @@ async def send_message(
         )
         
     except Exception as e:
-        logger.error(f"Error in chat: {e}", exc_info=True)
+        logger.error(f"💬 [CHAT_API] ERROR: Chat API failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Chat generation failed: {str(e)}"
@@ -488,7 +497,11 @@ async def send_message_stream(
     
     async def generate_stream():
         """Stream chat response."""
+        logger.info(f"💬 [CHAT_API_STREAM] ========== STREAMING CHAT REQUEST ==========")
+        logger.info(f"💬 [CHAT_API_STREAM] Step 1: Message length={len(request.message)}, session_id={request.session_id}, folder_id={request.folder_id}")
         try:
+            logger.info(f"💬 [CHAT_API_STREAM] Step 2: Starting chat stream")
+            chunk_count = 0
             async for chunk in service.chat(
                 message=request.message,
                 conversation_history=request.conversation_history,
@@ -498,9 +511,15 @@ async def send_message_stream(
                 folder_id=request.folder_id,
                 meeting_notes_content=request.meeting_notes_content
             ):
+                chunk_count += 1
+                if chunk_count == 1:
+                    logger.info(f"💬 [CHAT_API_STREAM] Step 2.1: First chunk received: type={chunk.get('type')}")
+                if chunk.get("type") == "complete":
+                    logger.info(f"💬 [CHAT_API_STREAM] Step 3: Stream complete - total_chunks={chunk_count}, response_length={len(chunk.get('content', ''))}")
                 yield f"data: {json.dumps(chunk)}\n\n"
+            logger.info(f"💬 [CHAT_API_STREAM] ========== STREAMING CHAT COMPLETE ==========")
         except Exception as e:
-            logger.error(f"Error in streaming chat: {e}", exc_info=True)
+            logger.error(f"💬 [CHAT_API_STREAM] ERROR: Streaming chat failed: {e}", exc_info=True)
             error_chunk = {
                 "type": "error",
                 "content": f"Error: {str(e)}",
@@ -556,7 +575,11 @@ async def stream_agentic_chat(
     
     async def generate_stream():
         """Stream agentic chat response with tool status updates."""
+        logger.info(f"🤖 [AGENTIC_CHAT_API] ========== AGENTIC CHAT STREAM REQUEST ==========")
+        logger.info(f"🤖 [AGENTIC_CHAT_API] Step 1: Message length={len(body.message)}, write_mode={write_mode}, session_id={body.session_id}, folder_id={body.folder_id}")
         try:
+            logger.info(f"🤖 [AGENTIC_CHAT_API] Step 2: Starting agentic chat stream")
+            chunk_count = 0
             async for chunk in service.chat(
                 message=body.message,
                 conversation_history=body.conversation_history,
@@ -565,9 +588,15 @@ async def stream_agentic_chat(
                 folder_id=body.folder_id,
                 meeting_notes_content=body.meeting_notes_content
             ):
+                chunk_count += 1
+                if chunk_count == 1:
+                    logger.info(f"🤖 [AGENTIC_CHAT_API] Step 2.1: First chunk received: type={chunk.get('type')}")
+                if chunk.get("type") == "complete":
+                    logger.info(f"🤖 [AGENTIC_CHAT_API] Step 3: Stream complete - total_chunks={chunk_count}, response_length={len(chunk.get('content', ''))}")
                 yield f"data: {json.dumps(chunk)}\n\n"
+            logger.info(f"🤖 [AGENTIC_CHAT_API] ========== AGENTIC CHAT STREAM COMPLETE ==========")
         except Exception as e:
-            logger.error(f"Error in agentic chat: {e}", exc_info=True)
+            logger.error(f"🤖 [AGENTIC_CHAT_API] ERROR: Agentic chat stream failed: {e}", exc_info=True)
             error_chunk = {
                 "type": "error",
                 "content": f"Error: {str(e)}",
