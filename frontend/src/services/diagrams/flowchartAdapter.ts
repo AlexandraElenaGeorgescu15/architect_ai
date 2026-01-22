@@ -14,6 +14,10 @@ export class FlowchartAdapter extends BaseDiagramAdapter {
     // Clean the code first
     const cleanCode = this.cleanMermaidCode(mermaidCode)
 
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/dfc1763a-e24e-49d7-baae-a7a908b307cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'flowchartAdapter.ts:parseFromMermaid',message:'FlowchartAdapter parsing',data:{codeLength:cleanCode.length,hasGraph:cleanCode.includes('graph'),hasFlowchart:cleanCode.includes('flowchart'),codePreview:cleanCode.substring(0,300)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
+
     // Extract direction (TD, LR, etc.) - handle both "graph" and "flowchart"
     const directionMatch = cleanCode.match(/(?:graph|flowchart)\s+(TD|LR|RL|BT)/i)
     const direction = directionMatch ? directionMatch[1] : 'TD'

@@ -5,9 +5,32 @@ Handles both programmatic cleaning and AI-assisted cleanup.
 
 import re
 import logging
+import json
+import os
 from typing import Optional, Tuple
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+# #region agent log
+def _debug_log_artifact(location: str, message: str, data: dict, hypothesis_id: str):
+    """Write debug log entry to debug.log file"""
+    try:
+        log_path = os.path.join(os.path.dirname(__file__), '..', '..', '.cursor', 'debug.log')
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+        entry = {
+            "location": location,
+            "message": message,
+            "data": data,
+            "timestamp": datetime.now().isoformat(),
+            "sessionId": "debug-session",
+            "hypothesisId": hypothesis_id
+        }
+        with open(log_path, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(entry) + '\n')
+    except Exception:
+        pass
+# #endregion
 
 
 class ArtifactCleaner:
@@ -27,6 +50,15 @@ class ArtifactCleaner:
             return content
         
         original_length = len(content)
+        
+        # #region agent log
+        _debug_log_artifact(
+            "artifact_cleaner.py:clean_mermaid:entry",
+            "Mermaid cleaning started",
+            {"contentLength": original_length, "contentPreview": content[:500]},
+            "H2"
+        )
+        # #endregion
         
         # Step 1: Try to extract from markdown code blocks
         mermaid_pattern = r'```(?:mermaid)?\s*\n(.*?)```'
@@ -145,6 +177,15 @@ class ArtifactCleaner:
         # Threshold of 10+ chars to reduce log spam from minor cleanups
         if chars_removed >= 10:
             logger.info(f"🧹 [CLEANER] Cleaned Mermaid: removed {chars_removed} chars")
+        
+        # #region agent log
+        _debug_log_artifact(
+            "artifact_cleaner.py:clean_mermaid:exit",
+            "Mermaid cleaning complete",
+            {"originalLength": original_length, "cleanedLength": len(content), "charsRemoved": chars_removed, "cleanedContent": content[:800]},
+            "H2"
+        )
+        # #endregion
         
         return content
     
@@ -299,18 +340,39 @@ class ArtifactCleaner:
         if not content:
             return content
         
+        # #region agent log
+        _debug_log_artifact(
+            "artifact_cleaner.py:clean_artifact:entry",
+            "Artifact cleaning requested",
+            {"artifactType": artifact_type, "contentLength": len(content), "rawPreview": content[:300]},
+            "H2"
+        )
+        # #endregion
+        
+        result = content
         if artifact_type.startswith("mermaid_"):
-            return ArtifactCleaner.clean_mermaid(content)
+            result = ArtifactCleaner.clean_mermaid(content)
         elif artifact_type.startswith("html_") or artifact_type in ["dev_visual_prototype", "html_prototype"]:
-            return ArtifactCleaner.clean_html(content)
+            result = ArtifactCleaner.clean_html(content)
         elif artifact_type == "code_prototype":
-            return ArtifactCleaner.clean_code(content)
+            result = ArtifactCleaner.clean_code(content)
         elif artifact_type == "api_docs":
             # API docs can be markdown, minimal cleaning
-            return content.strip()
+            result = content.strip()
         else:
             # Default: just strip whitespace
-            return content.strip()
+            result = content.strip()
+        
+        # #region agent log
+        _debug_log_artifact(
+            "artifact_cleaner.py:clean_artifact:exit",
+            "Artifact cleaning complete",
+            {"artifactType": artifact_type, "resultLength": len(result), "cleanedPreview": result[:300]},
+            "H2"
+        )
+        # #endregion
+        
+        return result
 
 
 # Global singleton

@@ -17,6 +17,10 @@ import { ClassAdapter } from './classAdapter'
 export function getAdapterForDiagramType(diagramType: string): BaseDiagramAdapter {
   const type = diagramType.toLowerCase().replace('mermaid_', '').replace('html_', '')
 
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/dfc1763a-e24e-49d7-baae-a7a908b307cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'diagrams/index.ts:getAdapterForDiagramType',message:'Adapter selection',data:{originalType:diagramType,normalizedType:type},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
+  // #endregion
+
   switch (type) {
     case 'flowchart':
     case 'flow':
@@ -45,6 +49,9 @@ export function getAdapterForDiagramType(diagramType: string): BaseDiagramAdapte
 
     // Default to flowchart adapter for unsupported types
     default:
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/dfc1763a-e24e-49d7-baae-a7a908b307cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'diagrams/index.ts:getAdapterForDiagramType:fallback',message:'UNSUPPORTED TYPE - using FlowchartAdapter fallback',data:{originalType:diagramType,normalizedType:type},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
       console.warn(`No specific adapter for ${diagramType}, using FlowchartAdapter`)
       return new FlowchartAdapter()
   }

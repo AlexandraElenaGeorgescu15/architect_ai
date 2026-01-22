@@ -235,6 +235,10 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
       return
     }
 
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/dfc1763a-e24e-49d7-baae-a7a908b307cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'EnhancedDiagramEditor.tsx:parseAndLoadDiagram:entry',message:'Parse attempt started',data:{diagramType,codeLength:code.length,codePreview:code.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
+    // #endregion
+
     try {
       setIsSyncing(true)
 
@@ -248,6 +252,10 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
           cleanedCode = (adapter as any).cleanMermaidCode(code)
         }
         
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/dfc1763a-e24e-49d7-baae-a7a908b307cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'EnhancedDiagramEditor.tsx:parseAndLoadDiagram:afterClean',message:'After code cleaning',data:{diagramType,originalLength:code.length,cleanedLength:cleanedCode?.length||0,cleanedPreview:cleanedCode?.substring(0,200)||'EMPTY'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
+        // #endregion
+        
         if (!cleanedCode || !cleanedCode.trim()) {
           console.warn('parseAndLoadDiagram: Code became empty after cleaning')
           addNotification('warning', 'Diagram code is empty after cleaning')
@@ -255,6 +263,10 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
         }
         
         const parsed = adapter.parseFromMermaid(cleanedCode)
+
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/dfc1763a-e24e-49d7-baae-a7a908b307cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'EnhancedDiagramEditor.tsx:parseAndLoadDiagram:afterParse',message:'After parseFromMermaid',data:{diagramType,nodesFound:parsed.nodes.length,edgesFound:parsed.edges?.length||0,nodeIds:parsed.nodes.map(n=>n.id).slice(0,10)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
+        // #endregion
 
         if (parsed.nodes.length > 0) {
           // Convert to React Flow format with callbacks
@@ -273,10 +285,16 @@ export default function EnhancedDiagramEditor({ selectedArtifactId: propSelected
           addNotification('success', `Loaded ${parsed.nodes.length} nodes (rule-based parsing)`)
           return // Success with rule-based parsing
         } else {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/dfc1763a-e24e-49d7-baae-a7a908b307cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'EnhancedDiagramEditor.tsx:parseAndLoadDiagram:zeroNodes',message:'PARSE FAILED - 0 nodes found',data:{diagramType,cleanedCode:cleanedCode.substring(0,500)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
+          // #endregion
           console.warn('Rule-based parsing returned 0 nodes for:', cleanedCode.substring(0, 100))
           addNotification('warning', 'Could not parse diagram - no nodes found')
         }
       } catch (ruleError) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/dfc1763a-e24e-49d7-baae-a7a908b307cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'EnhancedDiagramEditor.tsx:parseAndLoadDiagram:ruleError',message:'PARSE EXCEPTION',data:{diagramType,error:ruleError instanceof Error ? ruleError.message : String(ruleError)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
+        // #endregion
         console.error('Rule-based parsing failed:', ruleError)
         addNotification('error', `Parsing failed: ${ruleError instanceof Error ? ruleError.message : 'Unknown error'}`)
       }

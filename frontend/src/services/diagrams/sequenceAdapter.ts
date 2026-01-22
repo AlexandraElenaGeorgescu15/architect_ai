@@ -11,6 +11,10 @@ export class SequenceAdapter extends BaseDiagramAdapter {
     const nodes: ReactFlowNode[] = []
     const edges: ReactFlowEdge[] = []
 
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/dfc1763a-e24e-49d7-baae-a7a908b307cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sequenceAdapter.ts:parseFromMermaid',message:'SequenceAdapter parsing',data:{codeLength:mermaidCode.length,hasSequenceDiagram:mermaidCode.includes('sequenceDiagram'),codePreview:mermaidCode.substring(0,400)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H5'})}).catch(()=>{});
+    // #endregion
+
     // Extract participants
     const participantRegex = /participant\s+(\w+)(?:\s+as\s+(.+))?/g
     const participantMatches = mermaidCode.matchAll(participantRegex)

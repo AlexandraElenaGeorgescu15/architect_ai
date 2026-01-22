@@ -84,6 +84,10 @@ export class ERDAdapter extends BaseDiagramAdapter {
     // Clean the code first
     const cleanCode = this.cleanMermaidCode(mermaidCode)
 
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/dfc1763a-e24e-49d7-baae-a7a908b307cd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'erdAdapter.ts:parseFromMermaid',message:'ERDAdapter parsing',data:{codeLength:cleanCode.length,hasErDiagram:cleanCode.includes('erDiagram'),codePreview:cleanCode.substring(0,400)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
+    // #endregion
+
     // Extract entities with properties
     // Match: EntityName { ... } (handles both standard and converted CLASS syntax)
     const entityRegex = /^[ \t]*(\w+)\s*\{([^}]*)\}/gms
