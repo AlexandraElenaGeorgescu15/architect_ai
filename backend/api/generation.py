@@ -591,6 +591,15 @@ async def update_artifact(
         if not artifact_type or artifact_type == "unknown":
             artifact_type = "unknown"
         
+        # BUGFIX: Preserve folder_id from previous version
+        # This ensures artifacts remain associated with their folder after manual edits
+        previous_folder_id = None
+        if artifact_id in version_service.versions:
+            versions = version_service.versions[artifact_id]
+            if versions:
+                previous_metadata = versions[-1].get("metadata", {})
+                previous_folder_id = previous_metadata.get("folder_id")
+        
         version_service.create_version(
             artifact_id=artifact_id,
             artifact_type=artifact_type,
@@ -598,6 +607,8 @@ async def update_artifact(
             metadata={
                 "updated_by": current_user.username,
                 "update_type": "manual_edit",
+                "folder_id": previous_folder_id,  # Preserve folder association
+                "artifact_type": artifact_type,  # Also preserve artifact_type
                 **(body.get("metadata") or {})
             }
         )
@@ -651,7 +662,10 @@ async def list_artifacts(
             artifact = job.get("artifact")
             if artifact:
                 # Get artifact's folder_id (from artifact or job)
+                # If null, assign to default orphan folder
                 artifact_folder_id = artifact.get("folder_id") or job.get("folder_id")
+                if not artifact_folder_id:
+                    artifact_folder_id = DEFAULT_ORPHAN_FOLDER
                 
                 # Filter by folder_id if specified
                 if folder_id and artifact_folder_id != folder_id:
@@ -687,6 +701,9 @@ async def list_artifacts(
                         artifact_dict["attempts"] = artifact["attempts"]
                     artifacts.append(artifact_dict)
     
+    # CONSTANT: Default folder for orphan artifacts (with null folder_id)
+    DEFAULT_ORPHAN_FOLDER = "swap phones"
+    
     # 2. Load artifacts from VersionService (persistent storage)
     try:
         from backend.services.version_service import get_version_service
@@ -702,6 +719,9 @@ async def list_artifacts(
                 for version in versions:
                     metadata = version.get("metadata", {})
                     version_folder_id = metadata.get("folder_id")
+                    # Assign default folder if null
+                    if not version_folder_id:
+                        version_folder_id = DEFAULT_ORPHAN_FOLDER
                     
                     # Filter by folder_id if specified
                     if folder_id and version_folder_id != folder_id:
@@ -721,7 +741,7 @@ async def list_artifacts(
                         "updated_at": version.get("created_at", datetime.now().isoformat()),
                         "version": version.get("version", 1),
                         "is_current": version.get("is_current", False),
-                        "folder_id": version_folder_id,  # Include folder association
+                        "folder_id": version_folder_id,  # Include folder association (defaulted)
                     }
                     # Add optional fields from metadata
                     if "validation_score" in metadata:
@@ -753,6 +773,9 @@ async def list_artifacts(
                 if current_version and artifact_id not in artifact_ids_seen:
                     metadata = current_version.get("metadata", {})
                     version_folder_id = metadata.get("folder_id")
+                    # Assign default folder if null
+                    if not version_folder_id:
+                        version_folder_id = DEFAULT_ORPHAN_FOLDER
                     
                     # Filter by folder_id if specified
                     if folder_id and version_folder_id != folder_id:
@@ -771,7 +794,7 @@ async def list_artifacts(
                         "content": cleaned_content,
                         "created_at": current_version.get("created_at", datetime.now().isoformat()),
                         "updated_at": current_version.get("created_at", datetime.now().isoformat()),
-                        "folder_id": version_folder_id,  # Include folder association
+                        "folder_id": version_folder_id,  # Include folder association (defaulted)
                     }
                     # Add optional fields from metadata
                     if "validation_score" in metadata:
@@ -792,26 +815,33 @@ async def list_artifacts(
         logger.info(f"📋 [GENERATION] Returning {len(artifacts)} artifacts (all versions)")
         return artifacts
     
-    # Group by artifact_type and keep only the latest version per type
-    artifacts_by_type: Dict[str, Dict] = {}
+    # Group by (folder_id + artifact_type) and keep only the latest version per type per folder
+    # FIX: Previously only grouped by artifact_type, which meant all folders shared the same artifact
+    # Now each folder gets its own artifact per type
+    artifacts_by_key: Dict[str, Dict] = {}
     for artifact in artifacts:
         artifact_type = artifact.get("type", "unknown")
+        artifact_folder_id = artifact.get("folder_id") or ""  # Use empty string for null folder
         created_at = artifact.get("created_at", "")
         
-        # If we haven't seen this type, or this one is newer, keep it
-        if artifact_type not in artifacts_by_type:
-            artifacts_by_type[artifact_type] = artifact
+        # Create a composite key: folder_id + artifact_type
+        # This ensures each folder can have its own version of each artifact type
+        group_key = f"{artifact_folder_id}::{artifact_type}"
+        
+        # If we haven't seen this key, or this one is newer, keep it
+        if group_key not in artifacts_by_key:
+            artifacts_by_key[group_key] = artifact
         else:
-            existing = artifacts_by_type[artifact_type]
+            existing = artifacts_by_key[group_key]
             existing_date = existing.get("created_at", "")
             if created_at > existing_date:
-                artifacts_by_type[artifact_type] = artifact
+                artifacts_by_key[group_key] = artifact
     
     # Convert back to list and sort by created_at descending (newest first)
-    latest_artifacts = list(artifacts_by_type.values())
+    latest_artifacts = list(artifacts_by_key.values())
     latest_artifacts.sort(key=lambda x: x.get("created_at", ""), reverse=True)
     
-    logger.info(f"📋 [GENERATION] Returning {len(latest_artifacts)} artifacts (latest version per type, from {len(artifacts)} total)")
+    logger.info(f"📋 [GENERATION] Returning {len(latest_artifacts)} artifacts (latest version per type per folder, from {len(artifacts)} total)")
     return latest_artifacts
 
 

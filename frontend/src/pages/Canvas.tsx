@@ -96,19 +96,24 @@ export default function Canvas() {
 
   useEffect(() => {
     // FIXED: Sync selectedArtifactId with actual selection to prevent stale ID issues
+    // CRITICAL: Only auto-select on initial mount, NOT when user manually selects
     
     // Case 1: ID is set but artifact not found (stale ID) - sync with actual selection
     if (selectedArtifactId && selectedArtifact && selectedArtifact.id !== selectedArtifactId) {
       console.debug('[Canvas] Syncing stale ID to actual artifact:', selectedArtifact.id)
       setSelectedArtifactId(selectedArtifact.id)
+      // Clear targetType to prevent it from overriding user selections
+      setTargetType(null)
       return
     }
     
-    // Case 2: No ID but have a target type - find by type
+    // Case 2: No ID but have a target type - find by type (ONLY on initial load)
     if (!selectedArtifactId && targetType) {
       const latestOfType = diagramArtifacts.find(a => a.type === targetType)
       if (latestOfType) {
         setSelectedArtifactId(latestOfType.id)
+        // Clear targetType after using it to prevent re-triggering
+        setTargetType(null)
         return
       }
     }
@@ -164,6 +169,7 @@ export default function Canvas() {
                   key={artifact.id}
                   onClick={() => {
                     setSelectedArtifactId(artifact.id)
+                    setTargetType(null)  // Clear targetType to prevent interference
                     setShowSelector(false)
                   }}
                   className={`w-full px-4 py-2 text-left text-sm hover:bg-primary/10 transition-colors ${

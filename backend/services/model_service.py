@@ -921,7 +921,18 @@ class ModelService:
         except Exception as e:
             logger.debug(f"Could not load base model mappings: {e}")
         
-        # STEP 4: Universal fallback - any available local model (Ollama or HuggingFace)
+        # STEP 4: AUTO-ADD DOWNLOADED HUGGINGFACE MODELS
+        # This ensures downloaded HuggingFace models are automatically available
+        # even if not explicitly configured in routing
+        for model_id, model_info in self.models.items():
+            if model_info.provider == "huggingface" and model_info.status in ["available", "downloaded"]:
+                # Check if this HuggingFace model is usable via transformers
+                if model_info.metadata.get("usable_via_transformers", False):
+                    if model_id not in models:
+                        models.append(model_id)
+                        logger.info(f"✅ [MODEL_SERVICE] Auto-added downloaded HuggingFace model: {model_id}")
+        
+        # STEP 5: Universal fallback - any available local model (Ollama or HuggingFace)
         # This ensures ANY model can work with ANY artifact
         if not models:
             # Get all available local models (Ollama and HuggingFace)

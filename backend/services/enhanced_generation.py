@@ -240,6 +240,10 @@ class EnhancedGenerationService:
         
         # Step 1: Try local models (with retry logic per model)
         logger.info(f"🔄 [ENHANCED_GEN] Starting local model attempts: {len(local_models)} model(s)")
+        
+        # Known cloud providers - anything else with ":" is likely an Ollama model:tag format
+        CLOUD_PROVIDERS = {"gemini", "groq", "openai", "anthropic"}
+        
         for model_idx, model_id in enumerate(local_models):
             # Check if this is a local model (Ollama/HuggingFace) or cloud model
             provider = "ollama"  # default
@@ -248,8 +252,12 @@ class EnhancedGenerationService:
             hf_model_path = None
             
             if ":" in model_id:
-                provider, model_name = model_id.split(":", 1)
-                if provider == "huggingface":
+                prefix, rest = model_id.split(":", 1)
+                
+                # Check if the prefix is a known provider
+                if prefix == "huggingface":
+                    provider = "huggingface"
+                    model_name = rest
                     # Extract HuggingFace model ID
                     hf_model_id = model_name.replace("-", "/")  # Convert back from registry format
                     # Try to get model path from registry
@@ -268,9 +276,22 @@ class EnhancedGenerationService:
                                 hf_model_path = model_info.metadata.get("path") or model_info.metadata.get("actual_file_path")
                     except Exception as e:
                         logger.debug(f"Could not get HF model path: {e}")
+                elif prefix == "ollama":
+                    # Explicit ollama:model:tag format
+                    provider = "ollama"
+                    model_name = rest
+                elif prefix.lower() in CLOUD_PROVIDERS:
+                    # This is a cloud model (gemini:xxx, groq:xxx, etc.)
+                    provider = prefix.lower()
+                    model_name = rest
+                else:
+                    # Assume Ollama model:tag format (e.g., codellama:7b-instruct-q4_K_M)
+                    # The full model_id IS the Ollama model name
+                    provider = "ollama"
+                    model_name = model_id  # Keep the full name including tag
             
             # Skip cloud models in local phase
-            if provider not in ["ollama", "huggingface"]:
+            if provider in CLOUD_PROVIDERS:
                 logger.debug(f"⏭️ [ENHANCED_GEN] Skipping cloud model in local phase: {model_id}")
                 continue
             
@@ -605,7 +626,7 @@ class EnhancedGenerationService:
                                         logger.debug(f"⚠️ [ENHANCED_GEN] Model {model_name} scored {score:.1f} but not promoting (already primary or score < 80)")
                                 else:
                                     # Create new routing with this successful model
-                                    from backend.core.config import settings
+                                    # Note: settings is imported at module level
                                     routing = ModelRoutingDTO(
                                         artifact_type=artifact_type,
                                         primary_model=model_id,
@@ -1078,9 +1099,11 @@ Follow the repository's coding style and test patterns. Make tests realistic and
                     if (provider, model_name) not in cloud_providers:
                         _add_cloud_provider_if_valid(model_id)
         
-        # Add default cloud models if routing didn't provide any
+        # Add default cloud models ONLY if routing didn't provide any cloud models
+        # This respects the user's model mapping configuration
         # Updated Jan 2026 - Use latest stable models (Official Google AI)
         if not cloud_providers:
+            logger.info("📋 [CLOUD_FALLBACK] No cloud models in routing, using defaults")
             if settings.google_api_key or settings.gemini_api_key:
                 cloud_providers.append(("gemini", "gemini-2.5-flash"))  # Best price-performance
             if settings.groq_api_key:
@@ -1089,6 +1112,8 @@ Follow the repository's coding style and test patterns. Make tests realistic and
                 cloud_providers.append(("openai", "gpt-4o"))  # Latest GPT-4o
             if settings.anthropic_api_key:
                 cloud_providers.append(("anthropic", "claude-sonnet-4-20250514"))  # Claude 4
+        
+        logger.info(f"☁️ [CLOUD_FALLBACK] Cloud providers to try: {cloud_providers}")
         
         for idx, (provider, model_name) in enumerate(cloud_providers):
             try:

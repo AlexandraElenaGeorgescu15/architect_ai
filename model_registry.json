@@ -9,8 +9,7 @@
     "is_trained": false,
     "base_model": null,
     "metadata": {
-      "api_key_configured": true,
-      "description": "Most intelligent model for multimodal understanding"
+      "api_key_configured": true
     }
   },
   "gemini:gemini-3-flash-preview": {
@@ -23,8 +22,7 @@
     "is_trained": false,
     "base_model": null,
     "metadata": {
-      "api_key_configured": true,
-      "description": "Most balanced model for speed and intelligence"
+      "api_key_configured": true
     }
   },
   "gemini:gemini-2.5-pro": {
@@ -37,8 +35,7 @@
     "is_trained": false,
     "base_model": null,
     "metadata": {
-      "api_key_configured": true,
-      "description": "State-of-the-art thinking model for complex problems"
+      "api_key_configured": true
     }
   },
   "gemini:gemini-2.5-flash": {
@@ -51,8 +48,7 @@
     "is_trained": false,
     "base_model": null,
     "metadata": {
-      "api_key_configured": true,
-      "description": "Best model for price-performance, ideal for most tasks"
+      "api_key_configured": true
     }
   },
   "gemini:gemini-2.5-flash-lite": {
@@ -65,8 +61,7 @@
     "is_trained": false,
     "base_model": null,
     "metadata": {
-      "api_key_configured": true,
-      "description": "Fastest flash model optimized for cost-efficiency"
+      "api_key_configured": true
     }
   },
   "gemini:gemini-2.0-flash": {
@@ -79,8 +74,7 @@
     "is_trained": false,
     "base_model": null,
     "metadata": {
-      "api_key_configured": true,
-      "description": "Previous generation workhorse model"
+      "api_key_configured": true
     }
   },
   "groq:llama-3.3-70b-versatile": {
@@ -265,6 +259,34 @@
       "api_key_configured": false
     }
   },
+  "ollama:vicoder-html-32b:latest": {
+    "id": "ollama:vicoder-html-32b:latest",
+    "name": "vicoder-html-32b:latest",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 7932161984,
+      "created_at": "2026-01-22T08:50:45.6718923+02:00"
+    }
+  },
+  "ollama:mermaid-mistral-22b:latest": {
+    "id": "ollama:mermaid-mistral-22b:latest",
+    "name": "mermaid-mistral-22b:latest",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 5267139712,
+      "created_at": "2026-01-22T08:48:31.5968641+02:00"
+    }
+  },
   "ollama:llama3:latest": {
     "id": "ollama:llama3:latest",
     "name": "llama3:latest",
@@ -274,29 +296,10 @@
     "status": "available",
     "is_trained": false,
     "base_model": null,
-    "metadata": {}
-  },
-  "ollama:codellama:7b-instruct": {
-    "id": "ollama:codellama:7b-instruct",
-    "name": "codellama:7b-instruct",
-    "provider": "ollama",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "available",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {}
-  },
-  "ollama:mistral:7b-instruct": {
-    "id": "ollama:mistral:7b-instruct",
-    "name": "mistral:7b-instruct",
-    "provider": "ollama",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "available",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {}
+    "metadata": {
+      "size": 4661224676,
+      "created_at": "2025-12-19T15:26:47.86752+02:00"
+    }
   },
   "ollama:dolphin-llama3:latest": {
     "id": "ollama:dolphin-llama3:latest",
@@ -307,54 +310,9 @@
     "status": "available",
     "is_trained": false,
     "base_model": null,
-    "metadata": {}
-  },
-  "huggingface:microsoft-Phi-4-mini-instruct": {
-    "id": "huggingface:microsoft-Phi-4-mini-instruct",
-    "name": "microsoft/Phi-4-mini-instruct (HuggingFace)",
-    "provider": "huggingface",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "downloaded",
-    "is_trained": false,
-    "base_model": null,
     "metadata": {
-      "huggingface_id": "microsoft/Phi-4-mini-instruct",
-      "path": "models\\huggingface\\microsoft_Phi-4-mini-instruct",
-      "actual_file_path": null,
-      "usable_via_transformers": true
-    }
-  },
-  "huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF": {
-    "id": "huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF",
-    "name": "mradermacher/BlackSheep-MermaidMistral-22B-i1-GGUF (HuggingFace)",
-    "provider": "huggingface",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "downloaded",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {
-      "huggingface_id": "mradermacher/BlackSheep-MermaidMistral-22B-i1-GGUF",
-      "path": "models\\huggingface\\mradermacher_BlackSheep-MermaidMistral-22B-i1-GGUF",
-      "actual_file_path": null,
-      "usable_via_transformers": true
-    }
-  },
-  "huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF": {
-    "id": "huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF",
-    "name": "mradermacher/ViCoder-html-32B-preview-i1-GGUF (HuggingFace)",
-    "provider": "huggingface",
-    "size_gb": null,
-    "vram_required_gb": null,
-    "status": "downloaded",
-    "is_trained": false,
-    "base_model": null,
-    "metadata": {
-      "huggingface_id": "mradermacher/ViCoder-html-32B-preview-i1-GGUF",
-      "path": "models\\huggingface\\mradermacher_ViCoder-html-32B-preview-i1-GGUF",
-      "actual_file_path": "models\\huggingface\\mradermacher_ViCoder-html-32B-preview-i1-GGUF\\models--mradermacher--ViCoder-html-32B-preview-i1-GGUF\\snapshots\\87ddaa1b8ad1d5bacff9476e5a538d98ebdb91ec\\ViCoder-html-32B-preview.i1-IQ1_M.gguf",
-      "usable_via_transformers": true
+      "size": 4661235994,
+      "created_at": "2025-12-11T17:56:33.7412807+02:00"
     }
   },
   "ollama:deepseek-coder:6.7b-instruct-q4_K_M": {
@@ -411,6 +369,34 @@
     "metadata": {
       "size": 8988124298,
       "created_at": "2025-11-10T15:30:19.6999558+02:00"
+    }
+  },
+  "ollama:mistral:7b-instruct": {
+    "id": "ollama:mistral:7b-instruct",
+    "name": "mistral:7b-instruct",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 4372824384,
+      "created_at": "2025-11-07T21:07:17.8878757+02:00"
+    }
+  },
+  "ollama:codellama:7b-instruct": {
+    "id": "ollama:codellama:7b-instruct",
+    "name": "codellama:7b-instruct",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "available",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "size": 3825910662,
+      "created_at": "2025-11-07T21:06:37.407377+02:00"
     }
   },
   "ollama:llama3:8b-instruct-q4_K_M": {
@@ -515,6 +501,38 @@
       "usable_via_transformers": true
     }
   },
+  "huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF": {
+    "id": "huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF",
+    "name": "mradermacher/BlackSheep-MermaidMistral-22B-i1-GGUF (HuggingFace)",
+    "provider": "huggingface",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "downloaded",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "huggingface_id": "mradermacher/BlackSheep-MermaidMistral-22B-i1-GGUF",
+      "path": "models\\huggingface\\mradermacher_BlackSheep-MermaidMistral-22B-i1-GGUF",
+      "actual_file_path": null,
+      "usable_via_transformers": true
+    }
+  },
+  "huggingface:microsoft-Phi-4-mini-instruct": {
+    "id": "huggingface:microsoft-Phi-4-mini-instruct",
+    "name": "microsoft/Phi-4-mini-instruct (HuggingFace)",
+    "provider": "huggingface",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "downloaded",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "huggingface_id": "microsoft/Phi-4-mini-instruct",
+      "path": "models\\huggingface\\microsoft_Phi-4-mini-instruct",
+      "actual_file_path": null,
+      "usable_via_transformers": true
+    }
+  },
   "huggingface:zai-org-GLM-4.6": {
     "id": "huggingface:zai-org-GLM-4.6",
     "name": "zai-org/GLM-4.6 (HuggingFace)",
@@ -528,6 +546,22 @@
       "huggingface_id": "zai-org/GLM-4.6",
       "path": "models\\huggingface\\zai-org_GLM-4.6",
       "actual_file_path": "models\\huggingface\\zai-org_GLM-4.6\\models--zai-org--GLM-4.6\\snapshots\\be72194883d968d7923a07e2f61681ea9a2826d1\\config.json",
+      "usable_via_transformers": true
+    }
+  },
+  "huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF": {
+    "id": "huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF",
+    "name": "mradermacher/ViCoder-html-32B-preview-i1-GGUF (HuggingFace)",
+    "provider": "huggingface",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "downloaded",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "huggingface_id": "mradermacher/ViCoder-html-32B-preview-i1-GGUF",
+      "path": "models\\huggingface\\mradermacher_ViCoder-html-32B-preview-i1-GGUF",
+      "actual_file_path": "models\\huggingface\\mradermacher_ViCoder-html-32B-preview-i1-GGUF\\models--mradermacher--ViCoder-html-32B-preview-i1-GGUF\\snapshots\\87ddaa1b8ad1d5bacff9476e5a538d98ebdb91ec\\ViCoder-html-32B-preview.i1-IQ1_M.gguf",
       "usable_via_transformers": true
     }
   }

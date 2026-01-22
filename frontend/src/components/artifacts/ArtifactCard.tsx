@@ -154,15 +154,7 @@ export default function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
             {artifact.type.replace(/_/g, ' ')}
           </h3>
         </div>
-        {artifact.score !== undefined && (
-          <span className={`px-2 py-1 rounded text-xs font-medium ${
-            artifact.score >= 80 ? 'bg-green-500/20 text-green-500' :
-            artifact.score >= 60 ? 'bg-yellow-500/20 text-yellow-500' :
-            'bg-red-500/20 text-red-500'
-          }`}>
-            {artifact.score}%
-          </span>
-        )}
+        {/* Score badge moved to info section below for better organization */}
       </div>
 
       <div className="space-y-2">
@@ -174,21 +166,33 @@ export default function ArtifactCard({ artifact, onClick }: ArtifactCardProps) {
           <span>{new Date(artifact.created_at).toLocaleDateString()}</span>
           <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
         </div>
-        {/* Model and Attempt Info */}
-        {(artifact.model_used || artifact.attempts) && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1 border-t border-border/50">
-            {artifact.model_used && (
-              <span className="px-2 py-0.5 bg-primary/10 text-primary rounded">
-                {artifact.model_used.replace('ollama:', '').replace('huggingface:', '')}
-              </span>
-            )}
-            {artifact.attempts && artifact.attempts.length > 0 && (
-              <span className="text-muted-foreground">
-                Try {artifact.attempts[artifact.attempts.length - 1].retry + 1} of {artifact.attempts.length}
-              </span>
-            )}
-          </div>
-        )}
+        {/* Model, Score, and Attempt Info - Always show section for consistency */}
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground pt-1 border-t border-border/50">
+          {/* Model Used */}
+          <span className={`px-2 py-0.5 rounded ${artifact.model_used ? 'bg-primary/10 text-primary' : 'bg-muted/50 text-muted-foreground'}`}>
+            {artifact.model_used 
+              ? artifact.model_used.replace('ollama:', '').replace('huggingface:', '').replace('gemini:', '')
+              : 'No model info'}
+          </span>
+          
+          {/* Validation Score */}
+          {artifact.score !== undefined && artifact.score !== null && (
+            <span className={`px-2 py-0.5 rounded ${
+              artifact.score >= 80 ? 'bg-green-500/20 text-green-500' :
+              artifact.score >= 60 ? 'bg-yellow-500/20 text-yellow-500' :
+              'bg-red-500/20 text-red-500'
+            }`}>
+              {artifact.score}%
+            </span>
+          )}
+          
+          {/* Attempt Info */}
+          {artifact.attempts && artifact.attempts.length > 0 && (
+            <span className="text-muted-foreground">
+              Try {artifact.attempts[artifact.attempts.length - 1].retry + 1}/{artifact.attempts.length}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Feedback Buttons */}

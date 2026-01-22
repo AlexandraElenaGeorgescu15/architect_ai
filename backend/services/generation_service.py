@@ -516,10 +516,16 @@ class GenerationService:
             # Create artifact object
             # FIX: Use artifact_type as the stable ID (not job_id) for consistent navigation
             # This ensures the ID matches what listArtifacts() returns from version_service
-            logger.info(f"📦 [GEN_SERVICE] Step 6: Creating artifact object (job_id={job_id})")
+            # IMPORTANT: Define folder-specific ID here, BEFORE it's used in artifact_obj
+            if folder_id:
+                artifact_id_for_version = f"{folder_id}::{artifact_type.value}"  # e.g., "swap phones::mermaid_erd"
+            else:
+                artifact_id_for_version = artifact_type.value  # Legacy: e.g., "mermaid_erd"
+            
+            logger.info(f"📦 [GEN_SERVICE] Step 6: Creating artifact object (job_id={job_id}, artifact_id={artifact_id_for_version})")
             artifact_obj = {
-                "id": artifact_type.value,  # STABLE ID: matches version_service and listArtifacts()
-                "artifact_id": artifact_type.value,  # Also update artifact_id for consistency
+                "id": artifact_id_for_version,  # Folder-specific ID: matches version_service and listArtifacts()
+                "artifact_id": artifact_id_for_version,  # Also update artifact_id for consistency
                 "job_id": job_id,  # Keep job_id separate for tracking
                 "artifact_type": artifact_type.value,
                 "content": artifact_content,
@@ -553,10 +559,7 @@ class GenerationService:
             logger.info(f"✅ [GEN_SERVICE] Job status updated successfully: job_id={job_id}")
             
             # Save to VersionService for persistent storage
-            # Use artifact_type as the STABLE identifier for versioning
-            # This ensures all artifacts of the same type share a version history (v1, v2, v3, etc.)
-            # Instead of each generation being a separate artifact with v1 only
-            artifact_id_for_version = artifact_type.value  # STABLE ID: e.g., "mermaid_erd"
+            # artifact_id_for_version is already defined above with folder-specific ID
             try:
                 from backend.services.version_service import get_version_service
                 version_service = get_version_service()
@@ -589,7 +592,7 @@ class GenerationService:
                     "status": GenerationStatus.COMPLETED.value,
                     "progress": 100.0,
                     "artifact": {
-                        "id": artifact_type.value,  # STABLE ID for consistent navigation
+                        "id": artifact_id_for_version,  # Folder-specific ID for consistent navigation
                         "artifact_type": artifact_type.value,
                         "content": artifact_content,
                         "validation": {
@@ -608,7 +611,7 @@ class GenerationService:
                     "job_id": job_id,
                     "status": GenerationStatus.COMPLETED.value,
                     "artifact": {
-                        "id": artifact_type.value,  # STABLE ID for consistent navigation
+                        "id": artifact_id_for_version,  # Folder-specific ID for consistent navigation
                         "artifact_type": artifact_type.value,
                         "content": artifact_content,
                         "validation": {

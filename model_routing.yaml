@@ -1,318 +1,406 @@
+# Model Routing Configuration
+# Updated: 2026-01-22
+# FIXED: Changed from unavailable HuggingFace GGUF models to available Ollama models
+# 
+# Priority: Primary (Ollama local) -> Fallback (Ollama/Cloud)
+# 
+# Available Ollama Models:
+#   - llama3:latest, llama3:8b-instruct-q4_K_M
+#   - dolphin-llama3:latest
+#   - codellama:7b-instruct, codellama:7b-instruct-q4_K_M
+#   - mistral:7b-instruct, mistral:7b-instruct-q4_K_M, mistral-nemo:12b-instruct-2407-q4_K_M
+#   - deepseek-coder:6.7b-instruct-q4_K_M
+#   - qwen2.5-coder:7b-instruct-q4_K_M, qwen2.5-coder:14b-instruct-q4_K_M
+
+# =============================================================================
+# API DOCUMENTATION
+# =============================================================================
 api_docs:
   enabled: true
+  primary_model: ollama:deepseek-coder:6.7b-instruct-q4_K_M
   fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
+  - ollama:codellama:7b-instruct-q4_K_M
   - gemini:gemini-2.5-flash
-  primary_model: ollama:dolphin-llama3:latest
-backlog:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: ollama:dolphin-llama3:latest
+
+# =============================================================================
+# CODE ARTIFACTS
+# =============================================================================
 code_prototype:
   enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
   primary_model: ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  fallback_models:
+  - ollama:qwen2.5-coder:7b-instruct-q4_K_M
+  - ollama:codellama:7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
 dev_visual_prototype:
   enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
   fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
   - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-estimations:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: ollama:mistral-nemo:12b-instruct-2407-q4_K_M
-feature_scoring:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: ollama:mistral-nemo:12b-instruct-2407-q4_K_M
-html_api_sequence:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_architecture:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_c4_component:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_c4_container:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_c4_context:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_c4_deployment:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_class:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_component:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_data_flow:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_erd:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_flowchart:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_gantt:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_git_graph:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_journey:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_mindmap:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_pie:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_sequence:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_state:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_system_overview:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_timeline:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_uml:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-html_user_flow:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-ViCoder-html-32B-preview-i1-GGUF
-jira:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: ollama:dolphin-llama3:latest
-mermaid_api_sequence:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-mermaid_architecture:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-mermaid_c4_component:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-mermaid_c4_container:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-mermaid_c4_context:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-mermaid_c4_deployment:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-mermaid_class:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-mermaid_component:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-mermaid_data_flow:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
+
+# =============================================================================
+# MERMAID DIAGRAMS (ERD, Flowchart, Sequence, etc.)
+# Best models for structured diagram generation
+# =============================================================================
 mermaid_erd:
   enabled: true
+  primary_model: ollama:mermaid-mistral-22b:latest
   fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
+  - ollama:codellama:7b-instruct-q4_K_M
+  - ollama:llama3:8b-instruct-q4_K_M
   - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
+
 mermaid_flowchart:
   enabled: true
+  primary_model: ollama:mermaid-mistral-22b:latest
   fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
+  - ollama:codellama:7b-instruct-q4_K_M
   - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-mermaid_gantt:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-mermaid_git_graph:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-mermaid_journey:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-mermaid_mindmap:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-mermaid_pie:
-  enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
+
 mermaid_sequence:
   enabled: true
+  primary_model: ollama:mermaid-mistral-22b:latest
   fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
+  - ollama:codellama:7b-instruct-q4_K_M
   - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
+
+mermaid_class:
+  enabled: true
+  primary_model: ollama:mermaid-mistral-22b:latest
+  fallback_models:
+  - ollama:codellama:7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
 mermaid_state:
   enabled: true
+  primary_model: ollama:codellama:7b-instruct-q4_K_M
   fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
+  - ollama:llama3:8b-instruct-q4_K_M
   - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-mermaid_system_overview:
+
+mermaid_architecture:
   enabled: true
+  primary_model: ollama:llama3:8b-instruct-q4_K_M
   fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
+  - ollama:codellama:7b-instruct-q4_K_M
   - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-mermaid_timeline:
+
+mermaid_api_sequence:
   enabled: true
+  primary_model: ollama:codellama:7b-instruct-q4_K_M
   fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
+  - ollama:llama3:8b-instruct-q4_K_M
   - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-mermaid_uml:
+
+mermaid_data_flow:
   enabled: true
+  primary_model: ollama:llama3:8b-instruct-q4_K_M
   fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
+  - ollama:codellama:7b-instruct-q4_K_M
   - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
+
 mermaid_user_flow:
   enabled: true
+  primary_model: ollama:llama3:8b-instruct-q4_K_M
   fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
+  - ollama:codellama:7b-instruct-q4_K_M
   - gemini:gemini-2.5-flash
-  primary_model: huggingface:mradermacher-BlackSheep-MermaidMistral-22B-i1-GGUF
-personas:
+
+mermaid_component:
   enabled: true
+  primary_model: ollama:codellama:7b-instruct-q4_K_M
   fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
+  - ollama:llama3:8b-instruct-q4_K_M
   - gemini:gemini-2.5-flash
+
+mermaid_system_overview:
+  enabled: true
+  primary_model: ollama:llama3:8b-instruct-q4_K_M
+  fallback_models:
+  - ollama:codellama:7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+mermaid_uml:
+  enabled: true
+  primary_model: ollama:codellama:7b-instruct-q4_K_M
+  fallback_models:
+  - ollama:llama3:8b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+# Mermaid: Other diagram types
+mermaid_gantt:
+  enabled: true
+  primary_model: ollama:llama3:8b-instruct-q4_K_M
+  fallback_models:
+  - ollama:codellama:7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+mermaid_pie:
+  enabled: true
+  primary_model: ollama:llama3:8b-instruct-q4_K_M
+  fallback_models:
+  - ollama:codellama:7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+mermaid_journey:
+  enabled: true
+  primary_model: ollama:llama3:8b-instruct-q4_K_M
+  fallback_models:
+  - ollama:codellama:7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+mermaid_mindmap:
+  enabled: true
+  primary_model: ollama:llama3:8b-instruct-q4_K_M
+  fallback_models:
+  - ollama:codellama:7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+mermaid_timeline:
+  enabled: true
+  primary_model: ollama:llama3:8b-instruct-q4_K_M
+  fallback_models:
+  - ollama:codellama:7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+mermaid_git_graph:
+  enabled: true
+  primary_model: ollama:codellama:7b-instruct-q4_K_M
+  fallback_models:
+  - ollama:llama3:8b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+# Mermaid: C4 Diagrams
+mermaid_c4_context:
+  enabled: true
+  primary_model: ollama:llama3:8b-instruct-q4_K_M
+  fallback_models:
+  - ollama:codellama:7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+mermaid_c4_container:
+  enabled: true
+  primary_model: ollama:llama3:8b-instruct-q4_K_M
+  fallback_models:
+  - ollama:codellama:7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+mermaid_c4_component:
+  enabled: true
+  primary_model: ollama:codellama:7b-instruct-q4_K_M
+  fallback_models:
+  - ollama:llama3:8b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+mermaid_c4_deployment:
+  enabled: true
+  primary_model: ollama:llama3:8b-instruct-q4_K_M
+  fallback_models:
+  - ollama:codellama:7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+# =============================================================================
+# HTML DIAGRAMS
+# Uses code-focused models for better HTML generation
+# =============================================================================
+html_erd:
+  enabled: true
+  primary_model: ollama:vicoder-html-32b:latest
+  fallback_models:
+  - ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_flowchart:
+  enabled: true
+  primary_model: ollama:vicoder-html-32b:latest
+  fallback_models:
+  - ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_sequence:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_class:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_state:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_architecture:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_api_sequence:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_data_flow:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_user_flow:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_component:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_system_overview:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_uml:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_gantt:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_pie:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_journey:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_mindmap:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_timeline:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_git_graph:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_c4_context:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_c4_container:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_c4_component:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+html_c4_deployment:
+  enabled: true
+  primary_model: ollama:qwen2.5-coder:14b-instruct-q4_K_M
+  fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  - gemini:gemini-2.5-flash
+
+# =============================================================================
+# PM (Product Management) ARTIFACTS
+# Uses general-purpose models for text generation
+# =============================================================================
+jira:
+  enabled: true
   primary_model: ollama:dolphin-llama3:latest
+  fallback_models:
+  - ollama:llama3:latest
+  - gemini:gemini-2.5-flash
+
 workflows:
   enabled: true
-  fallback_models:
-  - huggingface:microsoft-Phi-4-mini-instruct
-  - gemini:gemini-2.5-flash
   primary_model: ollama:dolphin-llama3:latest
+  fallback_models:
+  - ollama:llama3:latest
+  - gemini:gemini-2.5-flash
+
+backlog:
+  enabled: true
+  primary_model: ollama:dolphin-llama3:latest
+  fallback_models:
+  - ollama:llama3:latest
+  - gemini:gemini-2.5-flash
+
+personas:
+  enabled: true
+  primary_model: ollama:dolphin-llama3:latest
+  fallback_models:
+  - ollama:llama3:latest
+  - gemini:gemini-2.5-flash
+
+estimations:
+  enabled: true
+  primary_model: ollama:mistral-nemo:12b-instruct-2407-q4_K_M
+  fallback_models:
+  - ollama:dolphin-llama3:latest
+  - gemini:gemini-2.5-flash
+
+feature_scoring:
+  enabled: true
+  primary_model: ollama:mistral-nemo:12b-instruct-2407-q4_K_M
+  fallback_models:
+  - ollama:dolphin-llama3:latest
+  - gemini:gemini-2.5-flash
