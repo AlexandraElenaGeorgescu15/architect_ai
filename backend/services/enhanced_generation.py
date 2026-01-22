@@ -7,7 +7,7 @@ This service properly uses model routing and implements the user's requirements.
 
 import sys
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple, Union
 import logging
 from datetime import datetime
 import asyncio
@@ -71,7 +71,7 @@ class EnhancedGenerationService:
     
     async def generate_with_pipeline(
         self,
-        artifact_type: ArtifactType,
+        artifact_type: Union[ArtifactType, str],
         meeting_notes: str,
         context_id: Optional[str] = None,
         options: Optional[Dict[str, Any]] = None,
@@ -81,7 +81,7 @@ class EnhancedGenerationService:
         Generate artifact using proper pipeline.
         
         Args:
-            artifact_type: Type of artifact to generate
+            artifact_type: Type of artifact to generate (enum or custom type string)
             meeting_notes: User requirements
             context_id: Optional pre-built context
             options: Generation options
@@ -99,19 +99,39 @@ class EnhancedGenerationService:
         if options:
             opts.update(options)
         
-        logger.info(f"🚀 [ENHANCED_GEN] Starting generation pipeline: artifact_type={artifact_type.value}, "
+        # Handle both enum and string artifact types
+        custom_prompt_template = None
+        if isinstance(artifact_type, ArtifactType):
+            artifact_type_str = artifact_type.value
+            is_custom_type = False
+        else:
+            artifact_type_str = str(artifact_type)
+            is_custom_type = True
+            # Load custom artifact type info for prompt template
+            try:
+                from backend.services.custom_artifact_service import get_service as get_custom_service
+                custom_service = get_custom_service()
+                custom_type_info = custom_service.get_type(artifact_type_str)
+                if custom_type_info:
+                    custom_prompt_template = custom_type_info.prompt_template
+                    logger.info(f"📝 [ENHANCED_GEN] Loaded custom prompt template for {artifact_type_str}")
+            except Exception as e:
+                logger.warning(f"⚠️ [ENHANCED_GEN] Could not load custom type info: {e}")
+        
+        logger.info(f"🚀 [ENHANCED_GEN] Starting generation pipeline: artifact_type={artifact_type_str}, "
+                   f"is_custom={is_custom_type}, has_custom_template={bool(custom_prompt_template)}, "
                    f"meeting_notes_length={len(meeting_notes)}, context_id={context_id}")
         
         # Record metrics
-        metrics.increment("generation_requests_total", tags={"artifact_type": artifact_type.value})
+        metrics.increment("generation_requests_total", tags={"artifact_type": artifact_type_str})
         
         # Progress: Building context (10%)
         if progress_callback:
             await progress_callback(10.0, "Building context from repository...")
         
         # Build context if not provided (with artifact-specific RAG targeting)
-        logger.info(f"🏗️ [ENHANCED_GEN] Building context (artifact_type={artifact_type.value})")
-        with metrics.timer("context_building", tags={"artifact_type": artifact_type.value}):
+        logger.info(f"🏗️ [ENHANCED_GEN] Building context (artifact_type={artifact_type_str})")
+        with metrics.timer("context_building", tags={"artifact_type": artifact_type_str}):
             if context_id:
                 logger.info(f"♻️ [ENHANCED_GEN] Attempting to use pre-built context: {context_id}")
                 # Try to get context by ID
@@ -125,7 +145,7 @@ class EnhancedGenerationService:
                         include_rag=True,
                         include_kg=True,
                         include_patterns=True,
-                        artifact_type=artifact_type.value,  # Pass artifact type for targeted RAG
+                        artifact_type=artifact_type_str,  # Pass artifact type for targeted RAG
                         force_refresh=True  # Always get fresh context for generation
                     )
                     logger.info(f"✅ [ENHANCED_GEN] New context built successfully")
@@ -138,7 +158,7 @@ class EnhancedGenerationService:
                     include_rag=True,
                     include_kg=True,
                     include_patterns=True,
-                    artifact_type=artifact_type.value,  # Pass artifact type for targeted RAG
+                    artifact_type=artifact_type_str,  # Pass artifact type for targeted RAG
                     force_refresh=True  # Always get fresh context for generation
                 )
                 logger.info(f"✅ [ENHANCED_GEN] Context built successfully")
@@ -176,7 +196,8 @@ class EnhancedGenerationService:
                     assembled_context=assembled_context,
                     context=context,
                     threshold=opts.get("validation_threshold", 80.0),
-                    progress_callback=progress_callback
+                    progress_callback=progress_callback,
+                    custom_prompt_template=custom_prompt_template
                 )
                 
                 if cloud_result and cloud_result.get("success"):
@@ -321,9 +342,9 @@ class EnhancedGenerationService:
                 try:
                     logger.info(f"🔄 [ENHANCED_GEN] Model attempt {retry + 1}/{opts['max_retries'] + 1}: {model_name} ({provider})")
                     
-                    # Build prompt with context
-                    prompt = self._build_prompt(meeting_notes, assembled_context, artifact_type)
-                    logger.debug(f"📝 [ENHANCED_GEN] Prompt built: length={len(prompt)}")
+                    # Build prompt with context (use custom template if available)
+                    prompt = self._build_prompt(meeting_notes, assembled_context, artifact_type, custom_prompt_template)
+                    logger.debug(f"📝 [ENHANCED_GEN] Prompt built: length={len(prompt)}, custom_template={bool(custom_prompt_template)}")
                     
                     # Generate based on provider
                     if provider == "ollama":
@@ -794,15 +815,32 @@ class EnhancedGenerationService:
                 "suggestion": "Ensure Ollama is running, models are installed, or cloud API keys are configured"
             }
     
-    def _build_prompt(self, meeting_notes: str, rag_context: str, artifact_type: ArtifactType) -> str:
+    def _build_prompt(self, meeting_notes: str, rag_context: str, artifact_type: Union[ArtifactType, str], 
+                       custom_prompt_template: Optional[str] = None) -> str:
         """Build comprehensive prompt with all context."""
         # Import prompt sanitization to prevent injection attacks
         from rag.filters import sanitize_prompt_input
         
         parts = []
         
-        # Add artifact-specific instructions
-        artifact_name = artifact_type.value.replace("_", " ").title()
+        # Get artifact type as string
+        if isinstance(artifact_type, ArtifactType):
+            artifact_type_str = artifact_type.value
+        else:
+            artifact_type_str = str(artifact_type)
+        
+        # Check if we have a custom prompt template
+        if custom_prompt_template:
+            # Use custom prompt template, substituting {meeting_notes} and {context}
+            prompt = custom_prompt_template
+            safe_notes = sanitize_prompt_input(meeting_notes, max_length=8000)
+            safe_context = sanitize_prompt_input(rag_context, max_length=12000) if rag_context else ""
+            prompt = prompt.replace("{meeting_notes}", safe_notes)
+            prompt = prompt.replace("{context}", safe_context)
+            return prompt
+        
+        # Default prompt building for built-in types
+        artifact_name = artifact_type_str.replace("_", " ").title()
         parts.append(f"Generate a {artifact_name} based on the following requirements and project context.")
         parts.append("\n## Requirements")
         
@@ -827,9 +865,19 @@ class EnhancedGenerationService:
         
         return "\n".join(parts)
     
-    def _get_system_message(self, artifact_type: ArtifactType) -> str:
+    def _get_system_message(self, artifact_type: Union[ArtifactType, str]) -> str:
         """Get comprehensive system message for artifact type."""
         base_message = "You are an expert architect and developer assistant. Your goal is to generate high-quality, accurate, and relevant architectural artifacts."
+        
+        # Handle custom artifact types (not in the messages dict)
+        if isinstance(artifact_type, str):
+            # Try to convert to enum, if fails use generic message
+            try:
+                artifact_type = ArtifactType(artifact_type)
+            except ValueError:
+                # This is a custom artifact type - use generic message
+                artifact_name = artifact_type.replace("_", " ").title()
+                return f"{base_message} Generate a {artifact_name} based on the provided requirements. Ensure the output is accurate, well-structured, and follows best practices."
         
         # CRITICAL: Explicit instruction to avoid explanatory text
         mermaid_output_rules = """
@@ -1130,7 +1178,8 @@ Follow the repository's coding style and test patterns. Make tests realistic and
                     model_name=model_name,
                     meeting_notes=meeting_notes,
                     rag_context=assembled_context,
-                    artifact_type=artifact_type
+                    artifact_type=artifact_type,
+                    custom_prompt_template=custom_prompt_template
                 )
                 
                 if not content:
@@ -1186,12 +1235,13 @@ Follow the repository's coding style and test patterns. Make tests realistic and
         self,
         provider: str,
         model_name: str,
-        artifact_type: ArtifactType,
+        artifact_type: Union[ArtifactType, str],
         meeting_notes: str,
         assembled_context: str,
         context: Dict[str, Any],
         threshold: float,
-        progress_callback: Optional[callable] = None
+        progress_callback: Optional[callable] = None,
+        custom_prompt_template: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Try a single specific cloud model (user's preferred model from routing).
@@ -1208,6 +1258,7 @@ Follow the repository's coding style and test patterns. Make tests realistic and
             context: Full context dict
             threshold: Validation score threshold
             progress_callback: Optional progress callback
+            custom_prompt_template: Optional custom prompt template
         
         Returns:
             Generation result dict or None if failed
@@ -1233,13 +1284,14 @@ Follow the repository's coding style and test patterns. Make tests realistic and
             if progress_callback:
                 await progress_callback(40.0, f"Generating with your preferred model: {provider}:{model_name}...")
             
-            # Call cloud API
+            # Call cloud API (pass custom_prompt_template if available)
             content = await self._call_cloud_api(
                 provider=provider,
                 model_name=model_name,
                 meeting_notes=meeting_notes,
                 rag_context=assembled_context,
-                artifact_type=artifact_type
+                artifact_type=artifact_type,
+                custom_prompt_template=custom_prompt_template
             )
             
             if not content:
@@ -1291,7 +1343,8 @@ Follow the repository's coding style and test patterns. Make tests realistic and
         model_name: str,
         meeting_notes: str,
         rag_context: str,
-        artifact_type: ArtifactType
+        artifact_type: Union[ArtifactType, str],
+        custom_prompt_template: Optional[str] = None
     ) -> Optional[str]:
         """
         Call cloud API directly for artifact generation.
@@ -1306,16 +1359,20 @@ Follow the repository's coding style and test patterns. Make tests realistic and
             meeting_notes: User requirements
             rag_context: RAG context
             artifact_type: Type of artifact to generate
+            custom_prompt_template: Optional custom prompt template for custom artifact types
         
         Returns:
             Generated content or None on failure
         """
+        # Get artifact type string
+        artifact_type_str = artifact_type.value if isinstance(artifact_type, ArtifactType) else str(artifact_type)
+        
         try:
-            # Build prompt with full context
-            prompt = self._build_prompt(meeting_notes, rag_context, artifact_type)
+            # Build prompt with full context (use custom template if available)
+            prompt = self._build_prompt(meeting_notes, rag_context, artifact_type, custom_prompt_template)
             system_message = self._get_system_message(artifact_type)
             
-            logger.info(f"☁️ [CLOUD_API] Calling {provider}:{model_name} directly for {artifact_type.value}")
+            logger.info(f"☁️ [CLOUD_API] Calling {provider}:{model_name} directly for {artifact_type_str}")
             logger.debug(f"☁️ [CLOUD_API] Prompt length: {len(prompt)}, System message length: {len(system_message)}")
             
             # Call cloud API directly - this is a fallback path, skip orchestrators

@@ -5,7 +5,7 @@ Handles artifact generation with streaming support.
 
 import sys
 from pathlib import Path
-from typing import Dict, List, Any, Optional, AsyncGenerator
+from typing import Dict, List, Any, Optional, AsyncGenerator, Union
 from datetime import datetime
 import uuid
 import asyncio
@@ -203,7 +203,7 @@ class GenerationService:
     
     async def generate_artifact(
         self,
-        artifact_type: ArtifactType,
+        artifact_type: Union[ArtifactType, str],
         meeting_notes: str,
         context_id: Optional[str] = None,
         options: Optional[Dict[str, Any]] = None,
@@ -214,7 +214,7 @@ class GenerationService:
         Generate an artifact with optional streaming.
         
         Args:
-            artifact_type: Type of artifact to generate
+            artifact_type: Type of artifact to generate (enum or custom type string)
             meeting_notes: User requirements
             context_id: Optional pre-built context ID
             options: Generation options (max_retries, temperature, etc.)
@@ -225,8 +225,17 @@ class GenerationService:
             Progress updates and final artifact
         """
         job_id = f"gen_{uuid.uuid4().hex[:8]}"
+        
+        # Handle both enum and string artifact types
+        if isinstance(artifact_type, ArtifactType):
+            artifact_type_str = artifact_type.value
+            is_custom_type = False
+        else:
+            artifact_type_str = str(artifact_type)
+            is_custom_type = True
+        
         logger.info(f"🎯 [GEN_SERVICE] Starting generation: job_id={job_id}, "
-                   f"artifact_type={artifact_type.value}, "
+                   f"artifact_type={artifact_type_str}, is_custom={is_custom_type}, "
                    f"meeting_notes_length={len(meeting_notes)}, "
                    f"context_id={context_id}, folder_id={folder_id}, stream={stream}")
         
@@ -248,14 +257,15 @@ class GenerationService:
         # Initialize job
         self.active_jobs[job_id] = {
             "job_id": job_id,
-            "artifact_type": artifact_type.value,
+            "artifact_type": artifact_type_str,
             "status": GenerationStatus.IN_PROGRESS.value,
             "progress": 0.0,
             "created_at": datetime.now().isoformat(),
             "meeting_notes": meeting_notes,
-            "folder_id": folder_id  # Associate artifact with meeting notes folder
+            "folder_id": folder_id,  # Associate artifact with meeting notes folder
+            "is_custom_type": is_custom_type  # Track if this is a custom artifact type
         }
-        logger.info(f"📋 [GEN_SERVICE] Job initialized: {job_id}, folder_id={folder_id}")
+        logger.info(f"📋 [GEN_SERVICE] Job initialized: {job_id}, folder_id={folder_id}, custom_type={is_custom_type}")
         
         try:
             # Step 1: Build context (if not provided)

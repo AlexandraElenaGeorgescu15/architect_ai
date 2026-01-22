@@ -4,7 +4,7 @@ Model Management Service - Handles model registry, routing, and management.
 
 import sys
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 import logging
 from datetime import datetime, timedelta
 import json
@@ -222,15 +222,20 @@ class ModelService:
                     data = yaml.safe_load(f) or {}
                     for artifact_type, routing_data in data.items():
                         try:
+                            # Try to parse as built-in ArtifactType enum
                             artifact_type_enum = ArtifactType(artifact_type)
                             self.routing[artifact_type] = ModelRoutingDTO(
                                 artifact_type=artifact_type_enum,
                                 **routing_data
                             )
                         except ValueError:
-                            # Skip invalid artifact types
-                            logger.debug(f"Skipping invalid artifact type in routing: {artifact_type}")
-                            continue
+                            # Not a built-in type - treat as custom artifact type (string)
+                            # Store with string key and string artifact_type
+                            self.routing[artifact_type] = ModelRoutingDTO(
+                                artifact_type=artifact_type,  # Store as string
+                                **routing_data
+                            )
+                            logger.debug(f"Loaded routing for custom artifact type: {artifact_type}")
                 logger.info(f"Loaded routing for {len(self.routing)} artifact types")
             except Exception as e:
                 logger.error(f"Error loading routing config: {e}")
@@ -245,14 +250,18 @@ class ModelService:
     def _save_routing(self):
         """Save model routing configuration to file."""
         try:
-            data = {
-                routing.artifact_type.value: {
+            data = {}
+            for routing in self.routing.values():
+                # Handle both ArtifactType enum and string (custom types)
+                if isinstance(routing.artifact_type, ArtifactType):
+                    key = routing.artifact_type.value
+                else:
+                    key = str(routing.artifact_type)
+                data[key] = {
                     "primary_model": routing.primary_model,
                     "fallback_models": routing.fallback_models,
                     "enabled": routing.enabled
                 }
-                for routing in self.routing.values()
-            }
             with open(self.routing_file, 'w', encoding='utf-8') as f:
                 yaml.dump(data, f, default_flow_style=False)
         except Exception as e:
@@ -789,19 +798,62 @@ class ModelService:
         """
         return self.models.get(model_id)
     
-    def get_routing_for_artifact(self, artifact_type: ArtifactType) -> Optional[ModelRoutingDTO]:
+    def get_routing_for_artifact(self, artifact_type: Union[ArtifactType, str]) -> Optional[ModelRoutingDTO]:
         """
         Get model routing configuration for an artifact type.
         
         Args:
-            artifact_type: Artifact type
+            artifact_type: Artifact type (enum or string for custom types)
         
         Returns:
             Routing configuration or None
         """
-        return self.routing.get(artifact_type.value)
+        # Get the string key for lookup
+        if isinstance(artifact_type, ArtifactType):
+            key = artifact_type.value
+        else:
+            key = str(artifact_type)
+        return self.routing.get(key)
     
-    def get_preferred_model_for_artifact(self, artifact_type: ArtifactType) -> Optional[tuple]:
+    def get_routing_for_custom_artifact(self, artifact_type_id: str) -> Optional[ModelRoutingDTO]:
+        """
+        Get model routing configuration for a custom artifact type by ID.
+        
+        Args:
+            artifact_type_id: Custom artifact type ID (string)
+        
+        Returns:
+            Routing configuration or None
+        """
+        return self.routing.get(artifact_type_id)
+    
+    def create_routing_for_custom_type(self, artifact_type_id: str, primary_model: str = "ollama:llama3:latest", 
+                                        fallback_models: Optional[List[str]] = None) -> ModelRoutingDTO:
+        """
+        Create default routing for a custom artifact type.
+        
+        Args:
+            artifact_type_id: Custom artifact type ID
+            primary_model: Primary model to use (default: llama3)
+            fallback_models: List of fallback models
+        
+        Returns:
+            Created ModelRoutingDTO
+        """
+        fallbacks = fallback_models or ["ollama:codellama:7b-instruct", "groq:llama-3.3-70b-versatile"]
+        
+        routing = ModelRoutingDTO(
+            artifact_type=artifact_type_id,  # Store as string for custom types
+            primary_model=primary_model,
+            fallback_models=fallbacks,
+            enabled=True
+        )
+        self.routing[artifact_type_id] = routing
+        self._save_routing()
+        logger.info(f"Created routing for custom artifact type: {artifact_type_id}")
+        return routing
+    
+    def get_preferred_model_for_artifact(self, artifact_type: Union[ArtifactType, str]) -> Optional[tuple]:
         """
         Get the user's preferred model for an artifact type.
         
@@ -818,11 +870,13 @@ class ModelService:
         routing = self.get_routing_for_artifact(artifact_type)
         if routing and routing.enabled and routing.primary_model:
             provider, model_name = normalize_model_id(routing.primary_model)
-            logger.debug(f"🎯 [MODEL_SERVICE] User's preferred model for {artifact_type.value}: {provider}:{model_name}")
+            # Handle both enum and string artifact types for logging
+            type_str = artifact_type.value if isinstance(artifact_type, ArtifactType) else str(artifact_type)
+            logger.debug(f"🎯 [MODEL_SERVICE] User's preferred model for {type_str}: {provider}:{model_name}")
             return (provider, model_name)
         return None
     
-    def get_models_for_artifact(self, artifact_type: ArtifactType) -> List[str]:
+    def get_models_for_artifact(self, artifact_type: Union[ArtifactType, str]) -> List[str]:
         """
         Get ordered list of models to try for an artifact type.
         
@@ -835,13 +889,17 @@ class ModelService:
         Returns only local (Ollama) models for the local phase.
         
         Args:
-            artifact_type: Artifact type
+            artifact_type: Artifact type (enum or string for custom types)
         
         Returns:
             List of model names to try in order (only Ollama models, no "ollama:" prefix)
         """
         models = []
-        artifact_type_str = artifact_type.value.lower().replace("-", "_")
+        # Handle both enum and string artifact types
+        if isinstance(artifact_type, ArtifactType):
+            artifact_type_str = artifact_type.value.lower().replace("-", "_")
+        else:
+            artifact_type_str = str(artifact_type).lower().replace("-", "_")
         
         # STEP 1: Check for fine-tuned models (HIGHEST PRIORITY)
         # Load fine-tuned models from registry
@@ -959,13 +1017,18 @@ class ModelService:
         Update model routing configuration.
         
         Args:
-            routings: List of routing configurations
+            routings: List of routing configurations (supports both enum and string artifact types)
         
         Returns:
             True if successful
         """
         for routing in routings:
-            self.routing[routing.artifact_type.value] = routing
+            # Handle both enum and string artifact types
+            if isinstance(routing.artifact_type, ArtifactType):
+                key = routing.artifact_type.value
+            else:
+                key = str(routing.artifact_type)
+            self.routing[key] = routing
         
         self._save_routing()
         logger.info(f"Updated routing for {len(routings)} artifact types")

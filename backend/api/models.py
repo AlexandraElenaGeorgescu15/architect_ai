@@ -47,7 +47,7 @@ async def get_routing_for_artifact(
     artifact_type: ArtifactType,
     current_user: UserPublic = Depends(get_current_user)
 ):
-    """Get model routing configuration for a specific artifact type."""
+    """Get model routing configuration for a specific artifact type (built-in types)."""
     service = get_service()
     routing = service.get_routing_for_artifact(artifact_type)
     if not routing:
@@ -55,6 +55,61 @@ async def get_routing_for_artifact(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"No routing configuration found for {artifact_type.value}"
         )
+    return routing
+
+
+@router.get("/routing/custom/{type_id}", response_model=ModelRoutingDTO, summary="Get routing for custom artifact type")
+async def get_routing_for_custom_artifact(
+    type_id: str,
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """
+    Get model routing configuration for a custom artifact type by ID.
+    
+    This endpoint supports custom artifact types that are not in the built-in enum.
+    If no routing exists for the custom type, creates a default one.
+    """
+    service = get_service()
+    routing = service.get_routing_for_custom_artifact(type_id)
+    
+    if not routing:
+        # Create default routing for the custom type
+        routing = service.create_routing_for_custom_type(type_id)
+    
+    return routing
+
+
+@router.put("/routing/custom/{type_id}", response_model=ModelRoutingDTO, summary="Update routing for custom artifact type")
+@limiter.limit("10/minute")
+async def update_routing_for_custom_artifact(
+    request: Request,
+    type_id: str,
+    primary_model: str,
+    fallback_models: List[str] = [],
+    enabled: bool = True,
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """
+    Update model routing configuration for a custom artifact type.
+    
+    Args:
+        type_id: Custom artifact type ID
+        primary_model: Primary model to use (e.g., "ollama:llama3:latest")
+        fallback_models: List of fallback models
+        enabled: Whether the routing is enabled
+    """
+    service = get_service()
+    
+    routing = ModelRoutingDTO(
+        artifact_type=type_id,
+        primary_model=primary_model,
+        fallback_models=fallback_models,
+        enabled=enabled
+    )
+    
+    service.routing[type_id] = routing
+    service._save_routing()
+    
     return routing
 
 

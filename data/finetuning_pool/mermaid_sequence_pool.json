@@ -734,5 +734,748 @@
     "model_used": "llama3",
     "context": {},
     "added_at": "2025-12-10T22:09:33.676684"
+  },
+  {
+    "artifact_type": "mermaid_sequence",
+    "content": "sequenceDiagram\n    participant User as User\n    participant Server as Server\n    participant Database as Database\n    User->>Server: Request\n    Server->>Database: Query\n    Database-->>Server: Results\n    Server-->>User: Response",
+    "meeting_notes": "Create a sequence diagram for a checkout process: User adds item to cart, proceeds to checkout, enters payment details, payment is processed, confirmation is sent",
+    "validation_score": 100.0,
+    "model_used": "codellama:7b-instruct-q4_K_M",
+    "context": {
+      "meeting_notes": "Create a sequence diagram for a checkout process: User adds item to cart, proceeds to checkout, enters payment details, payment is processed, confirmation is sent",
+      "repo_id": null,
+      "created_at": "2026-01-22T10:59:48.053659",
+      "universal_context": {
+        "project_directories": [
+          "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln",
+          "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project"
+        ],
+        "total_files": 69,
+        "key_entities": [
+          {
+            "name": "UserDto",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs"
+          },
+          {
+            "name": "WeatherForecast",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\WeatherForecast.cs"
+          },
+          {
+            "name": "UsersController",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs"
+          },
+          {
+            "name": "WeatherForecastController",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs"
+          },
+          {
+            "name": "IUserService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs"
+          },
+          {
+            "name": "UserService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs"
+          },
+          {
+            "name": "IMongoDBSettings",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\IMongoDBSettings.cs"
+          },
+          {
+            "name": "MongoDBSettings",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\MongoDBSettings.cs"
+          },
+          {
+            "name": "AppRoutingModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts"
+          },
+          {
+            "name": "AppComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.ts"
+          },
+          {
+            "name": "AppModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts"
+          },
+          {
+            "name": "AuthenticationModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts"
+          },
+          {
+            "name": "LoginComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts"
+          },
+          {
+            "name": "RegisterComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts"
+          },
+          {
+            "name": "NameUppercasePipe",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\pipes\\name-uppercase.pipe.ts"
+          },
+          {
+            "name": "AuthenticationService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts"
+          },
+          {
+            "name": "PhoneService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts"
+          },
+          {
+            "name": "TableRoutingModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table-routing.module.ts"
+          },
+          {
+            "name": "TableModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts"
+          },
+          {
+            "name": "EntryDetailsModalComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\entry-details-modal\\entry-details-modal.component.ts"
+          },
+          {
+            "name": "PhoneComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts"
+          },
+          {
+            "name": "TablePageComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts"
+          },
+          {
+            "name": "Phone",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts"
+          },
+          {
+            "name": "User",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts"
+          }
+        ],
+        "project_map": {
+          "directories": {
+            "final-proj-sln": {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln",
+              "file_count": 14,
+              "subdirectories": []
+            },
+            "final_project": {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project",
+              "file_count": 55,
+              "subdirectories": []
+            }
+          },
+          "file_types": {
+            ".sln": 1,
+            ".json": 9,
+            ".cs": 9,
+            ".csproj": 1,
+            ".md": 1,
+            ".ico": 1,
+            ".html": 7,
+            ".ts": 27,
+            ".scss": 7,
+            ".less": 1,
+            ".jpg": 2
+          },
+          "key_files": [
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Program.cs",
+              "name": "Program.cs",
+              "importance": 1.0
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs",
+              "name": "Controller.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs",
+              "name": "WeatherForecastController.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs",
+              "name": "IUserService.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+              "name": "UserService.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.spec.ts",
+              "name": "authentication.service.spec.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts",
+              "name": "authentication.service.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.spec.ts",
+              "name": "phone.service.spec.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts",
+              "name": "phone.service.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs",
+              "name": "UserDto.cs",
+              "importance": 0.8
+            }
+          ]
+        }
+      },
+      "sources": {
+        "rag": {
+          "context": "=== PROJECT CONTEXT (Universal Knowledge + Targeted Retrieval) ===\n\n\ud83d\udd11 KEY PROJECT ENTITIES:\n  - UserDto (class)\n  - WeatherForecast (class)\n  - UsersController (class)\n  - WeatherForecastController (class)\n  - IUserService (class)\n  - UserService (class)\n  - IMongoDBSettings (class)\n  - MongoDBSettings (class)\n  - AppRoutingModule (class)\n  - AppComponent (class)\n\n\ud83d\udcc4 RELEVANT CODE SNIPPETS (ranked by importance + relevance):\n\n\n--- Snippet 1 \u2b50\u2b50 (score: 0.334) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\index.css\n    0%, 100% {\n      transform: translateX(-2px);\n    }\n    50% {\n      transform: translateX(2px);\n    }\n  }\n  \n  @keyframes confetti-fall {\n    0% {\n      transform: translateY(0) rotate(0deg);\n      opacity: 1;\n    }\n    100% {\n      transform: translateY(100vh) rotate(720deg);\n      opacity: 0;\n    }\n  }\n  \n  @keyframes bounce-in {\n    0% {\n      transform: translate(-50%, 0) scale(0);\n      opacity: 0;\n    }\n    50% {\n      transform: translate(-50%, 0) scale(1.1);\n    }\n    100% {\n      transform: translate(-50%, 0) scale(1);\n      opacity: 1;\n    }\n  }\n  \n  .animate-float-up {\n    animation: float-up 4s ease-out forwards;\n  }\n  \n  .animate-confetti-fall {\n    animation: confetti-fall 3s ease-out forwards;\n  }\n  \n  .animate-bounce-in {\n    animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;\n  }\n}\n\n\n--- Snippet 2 \u2b50\u2b50\u2b50\u2b50 (score: 0.287) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts\n\n  logout(): void {\n    // remove user token from storage to log user out\n    localStorage.removeItem('authToken');\n    sessionStorage.removeItem('authToken');\n    localStorage.setItem('rememberMe', 'false');\n    this.router.navigateByUrl('/login');\n  }\n\n}\n\n\n--- Snippet 3 \u2b50\u2b50 (score: 0.254) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\components\\UnifiedStudioTabs.tsx\n    }\n  }, [])\n\n  const handleBulkGenerate = useCallback(async (selectedArtifacts: ArtifactType[]) => {\n    if (!props.meetingNotes || props.meetingNotes.length < 10) {\n      addNotification('error', 'Please provide meeting notes before bulk generation.')\n      return\n    }\n    setIsBulkGenerating(true)\n    try {\n      const response = await bulkGenerate(\n        selectedArtifacts.map((artifact_type) => ({\n          artifact_type,\n          meeting_notes: props.meetingNotes,\n          context_id: props.contextId || undefined,\n        }))\n      )\n      response.forEach((item) => {\n        if (item.artifact) {\n          addArtifact(item.artifact)\n        }\n      })\n      addNotification('success', `Bulk generation triggered for ${selectedArtifacts.length} artifacts.`)\n    } catch (error) {\n      // Bulk generation failed - show user error\n      addNotification('error', 'Bulk generation failed. Please try again.')\n    } finally {\n      setIsBulkGenerating(false)\n    }\n\n--- Snippet 4 \u2b50\u2b50 (score: 0.244) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\UnifiedStudioTabs.tsx\n                  <MeetingNotesManager />\n                </div>\n                <div className=\"p-6 border-t border-border bg-secondary/10 text-center\">\n                  <p className=\"text-xs text-muted-foreground\">\n                    \ud83d\udca1 <strong>Tip:</strong> For insights into your codebase, visit the <strong>Intelligence</strong> page to view the Knowledge Graph and Pattern Mining results.\n                  </p>\n                </div>\n              </div>\n            </div>\n          </div>\n        )}\n\n        {/* STUDIO VIEW */}\n        {activeView === 'studio' && (\n          <div className=\"h-full p-1 animate-fade-in-up overflow-y-auto custom-scrollbar\">\n            <div className=\"grid grid-cols-12 gap-6 h-full\">\n              {/* Left Column: Inputs */}\n              <div className=\"col-span-4 flex flex-col gap-6 h-full overflow-y-auto overflow-x-hidden custom-scrollbar\">\n                {/* Generation Controls */}\n\n--- Snippet 5 \u2b50\u2b50 (score: 0.239) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\pages\\Studio.tsx\n    // Other Mermaid\n    { value: 'mermaid_data_flow' as ArtifactType, label: 'Data Flow Diagram', category: 'Mermaid' },\n    { value: 'mermaid_user_flow' as ArtifactType, label: 'User Flow Diagram', category: 'Mermaid' },\n    { value: 'mermaid_component' as ArtifactType, label: 'Component Diagram', category: 'Mermaid' },\n    { value: 'mermaid_system_overview' as ArtifactType, label: 'System Overview', category: 'Mermaid' },\n    { value: 'mermaid_uml' as ArtifactType, label: 'UML Diagram', category: 'Mermaid' },\n    // HTML Diagrams (one for each Mermaid type)\n    { value: 'html_flowchart' as ArtifactType, label: 'HTML Flowchart', category: 'HTML' },\n    { value: 'html_erd' as ArtifactType, label: 'HTML ERD', category: 'HTML' },\n    { value: 'html_class' as ArtifactType, label: 'HTML Class Diagram', category: 'HTML' },\n    { value: 'html_state' as ArtifactType, label: 'HTML State Diagram', category: 'HTML' },\n\n--- Snippet 6 \u2b50\u2b50 (score: 0.236) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\pages\\Studio.tsx\n    { value: 'mermaid_component', label: 'Component Diagram', category: 'Mermaid' },\n    { value: 'mermaid_system_overview', label: 'System Overview', category: 'Mermaid' },\n    { value: 'mermaid_uml', label: 'UML Diagram', category: 'Mermaid' },\n    // HTML Diagrams (one for each Mermaid type)\n    { value: 'html_flowchart', label: 'HTML Flowchart', category: 'HTML' },\n    { value: 'html_erd', label: 'HTML ERD', category: 'HTML' },\n    { value: 'html_class', label: 'HTML Class Diagram', category: 'HTML' },\n    { value: 'html_state', label: 'HTML State Diagram', category: 'HTML' },\n    { value: 'html_sequence', label: 'HTML Sequence', category: 'HTML' },\n    { value: 'html_architecture', label: 'HTML Architecture', category: 'HTML' },\n    { value: 'html_api_sequence', label: 'HTML API Sequence', category: 'HTML' },\n    { value: 'html_gantt', label: 'HTML Gantt Chart', category: 'HTML' },\n    { value: 'html_pie', label: 'HTML Pie Chart', category: 'HTML' },\n\n--- Snippet 7 \u2b50\u2b50 (score: 0.235) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\pages\\Studio.tsx\n    { value: 'mermaid_component', label: 'Component Diagram', category: 'Mermaid' },\n    { value: 'mermaid_system_overview', label: 'System Overview', category: 'Mermaid' },\n    { value: 'mermaid_uml', label: 'UML Diagram', category: 'Mermaid' },\n    // HTML Diagrams (one for each Mermaid type)\n    { value: 'html_flowchart', label: 'HTML Flowchart', category: 'HTML' },\n    { value: 'html_erd', label: 'HTML ERD', category: 'HTML' },\n    { value: 'html_class', label: 'HTML Class Diagram', category: 'HTML' },\n    { value: 'html_state', label: 'HTML State Diagram', category: 'HTML' },\n    { value: 'html_sequence', label: 'HTML Sequence', category: 'HTML' },\n    { value: 'html_architecture', label: 'HTML Architecture', category: 'HTML' },\n    { value: 'html_api_sequence', label: 'HTML API Sequence', category: 'HTML' },\n    { value: 'html_gantt', label: 'HTML Gantt Chart', category: 'HTML' },\n    { value: 'html_pie', label: 'HTML Pie Chart', category: 'HTML' },\n\n--- Snippet 8 \u2b50\u2b50 (score: 0.225) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.scss\nSECTION: 0\n.Register{\n\n    position: relative;\n    height: 100%;\n  \n    &__background-image {\n      position: absolute;\n      top: 0;\n      left: 0;\n      width: 100%;\n      height: 100%;\n      background-image: url('/assets/background.jpg');\n      background-size: cover;\n      z-index: -1;\n    }\n}\n  form {\n    width: 300px;\n    margin: 0 auto;\n    padding: 20px;\n    border-radius: 5px;\n    background-color: white;\n    box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);\n  \n    h2 {\n      margin-bottom: 20px;\n      color: #3f51b5;\n      text-align: center;\n    }\n  \n    div {\n      margin-bottom: 15px;\n      \n      label {\n        color: #3f51b5;\n        font-weight: bold;\n        display: block;\n        margin-bottom: 5px;\n      }\n  \n      input {\n        width: 100%;\n        padding: 10px;\n        border-radius: 5px;\n        border: 1px solid #ddd;\n      }\n    }\n  \n    button {\n      width: 100%;\n      padding: 10px;\n      border: none;\n      border-radius: 5px;\n      background-color: #673ab7;\n      color: white;\n      cursor: pointer;\n      transition: background-color 0.3s ease;\n  \n      &:hover {\n        background-color: #5622a4;\n      }\n  \n      &:disabled {\n        background-color: #ccc;\n        cursor: not-allowed;\n      }\n    }\n  }\n  \n\n--- Snippet 9 \u2b50\u2b50 (score: 0.224) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\VersionControl.tsx\n    \n    for (const line of lines) {\n      if (line.startsWith('@@')) {\n        // Parse hunk header: @@ -old_start,old_count +new_start,new_count @@\n        const match = line.match(/@@ -(\\d+)(?:,(\\d+))? \\+(\\d+)(?:,(\\d+))? @@/)\n        if (match) {\n          oldLineNum = parseInt(match[1]) - 1\n          newLineNum = parseInt(match[3]) - 1\n        }\n        continue\n      }\n      \n      if (line.startsWith('+') && !line.startsWith('+++')) {\n        newLineNum++\n        changes.push({ type: 'added', line: line.substring(1), lineNumber: newLineNum })\n      } else if (line.startsWith('-') && !line.startsWith('---')) {\n        oldLineNum++\n        changes.push({ type: 'removed', line: line.substring(1), lineNumber: oldLineNum })\n      } else if (line.startsWith(' ')) {\n        oldLineNum++\n        newLineNum++\n        changes.push({ type: 'context', line: line.substring(1), lineNumber: newLineNum })\n      }\n    }\n    \n    return changes\n  }, [gitDiff])\n\n\n--- Snippet 10 \u2b50\u2b50 (score: 0.189) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\backend\\api\\versions.py\n        )\n    return comparison\n\n\n@router.post(\"/{artifact_id}/restore/{version_number}\", response_model=Dict[str, Any])\n@limiter.limit(\"10/minute\")\nasync def restore_version(\n    request: Request,\n    artifact_id: str,\n    version_number: int,\n    current_user: UserPublic = Depends(get_current_user)\n):\n    \"\"\"Restore a previous version of an artifact.\"\"\"\n    service = get_version_service()\n    result = service.restore_version(artifact_id, version_number)\n    if \"error\" in result:\n        raise HTTPException(\n            status_code=status.HTTP_404_NOT_FOUND,\n            detail=result[\"error\"]\n        )\n    return result\n\n\n@router.get(\"/by-type/{artifact_type}\", response_model=List[Dict[str, Any]])\n@limiter.limit(\"30/minute\")\nasync def get_versions_by_type(\n    request: Request,\n    artifact_type: str,\n    current_user: UserPublic = Depends(get_current_user)\n):\n    \"\"\"Get all versions for all artifacts of a given type.\"\"\"\n    service = get_version_service()\n    all_versions = []\n    \n\n--- Snippet 11 \u2b50\u2b50 (score: 0.183) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html\n      <div *ngIf=\"registerForm.get('password')?.errors?.['required']\">Password is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"confirmPassword\">Confirm Password:</label>\n    <input type=\"password\" formControlName=\"confirmPassword\" id=\"confirmPassword\" required>\n    <div *ngIf=\"registerForm.get('confirmPassword')?.invalid && (registerForm.get('confirmPassword')?.dirty || registerForm.get('confirmPassword')?.touched)\">\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['required']\">Confirmation password is required.</div>\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['passwordMismatch']\">Passwords do not match.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"firstName\">First Name:</label>\n    <input type=\"text\" formControlName=\"firstName\" id=\"firstName\" required>\n    <div *ngIf=\"registerForm.get('firstName')?.invalid && (registerForm.get('firstName')?.dirty || registerForm.get('firstName')?.touched)\">\n\n--- Snippet 12 \u2b50\u2b50 (score: 0.175) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\components\\feedback_models.py\n    validation_score: float = 0.0\n    artifact_type: str = \"\"\n    model_used: str = \"\"\n    reward_signal: float = 0.0\n    metadata: Dict[str, Any] = field(default_factory=dict)\n\n    def to_training_example(self) -> Dict[str, Any]:\n        \"\"\"Convert the event into a generic fine-tuning example payload.\"\"\"\n        target = self.corrected_output if self.corrected_output else self.ai_output\n        return {\n            \"instruction\": f\"Generate {self.artifact_type}\",\n            \"input\": self.input_data,\n            \"output\": target,\n            \"context\": json.dumps(self.context),\n            \"quality_score\": self.validation_score,\n        }\n\n\n@dataclass\nclass TrainingBatch:\n    \"\"\"Bundle of curated training examples ready for downstream fine-tuning.\"\"\"\n\n    batch_id: str\n    created_at: float\n    examples: List[Dict[str, Any]]\n    priority: int\n    metadata: Dict[str, Any] = field(default_factory=dict)\n    hyperparameters: Optional[Any] = None\n\"\"\"\n\n--- Snippet 13 \u2b50\u2b50 (score: 0.174) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\App.tsx\n      <WebSocketProvider defaultRoomId={defaultRoomId} token={token}>\n        {/* Only show main UI when everything is fully loaded */}\n        {isFullyLoaded ? (\n          <Router \n            future={{\n              v7_startTransition: true,\n              v7_relativeSplatPath: true\n            }}\n          >\n            <Routes>\n              <Route\n                path=\"*\"\n                element={\n                  <Layout>\n                    <Suspense fallback={<div className=\"flex items-center justify-center h-full\"><div className=\"text-muted-foreground\">Loading...</div></div>}>\n                      <Routes>\n                        <Route path=\"/\" element={<Navigate to=\"/studio\" replace />} />\n                        <Route path=\"/studio\" element={<Studio />} />\n                        <Route path=\"/intelligence\" element={<Intelligence />} />\n                        <Route path=\"/canvas\" element={<Canvas />} />\n\n--- Snippet 14 \u2b50\u2b50 (score: 0.172) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md\n# FinalProject\n\nThis project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 15.2.4.\n\n## Development server\n\nRun `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.\n\n## Code scaffolding\n\nRun `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.\n\n## Build\n\nRun `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.\n\n## Running unit tests\n\nRun `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).\n\n## Running end-to-end tests\n\nRun `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.\n\n## Further help\n\n\n--- Snippet 15 \u2b50\u2b50 (score: 0.168) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.html\n    </div>\n  </div>\n  <div>\n    <label for=\"rememberMe\">Remember me:</label>\n    <input type=\"checkbox\" formControlName=\"rememberMe\" id=\"rememberMe\" />\n  </div>\n  <button mat-raised-button color=\"accent\" type=\"submit\" [disabled]=\"loginForm.invalid\">Login</button>\n  <p> You don't have an account? Register now!</p>\n  <button mat-raised-button color=\"accent\" type=\"button\" (click)=\"redirectToRegister()\">Register</button>\n</form>\n</div>\n\n--- Snippet 16 \u2b50\u2b50 (score: 0.167) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\package-lock.json\n        \"@material/animation\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/auto-init\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/banner\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/base\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/button\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/card\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/checkbox\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/chips\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/circular-progress\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/data-table\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/density\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/dialog\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/dom\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/drawer\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/elevation\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/fab\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/feature-targeting\": \"15.0.0-canary.684e33d25.0\",\n\n--- Snippet 17 \u2b50\u2b50 (score: 0.163) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\TemplateGallery.tsx\n      .catch((error) => {\n        // Failed to load templates - show notification\n        addNotification('error', 'Failed to load templates')\n      })\n      .finally(() => setIsLoading(false))\n  }, [isOpen, addNotification])\n\n  if (!isOpen) return null\n\n  const handleApply = async (templateId: string) => {\n    setIsApplying(templateId)\n    try {\n      const response = await applyTemplate(templateId)\n      onApply(response)\n      addNotification('success', `${response.template.name} template applied`)\n      onClose()\n    } catch (error) {\n      // Failed to apply template - show notification\n      addNotification('error', 'Failed to apply template')\n    } finally {\n      setIsApplying(null)\n    }\n  }\n\n  return (\n    <div className=\"fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-fade-in\">\n\n--- Snippet 18 \u2b50\u2b50 (score: 0.158) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html\nSECTION: 1\n?.errors?.['***REDACTED***Mismatch']\">***REDACTED***s do not match.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"firstName\">First Name:</label>\n    <input type=\"text\" formControlName=\"firstName\" id=\"firstName\" required>\n    <div *ngIf=\"registerForm.get('firstName')?.invalid && (registerForm.get('firstName')?.dirty || registerForm.get('firstName')?.touched)\">\n      <div *ngIf=\"registerForm.get('firstName')?.errors?.['required']\">First name is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"lastName\">Last Name:</label>\n    <input type=\"text\" formControlName=\"lastName\" id=\"lastName\" required>\n    <div *ngIf=\"registerForm.get('lastName')?.invalid && (registerForm.get('lastName')?.dirty || registerForm.get('lastName')?.touched)\">\n      <div *ngIf=\"registerForm.get('lastName')?.errors?.['required']\">Last name is required.</div>\n    </div>\n  </div>\n  <button mat-raised-button color=\"accent\" type=\"submit\" [disabled]=\"registerForm.invalid\">Register</button>\n</form>\n</div>",
+          "snippets": [
+            {
+              "content": "    0%, 100% {\n      transform: translateX(-2px);\n    }\n    50% {\n      transform: translateX(2px);\n    }\n  }\n  \n  @keyframes confetti-fall {\n    0% {\n      transform: translateY(0) rotate(0deg);\n      opacity: 1;\n    }\n    100% {\n      transform: translateY(100vh) rotate(720deg);\n      opacity: 0;\n    }\n  }\n  \n  @keyframes bounce-in {\n    0% {\n      transform: translate(-50%, 0) scale(0);\n      opacity: 0;\n    }\n    50% {\n      transform: translate(-50%, 0) scale(1.1);\n    }\n    100% {\n      transform: translate(-50%, 0) scale(1);\n      opacity: 1;\n    }\n  }\n  \n  .animate-float-up {\n    animation: float-up 4s ease-out forwards;\n  }\n  \n  .animate-confetti-fall {\n    animation: confetti-fall 3s ease-out forwards;\n  }\n  \n  .animate-bounce-in {\n    animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;\n  }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\index.css",
+              "score": 0.33391795504485094,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 22446,
+                "file_hash": "0943d728ea8498500c23f5c7643b689696762347",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\index.css",
+                "indexed_at": "2025-12-08T12:31:17.775862",
+                "start_line": 22401
+              }
+            },
+            {
+              "content": "\n  logout(): void {\n    // remove user token from storage to log user out\n    localStorage.removeItem('authToken');\n    sessionStorage.removeItem('authToken');\n    localStorage.setItem('rememberMe', 'false');\n    this.router.navigateByUrl('/login');\n  }\n\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts",
+              "score": 0.2873860366500076,
+              "importance": 0.9,
+              "metadata": {
+                "end_line": 811,
+                "file_hash": "7ecc7b4f320e353f6d28c8780b64e9abe0c694f2",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts",
+                "indexed_at": "2025-11-20T15:11:27.653486",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "    }\n  }, [])\n\n  const handleBulkGenerate = useCallback(async (selectedArtifacts: ArtifactType[]) => {\n    if (!props.meetingNotes || props.meetingNotes.length < 10) {\n      addNotification('error', 'Please provide meeting notes before bulk generation.')\n      return\n    }\n    setIsBulkGenerating(true)\n    try {\n      const response = await bulkGenerate(\n        selectedArtifacts.map((artifact_type) => ({\n          artifact_type,\n          meeting_notes: props.meetingNotes,\n          context_id: props.contextId || undefined,\n        }))\n      )\n      response.forEach((item) => {\n        if (item.artifact) {\n          addArtifact(item.artifact)\n        }\n      })\n      addNotification('success', `Bulk generation triggered for ${selectedArtifacts.length} artifacts.`)\n    } catch (error) {\n      // Bulk generation failed - show user error\n      addNotification('error', 'Bulk generation failed. Please try again.')\n    } finally {\n      setIsBulkGenerating(false)\n    }",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\components\\UnifiedStudioTabs.tsx",
+              "score": 0.2541133112004105,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 8829,
+                "file_hash": "a220811bbbce6d5fceb23e441dcce9736d592e8f",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\components\\UnifiedStudioTabs.tsx",
+                "indexed_at": "2025-12-08T13:21:50.851083",
+                "start_line": 8801
+              }
+            },
+            {
+              "content": "                  <MeetingNotesManager />\n                </div>\n                <div className=\"p-6 border-t border-border bg-secondary/10 text-center\">\n                  <p className=\"text-xs text-muted-foreground\">\n                    \ud83d\udca1 <strong>Tip:</strong> For insights into your codebase, visit the <strong>Intelligence</strong> page to view the Knowledge Graph and Pattern Mining results.\n                  </p>\n                </div>\n              </div>\n            </div>\n          </div>\n        )}\n\n        {/* STUDIO VIEW */}\n        {activeView === 'studio' && (\n          <div className=\"h-full p-1 animate-fade-in-up overflow-y-auto custom-scrollbar\">\n            <div className=\"grid grid-cols-12 gap-6 h-full\">\n              {/* Left Column: Inputs */}\n              <div className=\"col-span-4 flex flex-col gap-6 h-full overflow-y-auto overflow-x-hidden custom-scrollbar\">\n                {/* Generation Controls */}",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\UnifiedStudioTabs.tsx",
+              "score": 0.24373561026666152,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 12819,
+                "file_hash": "25a86b62f765ad5739e27e5d548b97d51114aded",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\UnifiedStudioTabs.tsx",
+                "indexed_at": "2025-12-08T12:31:21.083585",
+                "start_line": 12801
+              }
+            },
+            {
+              "content": "    // Other Mermaid\n    { value: 'mermaid_data_flow' as ArtifactType, label: 'Data Flow Diagram', category: 'Mermaid' },\n    { value: 'mermaid_user_flow' as ArtifactType, label: 'User Flow Diagram', category: 'Mermaid' },\n    { value: 'mermaid_component' as ArtifactType, label: 'Component Diagram', category: 'Mermaid' },\n    { value: 'mermaid_system_overview' as ArtifactType, label: 'System Overview', category: 'Mermaid' },\n    { value: 'mermaid_uml' as ArtifactType, label: 'UML Diagram', category: 'Mermaid' },\n    // HTML Diagrams (one for each Mermaid type)\n    { value: 'html_flowchart' as ArtifactType, label: 'HTML Flowchart', category: 'HTML' },\n    { value: 'html_erd' as ArtifactType, label: 'HTML ERD', category: 'HTML' },\n    { value: 'html_class' as ArtifactType, label: 'HTML Class Diagram', category: 'HTML' },\n    { value: 'html_state' as ArtifactType, label: 'HTML State Diagram', category: 'HTML' },",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\pages\\Studio.tsx",
+              "score": 0.23915356468392668,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 4811,
+                "file_hash": "3d40cac97effde696176571bc142b48f3bfde8db",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\pages\\Studio.tsx",
+                "indexed_at": "2025-12-08T12:31:28.248235",
+                "start_line": 4801
+              }
+            },
+            {
+              "content": "    { value: 'mermaid_component', label: 'Component Diagram', category: 'Mermaid' },\n    { value: 'mermaid_system_overview', label: 'System Overview', category: 'Mermaid' },\n    { value: 'mermaid_uml', label: 'UML Diagram', category: 'Mermaid' },\n    // HTML Diagrams (one for each Mermaid type)\n    { value: 'html_flowchart', label: 'HTML Flowchart', category: 'HTML' },\n    { value: 'html_erd', label: 'HTML ERD', category: 'HTML' },\n    { value: 'html_class', label: 'HTML Class Diagram', category: 'HTML' },\n    { value: 'html_state', label: 'HTML State Diagram', category: 'HTML' },\n    { value: 'html_sequence', label: 'HTML Sequence', category: 'HTML' },\n    { value: 'html_architecture', label: 'HTML Architecture', category: 'HTML' },\n    { value: 'html_api_sequence', label: 'HTML API Sequence', category: 'HTML' },\n    { value: 'html_gantt', label: 'HTML Gantt Chart', category: 'HTML' },\n    { value: 'html_pie', label: 'HTML Pie Chart', category: 'HTML' },",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\pages\\Studio.tsx",
+              "score": 0.2358634115052122,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 4013,
+                "file_hash": "daa302d2a3a97abb70265b5cc79ef36699786d5d",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\pages\\Studio.tsx",
+                "indexed_at": "2025-12-08T13:21:57.021115",
+                "start_line": 4001
+              }
+            },
+            {
+              "content": "    { value: 'mermaid_component', label: 'Component Diagram', category: 'Mermaid' },\n    { value: 'mermaid_system_overview', label: 'System Overview', category: 'Mermaid' },\n    { value: 'mermaid_uml', label: 'UML Diagram', category: 'Mermaid' },\n    // HTML Diagrams (one for each Mermaid type)\n    { value: 'html_flowchart', label: 'HTML Flowchart', category: 'HTML' },\n    { value: 'html_erd', label: 'HTML ERD', category: 'HTML' },\n    { value: 'html_class', label: 'HTML Class Diagram', category: 'HTML' },\n    { value: 'html_state', label: 'HTML State Diagram', category: 'HTML' },\n    { value: 'html_sequence', label: 'HTML Sequence', category: 'HTML' },\n    { value: 'html_architecture', label: 'HTML Architecture', category: 'HTML' },\n    { value: 'html_api_sequence', label: 'HTML API Sequence', category: 'HTML' },\n    { value: 'html_gantt', label: 'HTML Gantt Chart', category: 'HTML' },\n    { value: 'html_pie', label: 'HTML Pie Chart', category: 'HTML' },",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\pages\\Studio.tsx",
+              "score": 0.23486811159141896,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 4013,
+                "file_hash": "daa302d2a3a97abb70265b5cc79ef36699786d5d",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\pages\\Studio.tsx",
+                "indexed_at": "2025-12-08T13:22:04.805575",
+                "start_line": 4001
+              }
+            },
+            {
+              "content": "FILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.scss\nSECTION: 0\n.Register{\n\n    position: relative;\n    height: 100%;\n  \n    &__background-image {\n      position: absolute;\n      top: 0;\n      left: 0;\n      width: 100%;\n      height: 100%;\n      background-image: url('/assets/background.jpg');\n      background-size: cover;\n      z-index: -1;\n    }\n}\n  form {\n    width: 300px;\n    margin: 0 auto;\n    padding: 20px;\n    border-radius: 5px;\n    background-color: white;\n    box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);\n  \n    h2 {\n      margin-bottom: 20px;\n      color: #3f51b5;\n      text-align: center;\n    }\n  \n    div {\n      margin-bottom: 15px;\n      \n      label {\n        color: #3f51b5;\n        font-weight: bold;\n        display: block;\n        margin-bottom: 5px;\n      }\n  \n      input {\n        width: 100%;\n        padding: 10px;\n        border-radius: 5px;\n        border: 1px solid #ddd;\n      }\n    }\n  \n    button {\n      width: 100%;\n      padding: 10px;\n      border: none;\n      border-radius: 5px;\n      background-color: #673ab7;\n      color: white;\n      cursor: pointer;\n      transition: background-color 0.3s ease;\n  \n      &:hover {\n        background-color: #5622a4;\n      }\n  \n      &:disabled {\n        background-color: #ccc;\n        cursor: not-allowed;\n      }\n    }\n  }\n  ",
+              "file_path": "unknown",
+              "score": 0.22548249195210082,
+              "importance": 0.5,
+              "metadata": {
+                "chunk": 0,
+                "complexity_score": 0.001,
+                "file_type": ".scss",
+                "has_documentation": false,
+                "has_tests": false,
+                "importance_score": 0.5,
+                "is_config": false,
+                "kind": "text",
+                "language": "unknown",
+                "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.scss"
+              }
+            },
+            {
+              "content": "    \n    for (const line of lines) {\n      if (line.startsWith('@@')) {\n        // Parse hunk header: @@ -old_start,old_count +new_start,new_count @@\n        const match = line.match(/@@ -(\\d+)(?:,(\\d+))? \\+(\\d+)(?:,(\\d+))? @@/)\n        if (match) {\n          oldLineNum = parseInt(match[1]) - 1\n          newLineNum = parseInt(match[3]) - 1\n        }\n        continue\n      }\n      \n      if (line.startsWith('+') && !line.startsWith('+++')) {\n        newLineNum++\n        changes.push({ type: 'added', line: line.substring(1), lineNumber: newLineNum })\n      } else if (line.startsWith('-') && !line.startsWith('---')) {\n        oldLineNum++\n        changes.push({ type: 'removed', line: line.substring(1), lineNumber: oldLineNum })\n      } else if (line.startsWith(' ')) {\n        oldLineNum++\n        newLineNum++\n        changes.push({ type: 'context', line: line.substring(1), lineNumber: newLineNum })\n      }\n    }\n    \n    return changes\n  }, [gitDiff])\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\VersionControl.tsx",
+              "score": 0.2239005589451531,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 7228,
+                "file_hash": "ee7657c0a25fcf9affb073dd03dd86bdb4e28d39",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\VersionControl.tsx",
+                "indexed_at": "2025-12-08T13:22:00.288564",
+                "start_line": 7201
+              }
+            },
+            {
+              "content": "        )\n    return comparison\n\n\n@router.post(\"/{artifact_id}/restore/{version_number}\", response_model=Dict[str, Any])\n@limiter.limit(\"10/minute\")\nasync def restore_version(\n    request: Request,\n    artifact_id: str,\n    version_number: int,\n    current_user: UserPublic = Depends(get_current_user)\n):\n    \"\"\"Restore a previous version of an artifact.\"\"\"\n    service = get_version_service()\n    result = service.restore_version(artifact_id, version_number)\n    if \"error\" in result:\n        raise HTTPException(\n            status_code=status.HTTP_404_NOT_FOUND,\n            detail=result[\"error\"]\n        )\n    return result\n\n\n@router.get(\"/by-type/{artifact_type}\", response_model=List[Dict[str, Any]])\n@limiter.limit(\"30/minute\")\nasync def get_versions_by_type(\n    request: Request,\n    artifact_type: str,\n    current_user: UserPublic = Depends(get_current_user)\n):\n    \"\"\"Get all versions for all artifacts of a given type.\"\"\"\n    service = get_version_service()\n    all_versions = []\n    ",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\backend\\api\\versions.py",
+              "score": 0.1890579471350851,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 2434,
+                "file_hash": "fc7ea93990b3503dfee38dc73bc1727dca6afa95",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\backend\\api\\versions.py",
+                "indexed_at": "2025-12-08T13:21:58.526435",
+                "start_line": 2401
+              }
+            },
+            {
+              "content": "      <div *ngIf=\"registerForm.get('password')?.errors?.['required']\">Password is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"confirmPassword\">Confirm Password:</label>\n    <input type=\"password\" formControlName=\"confirmPassword\" id=\"confirmPassword\" required>\n    <div *ngIf=\"registerForm.get('confirmPassword')?.invalid && (registerForm.get('confirmPassword')?.dirty || registerForm.get('confirmPassword')?.touched)\">\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['required']\">Confirmation password is required.</div>\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['passwordMismatch']\">Passwords do not match.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"firstName\">First Name:</label>\n    <input type=\"text\" formControlName=\"firstName\" id=\"firstName\" required>\n    <div *ngIf=\"registerForm.get('firstName')?.invalid && (registerForm.get('firstName')?.dirty || registerForm.get('firstName')?.touched)\">",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html",
+              "score": 0.18296051031755964,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 815,
+                "file_hash": "809ad6527386f8bb842a99bb2ae1fa79120a6b95",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html",
+                "indexed_at": "2025-11-20T15:11:27.252077",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "    validation_score: float = 0.0\n    artifact_type: str = \"\"\n    model_used: str = \"\"\n    reward_signal: float = 0.0\n    metadata: Dict[str, Any] = field(default_factory=dict)\n\n    def to_training_example(self) -> Dict[str, Any]:\n        \"\"\"Convert the event into a generic fine-tuning example payload.\"\"\"\n        target = self.corrected_output if self.corrected_output else self.ai_output\n        return {\n            \"instruction\": f\"Generate {self.artifact_type}\",\n            \"input\": self.input_data,\n            \"output\": target,\n            \"context\": json.dumps(self.context),\n            \"quality_score\": self.validation_score,\n        }\n\n\n@dataclass\nclass TrainingBatch:\n    \"\"\"Bundle of curated training examples ready for downstream fine-tuning.\"\"\"\n\n    batch_id: str\n    created_at: float\n    examples: List[Dict[str, Any]]\n    priority: int\n    metadata: Dict[str, Any] = field(default_factory=dict)\n    hyperparameters: Optional[Any] = None\n\"\"\"",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\components\\feedback_models.py",
+              "score": 0.1752975196009873,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 829,
+                "file_hash": "ad202010160af75087b9fd24e6f23c7a7ae84037",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\components\\feedback_models.py",
+                "indexed_at": "2025-11-20T15:11:10.374896",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "      <WebSocketProvider defaultRoomId={defaultRoomId} token={token}>\n        {/* Only show main UI when everything is fully loaded */}\n        {isFullyLoaded ? (\n          <Router \n            future={{\n              v7_startTransition: true,\n              v7_relativeSplatPath: true\n            }}\n          >\n            <Routes>\n              <Route\n                path=\"*\"\n                element={\n                  <Layout>\n                    <Suspense fallback={<div className=\"flex items-center justify-center h-full\"><div className=\"text-muted-foreground\">Loading...</div></div>}>\n                      <Routes>\n                        <Route path=\"/\" element={<Navigate to=\"/studio\" replace />} />\n                        <Route path=\"/studio\" element={<Studio />} />\n                        <Route path=\"/intelligence\" element={<Intelligence />} />\n                        <Route path=\"/canvas\" element={<Canvas />} />",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\App.tsx",
+              "score": 0.1737188057040998,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 3220,
+                "file_hash": "c802aa6bda25211f8775ee0015a26b5a0899b13b",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\App.tsx",
+                "indexed_at": "2025-12-08T12:31:16.605492",
+                "start_line": 3201
+              }
+            },
+            {
+              "content": "# FinalProject\n\nThis project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 15.2.4.\n\n## Development server\n\nRun `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.\n\n## Code scaffolding\n\nRun `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.\n\n## Build\n\nRun `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.\n\n## Running unit tests\n\nRun `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).\n\n## Running end-to-end tests\n\nRun `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.\n\n## Further help\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md",
+              "score": 0.17241290983606558,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 26,
+                "file_hash": "f1c79a135116c7cb7e7bbee8627b3c7bbd843075",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md",
+                "indexed_at": "2025-11-20T15:11:25.887818",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "    </div>\n  </div>\n  <div>\n    <label for=\"rememberMe\">Remember me:</label>\n    <input type=\"checkbox\" formControlName=\"rememberMe\" id=\"rememberMe\" />\n  </div>\n  <button mat-raised-button color=\"accent\" type=\"submit\" [disabled]=\"loginForm.invalid\">Login</button>\n  <p> You don't have an account? Register now!</p>\n  <button mat-raised-button color=\"accent\" type=\"button\" (click)=\"redirectToRegister()\">Register</button>\n</form>\n</div>",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.html",
+              "score": 0.16762749445676275,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 811,
+                "file_hash": "36230d43a041fcc42eb9873932da954d065d145b",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.html",
+                "indexed_at": "2025-11-20T15:11:27.015471",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "        \"@material/animation\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/auto-init\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/banner\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/base\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/button\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/card\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/checkbox\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/chips\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/circular-progress\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/data-table\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/density\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/dialog\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/dom\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/drawer\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/elevation\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/fab\": \"15.0.0-canary.684e33d25.0\",\n        \"@material/feature-targeting\": \"15.0.0-canary.684e33d25.0\",",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\package-lock.json",
+              "score": 0.1668395275136848,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 20017,
+                "file_hash": "e8a3f9f2f98873fcedc5fecd482882e2d8c01761",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\package-lock.json",
+                "indexed_at": "2025-11-20T15:11:11.337542",
+                "start_line": 20001
+              }
+            },
+            {
+              "content": "      .catch((error) => {\n        // Failed to load templates - show notification\n        addNotification('error', 'Failed to load templates')\n      })\n      .finally(() => setIsLoading(false))\n  }, [isOpen, addNotification])\n\n  if (!isOpen) return null\n\n  const handleApply = async (templateId: string) => {\n    setIsApplying(templateId)\n    try {\n      const response = await applyTemplate(templateId)\n      onApply(response)\n      addNotification('success', `${response.template.name} template applied`)\n      onClose()\n    } catch (error) {\n      // Failed to apply template - show notification\n      addNotification('error', 'Failed to apply template')\n    } finally {\n      setIsApplying(null)\n    }\n  }\n\n  return (\n    <div className=\"fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-fade-in\">",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\TemplateGallery.tsx",
+              "score": 0.16300236406619384,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 826,
+                "file_hash": "d63b748172ef96651ee75acb6503ce03f8980f0f",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\TemplateGallery.tsx",
+                "indexed_at": "2025-12-08T13:21:59.436736",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "FILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html\nSECTION: 1\n?.errors?.['***REDACTED***Mismatch']\">***REDACTED***s do not match.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"firstName\">First Name:</label>\n    <input type=\"text\" formControlName=\"firstName\" id=\"firstName\" required>\n    <div *ngIf=\"registerForm.get('firstName')?.invalid && (registerForm.get('firstName')?.dirty || registerForm.get('firstName')?.touched)\">\n      <div *ngIf=\"registerForm.get('firstName')?.errors?.['required']\">First name is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"lastName\">Last Name:</label>\n    <input type=\"text\" formControlName=\"lastName\" id=\"lastName\" required>\n    <div *ngIf=\"registerForm.get('lastName')?.invalid && (registerForm.get('lastName')?.dirty || registerForm.get('lastName')?.touched)\">\n      <div *ngIf=\"registerForm.get('lastName')?.errors?.['required']\">Last name is required.</div>\n    </div>\n  </div>\n  <button mat-raised-button color=\"accent\" type=\"submit\" [disabled]=\"registerForm.invalid\">Register</button>\n</form>\n</div>",
+              "file_path": "unknown",
+              "score": 0.15833333333333333,
+              "importance": 0.5,
+              "metadata": {
+                "chunk": 1,
+                "complexity_score": 0.044,
+                "file_type": ".html",
+                "has_documentation": false,
+                "has_tests": true,
+                "importance_score": 0.65,
+                "is_config": false,
+                "kind": "text",
+                "language": "unknown",
+                "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html"
+              }
+            }
+          ],
+          "num_snippets": 18,
+          "avg_score": 0.2126484146557508,
+          "key_entities": [
+            {
+              "name": "UserDto",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs"
+            },
+            {
+              "name": "WeatherForecast",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\WeatherForecast.cs"
+            },
+            {
+              "name": "UsersController",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs"
+            },
+            {
+              "name": "WeatherForecastController",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs"
+            },
+            {
+              "name": "IUserService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs"
+            },
+            {
+              "name": "UserService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs"
+            },
+            {
+              "name": "IMongoDBSettings",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\IMongoDBSettings.cs"
+            },
+            {
+              "name": "MongoDBSettings",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\MongoDBSettings.cs"
+            },
+            {
+              "name": "AppRoutingModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts"
+            },
+            {
+              "name": "AppComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.ts"
+            },
+            {
+              "name": "AppModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts"
+            },
+            {
+              "name": "AuthenticationModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts"
+            },
+            {
+              "name": "LoginComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts"
+            },
+            {
+              "name": "RegisterComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts"
+            },
+            {
+              "name": "NameUppercasePipe",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\pipes\\name-uppercase.pipe.ts"
+            },
+            {
+              "name": "AuthenticationService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts"
+            },
+            {
+              "name": "PhoneService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts"
+            },
+            {
+              "name": "TableRoutingModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table-routing.module.ts"
+            },
+            {
+              "name": "TableModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts"
+            },
+            {
+              "name": "EntryDetailsModalComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\entry-details-modal\\entry-details-modal.component.ts"
+            },
+            {
+              "name": "PhoneComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts"
+            },
+            {
+              "name": "TablePageComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts"
+            },
+            {
+              "name": "Phone",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts"
+            },
+            {
+              "name": "User",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts"
+            }
+          ],
+          "uses_universal_context": true
+        },
+        "kg": {
+          "graph_stats": {
+            "node_count": 104,
+            "edge_count": 127,
+            "file_count": 27,
+            "class_count": 16,
+            "function_count": 3,
+            "total_classes": 16,
+            "total_functions": 3,
+            "total_files": 27,
+            "is_connected": false,
+            "component_count": 5
+          },
+          "relevant_nodes": [],
+          "most_connected": [
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts",
+              "degree": 22
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts",
+              "degree": 15
+            },
+            {
+              "node_id": "module:@angular/core",
+              "degree": 14
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts:table-page.component.ts",
+              "degree": 10
+            },
+            {
+              "node_id": "module:@angular/core/testing",
+              "degree": 8
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts:authentication.module.ts",
+              "degree": 8
+            },
+            {
+              "node_id": "module:@angular/forms",
+              "degree": 7
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts:register.component.ts",
+              "degree": 7
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts:app-routing.module.ts",
+              "degree": 6
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts:login.component.ts",
+              "degree": 6
+            }
+          ],
+          "top_central_nodes": [
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts",
+              "centrality": 0.21359223300970873
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts",
+              "centrality": 0.14563106796116504
+            },
+            {
+              "node_id": "module:@angular/core",
+              "centrality": 0.13592233009708737
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts:table-page.component.ts",
+              "centrality": 0.09708737864077668
+            },
+            {
+              "node_id": "module:@angular/core/testing",
+              "centrality": 0.07766990291262135
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts:authentication.module.ts",
+              "centrality": 0.07766990291262135
+            },
+            {
+              "node_id": "module:@angular/forms",
+              "centrality": 0.06796116504854369
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts:register.component.ts",
+              "centrality": 0.06796116504854369
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts:app-routing.module.ts",
+              "centrality": 0.058252427184466014
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts:login.component.ts",
+              "centrality": 0.058252427184466014
+            }
+          ],
+          "key_terms_searched": [
+            "create",
+            "user"
+          ]
+        },
+        "patterns": {
+          "patterns_available": true,
+          "patterns_detected": [
+            "PatternDetail(name='Observer', pattern_type='Observer', description='Observer pattern detected.', frequency=2, severity='info', files=['C'], suggestions=['Validate observers are unsubscribed properly to avoid memory leaks and unexpected notifications.'])"
+          ],
+          "pattern_count": 1,
+          "code_smells": [],
+          "code_smell_count": 0,
+          "security_issues": [],
+          "security_issue_count": 0,
+          "note": "Real pattern mining data from project analysis"
+        }
+      },
+      "assembled_context": "\ud83d\udd11 === KEY PROJECT ENTITIES (Most Important) ===\n  \u2022 UserDto (class)\n  \u2022 WeatherForecast (class)\n  \u2022 UsersController (class)\n  \u2022 WeatherForecastController (class)\n  \u2022 IUserService (class)\n  \u2022 UserService (class)\n  \u2022 IMongoDBSettings (class)\n  \u2022 MongoDBSettings (class)\n  \u2022 AppRoutingModule (class)\n  \u2022 AppComponent (class)\n  \u2022 AppModule (class)\n  \u2022 AuthenticationModule (class)\n  \u2022 LoginComponent (class)\n  \u2022 RegisterComponent (class)\n  \u2022 NameUppercasePipe (class)\n\n\ud83d\udccb === YOUR REQUIREMENTS ===\nCreate a sequence diagram for a checkout process: User adds item to cart, proceeds to checkout, enters payment details, payment is processed, confirmation is sent\n\ud83d\udcc4 === CODEBASE CONTEXT (High Relevance) ===\n\n--- Snippet 1 (score: 0.334, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\index.css) ---\n    0%, 100% {\n      transform: translateX(-2px);\n    }\n    50% {\n      transform: translateX(2px);\n    }\n  }\n  \n  @keyframes confetti-fall {\n    0% {\n      transform: translateY(0) rotate(0deg);\n      opacity: 1;\n    }\n    100% {\n      transform: translateY(100vh) rotate(720deg);\n      opacity: 0;\n    }\n  }\n  \n  @keyframes bounce-in {\n    0% {\n      transform: translate(-50%, 0) scale(0);\n      opacity: 0;\n    }\n    50% {\n      transform: translate(-50%, 0) scale(1.1);\n    }\n    100% {\n      transform: translate(-50%, 0) scale(1);\n      opacity: 1;\n    }\n  }\n  \n  .animate-float-up {\n    animation: float-up 4s ease-out forwards;\n  }\n  \n  .animate-confetti-fall {\n    animation: confetti-fall 3s ease-out forwards;\n  }\n  \n  .animate-bounce-in {\n    animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;\n  }\n}\n\n\n--- Snippet 2 (score: 0.287, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts) ---\n\n  logout(): void {\n    // remove user token from storage to log user out\n    localStorage.removeItem('authToken');\n    sessionStorage.removeItem('authToken');\n    localStorage.setItem('rememberMe', 'false');\n    this.router.navigateByUrl('/login');\n  }\n\n}\n\n\n--- Snippet 3 (score: 0.254, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\components\\UnifiedStudioTabs.tsx) ---\n    }\n  }, [])\n\n  const handleBulkGenerate = useCallback(async (selectedArtifacts: ArtifactType[]) => {\n    if (!props.meetingNotes || props.meetingNotes.length < 10) {\n      addNotification('error', 'Please provide meeting notes before bulk generation.')\n      return\n    }\n    setIsBulkGenerating(true)\n    try {\n      const response = await bulkGenerate(\n        selectedArtifacts.map((artifact_type) => ({\n          artifact_type,\n          meeting_notes: props.meetingNotes,\n          context_id: props.contextId || undefined,\n        }))\n      )\n      response.forEach((item) => {\n        if (item.artifact) {\n          addArtifact(item.artifact)\n        }\n      })\n      addNotification('success', `Bulk generation triggered for ${selectedArtifacts.length} artifacts.`)\n    } catch (error) {\n      // Bulk generation failed - show user error\n      addNotification('error', 'Bulk generation failed. Please try again.')\n    } finally {\n      setIsBulkGenerating(false)\n    }\n\n--- Snippet 4 (score: 0.244, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\UnifiedStudioTabs.tsx) ---\n                  <MeetingNotesManager />\n                </div>\n                <div className=\"p-6 border-t border-border bg-secondary/10 text-center\">\n                  <p className=\"text-xs text-muted-foreground\">\n                    \ud83d\udca1 <strong>Tip:</strong> For insights into your codebase, visit the <strong>Intelligence</strong> page to view the Knowledge Graph and Pattern Mining results.\n                  </p>\n                </div>\n              </div>\n            </div>\n          </div>\n        )}\n\n        {/* STUDIO VIEW */}\n        {activeView === 'studio' && (\n          <div className=\"h-full p-1 animate-fade-in-up overflow-y-auto custom-scrollbar\">\n            <div className=\"grid grid-cols-12 gap-6 h-full\">\n              {/* Left Column: Inputs */}\n              <div className=\"col-span-4 flex flex-col gap-6 h-full overflow-y-auto overflow-x-hidden custom-scrollbar\">\n                {/* Generation Controls */}\n\n--- Snippet 5 (score: 0.239, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\pages\\Studio.tsx) ---\n    // Other Mermaid\n    { value: 'mermaid_data_flow' as ArtifactType, label: 'Data Flow Diagram', category: 'Mermaid' },\n    { value: 'mermaid_user_flow' as ArtifactType, label: 'User Flow Diagram', category: 'Mermaid' },\n    { value: 'mermaid_component' as ArtifactType, label: 'Component Diagram', category: 'Mermaid' },\n    { value: 'mermaid_system_overview' as ArtifactType, label: 'System Overview', category: 'Mermaid' },\n    { value: 'mermaid_uml' as ArtifactType, label: 'UML Diagram', category: 'Mermaid' },\n    // HTML Diagrams (one for each Mermaid type)\n    { value: 'html_flowchart' as ArtifactType, label: 'HTML Flowchart', category: 'HTML' },\n    { value: 'html_erd' as ArtifactType, label: 'HTML ERD', category: 'HTML' },\n    { value: 'html_class' as ArtifactType, label: 'HTML Class Diagram', category: 'HTML' },\n    { value: 'html_state' as ArtifactType, label: 'HTML State Diagram', category: 'HTML' },\n\n--- Snippet 6 (score: 0.236, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\pages\\Studio.tsx) ---\n    { value: 'mermaid_component', label: 'Component Diagram', category: 'Mermaid' },\n    { value: 'mermaid_system_overview', label: 'System Overview', category: 'Mermaid' },\n    { value: 'mermaid_uml', label: 'UML Diagram', category: 'Mermaid' },\n    // HTML Diagrams (one for each Mermaid type)\n    { value: 'html_flowchart', label: 'HTML Flowchart', category: 'HTML' },\n    { value: 'html_erd', label: 'HTML ERD', category: 'HTML' },\n    { value: 'html_class', label: 'HTML Class Diagram', category: 'HTML' },\n    { value: 'html_state', label: 'HTML State Diagram', category: 'HTML' },\n    { value: 'html_sequence', label: 'HTML Sequence', category: 'HTML' },\n    { value: 'html_architecture', label: 'HTML Architecture', category: 'HTML' },\n    { value: 'html_api_sequence', label: 'HTML API Sequence', category: 'HTML' },\n    { value: 'html_gantt', label: 'HTML Gantt Chart', category: 'HTML' },\n    { value: 'html_pie', label: 'HTML Pie Chart', category: 'HTML' },\n\n--- Snippet 7 (score: 0.235, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\pages\\Studio.tsx) ---\n    { value: 'mermaid_component', label: 'Component Diagram', category: 'Mermaid' },\n    { value: 'mermaid_system_overview', label: 'System Overview', category: 'Mermaid' },\n    { value: 'mermaid_uml', label: 'UML Diagram', category: 'Mermaid' },\n    // HTML Diagrams (one for each Mermaid type)\n    { value: 'html_flowchart', label: 'HTML Flowchart', category: 'HTML' },\n    { value: 'html_erd', label: 'HTML ERD', category: 'HTML' },\n    { value: 'html_class', label: 'HTML Class Diagram', category: 'HTML' },\n    { value: 'html_state', label: 'HTML State Diagram', category: 'HTML' },\n    { value: 'html_sequence', label: 'HTML Sequence', category: 'HTML' },\n    { value: 'html_architecture', label: 'HTML Architecture', category: 'HTML' },\n    { value: 'html_api_sequence', label: 'HTML API Sequence', category: 'HTML' },\n    { value: 'html_gantt', label: 'HTML Gantt Chart', category: 'HTML' },\n    { value: 'html_pie', label: 'HTML Pie Chart', category: 'HTML' },\n\n--- Snippet 8 (score: 0.225, file: unknown) ---\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.scss\nSECTION: 0\n.Register{\n\n    position: relative;\n    height: 100%;\n  \n    &__background-image {\n      position: absolute;\n      top: 0;\n      left: 0;\n      width: 100%;\n      height: 100%;\n      background-image: url('/assets/background.jpg');\n      background-size: cover;\n      z-index: -1;\n    }\n}\n  form {\n    width: 300px;\n    margin: 0 auto;\n    padding: 20px;\n    border-radius: 5px;\n    background-color: white;\n    box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);\n  \n    h2 {\n      margin-bottom: 20px;\n      color: #3f51b5;\n      text-align: center;\n    }\n  \n    div {\n      margin-bottom: 15px;\n      \n      label {\n        color: #3f51b5;\n        font-weight: bold;\n        display: block;\n        margin-bottom: 5px;\n      }\n  \n      input {\n        width: 100%;\n        padding: 10px;\n        border-radius: 5px;\n        border: 1px solid #ddd;\n      }\n    }\n  \n    button {\n      width: 100%;\n      padding: 10px;\n      border: none;\n      border-radius: 5px;\n      background-color: #673ab7;\n      color: white;\n      cursor: pointer;\n      transition: background-color 0.3s ease;\n  \n      &:hover {\n        background-color: #5622a4;\n      }\n  \n      &:disabled {\n        background-color: #ccc;\n        cursor: not-allowed;\n      }\n    }\n  }\n  \n\n--- Snippet 9 (score: 0.224, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\VersionControl.tsx) ---\n    \n    for (const line of lines) {\n      if (line.startsWith('@@')) {\n        // Parse hunk header: @@ -old_start,old_count +new_start,new_count @@\n        const match = line.match(/@@ -(\\d+)(?:,(\\d+))? \\+(\\d+)(?:,(\\d+))? @@/)\n        if (match) {\n          oldLineNum = parseInt(match[1]) - 1\n          newLineNum = parseInt(match[3]) - 1\n        }\n        continue\n      }\n      \n      if (line.startsWith('+') && !line.startsWith('+++')) {\n        newLineNum++\n        changes.push({ type: 'added', line: line.substring(1), lineNumber: newLineNum })\n      } else if (line.startsWith('-') && !line.startsWith('---')) {\n        oldLineNum++\n        changes.push({ type: 'removed', line: line.substring(1), lineNumber: oldLineNum })\n      } else if (line.startsWith(' ')) {\n        oldLineNum++\n        newLineNum++\n        changes.push({ type: 'context', line: line.substring(1), lineNumber: newLineNum })\n      }\n    }\n    \n    return changes\n  }, [gitDiff])\n\n\n--- Snippet 10 (score: 0.189, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\backend\\api\\versions.py) ---\n        )\n    return comparison\n\n\n@router.post(\"/{artifact_id}/restore/{version_number}\", response_model=Dict[str, Any])\n@limiter.limit(\"10/minute\")\nasync def restore_version(\n    request: Request,\n    artifact_id: str,\n    version_number: int,\n    current_user: UserPublic = Depends(get_current_user)\n):\n    \"\"\"Restore a previous version of an artifact.\"\"\"\n    service = get_version_service()\n    result = service.restore_version(artifact_id, version_number)\n    if \"error\" in result:\n        raise HTTPException(\n            status_code=status.HTTP_404_NOT_FOUND,\n            detail=result[\"error\"]\n        )\n    return result\n\n\n@router.get(\"/by-type/{artifact_type}\", response_model=List[Dict[str, Any]])\n@limiter.limit(\"30/minute\")\n\n[... High-Priority RAG truncated to preserve higher-priority context ...]\n\n\ud83e\udde0 === KNOWLEDGE GRAPH INSIGHTS ===\nGraph: 104 nodes, 127 edges\nMost Connected:\n  \u2022 file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts (degree: 22)\n  \u2022 file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts (degree: 15)\n  \u2022 module:@angular/core (degree: 14)\n\n\ud83d\udd0d === DESIGN PATTERNS DETECTED (1) ===\nPatternDetail(name='Observer', pattern_type='Observer', description='Observer pattern detected.', frequency=2, severity='info', files=['C'], suggestions=['Validate observers are unsubscribed properly to avoid memory leaks and unexpected notifications.'])\n\n\ud83d\udcc4 === ADDITIONAL CONTEXT (Lower Relevance) ===\n\n--- Snippet 11 (score: 0.183, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html) ---\n      <div *ngIf=\"registerForm.get('password')?.errors?.['required']\">Password is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"confirmPassword\">Confirm Password:</label>\n    <input type=\"password\" formControlName=\"confirmPassword\" id=\"confirmPassword\" required>\n    <div *ngIf=\"registerForm.get('confirmPassword')?.invalid && (registerForm.get('confirmPassword')?.dirty || registerForm.get('confirmPassword')?.touched)\">\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['required']\">Confirmation password is required.</div>\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['passwordMismatch']\">Passwords do not match.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"firstName\">First Name:</label>\n    <input type=\"text\" formControlName=\"firstName\" id=\"firstName\" required>\n    <div *ngIf=\"registerForm.get('firstName')?.invalid && (registerForm.get('firstName')?.dirty || registerForm.get('firstName')?.touched)\">\n\n--- Snippet 12 (score: 0.175, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\components\\feedback_models.py) ---\n    validation_score: float = 0.0\n    artifact_type: str = \"\"\n    model_used: str = \"\"\n    reward_signal: float = 0.0\n    metadata: Dict[str, Any] = field(default_factory=dict)\n\n    def to_training_example(self) -> Dict[str, Any]:\n        \"\"\"Convert the event into a generic fine-tuning example payload.\"\"\"\n        target = self.corrected_output if self.corrected_output else self.ai_output\n        return {\n            \"instruction\": f\"Generate {self.artifact_type}\",\n            \"input\": self.input_data,\n            \"output\": target,\n            \"context\": json.dumps(self.context),\n            \"quality_score\": self.validation_score,\n        }\n\n\n@dataclass\nclass TrainingBatch:\n    \"\"\"Bundle of curated training examples ready for downstream fine-tuning.\"\"\"\n\n    batch_id: str\n    created_at: float\n    examples: List[Dict[str, Any]]\n    priority: int\n    metadata: Dict[str, Any] = field(default_factory=dict)\n    hyperparameters: Optional[Any] = None\n\"\"\"\n\n--- Snippet 13 (score: 0.174, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\App.tsx) ---\n      <WebSocketProvider defaultRoomId={defaultRoomId} token={token}>\n        {/* Only show main UI when everything is fully loaded */}\n        {isFullyLoaded ? (\n          <Router \n            future={{\n              v7_startTransition: true,\n              v7_relativeSplatPath: true\n            }}\n          >\n            <Routes>\n              <Route\n                path=\"*\"\n                element={\n                  <Layout>\n                    <Suspense fallback={<div className=\"flex items-center justify-center h-full\"><div className=\"text-muted-foreground\">Loading...</div></div>}>\n                      <Routes>\n                        <Route path=\"/\" element={<Navigate to=\"/studio\" replace />} />\n                        <Route path=\"/studio\" element={<Studio />} />\n                        <Route path=\"/intelligence\" element={<Intelligence />} />\n                        <Route path=\"/canvas\" element={<Canvas />} />\n\n--- Snippet 14 (score: 0.172, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md) ---\n# FinalProject\n\nThis project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 15.2.4.\n\n## Development server\n\nRun `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.\n\n## Code scaffolding\n\nRun `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.\n\n## Build\n\nRun `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.\n\n## Running unit tests\n\nRun `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).\n\n## Running end-to-end tests\n\nRun `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.\n\n## Further help\n\n\n--- Snippet 15 (score: 0.168, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.html) ---\n    </div>\n  </div>\n  <div>\n    <label for=\"rememberMe\">Remember me:</label>\n    <input type=\"checkbox\" formControlName=\"rememberMe\" id=\"rememberMe\" />\n  </div>\n  <button mat-raised-button color=\"accent\" type=\"submit\" [disabled]=\"loginForm.invalid\">Login</button>\n  <p> You don't have an account? Register now!</p>\n\n[... Low-Priority RAG truncated to preserve higher-priority context ...]",
+      "truncation_info": {
+        "any_truncated": true,
+        "sections_truncated": [
+          {
+            "section": "High-Priority RAG",
+            "original_tokens": 2837,
+            "budget_tokens": 2800,
+            "reduction_percent": 1.3
+          },
+          {
+            "section": "Low-Priority RAG",
+            "original_tokens": 2182,
+            "budget_tokens": 1200,
+            "reduction_percent": 45.0
+          }
+        ],
+        "token_budget": 8000,
+        "tokens_used": 4310
+      },
+      "from_cache": false,
+      "context_id": "2026-01-22T10:59:48.053659"
+    },
+    "added_at": "2026-01-22T11:00:22.705564"
+  },
+  {
+    "artifact_type": "mermaid_sequence",
+    "content": "sequenceDiagram\n    participant User as User\n    participant Server as Server\n    participant Database as Database\n    User->>Server: Request\n    Server->>Database: Query\n    Database-->>Server: Results\n    Server-->>User: Response",
+    "meeting_notes": "Create a sequence diagram for a checkout process: User adds item to cart, proceeds to checkout, enters payment details, payment is processed, confirmation is sent",
+    "validation_score": 100.0,
+    "model_used": "codellama:7b-instruct-q4_K_M",
+    "context": {},
+    "added_at": "2026-01-22T11:00:22.745815"
   }
 ]

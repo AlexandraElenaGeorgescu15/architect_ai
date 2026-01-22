@@ -2609,5 +2609,746 @@
     "model_used": "gemini-2.5-flash",
     "context": {},
     "added_at": "2026-01-19T20:36:19.638838"
+  },
+  {
+    "artifact_type": "mermaid_flowchart",
+    "content": "flowchart TD\n    A[Start] --> B{Decision}\n    B -->|Yes| C[Process]\n    B -->|No| D[Other]\n    C --> E[End]\n    D --> E",
+    "meeting_notes": "Create a simple flowchart showing user login process with steps: enter credentials, validate, redirect to dashboard or show error",
+    "validation_score": 100.0,
+    "model_used": "codellama:7b-instruct-q4_K_M",
+    "context": {
+      "meeting_notes": "Create a simple flowchart showing user login process with steps: enter credentials, validate, redirect to dashboard or show error",
+      "repo_id": null,
+      "created_at": "2026-01-22T10:50:44.392215",
+      "universal_context": {
+        "project_directories": [
+          "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln",
+          "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project"
+        ],
+        "total_files": 69,
+        "key_entities": [
+          {
+            "name": "UserDto",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs"
+          },
+          {
+            "name": "WeatherForecast",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\WeatherForecast.cs"
+          },
+          {
+            "name": "UsersController",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs"
+          },
+          {
+            "name": "WeatherForecastController",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs"
+          },
+          {
+            "name": "IUserService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs"
+          },
+          {
+            "name": "UserService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs"
+          },
+          {
+            "name": "IMongoDBSettings",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\IMongoDBSettings.cs"
+          },
+          {
+            "name": "MongoDBSettings",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\MongoDBSettings.cs"
+          },
+          {
+            "name": "AppRoutingModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts"
+          },
+          {
+            "name": "AppComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.ts"
+          },
+          {
+            "name": "AppModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts"
+          },
+          {
+            "name": "AuthenticationModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts"
+          },
+          {
+            "name": "LoginComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts"
+          },
+          {
+            "name": "RegisterComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts"
+          },
+          {
+            "name": "NameUppercasePipe",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\pipes\\name-uppercase.pipe.ts"
+          },
+          {
+            "name": "AuthenticationService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts"
+          },
+          {
+            "name": "PhoneService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts"
+          },
+          {
+            "name": "TableRoutingModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table-routing.module.ts"
+          },
+          {
+            "name": "TableModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts"
+          },
+          {
+            "name": "EntryDetailsModalComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\entry-details-modal\\entry-details-modal.component.ts"
+          },
+          {
+            "name": "PhoneComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts"
+          },
+          {
+            "name": "TablePageComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts"
+          },
+          {
+            "name": "Phone",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts"
+          },
+          {
+            "name": "User",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts"
+          }
+        ],
+        "project_map": {
+          "directories": {
+            "final-proj-sln": {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln",
+              "file_count": 14,
+              "subdirectories": []
+            },
+            "final_project": {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project",
+              "file_count": 55,
+              "subdirectories": []
+            }
+          },
+          "file_types": {
+            ".sln": 1,
+            ".json": 9,
+            ".cs": 9,
+            ".csproj": 1,
+            ".md": 1,
+            ".ico": 1,
+            ".html": 7,
+            ".ts": 27,
+            ".scss": 7,
+            ".less": 1,
+            ".jpg": 2
+          },
+          "key_files": [
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Program.cs",
+              "name": "Program.cs",
+              "importance": 1.0
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs",
+              "name": "Controller.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs",
+              "name": "WeatherForecastController.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs",
+              "name": "IUserService.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+              "name": "UserService.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.spec.ts",
+              "name": "authentication.service.spec.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts",
+              "name": "authentication.service.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.spec.ts",
+              "name": "phone.service.spec.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts",
+              "name": "phone.service.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs",
+              "name": "UserDto.cs",
+              "importance": 0.8
+            }
+          ]
+        }
+      },
+      "sources": {
+        "rag": {
+          "context": "=== PROJECT CONTEXT (Universal Knowledge + Targeted Retrieval) ===\n\n\ud83d\udd11 KEY PROJECT ENTITIES:\n  - UserDto (class)\n  - WeatherForecast (class)\n  - UsersController (class)\n  - WeatherForecastController (class)\n  - IUserService (class)\n  - UserService (class)\n  - IMongoDBSettings (class)\n  - MongoDBSettings (class)\n  - AppRoutingModule (class)\n  - AppComponent (class)\n\n\ud83d\udcc4 RELEVANT CODE SNIPPETS (ranked by importance + relevance):\n\n\n--- Snippet 1 \u2b50\u2b50 (score: 0.367) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs\nSECTION: 0\n\ufeffusing System.Threading.Tasks;\n\nnamespace registration_api.Services\n{\n    public interface IUserService\n    {\n        Task<bool> Register(UserDto userDto);\n        Task<UserDto?> Login(UserDto userDto);\n    }\n}\n\n\n--- Snippet 2 \u2b50\u2b50\u2b50\u2b50 (score: 0.303) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts\nimport { Injectable } from '@angular/core';\nimport { HttpClient, HttpHeaders } from '@angular/common/http';\nimport { Observable, tap } from 'rxjs';\nimport { User } from 'src/models/user';\nimport { Router } from '@angular/router';\n\n@Injectable({\n  providedIn: 'root'\n})\nexport class AuthenticationService {\n  private apiUrl = 'https://localhost:7214/Users';\n \n  constructor (private http: HttpClient, private router: Router) { }\n\n  readonly httpOptions = {\n    headers: new HttpHeaders({\n      'Content-Type':  'application/json',\n    })\n  }\n\n  serviceCall() {\n    console.log(\"Service was called\");\n  }\n\n\n  login(user: any): Observable<any> {\n    return this.http.post(`${this.apiUrl}/login`, JSON.stringify(user), this.httpOptions)\n  }\n\n  register(user: any): Observable<any> {\n    return this.http.post(`${this.apiUrl}/register`, JSON.stringify(user), this.httpOptions);\n  }\n\n  logout(): void {\n    // remove user token from storage to log user out\n    localStorage.removeItem('authToken');\n\n--- Snippet 3 \u2b50\u2b50\u2b50\u2b50 (score: 0.300) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs\n\ufeffusing Microsoft.AspNetCore.Mvc;\nusing registration_api.Services;\n\nnamespace registration_api.Controllers\n{\n    [Route(\"[controller]\")]\n    [ApiController]\n    public class UsersController : ControllerBase\n    {\n        private readonly IUserService _userService;\n\n        public UsersController(IUserService userService)\n        {\n            _userService = userService;\n        }\n\n        [HttpPost(\"register\")]\n        public async Task<IActionResult> Register(UserDto userDto)\n        {\n            var success = await _userService.Register(userDto);\n\n            if (success)\n            {\n                return Ok(); // Registration successful\n            }\n            else\n            {\n                return BadRequest(); // Registration failed\n            }\n        }\n\n        [HttpPost(\"login\")]\n        public async Task<IActionResult> Login([FromBody] UserDto userDto)\n        {\n            var success = await _userService.Login(userDto);\n            if (success==null)\n            {\n\n--- Snippet 4 \u2b50\u2b50\u2b50\u2b50 (score: 0.296) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs\n            if (user != null)\n            {\n                return false; // Registration failed\n            }\n            else { \n\n                userDto.Id = Guid.NewGuid();\n                await _users.InsertOneAsync(userDto);\n                return true;\n                 \n            }\n        }\n\n        public async Task<UserDto?> Login(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n                Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n                Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n            );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n            if(user != null)\n            {\n                return user;\n\n            }\n            return null;\n        }\n\n    }\n}\n\n\n--- Snippet 5 \u2b50\u2b50 (score: 0.221) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\components\\UnifiedStudioTabs.tsx\n    } catch (error: any) {\n      console.error('Generation error:', error)\n      addNotification('error', error?.response?.data?.detail || error?.message || 'Failed to generate artifact. Please try again.')\n    }\n  }, [props, selectedFolderId, addNotification])\n\n  const handleAskAi = useCallback(async (question: string) => {\n    if (!question.trim()) return\n    setIsAskingAi(true)\n    setAiResponse(null)\n\n    try {\n      const { sendChatMessage } = await import('../services/chatService')\n      const response = await sendChatMessage({\n        message: question,\n        conversation_history: [],\n        include_project_context: true\n      })\n      setAiResponse(response.message)\n    } catch (error) {\n      // Chat error - show user error\n      setAiResponse('Sorry, I encountered an error. Please try again.')\n    } finally {\n      setIsAskingAi(false)\n    }\n  }, [])\n\n  const handleBulkGenerate = useCallback(async (selectedArtifacts: ArtifactType[]) => {\n\n--- Snippet 6 \u2b50\u2b50 (score: 0.219) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\UnifiedStudioTabs.tsx\n\n    try {\n      const { sendChatMessage } = await import('../services/chatService')\n      const response = await sendChatMessage({\n        message: question,\n        conversation_history: [],\n        include_project_context: true\n      })\n      setAiResponse(response.message)\n    } catch (error) {\n      // Chat error - show user error\n      setAiResponse('Sorry, I encountered an error. Please try again.')\n    } finally {\n      setIsAskingAi(false)\n    }\n  }, [])\n\n  const handleBulkGenerate = useCallback(async (selectedArtifacts: ArtifactType[]) => {\n    if (!props.meetingNotes || props.meetingNotes.length < 10) {\n      addNotification('error', 'Please provide meeting notes before bulk generation.')\n      return\n    }\n    setIsBulkGenerating(true)\n    try {\n      const response = await bulkGenerate(\n        selectedArtifacts.map((artifact_type) => ({\n          artifact_type,\n          meeting_notes: props.meetingNotes,\n          context_id: props.contextId || undefined,\n        }))\n\n--- Snippet 7 \u2b50\u2b50 (score: 0.211) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\index.css\n  /* Royal Violet Gradient */\n  .text-gradient-royal {\n    background-clip: text;\n    -webkit-background-clip: text;\n    -webkit-text-fill-color: transparent;\n    background-image: linear-gradient(\n      135deg,\n      hsl(var(--accent)) 0%,\n      hsl(280 100% 75%) 50%,\n      hsl(var(--primary)) 100%\n    );\n  }\n\n  /* Animations */\n  @keyframes float {\n    0%, 100% { transform: translateY(0px); }\n    50% { transform: translateY(-6px); }\n  }\n  \n  @keyframes pulse-glow {\n    0%, 100% { \n      box-shadow: \n        0 0 0 0 hsl(var(--primary) / 0),\n        0 0 0 0 hsl(var(--accent) / 0);\n    }\n    50% { \n      box-shadow: \n        0 0 30px 0 hsl(var(--primary) / 0.5),\n        0 0 60px 0 hsl(var(--accent) / 0.2);\n    }\n  }\n  \n  @keyframes shimmer {\n    0% { background-position: -200% 0; }\n    100% { background-position: 200% 0; }\n  }\n  \n  @keyframes fade-in-up {\n    0% {\n      opacity: 0;\n      transform: translateY(20px);\n    }\n    100% {\n      opacity: 1;\n      transform: translateY(0);\n\n--- Snippet 8 \u2b50\u2b50 (score: 0.205) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\backend\\api\\versions.py\n\"\"\"\nVersions API endpoints for artifact version tracking.\n\"\"\"\n\nfrom fastapi import APIRouter, HTTPException, status, Depends, Query, Request\nfrom typing import List, Dict, Any, Optional\nimport logging\n\nfrom backend.services.version_service import get_version_service\nfrom backend.core.auth import get_current_user\nfrom backend.models.dto import UserPublic\nfrom backend.core.middleware import limiter\n\nlogger = logging.getLogger(__name__)\n\nrouter = APIRouter(prefix=\"/api/versions\", tags=[\"versions\"])\n\n\n@router.get(\"/{artifact_id}\", response_model=List[Dict[str, Any]])\n@limiter.limit(\"30/minute\")\nasync def get_artifact_versions(\n    request: Request,\n    artifact_id: str,\n    current_user: UserPublic = Depends(get_current_user)\n):\n    \"\"\"Get all versions for an artifact.\"\"\"\n    service = get_version_service()\n    versions = service.get_versions(artifact_id)\n    return versions\n\n\n@router.get(\"/{artifact_id}/current\", response_model=Dict[str, Any])\nasync def get_current_version(\n\n--- Snippet 9 \u2b50\u2b50 (score: 0.204) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\VersionControl.tsx\n                }))\n                versionsByType[artifactType].push(...versionsWithId)\n              }\n            } catch (err) {\n              // Artifact has no versions yet\n              continue\n            }\n          }\n        }\n      }\n      \n      // Convert to artifact_id-based map for compatibility with existing UI\n      // Group by artifact_type, but use artifact_type as the key\n      const versionsMap: Record<string, any[]> = {}\n      for (const [artifactType, versions] of Object.entries(versionsByType)) {\n        // Use artifact_type as key, but we'll need to update the UI to handle this\n        // For now, also create entries for each artifact_id\n        for (const version of versions) {\n          const artifactId = version.artifact_id || artifactType\n          if (!versionsMap[artifactId]) {\n            versionsMap[artifactId] = []\n          }\n          versionsMap[artifactId].push(version)\n        }\n      }\n      \n\n--- Snippet 10 \u2b50\u2b50 (score: 0.200) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\App.tsx\n          </Router>\n        ) : null}\n        <SystemLoadingOverlay \n          status={memoizedSystemStatus as any} \n          error={systemError} \n          isChecking={!isFullyLoaded || isChecking} \n          onRetry={retry}\n          loadingProgress={loadingProgress}\n          loadingMessage={loadingMessage}\n        />\n      </WebSocketProvider>\n    </ErrorBoundary>\n  )\n}\n\nexport default App\n\n\n--- Snippet 11 \u2b50\u2b50 (score: 0.189) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts\nimport { Component, OnInit, Output } from '@angular/core';\nimport { FormBuilder, FormGroup, Validators } from '@angular/forms';\nimport { Router } from '@angular/router';\nimport { AuthenticationService } from 'src/app/services/authentication.service';\nimport { User } from 'src/models/user';\n\n@Component({\n  selector: 'app-login',\n  templateUrl: './login.component.html',\n  styleUrls: ['./login.component.scss']\n})\nexport class LoginComponent implements OnInit{\n  loginForm: FormGroup;\n  \n  constructor(\n    private formBuilder: FormBuilder,\n    private authService: AuthenticationService,\n    private router: Router\n  ) {\n    this.loginForm = this.formBuilder.group({\n      email: ['', [Validators.required, Validators.email]],\n      password: ['', Validators.required],\n      rememberMe: [false]\n    });\n  }\n\n  ngOnInit(): void {\n    this.checkToken();\n  }\n\n  onSubmit() {\n    if (this.loginForm.invalid) {\n      return;\n    }\n    const rememberMe = this.loginForm.value.rememberMe;\n  \n\n--- Snippet 12 \u2b50\u2b50 (score: 0.183) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts\n          Validators.minLength(6),\n        ]\n      ],\n      confirmPassword: ['', Validators.required],\n      firstName: ['', Validators.required, capitalLetterValidator()],\n      lastName: ['', Validators.required, capitalLetterValidator()]\n    }, { validators: this.passwordMatchValidator });\n  }\n\n  onSubmit() {\n    if (this.registerForm.invalid) {\n      return;\n    }\n\n    let user:User={\n      email:this.registerForm.value.email,\n      password:this.registerForm.value.password,\n      lastName:this.registerForm.value.lastName,\n      firstName:this.registerForm.value.firstName\n      }\n      console.log(user)\n      this.authService.register(user).subscribe(\n        () => {\n          console.log('Registration successful');\n          this.router.navigateByUrl('/login');\n        },\n        (error) => {\n          console.log('Registration failed:', error);\n          // Handle registration failure, such as displaying an error message\n        }\n      );\n  }\n\n\n--- Snippet 13 \u2b50\u2b50 (score: 0.178) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md\nRun `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.\n\n## Further help\n\nTo get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.\n\n\n--- Snippet 14 \u2b50\u2b50 (score: 0.177) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts\nSECTION: 1.0\nexport class LoginComponent implements OnInit{\n  loginForm: FormGroup;\n  \n  constructor(\n    private formBuilder: FormBuilder,\n    private authService: AuthenticationService,\n    private router: Router\n  ) {\n    this.loginForm = this.formBuilder.group({\n      email: ['', [Validators.required, Validators.email]],\n      ***REDACTED***: ['', Validators.required],\n      rememberMe: [false]\n    });\n  }\n\n  ngOnInit(): void {\n    this.check***REDACTED***();\n  }\n\n  onSubmit() {\n    if (this.loginForm.invalid) {\n      return;\n    }\n    const rememberMe = this.loginForm.value.rememberMe;\n  \n    let user: User = {\n      email: this.loginForm.value.email,\n      ***REDACTED***: this.loginForm.value.***REDACTED***,\n      lastName: \"name\",\n      firstName: \"name\"\n    };\n  \n    this.authService.login(user).subscribe(\n      x => {\n        console.log(x);\n        const ***REDACTED*** = x.***REDACTED***;\n        if (rememberMe) {\n          localStorage.setItem('auth***REDACTED***', ***REDACTED***);\n          localStorage.setItem('rememberMe', 'true');\n        } else {\n          sessionStorage.setItem('auth***REDACTED***', ***REDACTED***);\n          localStorage.setItem('rememberMe', 'false');\n        }\n        this.router.navigate(['/PAGE']);\n      },\n      error => {\n        if (error.status === 401) {\n          console.log('Invalid email or ***REDACTED***.');\n        } else {\n          console.log('An error occurred. Please try again later.');\n        }\n      }\n    );\n  }\n\n  check***REDACTED***(): void\n\n--- Snippet 15 \u2b50\u2b50 (score: 0.176) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\pages\\Studio.tsx\n    // Other Mermaid\n    { value: 'mermaid_data_flow' as ArtifactType, label: 'Data Flow Diagram', category: 'Mermaid' },\n    { value: 'mermaid_user_flow' as ArtifactType, label: 'User Flow Diagram', category: 'Mermaid' },\n    { value: 'mermaid_component' as ArtifactType, label: 'Component Diagram', category: 'Mermaid' },\n    { value: 'mermaid_system_overview' as ArtifactType, label: 'System Overview', category: 'Mermaid' },\n    { value: 'mermaid_uml' as ArtifactType, label: 'UML Diagram', category: 'Mermaid' },\n    // HTML Diagrams (one for each Mermaid type)\n    { value: 'html_flowchart' as ArtifactType, label: 'HTML Flowchart', category: 'HTML' },\n    { value: 'html_erd' as ArtifactType, label: 'HTML ERD', category: 'HTML' },\n    { value: 'html_class' as ArtifactType, label: 'HTML Class Diagram', category: 'HTML' },\n    { value: 'html_state' as ArtifactType, label: 'HTML State Diagram', category: 'HTML' },\n\n--- Snippet 16 \u2b50\u2b50 (score: 0.176) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html\n      <div *ngIf=\"registerForm.get('password')?.errors?.['required']\">Password is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"confirmPassword\">Confirm Password:</label>\n    <input type=\"password\" formControlName=\"confirmPassword\" id=\"confirmPassword\" required>\n    <div *ngIf=\"registerForm.get('confirmPassword')?.invalid && (registerForm.get('confirmPassword')?.dirty || registerForm.get('confirmPassword')?.touched)\">\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['required']\">Confirmation password is required.</div>\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['passwordMismatch']\">Passwords do not match.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"firstName\">First Name:</label>\n    <input type=\"text\" formControlName=\"firstName\" id=\"firstName\" required>\n    <div *ngIf=\"registerForm.get('firstName')?.invalid && (registerForm.get('firstName')?.dirty || registerForm.get('firstName')?.touched)\">\n\n--- Snippet 17 \u2b50\u2b50 (score: 0.173) ---\nFile: unknown\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts\nSECTION: 1.1\n {\n        if (error.status === 401) {\n          console.log('Invalid email or ***REDACTED***.');\n        } else {\n          console.log('An error occurred. Please try again later.');\n        }\n      }\n    );\n  }\n\n  check***REDACTED***(): void {\n    const rememberMe = localStorage.getItem('rememberMe') === 'true';\n    const ***REDACTED*** = rememberMe ? localStorage.getItem('auth***REDACTED***') : sessionStorage.getItem('auth***REDACTED***');\n    if (rememberMe) {\n      this.router.navigate(['/PAGE']);\n    }\n  }\n  \n\n  get email() {\n    return this.loginForm.get('email');\n  }\n\n  get ***REDACTED***() {\n    return this.loginForm.get('***REDACTED***');\n  }\n\n  redirectToRegister() {\n    this.router.navigate(['/register']);\n  }\n}\n\n\n--- Snippet 18 \u2b50\u2b50 (score: 0.172) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\TemplateGallery.tsx\n      .catch((error) => {\n        // Failed to load templates - show notification\n        addNotification('error', 'Failed to load templates')\n      })\n      .finally(() => setIsLoading(false))\n  }, [isOpen, addNotification])\n\n  if (!isOpen) return null\n\n  const handleApply = async (templateId: string) => {\n    setIsApplying(templateId)\n    try {\n      const response = await applyTemplate(templateId)\n      onApply(response)\n      addNotification('success', `${response.template.name} template applied`)\n      onClose()\n    } catch (error) {\n      // Failed to apply template - show notification\n      addNotification('error', 'Failed to apply template')\n    } finally {\n      setIsApplying(null)\n    }\n  }\n\n  return (\n    <div className=\"fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-fade-in\">",
+          "snippets": [
+            {
+              "content": "FILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs\nSECTION: 0\n\ufeffusing System.Threading.Tasks;\n\nnamespace registration_api.Services\n{\n    public interface IUserService\n    {\n        Task<bool> Register(UserDto userDto);\n        Task<UserDto?> Login(UserDto userDto);\n    }\n}\n",
+              "file_path": "unknown",
+              "score": 0.36722299550307624,
+              "importance": 0.5,
+              "metadata": {
+                "chunk": 0,
+                "complexity_score": 0.0,
+                "file_type": ".cs",
+                "has_documentation": false,
+                "has_tests": false,
+                "importance_score": 0.5,
+                "is_config": false,
+                "kind": "code",
+                "language": "csharp",
+                "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs"
+              }
+            },
+            {
+              "content": "import { Injectable } from '@angular/core';\nimport { HttpClient, HttpHeaders } from '@angular/common/http';\nimport { Observable, tap } from 'rxjs';\nimport { User } from 'src/models/user';\nimport { Router } from '@angular/router';\n\n@Injectable({\n  providedIn: 'root'\n})\nexport class AuthenticationService {\n  private apiUrl = 'https://localhost:7214/Users';\n \n  constructor (private http: HttpClient, private router: Router) { }\n\n  readonly httpOptions = {\n    headers: new HttpHeaders({\n      'Content-Type':  'application/json',\n    })\n  }\n\n  serviceCall() {\n    console.log(\"Service was called\");\n  }\n\n\n  login(user: any): Observable<any> {\n    return this.http.post(`${this.apiUrl}/login`, JSON.stringify(user), this.httpOptions)\n  }\n\n  register(user: any): Observable<any> {\n    return this.http.post(`${this.apiUrl}/register`, JSON.stringify(user), this.httpOptions);\n  }\n\n  logout(): void {\n    // remove user token from storage to log user out\n    localStorage.removeItem('authToken');",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts",
+              "score": 0.30254457126220685,
+              "importance": 0.9,
+              "metadata": {
+                "end_line": 36,
+                "file_hash": "7ecc7b4f320e353f6d28c8780b64e9abe0c694f2",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts",
+                "indexed_at": "2025-11-20T15:11:27.653486",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "\ufeffusing Microsoft.AspNetCore.Mvc;\nusing registration_api.Services;\n\nnamespace registration_api.Controllers\n{\n    [Route(\"[controller]\")]\n    [ApiController]\n    public class UsersController : ControllerBase\n    {\n        private readonly IUserService _userService;\n\n        public UsersController(IUserService userService)\n        {\n            _userService = userService;\n        }\n\n        [HttpPost(\"register\")]\n        public async Task<IActionResult> Register(UserDto userDto)\n        {\n            var success = await _userService.Register(userDto);\n\n            if (success)\n            {\n                return Ok(); // Registration successful\n            }\n            else\n            {\n                return BadRequest(); // Registration failed\n            }\n        }\n\n        [HttpPost(\"login\")]\n        public async Task<IActionResult> Login([FromBody] UserDto userDto)\n        {\n            var success = await _userService.Login(userDto);\n            if (success==null)\n            {",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs",
+              "score": 0.3002906176167906,
+              "importance": 0.9,
+              "metadata": {
+                "end_line": 37,
+                "file_hash": "835883d82f8478c22a71b2cce695c595f7372022",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs",
+                "indexed_at": "2025-11-20T15:11:10.817893",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "            if (user != null)\n            {\n                return false; // Registration failed\n            }\n            else { \n\n                userDto.Id = Guid.NewGuid();\n                await _users.InsertOneAsync(userDto);\n                return true;\n                 \n            }\n        }\n\n        public async Task<UserDto?> Login(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n                Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n                Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n            );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n            if(user != null)\n            {\n                return user;\n\n            }\n            return null;\n        }\n\n    }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+              "score": 0.29557438290493676,
+              "importance": 0.9,
+              "metadata": {
+                "end_line": 832,
+                "file_hash": "ff9b3e84c3737cf9a0979f5770bcb732c95ec1d3",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+                "indexed_at": "2025-11-20T15:11:11.051904",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "    } catch (error: any) {\n      console.error('Generation error:', error)\n      addNotification('error', error?.response?.data?.detail || error?.message || 'Failed to generate artifact. Please try again.')\n    }\n  }, [props, selectedFolderId, addNotification])\n\n  const handleAskAi = useCallback(async (question: string) => {\n    if (!question.trim()) return\n    setIsAskingAi(true)\n    setAiResponse(null)\n\n    try {\n      const { sendChatMessage } = await import('../services/chatService')\n      const response = await sendChatMessage({\n        message: question,\n        conversation_history: [],\n        include_project_context: true\n      })\n      setAiResponse(response.message)\n    } catch (error) {\n      // Chat error - show user error\n      setAiResponse('Sorry, I encountered an error. Please try again.')\n    } finally {\n      setIsAskingAi(false)\n    }\n  }, [])\n\n  const handleBulkGenerate = useCallback(async (selectedArtifacts: ArtifactType[]) => {",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\components\\UnifiedStudioTabs.tsx",
+              "score": 0.2212853472828494,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 8028,
+                "file_hash": "a220811bbbce6d5fceb23e441dcce9736d592e8f",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\components\\UnifiedStudioTabs.tsx",
+                "indexed_at": "2025-12-08T13:21:50.851083",
+                "start_line": 8001
+              }
+            },
+            {
+              "content": "\n    try {\n      const { sendChatMessage } = await import('../services/chatService')\n      const response = await sendChatMessage({\n        message: question,\n        conversation_history: [],\n        include_project_context: true\n      })\n      setAiResponse(response.message)\n    } catch (error) {\n      // Chat error - show user error\n      setAiResponse('Sorry, I encountered an error. Please try again.')\n    } finally {\n      setIsAskingAi(false)\n    }\n  }, [])\n\n  const handleBulkGenerate = useCallback(async (selectedArtifacts: ArtifactType[]) => {\n    if (!props.meetingNotes || props.meetingNotes.length < 10) {\n      addNotification('error', 'Please provide meeting notes before bulk generation.')\n      return\n    }\n    setIsBulkGenerating(true)\n    try {\n      const response = await bulkGenerate(\n        selectedArtifacts.map((artifact_type) => ({\n          artifact_type,\n          meeting_notes: props.meetingNotes,\n          context_id: props.contextId || undefined,\n        }))",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\UnifiedStudioTabs.tsx",
+              "score": 0.21891318133865148,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 6430,
+                "file_hash": "25a86b62f765ad5739e27e5d548b97d51114aded",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\UnifiedStudioTabs.tsx",
+                "indexed_at": "2025-12-08T12:31:21.083585",
+                "start_line": 6401
+              }
+            },
+            {
+              "content": "  /* Royal Violet Gradient */\n  .text-gradient-royal {\n    background-clip: text;\n    -webkit-background-clip: text;\n    -webkit-text-fill-color: transparent;\n    background-image: linear-gradient(\n      135deg,\n      hsl(var(--accent)) 0%,\n      hsl(280 100% 75%) 50%,\n      hsl(var(--primary)) 100%\n    );\n  }\n\n  /* Animations */\n  @keyframes float {\n    0%, 100% { transform: translateY(0px); }\n    50% { transform: translateY(-6px); }\n  }\n  \n  @keyframes pulse-glow {\n    0%, 100% { \n      box-shadow: \n        0 0 0 0 hsl(var(--primary) / 0),\n        0 0 0 0 hsl(var(--accent) / 0);\n    }\n    50% { \n      box-shadow: \n        0 0 30px 0 hsl(var(--primary) / 0.5),\n        0 0 60px 0 hsl(var(--accent) / 0.2);\n    }\n  }\n  \n  @keyframes shimmer {\n    0% { background-position: -200% 0; }\n    100% { background-position: 200% 0; }\n  }\n  \n  @keyframes fade-in-up {\n    0% {\n      opacity: 0;\n      transform: translateY(20px);\n    }\n    100% {\n      opacity: 1;\n      transform: translateY(0);",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\index.css",
+              "score": 0.2105921782635239,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 13645,
+                "file_hash": "0943d728ea8498500c23f5c7643b689696762347",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\index.css",
+                "indexed_at": "2025-12-08T12:31:17.775862",
+                "start_line": 13601
+              }
+            },
+            {
+              "content": "\"\"\"\nVersions API endpoints for artifact version tracking.\n\"\"\"\n\nfrom fastapi import APIRouter, HTTPException, status, Depends, Query, Request\nfrom typing import List, Dict, Any, Optional\nimport logging\n\nfrom backend.services.version_service import get_version_service\nfrom backend.core.auth import get_current_user\nfrom backend.models.dto import UserPublic\nfrom backend.core.middleware import limiter\n\nlogger = logging.getLogger(__name__)\n\nrouter = APIRouter(prefix=\"/api/versions\", tags=[\"versions\"])\n\n\n@router.get(\"/{artifact_id}\", response_model=List[Dict[str, Any]])\n@limiter.limit(\"30/minute\")\nasync def get_artifact_versions(\n    request: Request,\n    artifact_id: str,\n    current_user: UserPublic = Depends(get_current_user)\n):\n    \"\"\"Get all versions for an artifact.\"\"\"\n    service = get_version_service()\n    versions = service.get_versions(artifact_id)\n    return versions\n\n\n@router.get(\"/{artifact_id}/current\", response_model=Dict[str, Any])\nasync def get_current_version(",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\backend\\api\\versions.py",
+              "score": 0.20539463737266167,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 33,
+                "file_hash": "fc7ea93990b3503dfee38dc73bc1727dca6afa95",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\backend\\api\\versions.py",
+                "indexed_at": "2025-12-08T13:21:58.525445",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "                }))\n                versionsByType[artifactType].push(...versionsWithId)\n              }\n            } catch (err) {\n              // Artifact has no versions yet\n              continue\n            }\n          }\n        }\n      }\n      \n      // Convert to artifact_id-based map for compatibility with existing UI\n      // Group by artifact_type, but use artifact_type as the key\n      const versionsMap: Record<string, any[]> = {}\n      for (const [artifactType, versions] of Object.entries(versionsByType)) {\n        // Use artifact_type as key, but we'll need to update the UI to handle this\n        // For now, also create entries for each artifact_id\n        for (const version of versions) {\n          const artifactId = version.artifact_id || artifactType\n          if (!versionsMap[artifactId]) {\n            versionsMap[artifactId] = []\n          }\n          versionsMap[artifactId].push(version)\n        }\n      }\n      ",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\VersionControl.tsx",
+              "score": 0.20442126276914468,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 4826,
+                "file_hash": "ee7657c0a25fcf9affb073dd03dd86bdb4e28d39",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\VersionControl.tsx",
+                "indexed_at": "2025-12-08T13:22:00.288564",
+                "start_line": 4801
+              }
+            },
+            {
+              "content": "          </Router>\n        ) : null}\n        <SystemLoadingOverlay \n          status={memoizedSystemStatus as any} \n          error={systemError} \n          isChecking={!isFullyLoaded || isChecking} \n          onRetry={retry}\n          loadingProgress={loadingProgress}\n          loadingMessage={loadingMessage}\n        />\n      </WebSocketProvider>\n    </ErrorBoundary>\n  )\n}\n\nexport default App\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\App.tsx",
+              "score": 0.20001659615689987,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 4817,
+                "file_hash": "c802aa6bda25211f8775ee0015a26b5a0899b13b",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\App.tsx",
+                "indexed_at": "2025-12-08T12:31:16.605492",
+                "start_line": 4801
+              }
+            },
+            {
+              "content": "import { Component, OnInit, Output } from '@angular/core';\nimport { FormBuilder, FormGroup, Validators } from '@angular/forms';\nimport { Router } from '@angular/router';\nimport { AuthenticationService } from 'src/app/services/authentication.service';\nimport { User } from 'src/models/user';\n\n@Component({\n  selector: 'app-login',\n  templateUrl: './login.component.html',\n  styleUrls: ['./login.component.scss']\n})\nexport class LoginComponent implements OnInit{\n  loginForm: FormGroup;\n  \n  constructor(\n    private formBuilder: FormBuilder,\n    private authService: AuthenticationService,\n    private router: Router\n  ) {\n    this.loginForm = this.formBuilder.group({\n      email: ['', [Validators.required, Validators.email]],\n      password: ['', Validators.required],\n      rememberMe: [false]\n    });\n  }\n\n  ngOnInit(): void {\n    this.checkToken();\n  }\n\n  onSubmit() {\n    if (this.loginForm.invalid) {\n      return;\n    }\n    const rememberMe = this.loginForm.value.rememberMe;\n  ",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts",
+              "score": 0.18934466617393447,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 36,
+                "file_hash": "8fd5ba15032a4e297c694bea9b55da613c57fbd7",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts",
+                "indexed_at": "2025-11-20T15:11:27.181050",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "          Validators.minLength(6),\n        ]\n      ],\n      confirmPassword: ['', Validators.required],\n      firstName: ['', Validators.required, capitalLetterValidator()],\n      lastName: ['', Validators.required, capitalLetterValidator()]\n    }, { validators: this.passwordMatchValidator });\n  }\n\n  onSubmit() {\n    if (this.registerForm.invalid) {\n      return;\n    }\n\n    let user:User={\n      email:this.registerForm.value.email,\n      password:this.registerForm.value.password,\n      lastName:this.registerForm.value.lastName,\n      firstName:this.registerForm.value.firstName\n      }\n      console.log(user)\n      this.authService.register(user).subscribe(\n        () => {\n          console.log('Registration successful');\n          this.router.navigateByUrl('/login');\n        },\n        (error) => {\n          console.log('Registration failed:', error);\n          // Handle registration failure, such as displaying an error message\n        }\n      );\n  }\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts",
+              "score": 0.18271852842186234,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 833,
+                "file_hash": "cdc9fd3f06b93f72ab8b8392a917c9ecfdf190ae",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts",
+                "indexed_at": "2025-11-20T15:11:27.436431",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.\n\n## Further help\n\nTo get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md",
+              "score": 0.1778001961608519,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 806,
+                "file_hash": "f1c79a135116c7cb7e7bbee8627b3c7bbd843075",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md",
+                "indexed_at": "2025-11-20T15:11:25.887818",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "FILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts\nSECTION: 1.0\nexport class LoginComponent implements OnInit{\n  loginForm: FormGroup;\n  \n  constructor(\n    private formBuilder: FormBuilder,\n    private authService: AuthenticationService,\n    private router: Router\n  ) {\n    this.loginForm = this.formBuilder.group({\n      email: ['', [Validators.required, Validators.email]],\n      ***REDACTED***: ['', Validators.required],\n      rememberMe: [false]\n    });\n  }\n\n  ngOnInit(): void {\n    this.check***REDACTED***();\n  }\n\n  onSubmit() {\n    if (this.loginForm.invalid) {\n      return;\n    }\n    const rememberMe = this.loginForm.value.rememberMe;\n  \n    let user: User = {\n      email: this.loginForm.value.email,\n      ***REDACTED***: this.loginForm.value.***REDACTED***,\n      lastName: \"name\",\n      firstName: \"name\"\n    };\n  \n    this.authService.login(user).subscribe(\n      x => {\n        console.log(x);\n        const ***REDACTED*** = x.***REDACTED***;\n        if (rememberMe) {\n          localStorage.setItem('auth***REDACTED***', ***REDACTED***);\n          localStorage.setItem('rememberMe', 'true');\n        } else {\n          sessionStorage.setItem('auth***REDACTED***', ***REDACTED***);\n          localStorage.setItem('rememberMe', 'false');\n        }\n        this.router.navigate(['/PAGE']);\n      },\n      error => {\n        if (error.status === 401) {\n          console.log('Invalid email or ***REDACTED***.');\n        } else {\n          console.log('An error occurred. Please try again later.');\n        }\n      }\n    );\n  }\n\n  check***REDACTED***(): void",
+              "file_path": "unknown",
+              "score": 0.17700304600989533,
+              "importance": 0.5,
+              "metadata": {
+                "chunk": "1.0",
+                "complexity_score": 0.009,
+                "file_type": ".ts",
+                "has_documentation": false,
+                "has_tests": true,
+                "importance_score": 0.65,
+                "is_config": false,
+                "kind": "code",
+                "language": "typescript",
+                "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts"
+              }
+            },
+            {
+              "content": "    // Other Mermaid\n    { value: 'mermaid_data_flow' as ArtifactType, label: 'Data Flow Diagram', category: 'Mermaid' },\n    { value: 'mermaid_user_flow' as ArtifactType, label: 'User Flow Diagram', category: 'Mermaid' },\n    { value: 'mermaid_component' as ArtifactType, label: 'Component Diagram', category: 'Mermaid' },\n    { value: 'mermaid_system_overview' as ArtifactType, label: 'System Overview', category: 'Mermaid' },\n    { value: 'mermaid_uml' as ArtifactType, label: 'UML Diagram', category: 'Mermaid' },\n    // HTML Diagrams (one for each Mermaid type)\n    { value: 'html_flowchart' as ArtifactType, label: 'HTML Flowchart', category: 'HTML' },\n    { value: 'html_erd' as ArtifactType, label: 'HTML ERD', category: 'HTML' },\n    { value: 'html_class' as ArtifactType, label: 'HTML Class Diagram', category: 'HTML' },\n    { value: 'html_state' as ArtifactType, label: 'HTML State Diagram', category: 'HTML' },",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\pages\\Studio.tsx",
+              "score": 0.17631457551059707,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 4811,
+                "file_hash": "3d40cac97effde696176571bc142b48f3bfde8db",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\pages\\Studio.tsx",
+                "indexed_at": "2025-12-08T12:31:28.248235",
+                "start_line": 4801
+              }
+            },
+            {
+              "content": "      <div *ngIf=\"registerForm.get('password')?.errors?.['required']\">Password is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"confirmPassword\">Confirm Password:</label>\n    <input type=\"password\" formControlName=\"confirmPassword\" id=\"confirmPassword\" required>\n    <div *ngIf=\"registerForm.get('confirmPassword')?.invalid && (registerForm.get('confirmPassword')?.dirty || registerForm.get('confirmPassword')?.touched)\">\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['required']\">Confirmation password is required.</div>\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['passwordMismatch']\">Passwords do not match.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"firstName\">First Name:</label>\n    <input type=\"text\" formControlName=\"firstName\" id=\"firstName\" required>\n    <div *ngIf=\"registerForm.get('firstName')?.invalid && (registerForm.get('firstName')?.dirty || registerForm.get('firstName')?.touched)\">",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html",
+              "score": 0.17590196078431372,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 815,
+                "file_hash": "809ad6527386f8bb842a99bb2ae1fa79120a6b95",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html",
+                "indexed_at": "2025-11-20T15:11:27.252077",
+                "start_line": 801
+              }
+            },
+            {
+              "content": "FILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts\nSECTION: 1.1\n {\n        if (error.status === 401) {\n          console.log('Invalid email or ***REDACTED***.');\n        } else {\n          console.log('An error occurred. Please try again later.');\n        }\n      }\n    );\n  }\n\n  check***REDACTED***(): void {\n    const rememberMe = localStorage.getItem('rememberMe') === 'true';\n    const ***REDACTED*** = rememberMe ? localStorage.getItem('auth***REDACTED***') : sessionStorage.getItem('auth***REDACTED***');\n    if (rememberMe) {\n      this.router.navigate(['/PAGE']);\n    }\n  }\n  \n\n  get email() {\n    return this.loginForm.get('email');\n  }\n\n  get ***REDACTED***() {\n    return this.loginForm.get('***REDACTED***');\n  }\n\n  redirectToRegister() {\n    this.router.navigate(['/register']);\n  }\n}\n",
+              "file_path": "unknown",
+              "score": 0.17349505043585714,
+              "importance": 0.5,
+              "metadata": {
+                "chunk": "1.1",
+                "complexity_score": 0.009,
+                "file_type": ".ts",
+                "has_documentation": false,
+                "has_tests": true,
+                "importance_score": 0.65,
+                "is_config": false,
+                "kind": "code",
+                "language": "typescript",
+                "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts"
+              }
+            },
+            {
+              "content": "      .catch((error) => {\n        // Failed to load templates - show notification\n        addNotification('error', 'Failed to load templates')\n      })\n      .finally(() => setIsLoading(false))\n  }, [isOpen, addNotification])\n\n  if (!isOpen) return null\n\n  const handleApply = async (templateId: string) => {\n    setIsApplying(templateId)\n    try {\n      const response = await applyTemplate(templateId)\n      onApply(response)\n      addNotification('success', `${response.template.name} template applied`)\n      onClose()\n    } catch (error) {\n      // Failed to apply template - show notification\n      addNotification('error', 'Failed to apply template')\n    } finally {\n      setIsApplying(null)\n    }\n  }\n\n  return (\n    <div className=\"fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md animate-fade-in\">",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\TemplateGallery.tsx",
+              "score": 0.17216324535679373,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 826,
+                "file_hash": "d63b748172ef96651ee75acb6503ce03f8980f0f",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\TemplateGallery.tsx",
+                "indexed_at": "2025-12-08T13:21:59.436736",
+                "start_line": 801
+              }
+            }
+          ],
+          "num_snippets": 18,
+          "avg_score": 0.21949983551804705,
+          "key_entities": [
+            {
+              "name": "UserDto",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs"
+            },
+            {
+              "name": "WeatherForecast",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\WeatherForecast.cs"
+            },
+            {
+              "name": "UsersController",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs"
+            },
+            {
+              "name": "WeatherForecastController",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs"
+            },
+            {
+              "name": "IUserService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs"
+            },
+            {
+              "name": "UserService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs"
+            },
+            {
+              "name": "IMongoDBSettings",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\IMongoDBSettings.cs"
+            },
+            {
+              "name": "MongoDBSettings",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\MongoDBSettings.cs"
+            },
+            {
+              "name": "AppRoutingModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts"
+            },
+            {
+              "name": "AppComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.ts"
+            },
+            {
+              "name": "AppModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts"
+            },
+            {
+              "name": "AuthenticationModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts"
+            },
+            {
+              "name": "LoginComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts"
+            },
+            {
+              "name": "RegisterComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts"
+            },
+            {
+              "name": "NameUppercasePipe",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\pipes\\name-uppercase.pipe.ts"
+            },
+            {
+              "name": "AuthenticationService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts"
+            },
+            {
+              "name": "PhoneService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts"
+            },
+            {
+              "name": "TableRoutingModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table-routing.module.ts"
+            },
+            {
+              "name": "TableModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts"
+            },
+            {
+              "name": "EntryDetailsModalComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\entry-details-modal\\entry-details-modal.component.ts"
+            },
+            {
+              "name": "PhoneComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts"
+            },
+            {
+              "name": "TablePageComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts"
+            },
+            {
+              "name": "Phone",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts"
+            },
+            {
+              "name": "User",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts"
+            }
+          ],
+          "uses_universal_context": true
+        },
+        "kg": {
+          "graph_stats": {
+            "node_count": 104,
+            "edge_count": 127,
+            "file_count": 27,
+            "class_count": 16,
+            "function_count": 3,
+            "total_classes": 16,
+            "total_functions": 3,
+            "total_files": 27,
+            "is_connected": false,
+            "component_count": 5
+          },
+          "relevant_nodes": [],
+          "most_connected": [
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts",
+              "degree": 22
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts",
+              "degree": 15
+            },
+            {
+              "node_id": "module:@angular/core",
+              "degree": 14
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts:table-page.component.ts",
+              "degree": 10
+            },
+            {
+              "node_id": "module:@angular/core/testing",
+              "degree": 8
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts:authentication.module.ts",
+              "degree": 8
+            },
+            {
+              "node_id": "module:@angular/forms",
+              "degree": 7
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts:register.component.ts",
+              "degree": 7
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts:app-routing.module.ts",
+              "degree": 6
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts:login.component.ts",
+              "degree": 6
+            }
+          ],
+          "top_central_nodes": [
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts",
+              "centrality": 0.21359223300970873
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts",
+              "centrality": 0.14563106796116504
+            },
+            {
+              "node_id": "module:@angular/core",
+              "centrality": 0.13592233009708737
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts:table-page.component.ts",
+              "centrality": 0.09708737864077668
+            },
+            {
+              "node_id": "module:@angular/core/testing",
+              "centrality": 0.07766990291262135
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts:authentication.module.ts",
+              "centrality": 0.07766990291262135
+            },
+            {
+              "node_id": "module:@angular/forms",
+              "centrality": 0.06796116504854369
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts:register.component.ts",
+              "centrality": 0.06796116504854369
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts:app-routing.module.ts",
+              "centrality": 0.058252427184466014
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts:login.component.ts",
+              "centrality": 0.058252427184466014
+            }
+          ],
+          "key_terms_searched": [
+            "create"
+          ]
+        },
+        "patterns": {
+          "patterns_available": true,
+          "patterns_detected": [
+            "PatternDetail(name='Observer', pattern_type='Observer', description='Observer pattern detected.', frequency=2, severity='info', files=['C'], suggestions=['Validate observers are unsubscribed properly to avoid memory leaks and unexpected notifications.'])"
+          ],
+          "pattern_count": 1,
+          "code_smells": [],
+          "code_smell_count": 0,
+          "security_issues": [],
+          "security_issue_count": 0,
+          "note": "Real pattern mining data from project analysis"
+        }
+      },
+      "assembled_context": "\ud83d\udd11 === KEY PROJECT ENTITIES (Most Important) ===\n  \u2022 UserDto (class)\n  \u2022 WeatherForecast (class)\n  \u2022 UsersController (class)\n  \u2022 WeatherForecastController (class)\n  \u2022 IUserService (class)\n  \u2022 UserService (class)\n  \u2022 IMongoDBSettings (class)\n  \u2022 MongoDBSettings (class)\n  \u2022 AppRoutingModule (class)\n  \u2022 AppComponent (class)\n  \u2022 AppModule (class)\n  \u2022 AuthenticationModule (class)\n  \u2022 LoginComponent (class)\n  \u2022 RegisterComponent (class)\n  \u2022 NameUppercasePipe (class)\n\n\ud83d\udccb === YOUR REQUIREMENTS ===\nCreate a simple flowchart showing user login process with steps: enter credentials, validate, redirect to dashboard or show error\n\ud83d\udcc4 === CODEBASE CONTEXT (High Relevance) ===\n\n--- Snippet 1 (score: 0.367, file: unknown) ---\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs\nSECTION: 0\n\ufeffusing System.Threading.Tasks;\n\nnamespace registration_api.Services\n{\n    public interface IUserService\n    {\n        Task<bool> Register(UserDto userDto);\n        Task<UserDto?> Login(UserDto userDto);\n    }\n}\n\n\n--- Snippet 2 (score: 0.303, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts) ---\nimport { Injectable } from '@angular/core';\nimport { HttpClient, HttpHeaders } from '@angular/common/http';\nimport { Observable, tap } from 'rxjs';\nimport { User } from 'src/models/user';\nimport { Router } from '@angular/router';\n\n@Injectable({\n  providedIn: 'root'\n})\nexport class AuthenticationService {\n  private apiUrl = 'https://localhost:7214/Users';\n \n  constructor (private http: HttpClient, private router: Router) { }\n\n  readonly httpOptions = {\n    headers: new HttpHeaders({\n      'Content-Type':  'application/json',\n    })\n  }\n\n  serviceCall() {\n    console.log(\"Service was called\");\n  }\n\n\n  login(user: any): Observable<any> {\n    return this.http.post(`${this.apiUrl}/login`, JSON.stringify(user), this.httpOptions)\n  }\n\n  register(user: any): Observable<any> {\n    return this.http.post(`${this.apiUrl}/register`, JSON.stringify(user), this.httpOptions);\n  }\n\n  logout(): void {\n    // remove user token from storage to log user out\n    localStorage.removeItem('authToken');\n\n--- Snippet 3 (score: 0.300, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs) ---\n\ufeffusing Microsoft.AspNetCore.Mvc;\nusing registration_api.Services;\n\nnamespace registration_api.Controllers\n{\n    [Route(\"[controller]\")]\n    [ApiController]\n    public class UsersController : ControllerBase\n    {\n        private readonly IUserService _userService;\n\n        public UsersController(IUserService userService)\n        {\n            _userService = userService;\n        }\n\n        [HttpPost(\"register\")]\n        public async Task<IActionResult> Register(UserDto userDto)\n        {\n            var success = await _userService.Register(userDto);\n\n            if (success)\n            {\n                return Ok(); // Registration successful\n            }\n            else\n            {\n                return BadRequest(); // Registration failed\n            }\n        }\n\n        [HttpPost(\"login\")]\n        public async Task<IActionResult> Login([FromBody] UserDto userDto)\n        {\n            var success = await _userService.Login(userDto);\n            if (success==null)\n            {\n\n--- Snippet 4 (score: 0.296, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs) ---\n            if (user != null)\n            {\n                return false; // Registration failed\n            }\n            else { \n\n                userDto.Id = Guid.NewGuid();\n                await _users.InsertOneAsync(userDto);\n                return true;\n                 \n            }\n        }\n\n        public async Task<UserDto?> Login(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n                Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n                Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n            );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n            if(user != null)\n            {\n                return user;\n\n            }\n            return null;\n        }\n\n    }\n}\n\n\n--- Snippet 5 (score: 0.221, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\boa\\frontend\\src\\components\\UnifiedStudioTabs.tsx) ---\n    } catch (error: any) {\n      console.error('Generation error:', error)\n      addNotification('error', error?.response?.data?.detail || error?.message || 'Failed to generate artifact. Please try again.')\n    }\n  }, [props, selectedFolderId, addNotification])\n\n  const handleAskAi = useCallback(async (question: string) => {\n    if (!question.trim()) return\n    setIsAskingAi(true)\n    setAiResponse(null)\n\n    try {\n      const { sendChatMessage } = await import('../services/chatService')\n      const response = await sendChatMessage({\n        message: question,\n        conversation_history: [],\n        include_project_context: true\n      })\n      setAiResponse(response.message)\n    } catch (error) {\n      // Chat error - show user error\n      setAiResponse('Sorry, I encountered an error. Please try again.')\n    } finally {\n      setIsAskingAi(false)\n    }\n  }, [])\n\n  const handleBulkGenerate = useCallback(async (selectedArtifacts: ArtifactType[]) => {\n\n--- Snippet 6 (score: 0.219, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\components\\UnifiedStudioTabs.tsx) ---\n\n    try {\n      const { sendChatMessage } = await import('../services/chatService')\n      const response = await sendChatMessage({\n        message: question,\n        conversation_history: [],\n        include_project_context: true\n      })\n      setAiResponse(response.message)\n    } catch (error) {\n      // Chat error - show user error\n      setAiResponse('Sorry, I encountered an error. Please try again.')\n    } finally {\n      setIsAskingAi(false)\n    }\n  }, [])\n\n  const handleBulkGenerate = useCallback(async (selectedArtifacts: ArtifactType[]) => {\n    if (!props.meetingNotes || props.meetingNotes.length < 10) {\n      addNotification('error', 'Please provide meeting notes before bulk generation.')\n      return\n    }\n    setIsBulkGenerating(true)\n    try {\n      const response = await bulkGenerate(\n        selectedArtifacts.map((artifact_type) => ({\n          artifact_type,\n          meeting_notes: props.meetingNotes,\n          context_id: props.contextId || undefined,\n        }))\n\n--- Snippet 7 (score: 0.211, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\index.css) ---\n  /* Royal Violet Gradient */\n  .text-gradient-royal {\n    background-clip: text;\n    -webkit-background-clip: text;\n    -webkit-text-fill-color: transparent;\n    background-image: linear-gradient(\n      135deg,\n      hsl(var(--accent)) 0%,\n      hsl(280 100% 75%) 50%,\n      hsl(var(--primary)) 100%\n    );\n  }\n\n  /* Animations */\n  @keyframes float {\n    0%, 100% { transform: translateY(0px); }\n    50% { transform: translateY(-6px); }\n  }\n  \n  @keyframes pulse-glow {\n    0%, 100% { \n      box-shadow: \n        0 0 0 0 hsl(var(--primary) / 0),\n        0 0 0 0 hsl(var(--accent) / 0);\n    }\n    50% { \n      box-shadow: \n        0 0 30px 0 hsl(var(--primary) / 0.5),\n        0 0 60px 0 hsl(var(--accent) / 0.2);\n    }\n  }\n  \n  @keyframes shimmer {\n    0% { background-position: -200% 0; }\n    100% { background-position: 200% 0; }\n  }\n  \n  @keyframes fade-in-up {\n    0% {\n      opacity: 0;\n      transform: translateY(20px);\n    }\n    100% {\n      opacity: 1;\n      transform: translateY(0);\n\n--- Snippet 8 (score: 0.205, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\backend\\api\\versions.py) ---\n\"\"\"\nVersions API endpoints for artifact version tracking.\n\"\"\"\n\nfrom fastapi import APIRouter, HTTPException, status, Depends, Query, Request\nfrom typing import List, Dict, Any, Optional\nimport logging\n\nfrom backend.services.version_service import get_version_service\nfrom backend.core.auth import get_current_user\nfrom backend.models.dto import UserPublic\nfrom backend.core.middleware import limiter\n\nlogger = logging.getLogger(__name__)\n\nrouter = APIRouter(prefix=\"/api/versions\", tags=[\"versions\"])\n\n\n@router.get(\"/{artifact_id}\", response_model=List[Dict[str, Any]])\n@limiter.limit(\"30/minute\")\nasync def get_artifact_versions(\n    request: Request,\n    artifact_id: str,\n    current_user: UserPublic = Depends(get_current_user)\n):\n    \"\"\"Get all versions for an artifact.\"\"\"\n    service = get_version_service()\n    versions = service.get_versions(artifact_id)\n    return versions\n\n\n@router.get(\"/{artifact_id}/current\", response_model=Dict[str, Any])\nasync def get_current_version(\n\n--- Snippet 9 (score: 0.204, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\cmq\\frontend\\src\\components\\VersionControl.tsx) ---\n                }))\n                versionsByType[artifactType].push(...versionsWithId)\n              }\n            } catch (err) {\n              // Artifact has no versions yet\n              continue\n            }\n          }\n        }\n      }\n      \n      // Convert to artifact_id-based map for compatibility with existing UI\n      // Group by artifact_type, but use artifact_type as the key\n      const versionsMap: Record<string, any[]> = {}\n      for (const [artifactType, versions] of Object.entries(versionsByType)) {\n        // Use artifact_type as key, but we'll need to update the UI to handle this\n        // For now, also create entries for each artifact_id\n        for (const version of versions) {\n          const artifactId = version.artifact_id || artifactType\n          if (!versionsMap[artifactId]) {\n            versionsMap[artifactId] = []\n          }\n          versionsMap[artifactId].push(version)\n        }\n      }\n      \n\n--- Snippet 10 (score: 0.200, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\App.tsx) ---\n          </Router>\n        ) : null}\n        <SystemLoadingOverlay \n          status={memoizedSystemStatus as any} \n          error={systemError} \n          isChecking={!isFullyLoaded || isChecking} \n          onRetry={retry}\n          loadingProgress={loadingProgress}\n          loadingMessage={loadingMessage}\n        />\n      </WebSocketProvider>\n    </ErrorBoundary>\n  )\n}\n\nexport default App\n\n\n\ud83e\udde0 === KNOWLEDGE GRAPH INSIGHTS ===\nGraph: 104 nodes, 127 edges\nMost Connected:\n  \u2022 file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts (degree: 22)\n  \u2022 file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts (degree: 15)\n  \u2022 module:@angular/core (degree: 14)\n\n\ud83d\udd0d === DESIGN PATTERNS DETECTED (1) ===\nPatternDetail(name='Observer', pattern_type='Observer', description='Observer pattern detected.', frequency=2, severity='info', files=['C'], suggestions=['Validate observers are unsubscribed properly to avoid memory leaks and unexpected notifications.'])\n\n\ud83d\udcc4 === ADDITIONAL CONTEXT (Lower Relevance) ===\n\n--- Snippet 11 (score: 0.189, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts) ---\nimport { Component, OnInit, Output } from '@angular/core';\nimport { FormBuilder, FormGroup, Validators } from '@angular/forms';\nimport { Router } from '@angular/router';\nimport { AuthenticationService } from 'src/app/services/authentication.service';\nimport { User } from 'src/models/user';\n\n@Component({\n  selector: 'app-login',\n  templateUrl: './login.component.html',\n  styleUrls: ['./login.component.scss']\n})\nexport class LoginComponent implements OnInit{\n  loginForm: FormGroup;\n  \n  constructor(\n    private formBuilder: FormBuilder,\n    private authService: AuthenticationService,\n    private router: Router\n  ) {\n    this.loginForm = this.formBuilder.group({\n      email: ['', [Validators.required, Validators.email]],\n      password: ['', Validators.required],\n      rememberMe: [false]\n    });\n  }\n\n  ngOnInit(): void {\n    this.checkToken();\n  }\n\n  onSubmit() {\n    if (this.loginForm.invalid) {\n      return;\n    }\n    const rememberMe = this.loginForm.value.rememberMe;\n  \n\n--- Snippet 12 (score: 0.183, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts) ---\n          Validators.minLength(6),\n        ]\n      ],\n      confirmPassword: ['', Validators.required],\n      firstName: ['', Validators.required, capitalLetterValidator()],\n      lastName: ['', Validators.required, capitalLetterValidator()]\n    }, { validators: this.passwordMatchValidator });\n  }\n\n  onSubmit() {\n    if (this.registerForm.invalid) {\n      return;\n    }\n\n    let user:User={\n      email:this.registerForm.value.email,\n      password:this.registerForm.value.password,\n      lastName:this.registerForm.value.lastName,\n      firstName:this.registerForm.value.firstName\n      }\n      console.log(user)\n      this.authService.register(user).subscribe(\n        () => {\n          console.log('Registration successful');\n          this.router.navigateByUrl('/login');\n        },\n        (error) => {\n          console.log('Registration failed:', error);\n          // Handle registration failure, such as displaying an error message\n        }\n      );\n  }\n\n\n--- Snippet 13 (score: 0.178, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md) ---\nRun `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.\n\n## Further help\n\nTo get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.\n\n\n--- Snippet 14 (score: 0.177, file: unknown) ---\nFILE: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts\nSECTION: 1.0\nexport class LoginComponent implements OnInit{\n  loginForm: FormGroup;\n  \n  constructor(\n    private formBuilder: FormBuilder,\n    private authService: AuthenticationService,\n    private router: Router\n  ) {\n    this.loginForm = this.formBuilder.group({\n      email: ['', [Validators.required, Validators.email]],\n      ***REDACTED***: ['', Validators.required],\n      rememberMe: [false]\n    });\n  }\n\n  ngOnInit(): void {\n    this.check***REDACTED***();\n  }\n\n  onSubmit() {\n    if (this.loginForm.invalid) {\n      return;\n    }\n    const rememberMe = this.loginForm.value.rememberMe;\n  \n    let user: User = {\n      email: this.loginForm.value.email,\n      ***REDACTED***: this.loginForm.value.***REDACTED***,\n      lastName: \"name\",\n      firstName: \"name\"\n    };\n  \n    this.authService.login(user).subscribe(\n      x => {\n        console.log(x);\n        const ***REDACTED*** = x.***REDACTED***;\n        if (rememberMe) {\n          localStorage.setItem('auth***REDACTED***', ***REDACTED***);\n          localStorage.setItem('rememberMe', 'true');\n        } else {\n          sessionStorage.setItem('auth***REDACTED***', ***REDACTED***);\n          localStorage.setItem('rememberMe', 'false');\n        }\n        this.router.navigate(['/PAGE']);\n      },\n      error => {\n        if (error.status === 401) {\n          console.log('Invalid email or ***REDACTED***.');\n        } else {\n          console.log('An error occurred. Please try again later.');\n        }\n      }\n    );\n  }\n\n  check***REDACTED***(): void\n\n--- Snippet 15 (score: 0.176, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\wzs\\frontend\\src\\pages\\Studio.tsx) ---\n    // Other Mermaid\n    { value: 'mermaid_data_flow' as ArtifactType, label: 'Data Flow Diagram', category: 'Mermaid' },\n    { value: 'mermaid_user_flow' as ArtifactType, label: 'User Flow Diagram', category: 'Mermaid' },\n    { value: 'mermaid_component' as ArtifactType, label: 'Component Diagram', category: 'Mermaid' },\n    { value: 'mermaid_system_overview' as ArtifactType, label: 'System Overview', category: 'Mermaid' },\n\n[... Low-Priority RAG truncated to preserve higher-priority context ...]",
+      "truncation_info": {
+        "any_truncated": true,
+        "sections_truncated": [
+          {
+            "section": "Low-Priority RAG",
+            "original_tokens": 2086,
+            "budget_tokens": 1200,
+            "reduction_percent": 42.5
+          }
+        ],
+        "token_budget": 8000,
+        "tokens_used": 3813
+      },
+      "from_cache": false,
+      "context_id": "2026-01-22T10:50:44.392215"
+    },
+    "added_at": "2026-01-22T10:52:06.785815"
+  },
+  {
+    "artifact_type": "mermaid_flowchart",
+    "content": "flowchart TD\n    A[Start] --> B{Decision}\n    B -->|Yes| C[Process]\n    B -->|No| D[Other]\n    C --> E[End]\n    D --> E",
+    "meeting_notes": "Create a simple flowchart showing user login process with steps: enter credentials, validate, redirect to dashboard or show error",
+    "validation_score": 100.0,
+    "model_used": "codellama:7b-instruct-q4_K_M",
+    "context": {},
+    "added_at": "2026-01-22T10:52:06.843307"
   }
 ]
