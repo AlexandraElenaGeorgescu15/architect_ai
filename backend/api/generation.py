@@ -56,9 +56,17 @@ async def generate_artifact(
         }
     }
     """
-    logger.info(f"📥 [GENERATION] Received generation request: artifact_type={gen_request.artifact_type}, "
-                f"has_meeting_notes={bool(gen_request.meeting_notes)}, "
-                f"folder_id={gen_request.folder_id}, context_id={gen_request.context_id}")
+    logger.info(f"🚀 [GENERATION] ========== GENERATE ARTIFACT REQUEST RECEIVED ==========")
+    logger.info(f"🚀 [GENERATION] Step 1: Request received")
+    logger.info(f"🚀 [GENERATION] Step 1.1: URL={request.url}, Method={request.method}")
+    logger.info(f"🚀 [GENERATION] Step 1.2: Client={request.client.host if request.client else 'unknown'}")
+    logger.info(f"🚀 [GENERATION] Step 1.3: User={current_user.username if current_user else 'anonymous'}")
+    logger.info(f"🚀 [GENERATION] Step 2: Parsing request body")
+    logger.info(f"🚀 [GENERATION] Step 2.1: artifact_type={gen_request.artifact_type}")
+    logger.info(f"🚀 [GENERATION] Step 2.2: has_meeting_notes={bool(gen_request.meeting_notes)}, meeting_notes_length={len(gen_request.meeting_notes) if gen_request.meeting_notes else 0}")
+    logger.info(f"🚀 [GENERATION] Step 2.3: folder_id={gen_request.folder_id}")
+    logger.info(f"🚀 [GENERATION] Step 2.4: context_id={gen_request.context_id}")
+    logger.info(f"🚀 [GENERATION] Step 2.5: options={gen_request.options.dict() if gen_request.options else None}")
     
     # Validate request
     if not gen_request.meeting_notes and not gen_request.context_id and not gen_request.folder_id:
@@ -664,6 +672,10 @@ async def list_artifacts(
     Returns:
         List of artifact objects with id, type, content, validation, folder_id, etc.
     """
+    logger.info(f"📋 [LIST_ARTIFACTS] ========== LIST ARTIFACTS REQUEST ==========")
+    logger.info(f"📋 [LIST_ARTIFACTS] Step 1: Initializing list request")
+    logger.info(f"📋 [LIST_ARTIFACTS] Step 1.1: all_versions={all_versions}, folder_id={folder_id}")
+    
     service = get_service()
     artifacts = []
     artifact_ids_seen = set()  # Track to avoid duplicates
@@ -684,10 +696,14 @@ async def list_artifacts(
             return content
     
     # 1. Get all completed artifacts from active_jobs (in-memory, current session)
+    logger.info(f"📋 [LIST_ARTIFACTS] Step 2: Loading artifacts from active_jobs (in-memory)")
+    logger.info(f"📋 [LIST_ARTIFACTS] Step 2.1: Checking {len(service.active_jobs)} active jobs")
+    active_jobs_count = 0
     for job_id, job in service.active_jobs.items():
         if job.get("status") == GenerationStatus.COMPLETED.value:
             artifact = job.get("artifact")
             if artifact:
+                active_jobs_count += 1
                 # Get artifact's folder_id (from artifact or job)
                 # If null, assign to default orphan folder
                 artifact_folder_id = artifact.get("folder_id") or job.get("folder_id")
@@ -696,6 +712,7 @@ async def list_artifacts(
                 
                 # Filter by folder_id if specified
                 if folder_id and artifact_folder_id != folder_id:
+                    logger.debug(f"📋 [LIST_ARTIFACTS] Step 2.{active_jobs_count}: Skipping artifact (folder mismatch): {artifact_folder_id} != {folder_id}")
                     continue
                 
                 artifact_id = artifact.get("id") or artifact.get("artifact_id") or job_id
@@ -705,6 +722,8 @@ async def list_artifacts(
                     raw_content = artifact.get("content") or job.get("artifact_content", "")
                     # Clean artifact content using centralized cleaner
                     cleaned_content = clean_artifact_content(raw_content, artifact_type)
+                    
+                    logger.info(f"📋 [LIST_ARTIFACTS] Step 2.{active_jobs_count}: Adding artifact from active_jobs: id={artifact_id}, type={artifact_type}, folder_id={artifact_folder_id}")
                     
                     # Convert to frontend format
                     artifact_dict = {
@@ -727,13 +746,17 @@ async def list_artifacts(
                     if "attempts" in artifact:
                         artifact_dict["attempts"] = artifact["attempts"]
                     artifacts.append(artifact_dict)
+    logger.info(f"📋 [LIST_ARTIFACTS] Step 2.2: Found {active_jobs_count} completed artifacts in active_jobs, added {len([a for a in artifacts if a.get('id') in artifact_ids_seen])} to list")
     
     # 2. Load artifacts from VersionService (persistent storage)
+    logger.info(f"📋 [LIST_ARTIFACTS] Step 3: Loading artifacts from VersionService (persistent storage)")
     try:
         from backend.services.version_service import get_version_service
         version_service = get_version_service()
+        logger.info(f"📋 [LIST_ARTIFACTS] Step 3.1: VersionService has {len(version_service.versions)} artifacts with versions")
         
         if all_versions:
+            logger.info(f"📋 [LIST_ARTIFACTS] Step 3.2: Returning ALL versions")
             # Return ALL versions of ALL artifacts
             for artifact_id, versions in version_service.versions.items():
                 if not versions:
@@ -779,10 +802,13 @@ async def list_artifacts(
                     artifacts.append(artifact_dict)
         else:
             # Return only current/latest version per artifact (original behavior)
+            logger.info(f"📋 [LIST_ARTIFACTS] Step 3.2: Returning only latest version per artifact")
+            version_service_count = 0
             for artifact_id, versions in version_service.versions.items():
                 if not versions:
                     continue
                 
+                version_service_count += 1
                 # Get the current version (is_current=True) or latest version
                 current_version = None
                 for version in versions:
@@ -803,6 +829,7 @@ async def list_artifacts(
                     
                     # Filter by folder_id if specified
                     if folder_id and version_folder_id != folder_id:
+                        logger.debug(f"📋 [LIST_ARTIFACTS] Step 3.2.{version_service_count}: Skipping artifact (folder mismatch): {version_folder_id} != {folder_id}")
                         continue
                     
                     artifact_ids_seen.add(artifact_id)
@@ -810,6 +837,8 @@ async def list_artifacts(
                     raw_content = current_version.get("content", "")
                     # Clean artifact content using centralized cleaner
                     cleaned_content = clean_artifact_content(raw_content, artifact_type)
+                    
+                    logger.info(f"📋 [LIST_ARTIFACTS] Step 3.2.{version_service_count}: Adding artifact from VersionService: id={artifact_id}, type={artifact_type}, folder_id={version_folder_id}, content_length={len(cleaned_content)}")
                     
                     # Convert version to frontend format
                     artifact_dict = {
@@ -830,18 +859,24 @@ async def list_artifacts(
                     if "attempts" in metadata:
                         artifact_dict["attempts"] = metadata["attempts"]
                     artifacts.append(artifact_dict)
+            logger.info(f"📋 [LIST_ARTIFACTS] Step 3.3: Processed {version_service_count} artifacts from VersionService, added {len([a for a in artifacts if a.get('id') not in [x.get('id') for x in artifacts[:active_jobs_count]]])} new artifacts")
     except Exception as e:
-        logger.warning(f"Failed to load artifacts from version service: {e}")
+        logger.error(f"📋 [LIST_ARTIFACTS] Step 3.ERROR: Failed to load artifacts from version service: {e}", exc_info=True)
+    
+    logger.info(f"📋 [LIST_ARTIFACTS] Step 4: Processing results")
+    logger.info(f"📋 [LIST_ARTIFACTS] Step 4.1: Total artifacts collected: {len(artifacts)}")
     
     if all_versions:
         # Return all versions, sorted by created_at descending (newest first)
         artifacts.sort(key=lambda x: x.get("created_at", ""), reverse=True)
-        logger.info(f"📋 [GENERATION] Returning {len(artifacts)} artifacts (all versions)")
+        logger.info(f"📋 [LIST_ARTIFACTS] Step 4.2: Returning {len(artifacts)} artifacts (all versions)")
+        logger.info(f"📋 [LIST_ARTIFACTS] ========== LIST ARTIFACTS COMPLETE ==========")
         return artifacts
     
     # Group by (folder_id + artifact_type) and keep only the latest version per type per folder
     # FIX: Previously only grouped by artifact_type, which meant all folders shared the same artifact
     # Now each folder gets its own artifact per type
+    logger.info(f"📋 [LIST_ARTIFACTS] Step 4.2: Grouping by folder_id + artifact_type")
     artifacts_by_key: Dict[str, Dict] = {}
     for artifact in artifacts:
         artifact_type = artifact.get("type", "unknown")
@@ -855,17 +890,21 @@ async def list_artifacts(
         # If we haven't seen this key, or this one is newer, keep it
         if group_key not in artifacts_by_key:
             artifacts_by_key[group_key] = artifact
+            logger.debug(f"📋 [LIST_ARTIFACTS] Step 4.2.1: Added artifact to group: {group_key}")
         else:
             existing = artifacts_by_key[group_key]
             existing_date = existing.get("created_at", "")
             if created_at > existing_date:
                 artifacts_by_key[group_key] = artifact
+                logger.debug(f"📋 [LIST_ARTIFACTS] Step 4.2.1: Replaced artifact in group (newer): {group_key}")
     
     # Convert back to list and sort by created_at descending (newest first)
     latest_artifacts = list(artifacts_by_key.values())
     latest_artifacts.sort(key=lambda x: x.get("created_at", ""), reverse=True)
     
-    logger.info(f"📋 [GENERATION] Returning {len(latest_artifacts)} artifacts (latest version per type per folder, from {len(artifacts)} total)")
+    logger.info(f"📋 [LIST_ARTIFACTS] Step 4.3: Grouped to {len(latest_artifacts)} unique artifacts (from {len(artifacts)} total)")
+    logger.info(f"📋 [LIST_ARTIFACTS] Step 4.4: Artifact IDs: {[a.get('id') for a in latest_artifacts[:10]]}...")  # Show first 10
+    logger.info(f"📋 [LIST_ARTIFACTS] ========== LIST ARTIFACTS COMPLETE ==========")
     return latest_artifacts
 
 

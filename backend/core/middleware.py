@@ -274,9 +274,13 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
         operation_var.set(operation)
         
         # Log request (skip for health checks)
-        if not skip_logging:
-            logger.info(
-                "Request started",
+        # CRITICAL: Always log generation requests for debugging
+        is_generation_request = path.startswith("/api/generation/")
+        if not skip_logging or is_generation_request:
+            log_level = "info" if not is_generation_request else "warning"  # Make generation requests more visible
+            logger.log(
+                logging.WARNING if is_generation_request else logging.INFO,
+                f"🌐 [MIDDLEWARE] {'=' * 20} REQUEST RECEIVED {'=' * 20}",
                 extra={
                     "request_id": request_id,
                     "method": request.method,
@@ -284,6 +288,7 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
                     "query": str(request.query_params),
                     "client": request.client.host if request.client else None,
                     "user_agent": request.headers.get("user-agent"),
+                    "is_generation": is_generation_request,
                 }
             )
         

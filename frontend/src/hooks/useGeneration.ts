@@ -145,6 +145,11 @@ export function useGeneration() {
     
     // Trigger celebration effect! 🎉
     window.dispatchEvent(new CustomEvent('celebrate-generation'))
+    
+    // CRITICAL FIX: Trigger artifact reload to ensure UI updates
+    // This ensures artifacts appear even if WebSocket event doesn't fully update the store
+    console.log('🔄 [FRONTEND] Triggering artifact reload after generation')
+    window.dispatchEvent(new CustomEvent('reload-artifacts'))
   })
 
   // Listen for generation error events

@@ -6,6 +6,7 @@ import OnboardingTour from './components/OnboardingTour'
 import CelebrationEffect from './components/CelebrationEffect'
 import SystemLoadingOverlay from './components/SystemLoadingOverlay'
 import BackendSettings from './components/BackendSettings'
+import RobotGame from './components/RobotGame'
 import { useSystemStatus } from './hooks/useSystemStatus'
 import { useAppLoading } from './hooks/useAppLoading'
 
@@ -99,19 +100,87 @@ class ErrorBoundary extends React.Component<
         )
       }
       
-      // Generic error handling
+      // Generic error handling - show RobotGame like the loading overlay
       return (
-        <div style={{ padding: '20px', fontFamily: 'sans-serif', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ maxWidth: '500px', padding: '20px', border: '1px solid #ccc', borderRadius: '8px' }}>
-            <h1 style={{ color: '#dc2626', marginBottom: '16px' }}>Application Error</h1>
-            <p style={{ marginBottom: '16px', color: '#666' }}>{this.state.error.message}</p>
-            <p style={{ marginBottom: '16px', color: '#666', fontSize: '14px' }}>Check the browser console (F12) for more details.</p>
-            <button
-              onClick={() => window.location.reload()}
-              style={{ padding: '8px 16px', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-            >
-              Reload Page
-            </button>
+        <div className="fixed inset-0 z-[1000] flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm overflow-y-auto">
+          <div className="w-full max-w-4xl rounded-3xl border border-border bg-card/95 p-8 shadow-2xl shadow-black/10 my-8">
+            {/* Header Section with Game */}
+            <div className="mb-6">
+              <div className="flex items-start gap-6 mb-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm uppercase tracking-[0.3em] text-muted-foreground font-semibold">
+                    APPLICATION ERROR
+                  </p>
+                  <h1 className="text-2xl font-bold text-foreground mt-1" style={{ color: '#dc2626' }}>
+                    Something went wrong
+                  </h1>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    {this.state.error.message || 'An unexpected error occurred'}
+                  </p>
+                </div>
+              </div>
+              
+              {/* Interactive Robot Game - Full Width */}
+              <div className="w-full flex justify-center">
+                <div className="w-full max-w-md">
+                  <RobotGame className="w-full" />
+                  <p className="text-xs text-muted-foreground mt-2 text-center">
+                    Press SPACE to play while we fix this
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Error Details */}
+            <div className="mt-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30">
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-red-500/20 rounded-lg flex-shrink-0">
+                  <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm text-red-700 dark:text-red-400">Error Details</p>
+                  <p className="text-xs text-red-600/80 dark:text-red-400/70 mt-1">
+                    Check the browser console (F12) for more details. This error has been logged.
+                  </p>
+                  {this.state.error.stack && (
+                    <details className="mt-2">
+                      <summary className="text-xs text-red-600/60 dark:text-red-400/60 cursor-pointer hover:text-red-600 dark:hover:text-red-400">
+                        Show stack trace
+                      </summary>
+                      <pre className="mt-2 text-xs text-red-600/80 dark:text-red-400/70 overflow-auto max-h-32 p-2 bg-red-500/5 rounded">
+                        {this.state.error.stack}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex items-center justify-between pt-6 border-t border-border">
+              <div className="text-xs text-muted-foreground">
+                <span>An error occurred while rendering the application. Try reloading the page.</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => window.location.reload()}
+                  className="rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold uppercase tracking-wider text-foreground hover:bg-muted transition-colors shadow-sm"
+                >
+                  Reload Page
+                </button>
+                <button
+                  onClick={() => {
+                    // Clear localStorage and reload
+                    localStorage.clear()
+                    window.location.reload()
+                  }}
+                  className="rounded-full border border-border bg-muted px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-muted/80 transition-colors shadow-sm"
+                >
+                  Clear & Reload
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )

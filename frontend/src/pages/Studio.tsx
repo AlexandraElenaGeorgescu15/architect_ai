@@ -96,7 +96,18 @@ function Studio() {
       loadArtifacts()
     }
     window.addEventListener('focus', handleFocus)
-    return () => window.removeEventListener('focus', handleFocus)
+    
+    // CRITICAL FIX: Reload artifacts when generation completes
+    const handleReloadArtifacts = () => {
+      console.log('🔄 [STUDIO] Reloading artifacts after generation complete')
+      loadArtifacts()
+    }
+    window.addEventListener('reload-artifacts', handleReloadArtifacts)
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('reload-artifacts', handleReloadArtifacts)
+    }
   }, [setArtifacts, setLoading, currentFolderId])
 
   // Memoize artifact types to prevent recreation on every render

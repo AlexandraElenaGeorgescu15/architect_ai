@@ -760,29 +760,133 @@ class GenerationService:
         Returns:
             Updated artifact dictionary or None if not found
         """
+        logger.info(f"✏️ [GEN_SERVICE] ========== UPDATE ARTIFACT STARTED ==========")
+        logger.info(f"✏️ [GEN_SERVICE] Step 1: Updating artifact")
+        logger.info(f"✏️ [GEN_SERVICE] Step 1.1: artifact_id={artifact_id}, content_length={len(content)}, has_metadata={bool(metadata)}")
+        
+        updated_artifact = None
+        
         # Find artifact in active jobs
+        logger.info(f"✏️ [GEN_SERVICE] Step 2: Checking active_jobs")
         if artifact_id in self.active_jobs:
+            logger.info(f"✏️ [GEN_SERVICE] Step 2.1: Found artifact in active_jobs")
             job = self.active_jobs[artifact_id]
+            artifact = job.get("artifact", {})
+            artifact_type = artifact.get("artifact_type") or artifact.get("type") or job.get("artifact_type", "unknown")
+            
+            # Update in-memory job
             job["artifact_content"] = content
             job["updated_at"] = datetime.now().isoformat()
+            if artifact:
+                artifact["content"] = content
+                artifact["updated_at"] = datetime.now().isoformat()
             if metadata:
                 if "metadata" not in job:
                     job["metadata"] = {}
                 job["metadata"].update(metadata)
-            return job
+            
+            updated_artifact = {
+                "id": artifact_id,
+                "artifact_id": artifact_id,
+                "artifact_type": artifact_type,
+                "type": artifact_type,
+                "content": content,
+                "updated_at": job["updated_at"],
+                "created_at": artifact.get("generated_at") or job.get("created_at", datetime.now().isoformat()),
+                "folder_id": artifact.get("folder_id") or job.get("folder_id")
+            }
+            logger.info(f"✏️ [GEN_SERVICE] Step 2.2: Updated artifact in active_jobs")
+        else:
+            logger.warning(f"✏️ [GEN_SERVICE] Step 2.1: Artifact {artifact_id} not found in active_jobs")
         
-        # If not found in active jobs, create a new entry
-        logger.warning(f"Artifact {artifact_id} not found in active jobs, creating new entry")
-        self.active_jobs[artifact_id] = {
-            "job_id": artifact_id,
-            "artifact_type": metadata.get("artifact_type", "unknown") if metadata else "unknown",
-            "status": GenerationStatus.COMPLETED.value,
-            "artifact_content": content,
-            "created_at": datetime.now().isoformat(),
-            "updated_at": datetime.now().isoformat(),
-            "metadata": metadata or {}
-        }
-        return self.active_jobs[artifact_id]
+        # CRITICAL FIX: Also update VersionService (persistent storage)
+        logger.info(f"✏️ [GEN_SERVICE] Step 3: Updating VersionService (persistent storage)")
+        try:
+            from backend.services.version_service import get_version_service
+            version_service = get_version_service()
+            
+            # Get current version to determine artifact_type and folder_id
+            versions = version_service.get_versions(artifact_id)
+            current_version = version_service.get_current_version(artifact_id)
+            
+            if current_version:
+                artifact_type = current_version.get("artifact_type", "unknown")
+                version_metadata = current_version.get("metadata", {})
+                folder_id = version_metadata.get("folder_id")
+                logger.info(f"✏️ [GEN_SERVICE] Step 3.1: Found in VersionService: artifact_type={artifact_type}, folder_id={folder_id}")
+            else:
+                # Try to infer from artifact_id
+                artifact_type = metadata.get("artifact_type", "unknown") if metadata else "unknown"
+                if artifact_type == "unknown":
+                    # Try to extract from artifact_id pattern
+                    if "::" in artifact_id:
+                        artifact_type = artifact_id.split("::")[-1]
+                    else:
+                        artifact_type = artifact_id
+                folder_id = metadata.get("folder_id") if metadata else None
+                logger.info(f"✏️ [GEN_SERVICE] Step 3.1: Not found in VersionService, inferred: artifact_type={artifact_type}, folder_id={folder_id}")
+            
+            # Create new version with updated content
+            logger.info(f"✏️ [GEN_SERVICE] Step 3.2: Creating new version with updated content")
+            version_service.create_version(
+                artifact_id=artifact_id,
+                artifact_type=artifact_type,
+                content=content,
+                metadata={
+                    "update_type": "manual_edit",
+                    "updated_at": datetime.now().isoformat(),
+                    "folder_id": folder_id,
+                    **(metadata or {})
+                }
+            )
+            logger.info(f"✏️ [GEN_SERVICE] Step 3.3: Version created successfully in VersionService")
+            
+            # Build updated artifact dict if not already built
+            if not updated_artifact:
+                updated_artifact = {
+                    "id": artifact_id,
+                    "artifact_id": artifact_id,
+                    "artifact_type": artifact_type,
+                    "type": artifact_type,
+                    "content": content,
+                    "updated_at": datetime.now().isoformat(),
+                    "created_at": current_version.get("created_at", datetime.now().isoformat()) if current_version else datetime.now().isoformat(),
+                    "folder_id": folder_id
+                }
+        except Exception as e:
+            logger.error(f"✏️ [GEN_SERVICE] Step 3.ERROR: Failed to update VersionService: {e}", exc_info=True)
+        
+        # If not found anywhere, create a new entry in active_jobs
+        if not updated_artifact:
+            logger.warning(f"✏️ [GEN_SERVICE] Step 4: Artifact not found anywhere, creating new entry in active_jobs")
+            artifact_type = metadata.get("artifact_type", "unknown") if metadata else "unknown"
+            self.active_jobs[artifact_id] = {
+                "job_id": artifact_id,
+                "artifact_type": artifact_type,
+                "status": GenerationStatus.COMPLETED.value,
+                "artifact_content": content,
+                "artifact": {
+                    "id": artifact_id,
+                    "artifact_type": artifact_type,
+                    "type": artifact_type,
+                    "content": content
+                },
+                "created_at": datetime.now().isoformat(),
+                "updated_at": datetime.now().isoformat(),
+                "metadata": metadata or {}
+            }
+            updated_artifact = {
+                "id": artifact_id,
+                "artifact_id": artifact_id,
+                "artifact_type": artifact_type,
+                "type": artifact_type,
+                "content": content,
+                "updated_at": datetime.now().isoformat(),
+                "created_at": datetime.now().isoformat()
+            }
+        
+        logger.info(f"✏️ [GEN_SERVICE] ========== UPDATE ARTIFACT COMPLETE ==========")
+        return updated_artifact
 
 
 # Global service instance
