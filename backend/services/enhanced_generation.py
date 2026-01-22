@@ -1269,64 +1269,42 @@ Follow the repository's coding style and test patterns. Make tests realistic and
         artifact_type: ArtifactType
     ) -> Optional[str]:
         """
-        Call cloud API using SmartGenerationOrchestrator or direct API calls.
+        Call cloud API directly for artifact generation.
         
-        This properly integrates with cloud providers (Gemini, Grok, OpenAI, Anthropic).
+        This is called as a cloud fallback AFTER local models have failed.
+        We go directly to cloud API calls to avoid infinite loops through
+        SmartGenerationOrchestrator (which would try local models again).
+        
+        Args:
+            provider: Cloud provider (gemini, groq, openai, anthropic)
+            model_name: Model name
+            meeting_notes: User requirements
+            rag_context: RAG context
+            artifact_type: Type of artifact to generate
+        
+        Returns:
+            Generated content or None on failure
         """
         try:
-            # Build prompt
+            # Build prompt with full context
             prompt = self._build_prompt(meeting_notes, rag_context, artifact_type)
             system_message = self._get_system_message(artifact_type)
             
-            # Try SmartGenerationOrchestrator first (preferred)
-            try:
-                from ai.smart_generation import get_smart_generator
-                orchestrator = get_smart_generator(
-                    ollama_client=self.ollama_client,
-                    output_validator=self.validation_service
-                )
-                
-                result = await orchestrator.generate(
-                    artifact_type=artifact_type.value,
-                    prompt=prompt,
-                    system_message=system_message,
-                    meeting_notes=meeting_notes,
-                    rag_context=rag_context,
-                    model_preference=f"{provider}:{model_name}",
-                    temperature=0.2
-                )
-                
-                if result and hasattr(result, 'content'):
-                    return result.content
-                elif isinstance(result, dict) and 'content' in result:
-                    return result['content']
-            except ImportError:
-                logger.debug("SmartGenerationOrchestrator not available, trying UniversalArchitectAgent...")
-            except Exception as e:
-                logger.warning(f"SmartGenerationOrchestrator failed: {e}, trying fallback...")
+            logger.info(f"☁️ [CLOUD_API] Calling {provider}:{model_name} directly for {artifact_type.value}")
+            logger.debug(f"☁️ [CLOUD_API] Prompt length: {len(prompt)}, System message length: {len(system_message)}")
             
-            # Fallback: Use UniversalArchitectAgent
-            if UNIVERSAL_AGENT_AVAILABLE:
-                agent = UniversalArchitectAgent()
-                
-                result = await agent.generate_artifact(
-                    artifact_type=artifact_type.value,
-                    meeting_notes=meeting_notes,
-                    rag_context=rag_context,
-                    model_preference=f"{provider}:{model_name}",
-                    system_message=system_message
-                )
-                
-                if result and hasattr(result, 'content'):
-                    return result.content
-                elif isinstance(result, dict) and 'content' in result:
-                    return result['content']
+            # Call cloud API directly - this is a fallback path, skip orchestrators
+            content = await self._call_cloud_api_direct(provider, model_name, prompt, system_message)
             
-            # Final fallback: Direct API calls
-            return await self._call_cloud_api_direct(provider, model_name, prompt, system_message)
+            if content:
+                logger.info(f"✅ [CLOUD_API] {provider}:{model_name} generated {len(content)} chars")
+            else:
+                logger.warning(f"⚠️ [CLOUD_API] {provider}:{model_name} returned no content")
+            
+            return content
             
         except Exception as e:
-            logger.error(f"Error calling cloud API for {provider}:{model_name}: {e}", exc_info=True)
+            logger.error(f"❌ [CLOUD_API] Error calling {provider}:{model_name}: {e}", exc_info=True)
             return None
     
     async def _call_cloud_api_direct(

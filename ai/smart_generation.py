@@ -667,7 +667,8 @@ class SmartGenerationOrchestrator:
                     "success": True,
                     "quality_score": quality_score,
                     "validation_errors": validation_errors,
-                    "time": attempt_time
+                    "time": attempt_time,
+                    "content": response.content  # Store content for fallback retrieval
                 }
                 attempts.append(attempt_info)
                 
@@ -717,12 +718,14 @@ class SmartGenerationOrchestrator:
             )
             
             if best_attempt:
+                best_content = best_attempt.get('content', '')
                 print(f"[FALLBACK] Using best local attempt: {best_attempt['model']} ({best_attempt['quality_score']}/100)")
-                # Find the actual response content from the last successful attempt
-                # For now, return empty since we need to refactor to store content
+                print(f"[FALLBACK] Content length: {len(best_content)} chars")
+                
+                # Return best attempt even if below threshold - better than nothing
                 return GenerationResult(
-                    success=False,
-                    content="",
+                    success=bool(best_content),  # Success if we have content
+                    content=best_content,
                     model_used=best_attempt['model'],
                     quality_score=best_attempt['quality_score'],
                     is_local=True,
