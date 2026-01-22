@@ -344,7 +344,7 @@ class GenerationService:
                     "job_id": job_id,
                     "status": "generating",
                     "progress": 40.0,
-                    "message": f"Generating {artifact_type.value}..."
+                    "message": f"Generating {artifact_type_str}..."
                 }
             
             # Use Enhanced Generation Service (proper pipeline)
@@ -389,9 +389,9 @@ class GenerationService:
                         from backend.services.artifact_cleaner import get_cleaner
                         cleaner = get_cleaner()
                         original_length = len(artifact_content)
-                        artifact_content = cleaner.clean_artifact(artifact_content, artifact_type.value)
+                        artifact_content = cleaner.clean_artifact(artifact_content, artifact_type_str)
                         if len(artifact_content) < original_length:
-                            logger.info(f"🧹 [GEN_SERVICE] Cleaned {artifact_type.value}: removed {original_length - len(artifact_content)} chars of noise (job_id={job_id})")
+                            logger.info(f"🧹 [GEN_SERVICE] Cleaned {artifact_type_str}: removed {original_length - len(artifact_content)} chars of noise (job_id={job_id})")
                     except Exception as e:
                         logger.warning(f"⚠️ [GEN_SERVICE] Failed to clean artifact: {e} (job_id={job_id})")
                     
@@ -399,7 +399,7 @@ class GenerationService:
                     # 1. Universal diagram fixer (removes AI text, fixes structure)
                     # 2. Validation service auto-repair (fixes syntax errors)
                     # 3. Re-validation loop until diagram is valid or max attempts reached
-                    if artifact_type.value.startswith("mermaid_"):
+                    if artifact_type_str.startswith("mermaid_"):
                         try:
                             from components.universal_diagram_fixer import fix_any_diagram
                             from backend.services.validation_service import get_service as get_validator
@@ -435,7 +435,7 @@ class GenerationService:
                             
                             chars_removed = pre_fix_length - len(artifact_content)
                             if chars_removed > 10:
-                                logger.info(f"🔧 [GEN_SERVICE] Total cleanup: removed {chars_removed} chars from {artifact_type.value} (job_id={job_id})")
+                                logger.info(f"🔧 [GEN_SERVICE] Total cleanup: removed {chars_removed} chars from {artifact_type_str} (job_id={job_id})")
                         except Exception as e:
                             logger.warning(f"⚠️ [GEN_SERVICE] Mermaid repair pipeline failed: {e} (job_id={job_id})")
                 
@@ -448,7 +448,7 @@ class GenerationService:
                 # Enhanced generation failed - log error and return failure
                 error_msg = result.get("error", "Generation failed")
                 logger.error(f"❌ [GEN_SERVICE] Enhanced generation failed: job_id={job_id}, error={error_msg}")
-                artifact_content = f"# {artifact_type.value}\n\nError: {error_msg}"
+                artifact_content = f"# {artifact_type_str}\n\nError: {error_msg}"
                 validation_score = 0.0
                 model_used = "failed"
             
@@ -475,7 +475,7 @@ class GenerationService:
                     from backend.services.finetuning_pool import get_pool
                     finetuning_pool = get_pool()
                     finetuning_pool.add_example(
-                        artifact_type=artifact_type.value,
+                        artifact_type=artifact_type_str,
                         content=artifact_content,
                         meeting_notes=meeting_notes,
                         validation_score=validation_score,
@@ -492,10 +492,10 @@ class GenerationService:
             
             # Step 5: Generate HTML version if needed
             html_content = None
-            if artifact_type.value.startswith("mermaid_"):
+            if artifact_type_str.startswith("mermaid_"):
                 # If Mermaid diagram, also generate HTML version
                 logger.info(f"🎨 [GEN_SERVICE] Step 5: Generating HTML version for Mermaid diagram "
-                           f"(job_id={job_id}, type={artifact_type.value})")
+                           f"(job_id={job_id}, type={artifact_type_str})")
                 try:
                     from backend.services.html_diagram_generator import get_generator
                     html_generator = get_generator()
@@ -513,11 +513,11 @@ class GenerationService:
                 except Exception as e:
                     logger.warning(f"⚠️ [GEN_SERVICE] Failed to generate HTML version: {e} (job_id={job_id})")
                     html_content = None
-            elif artifact_type.value.startswith("html_"):
+            elif artifact_type_str.startswith("html_"):
                 # If HTML diagram type, the content IS the HTML (already generated by enhanced_gen)
                 # No additional processing needed - artifact_content is already HTML
                 logger.info(f"✅ [GEN_SERVICE] HTML diagram generated directly: "
-                           f"job_id={job_id}, type={artifact_type.value}, content_length={len(artifact_content)}")
+                           f"job_id={job_id}, type={artifact_type_str}, content_length={len(artifact_content)}")
                 html_content = artifact_content  # Content is already HTML
             else:
                 html_content = None
@@ -528,16 +528,16 @@ class GenerationService:
             # This ensures the ID matches what listArtifacts() returns from version_service
             # IMPORTANT: Define folder-specific ID here, BEFORE it's used in artifact_obj
             if folder_id:
-                artifact_id_for_version = f"{folder_id}::{artifact_type.value}"  # e.g., "swap phones::mermaid_erd"
+                artifact_id_for_version = f"{folder_id}::{artifact_type_str}"  # e.g., "swap phones::mermaid_erd"
             else:
-                artifact_id_for_version = artifact_type.value  # Legacy: e.g., "mermaid_erd"
+                artifact_id_for_version = artifact_type_str  # Legacy: e.g., "mermaid_erd"
             
             logger.info(f"📦 [GEN_SERVICE] Step 6: Creating artifact object (job_id={job_id}, artifact_id={artifact_id_for_version})")
             artifact_obj = {
                 "id": artifact_id_for_version,  # Folder-specific ID: matches version_service and listArtifacts()
                 "artifact_id": artifact_id_for_version,  # Also update artifact_id for consistency
                 "job_id": job_id,  # Keep job_id separate for tracking
-                "artifact_type": artifact_type.value,
+                "artifact_type": artifact_type_str,
                 "content": artifact_content,
                 "validation": {
                     "score": validation_score,
@@ -551,7 +551,7 @@ class GenerationService:
             if html_content:
                 artifact_obj["html_content"] = html_content
             logger.info(f"✅ [GEN_SERVICE] Artifact object created: job_id={job_id}, "
-                       f"type={artifact_type.value}, has_html={bool(html_content)}")
+                       f"type={artifact_type_str}, has_html={bool(html_content)}")
             
             # Update job status with full artifact
             logger.info(f"💾 [GEN_SERVICE] Updating job status: job_id={job_id}, status=COMPLETED")
@@ -575,7 +575,7 @@ class GenerationService:
                 version_service = get_version_service()
                 version_service.create_version(
                     artifact_id=artifact_id_for_version,
-                    artifact_type=artifact_type.value,
+                    artifact_type=artifact_type_str,
                     content=artifact_content,  # Already cleaned if Mermaid
                     metadata={
                         "model_used": model_used,
@@ -603,7 +603,7 @@ class GenerationService:
                     "progress": 100.0,
                     "artifact": {
                         "id": artifact_id_for_version,  # Folder-specific ID for consistent navigation
-                        "artifact_type": artifact_type.value,
+                        "artifact_type": artifact_type_str,
                         "content": artifact_content,
                         "validation": {
                             "score": validation_score,
@@ -622,7 +622,7 @@ class GenerationService:
                     "status": GenerationStatus.COMPLETED.value,
                     "artifact": {
                         "id": artifact_id_for_version,  # Folder-specific ID for consistent navigation
-                        "artifact_type": artifact_type.value,
+                        "artifact_type": artifact_type_str,
                         "content": artifact_content,
                         "validation": {
                             "score": validation_score,
@@ -643,7 +643,7 @@ class GenerationService:
                 error=e,
                 context={
                     "job_id": job_id,
-                    "artifact_type": artifact_type.value,
+                    "artifact_type": artifact_type_str,
                     "meeting_notes_preview": meeting_notes[:200] if meeting_notes else "",
                     "context_id": context_id
                 },

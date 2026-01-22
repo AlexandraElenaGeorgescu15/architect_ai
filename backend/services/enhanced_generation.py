@@ -208,9 +208,9 @@ class EnhancedGenerationService:
         
         # Get models for this artifact type
         # This now properly prioritizes fine-tuned models first
-        logger.info(f"🔍 [ENHANCED_GEN] Getting models for artifact type: {artifact_type.value}")
+        logger.info(f"🔍 [ENHANCED_GEN] Getting models for artifact type: {artifact_type_str}")
         local_models = self.model_service.get_models_for_artifact(artifact_type)
-        logger.info(f"📋 [ENHANCED_GEN] Found {len(local_models)} local model(s) for {artifact_type.value}")
+        logger.info(f"📋 [ENHANCED_GEN] Found {len(local_models)} local model(s) for {artifact_type_str}")
         
         # Log which models will be tried (first 3)
         if local_models:
@@ -325,7 +325,7 @@ class EnhancedGenerationService:
                 logger.debug(f"⏭️ [ENHANCED_GEN] HuggingFace client not available, skipping: {model_id}")
                 continue
             
-            logger.info(f"🤖 [ENHANCED_GEN] Attempting local model [{model_idx + 1}/{len(local_models)}]: {model_name} ({provider}) for {artifact_type.value}")
+            logger.info(f"🤖 [ENHANCED_GEN] Attempting local model [{model_idx + 1}/{len(local_models)}]: {model_name} ({provider}) for {artifact_type_str}")
             
             # Progress: Trying model
             if progress_callback:
@@ -394,7 +394,7 @@ class EnhancedGenerationService:
                             operation="artifact_generation",
                             success=True,
                             duration_seconds=response.generation_time if hasattr(response, 'generation_time') else 0,
-                            metadata={"artifact_type": artifact_type.value, "provider": provider}
+                            metadata={"artifact_type": artifact_type_str, "provider": provider}
                         )
                         
                         # Log token usage if available
@@ -404,7 +404,7 @@ class EnhancedGenerationService:
                                 input_tokens=len(prompt) // 4,  # Rough estimate: 4 chars per token
                                 output_tokens=response.tokens_generated,
                                 operation="artifact_generation",
-                                artifact_type=artifact_type.value,
+                                artifact_type=artifact_type_str,
                                 duration_seconds=response.generation_time if hasattr(response, 'generation_time') else None,
                                 success=True
                             )
@@ -439,7 +439,7 @@ class EnhancedGenerationService:
                     # Additional render-viability checks for diagrams/HTML
                     render_viable = True
                     is_runnable = True
-                    if artifact_type.value.startswith("mermaid_"):
+                    if artifact_type_str.startswith("mermaid_"):
                         candidate = cleaned_content
                         mermaid_markers = [
                             "graph", "flowchart", "sequenceDiagram", "classDiagram", "stateDiagram",
@@ -463,7 +463,7 @@ class EnhancedGenerationService:
                         except Exception as e:
                             logger.warning(f"⚠️ [ENHANCED_GEN] Could not check runnability: {e}")
                     
-                    if artifact_type.value.startswith("html_"):
+                    if artifact_type_str.startswith("html_"):
                         candidate = cleaned_content
                         if "<" not in candidate or ">" not in candidate:
                             render_viable = False
@@ -500,7 +500,7 @@ class EnhancedGenerationService:
                         
                         # Clean content for Mermaid diagrams (extract only diagram code)
                         cleaned_content = response.content
-                        if artifact_type.value.startswith("mermaid_"):
+                        if artifact_type_str.startswith("mermaid_"):
                             try:
                                 from backend.services.validation_service import ValidationService
                                 validator = ValidationService()
@@ -511,7 +511,7 @@ class EnhancedGenerationService:
                                     logger.info(f"🧹 [ENHANCED_GEN] Cleaned Mermaid diagram: removed {chars_removed} chars of extra text")
                                 
                                 # Fix ERD syntax if it's using class diagram syntax
-                                if artifact_type.value == "mermaid_erd" and ("class " in cleaned_content or "CLASS " in cleaned_content):
+                                if artifact_type_str == "mermaid_erd" and ("class " in cleaned_content or "CLASS " in cleaned_content):
                                     cleaned_content = validator._fix_erd_syntax(cleaned_content)
                                     logger.info("🔧 [ENHANCED_GEN] Fixed ERD syntax (converted class diagram syntax to ERD)")
                             except Exception as e:
@@ -535,7 +535,7 @@ class EnhancedGenerationService:
                                 from backend.services.finetuning_pool import get_pool
                                 finetuning_pool = get_pool()
                                 finetuning_pool.add_example(
-                                    artifact_type=artifact_type.value,
+                                    artifact_type=artifact_type_str,
                                     content=cleaned_content,  # Use cleaned content
                                     meeting_notes=meeting_notes,
                                     validation_score=score,
@@ -548,7 +548,7 @@ class EnhancedGenerationService:
                         
                         # If Mermaid diagram, also generate HTML version automatically
                         html_content = None
-                        if artifact_type.value.startswith("mermaid_"):
+                        if artifact_type_str.startswith("mermaid_"):
                             try:
                                 from backend.services.html_diagram_generator import get_generator
                                 html_generator = get_generator()
@@ -560,14 +560,14 @@ class EnhancedGenerationService:
                                     # Avoid AI-assisted layout unless explicitly requested to cut latency
                                     use_ai=False
                                 )
-                                logger.info(f"✅ Auto-generated HTML version for {artifact_type.value}")
+                                logger.info(f"✅ Auto-generated HTML version for {artifact_type_str}")
                             except Exception as e:
                                 logger.warning(f"Failed to auto-generate HTML version: {e}")
                         
                         # Create version for this artifact
                         # Use stable artifact_id (the artifact type itself) to ensure versioning works correctly
                         # instead of creating a new artifact for every generation.
-                        artifact_id = artifact_type.value
+                        artifact_id = artifact_type_str
                         
                         # NOTE: GenerationService handles saving to VersionService using this artifact_id.
                         # We avoid double-saving here.
@@ -576,7 +576,7 @@ class EnhancedGenerationService:
                         #     version_service = get_version_service()
                         #     version_service.create_version(
                         #         artifact_id=artifact_id,
-                        #         artifact_type=artifact_type.value,
+                        #         artifact_type=artifact_type_str,
                         #         content=cleaned_content,  # Use cleaned content
                         #         metadata={
                         #             "model_used": model_name,
@@ -640,9 +640,9 @@ class EnhancedGenerationService:
                                         # Set successful model as primary (use the normalized model_id)
                                         routing.primary_model = model_id
                                         model_service.update_routing([routing])
-                                        logger.info(f"✅ [ENHANCED_GEN] Promoted {model_name} ({model_id}) to primary for {artifact_type.value} (score: {score:.1f}, previous: {current_primary})")
+                                        logger.info(f"✅ [ENHANCED_GEN] Promoted {model_name} ({model_id}) to primary for {artifact_type_str} (score: {score:.1f}, previous: {current_primary})")
                                     elif model_already_primary:
-                                        logger.debug(f"✅ [ENHANCED_GEN] Model {model_name} already primary for {artifact_type.value}, no update needed")
+                                        logger.debug(f"✅ [ENHANCED_GEN] Model {model_name} already primary for {artifact_type_str}, no update needed")
                                     else:
                                         logger.debug(f"⚠️ [ENHANCED_GEN] Model {model_name} scored {score:.1f} but not promoting (already primary or score < 80)")
                                 else:
@@ -655,7 +655,7 @@ class EnhancedGenerationService:
                                         enabled=True
                                     )
                                     model_service.update_routing([routing])
-                                    logger.info(f"✅ [ENHANCED_GEN] Created routing for {artifact_type.value} with {model_name} ({model_id}) as primary (score: {score:.1f})")
+                                    logger.info(f"✅ [ENHANCED_GEN] Created routing for {artifact_type_str} with {model_name} ({model_id}) as primary (score: {score:.1f})")
                             except Exception as e:
                                 logger.warning(f"⚠️ [ENHANCED_GEN] Failed to update routing: {e}", exc_info=True)
                         
@@ -688,7 +688,7 @@ class EnhancedGenerationService:
                         context={
                             "model": model_name,
                             "provider": provider,
-                            "artifact_type": artifact_type.value,
+                            "artifact_type": artifact_type_str,
                             "retry": retry,
                             "operation": "artifact_generation"
                         },
@@ -731,7 +731,7 @@ class EnhancedGenerationService:
                                 from backend.services.finetuning_pool import get_pool
                                 finetuning_pool = get_pool()
                                 finetuning_pool.add_example(
-                                    artifact_type=artifact_type.value,
+                                    artifact_type=artifact_type_str,
                                     content=cloud_result["content"],
                                     meeting_notes=meeting_notes,
                                     validation_score=cloud_result["score"],
@@ -744,7 +744,7 @@ class EnhancedGenerationService:
                         
                         # If Mermaid diagram, also generate HTML version automatically
                         html_content = None
-                        if artifact_type.value.startswith("mermaid_"):
+                        if artifact_type_str.startswith("mermaid_"):
                             try:
                                 from backend.services.html_diagram_generator import get_generator
                                 html_generator = get_generator()
@@ -756,13 +756,13 @@ class EnhancedGenerationService:
                                     # Keep AI layout off by default for stability/latency
                                     use_ai=False
                                 )
-                                logger.info(f"✅ Auto-generated HTML version for {artifact_type.value} (cloud)")
+                                logger.info(f"✅ Auto-generated HTML version for {artifact_type_str} (cloud)")
                             except Exception as e:
                                 logger.warning(f"Failed to auto-generate HTML version: {e}")
                         
                         # Use stable artifact_id (artifact type) for proper versioning
                         # NOTE: Version creation is handled by GenerationService to avoid duplicates
-                        artifact_id = artifact_type.value
+                        artifact_id = artifact_type_str
                         
                         return {
                             "success": True,
@@ -784,7 +784,7 @@ class EnhancedGenerationService:
             
             # Use stable artifact_id (artifact type) for proper versioning
             # NOTE: Version creation is handled by GenerationService to avoid duplicates
-            artifact_id = artifact_type.value
+            artifact_id = artifact_type_str
             
             return {
                 "success": True,
@@ -803,7 +803,7 @@ class EnhancedGenerationService:
             logger.error(error_msg)
             
             # Record metrics for failure
-            metrics.increment("generation_failures_total", tags={"artifact_type": artifact_type.value})
+            metrics.increment("generation_failures_total", tags={"artifact_type": artifact_type_str})
             
             if progress_callback:
                 await progress_callback(100.0, f"Error: {error_msg}")
@@ -1313,7 +1313,7 @@ Follow the repository's coding style and test patterns. Make tests realistic and
             is_valid = validation_result.is_valid and score >= threshold
             
             # Generate artifact ID
-            artifact_id = f"{artifact_type.value}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            artifact_id = f"{artifact_type_str}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
             
             if is_valid:
                 if progress_callback:
