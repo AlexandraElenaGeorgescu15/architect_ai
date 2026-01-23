@@ -35,6 +35,46 @@
       ]
     },
     "created_at": "2026-01-15T18:46:45.825324",
+    "is_current": false
+  },
+  {
+    "version": 2,
+    "artifact_id": "dev_visual_prototype",
+    "artifact_type": "dev_visual_prototype",
+    "content": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Phone Swap Request Feature</title>\n    <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n    <div class=\"container\">\n        <h1>Available Phones</h1>\n        <button id=\"requestSwapButton\">Request Phone Swap</button>\n\n        <!-- Modal Structure -->\n        <div id=\"swapModal\" class=\"modal\">\n            <div class=\"modal-content\">\n                <span class=\"close-button\">&times;</span>\n                <h2>Request a Phone Swap</h2>\n                <form id=\"swapForm\">\n                    <label for=\"phoneToRequest\">Phone to Request:</label>\n                    <select id=\"phoneToRequest\" required>\n                        <option value=\"\">Select a phone</option>\n                        <option value=\"iPhone 13 Pro\">iPhone 13 Pro</option>\n                        <option value=\"Samsung Galaxy S21\">Samsung Galaxy S21</option>\n                        <option value=\"Google Pixel 6\">Google Pixel 6</option>\n                    </select>\n\n                    <label for=\"phoneToExchange\">Phone to Exchange:</label>\n                    <select id=\"phoneToExchange\" required>\n                        <option value=\"\">Select a phone</option>\n                        <option value=\"iPhone 12\">iPhone 12</option>\n                        <option value=\"Samsung Galaxy S20\">Samsung Galaxy S20</option>\n                    </select>\n\n                    <label for=\"reasonForRequest\">Reason for Request:</label>\n                    <textarea id=\"reasonForRequest\" rows=\"4\"></textarea>\n\n                    <button type=\"submit\">Submit Request</button>\n                    <button type=\"button\" class=\"cancel-button\">Cancel</button>\n                </form>\n            </div>\n        </div>\n    </div>\n\n    <script src=\"script.js\"></script>\n</body>\n</html>",
+    "metadata": {
+      "model_used": "qwen2.5-coder:14b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 100.0,
+      "is_valid": true,
+      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
+      "html_content": null,
+      "quality_prediction": {
+        "label": "high",
+        "confidence": 0.8,
+        "score": 0.8,
+        "reasons": {
+          "notes_depth": 0.2,
+          "notes_structure": 0.05,
+          "context_rag": 0.1,
+          "artifact_complexity": -0.1
+        }
+      },
+      "job_id": "gen_dc6691af",
+      "attempts": [
+        {
+          "model": "qwen2.5-coder:14b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "To create a visual prototype for the Phone Swap Request feature, I'll generate an interactive HTML/CSS/JS code snippet that demonstrates the UI/UX design as described. This will include a button to trigger the modal, the modal itself with form fields, and basic JavaScript to handle interactions.\n\n### HTML (index.html)\n```html\n<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Phone Swap Request Feature</title>\n    <link rel=\"stylesheet\" href=\"styles.css\">\n</head>\n<body>\n    <div class=\"container\">\n        <h1>Available Phones</h1>\n        <button id=\"requestSwapButton\">Request Phone Swap</button>\n\n        <!-- Modal Structure -->\n        <div id=\"swapModal\" class=\"modal\">\n            <div class=\"modal-content\">\n                <span class=\"close-button\">&times;</span>\n                <h2>Request a Phone Swap</h2>\n                <form id=\"swapForm\">\n                    <label for=\"phoneToRequest\">Phone to Request:</label>\n                    <select id=\"phoneToRequest\" required>\n                        <option value=\"\">Select a phone</option>\n                        <option value=\"iPhone 13 Pro\">iPhone 13 Pro</option>\n                        <option value=\"Samsung Galaxy S21\">Samsung Galaxy S21</option>\n                        <option value=\"Google Pixel 6\">Google Pixel 6</option>\n                    </select>\n\n                    <label for=\"phoneToExchange\">Phone to Exchange:</label>\n                    <select id=\"phoneToExchange\" required>\n                        <option value=\"\">Select a phone</option>\n                        <option value=\"iPhone 12\">iPhone 12</option>\n                        <option value=\"Samsung Galaxy S20\">Samsung Galaxy S20</option>\n                    </select>\n\n                    <label for=\"reasonForRequest\">Reason for Request:</label>\n                    <textarea id=\"reasonForRequest\" rows=\"4\"></textarea>\n\n                    <button type=\"submit\">Submit Request</button>\n                    <button type=\"button\" class=\"cancel-button\">Cancel</button>\n                </form>\n            </div>\n        </div>\n    </div>\n\n    <script src=\"script.js\"></script>\n</body>\n</html>\n```\n\n### CSS (styles.css)\n```css\nbody {\n    font-family: Arial, sans-serif;\n    background-color: #f4f4f9;\n    margin: 0;\n    padding: 20px;\n}\n\n.container {\n    max-width: 800px;\n    margin: auto;\n}\n\nbutton {\n    padding: 10px 20px;\n    font-size: 16px;\n    cursor: pointer;\n    border: none;\n    background-color: #007bff;\n    color: white;\n    border-radius: 5px;\n}\n\nbutton:hover {\n    background-color: #0056b3;\n}\n\n.modal {\n    display: none; /* Hidden by default */\n    position: fixed;\n    z-index: 1;\n    left: 0;\n    top: 0;\n    width: 100%;\n    height: 100%;\n    overflow: auto;\n    background-color: rgba(0,0,0,0.4);\n}\n\n.modal-content {\n    background-color: #fefefe;\n    margin: 15% auto;\n    padding: 20px;\n    border: 1px solid #888;\n    width: 80%;\n    max-width: 600px;\n}\n\n.close-button {\n    color: #aaa;\n    float: right;\n    font-size: 28px;\n    font-weight: bold;\n}\n\n.close-button:hover,\n.close-button:focus {\n    color: black;\n    text-decoration: none;\n    cursor: pointer;\n}\n\nform label {\n    display: block;\n    margin-top: 10px;\n}\n\nform select, form textarea {\n    width: 100%;\n    padding: 8px;\n    box-sizing: border-box;\n    margin-top: 5px;\n    margin-bottom: 20px;\n}\n\n.cancel-button {\n    background-color: #dc3545;\n    margin-left: 10px;\n}\n\n.cancel-button:hover {\n    background-color: #c82333;\n}\n```\n\n### JavaScript (script.js)\n```javascript\ndocument.addEventListener('DOMContentLoaded', function() {\n    const requestSwapButton = document.getElementById('requestSwapButton');\n    const swapModal = document.getElementById('swapModal');\n    const closeButton = document.querySelector('.close-button');\n    const cancelButtons = document.querySelectorAll('.cancel-button');\n    const swapForm = document.getElementById('swapForm');\n\n    requestSwapButton.onclick = function() {\n        swapModal.style.display = 'block';\n    }\n\n    closeButton.onclick = function() {\n        swapModal.style.display = 'none';\n    }\n\n    cancelButtons.forEach(button => {\n        button.onclick = function() {\n            swapModal.style.display = 'none';\n        }\n    });\n\n    swapForm.addEventListener('submit', function(event) {\n        event.preventDefault();\n        // Here you would typically send the form data to the backend\n        alert('Swap request submitted successfully!');\n        swapModal.style.display = 'none';\n    });\n});\n```\n\n### Explanation\n- **HTML**: The structure includes a button to trigger the modal and the modal itself with form fields.\n- **CSS**: Styles are applied to make the modal visually appealing and functional.\n- **JavaScript**: Handles opening and closing the modal, as well as submitting the form. In a real implementation, you would send the form data to the backend.\n\nThis prototype provides a basic interactive UI for the Phone Swap Request feature, adhering to best practices and conventions.",
+          "score": 100.0,
+          "is_valid": true,
+          "errors": [],
+          "retry": 1
+        }
+      ],
+      "folder_id": null
+    },
+    "created_at": "2026-01-22T18:43:29.529271",
     "is_current": true
   }
 ]
