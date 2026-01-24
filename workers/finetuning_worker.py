@@ -867,7 +867,7 @@ def main():
         jobs_dir="db/training_jobs",
         models_dir="finetuned_models",
         registry_path="model_registry.json",
-        batch_threshold=50,  # Trigger fine-tuning after 50 examples
+        batch_threshold=10,  # Trigger fine-tuning after 10 examples (lowered from 50)
         check_interval=60    # Check every 60 seconds
     )
     

@@ -17,6 +17,9 @@ import json
 import time
 from datetime import datetime
 import numpy as np
+import logging
+
+logger = logging.getLogger(__name__)
 
 from components._tool_detector import (
     get_user_project_directories,
@@ -292,17 +295,17 @@ class EnhancedRAGSystem:
                 )
                 self.model_limits[key] = limits
                 return key, limits
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Dynamic model config unavailable: {e}")
 
         return None
 
     def _build_default_limits(self) -> Tuple[str, ModelContextLimits]:
-        default_limits = self.model_limits['gpt-4']
-        return 'gpt-4', default_limits
+        default_limits = self.model_limits['gpt-4o']
+        return 'gpt-4o', default_limits
 
     def _build_default_config(self, task_type: TaskType) -> Dict[str, Any]:
-        default_limits = self.model_limits.get('gpt-4')
+        default_limits = self.model_limits.get('gpt-4o')
         if task_type == TaskType.FINE_TUNING:
             return {
                 'max_chunks': 500,
@@ -310,7 +313,7 @@ class EnhancedRAGSystem:
                 'reason': 'Safe defaults for fine-tuning (model unknown)',
                 'model_info': default_limits,
                 'task_type': 'fine_tuning',
-                'resolved_model_name': 'gpt-4'
+                'resolved_model_name': 'gpt-4o'
             }
 
         safe_chunks = 24
@@ -320,7 +323,7 @@ class EnhancedRAGSystem:
             'reason': 'Safe defaults for unknown model (limited chunks)',
             'model_info': default_limits,
             'task_type': 'generation',
-            'resolved_model_name': 'gpt-4'
+            'resolved_model_name': 'gpt-4o'
         }
     
     async def _retrieve_chunks_from_rag(self, query: str, max_chunks: int) -> List[Dict[str, Any]]:
@@ -390,14 +393,14 @@ class EnhancedRAGSystem:
             if not path_obj.is_absolute():
                 try:
                     path_obj = (Path.cwd() / path_obj).resolve()
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Path resolution failed: {e}")
 
             try:
                 if should_exclude_path(path_obj):
                     continue
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Path exclusion check failed: {e}")
 
             if not any(self._is_within_directory(path_obj, root) for root in self.user_project_dirs):
                 continue

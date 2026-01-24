@@ -55,7 +55,7 @@ class FinetuningPool:
         self.pools: Dict[str, List[Dict[str, Any]]] = {}
         
         # Finetuning thresholds
-        self.incremental_finetuning_threshold = 50  # Examples for incremental finetuning
+        self.incremental_finetuning_threshold = 10  # Examples for incremental finetuning (reduced from 50)
         self.major_finetuning_threshold = 2000  # Examples for major finetuning (user-triggered)
         self.min_score_threshold = 85.0  # Minimum validation score to include
         

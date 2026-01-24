@@ -16,6 +16,9 @@ from typing import Dict, List, Tuple, Optional
 from dataclasses import dataclass
 from pathlib import Path
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -200,7 +203,7 @@ class ArtifactValidator:
                         score -= 5
         except Exception as e:
             # Fallback to basic regex check
-            pass
+            logger.debug(f"Mermaid syntax validation unavailable: {e}")
         
         # NOTE: Syntax correction with MermaidSyntaxCorrector happens AFTER validation
         # We skip it here to avoid "coroutine never awaited" warnings
@@ -307,8 +310,8 @@ class ArtifactValidator:
                     for syntax_error in syntax_errors[:3]:
                         errors.append(f"Syntax: {syntax_error}")
                         score -= 5
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Mermaid syntax validation unavailable: {e}")
         
         # NOTE: Syntax correction with MermaidSyntaxCorrector happens AFTER validation
         # We skip it here to avoid "coroutine never awaited" warnings

@@ -1035,7 +1035,7 @@ class SmartGenerationOrchestrator:
                 jobs_dir="db/training_jobs",
                 models_dir="finetuned_models",
                 registry_path="model_registry.json",
-                batch_threshold=50
+                batch_threshold=10
             )
             
             # Process pending jobs

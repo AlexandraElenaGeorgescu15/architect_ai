@@ -393,8 +393,8 @@ def setup_security_middleware(app, allowed_hosts: list = None):
     # Add IP Ban Middleware (blocks banned IPs)
     app.add_middleware(IPBanMiddleware)
     
-    logger.info(f"🔒 [SECURITY] Security middleware configured with {len(allowed_hosts)} allowed hosts")
-    logger.info(f"🔒 [SECURITY] IP ban threshold: {ip_ban_manager.ban_threshold} 404s in {ip_ban_manager.window_seconds}s")
+    logger.info(f"[SECURITY] Security middleware configured with {len(allowed_hosts)} allowed hosts")
+    logger.info(f"[SECURITY] IP ban threshold: {ip_ban_manager.ban_threshold} 404s in {ip_ban_manager.window_seconds}s")
     
     return ip_ban_manager
 

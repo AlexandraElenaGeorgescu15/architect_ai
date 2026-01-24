@@ -231,9 +231,12 @@ class UniversalArchitectAgent:
             self.noise_reducer = None
             self.ml_engineer = None
         
-        # Cached components for performance (lazy load)
+        # Cached components for performance (lazy load) - with 30 minute TTL
         self._knowledge_graph_cache = None
+        self._knowledge_graph_cache_time = 0  # Unix timestamp
         self._pattern_analysis_cache = None
+        self._pattern_analysis_cache_time = 0  # Unix timestamp
+        self._cache_ttl_seconds = 1800  # 30 min TTL
         
         # Initialize AI client
         self._initialize_ai_client()
@@ -488,23 +491,31 @@ class UniversalArchitectAgent:
             self.collection = None
     
     def _get_knowledge_graph(self):
-        """Lazy-load and cache knowledge graph (10x performance improvement)"""
-        if self._knowledge_graph_cache is None:
+        """Lazy-load and cache knowledge graph with TTL (30 min expiry)"""
+        import time
+        now = time.time()
+        cache_expired = (now - self._knowledge_graph_cache_time) > self._cache_ttl_seconds
+        if self._knowledge_graph_cache is None or cache_expired:
             from components.knowledge_graph import KnowledgeGraphBuilder
             kg_builder = KnowledgeGraphBuilder()
             project_root = self.repo_analysis.project_structure.get('root') if self.repo_analysis else Path(".")
             self._knowledge_graph_cache = kg_builder.build_graph(project_root)
-            print("[⚡ PERFORMANCE] Knowledge graph built and cached")
+            self._knowledge_graph_cache_time = now
+            print("[PERFORMANCE] Knowledge graph built and cached (30 min TTL)")
         return self._knowledge_graph_cache
     
     def _get_pattern_analysis(self):
-        """Lazy-load and cache pattern analysis (10x performance improvement)"""
-        if self._pattern_analysis_cache is None:
+        """Lazy-load and cache pattern analysis with TTL (30 min expiry)"""
+        import time
+        now = time.time()
+        cache_expired = (now - self._pattern_analysis_cache_time) > self._cache_ttl_seconds
+        if self._pattern_analysis_cache is None or cache_expired:
             from components.pattern_mining import PatternDetector
             detector = PatternDetector()
             project_root = self.repo_analysis.project_structure.get('root') if self.repo_analysis else Path(".")
             self._pattern_analysis_cache = detector.analyze_project(project_root)
-            print("[⚡ PERFORMANCE] Pattern analysis complete and cached")
+            self._pattern_analysis_cache_time = now
+            print("[PERFORMANCE] Pattern analysis complete and cached (30 min TTL)")
         return self._pattern_analysis_cache
     
     def _initialize_advanced_systems(self):
@@ -813,237 +824,7 @@ USER REQUEST:
         print(f"[WARN] Unexpected code path in _call_ai for artifact_type={artifact_type}")
         return None
     
-    async def _call_cloud_provider(self, prompt: str, system_prompt: str = None, artifact_type: str = None) -> str:
-        """
-        Helper method to call cloud providers with smart selection and compression.
-        Used by SmartGenerationOrchestrator for cloud fallback.
-        
-        Args:
-            prompt: Full prompt (including RAG context)
-            system_prompt: System prompt (optional)
-            artifact_type: Artifact type for smart provider selection
-            
-        Returns:
-            Generated content from cloud provider
-        """
-        from config.secrets_manager import api_key_manager
-        from ai.smart_model_selector import ContextOptimizer
-        
-        # Compress context for cloud models (target 3000 tokens = ~12K chars)
-        compressed_prompt = await ContextOptimizer.compress_prompt_for_cloud(prompt, max_tokens=3000)
-        print(f"[CONTEXT_COMPRESSION] {len(prompt)} → {len(compressed_prompt)} chars for cloud")
-        
-        # Smart provider selection based on artifact type
-        # Complex tasks (architecture, prototypes) → Gemini 2.0 Flash
-        # Simple tasks (code, ERD) → Groq/OpenAI
-        if artifact_type in ['mermaid_class', 'prototype', 'architecture']:
-            cloud_providers = [
-                ('gemini', 'gemini-2.5-flash'),
-                ('groq', 'llama-3.3-70b-versatile'),
-                ('openai', 'gpt-4')
-            ]
-            print(f"[SMART_ROUTING] Complex task ({artifact_type}) → Trying Gemini first")
-        else:
-            cloud_providers = [
-                ('groq', 'llama-3.3-70b-versatile'),
-                ('gemini', 'gemini-2.5-flash'),
-                ('openai', 'gpt-4')
-            ]
-        
-        for provider_name, model_name in cloud_providers:
-            try:
-                api_key = api_key_manager.get_key(provider_name)
-                if not api_key:
-                    print(f"[SKIP] No API key for {provider_name}")
-                    continue
-                
-                if provider_name == 'groq':
-                    from groq import AsyncGroq
-                    client = AsyncGroq(api_key=api_key)
-                    messages = []
-                    if system_prompt:
-                        messages.append({"role": "system", "content": system_prompt})
-                    messages.append({"role": "user", "content": compressed_prompt})
-                    
-                    response = await client.chat.completions.create(
-                        model="llama-3.3-70b-versatile",
-                        messages=messages,
-                        temperature=0.2,
-                        max_tokens=8000
-                    )
-                    result = response.choices[0].message.content
-                    print(f"[OK] Cloud fallback succeeded using Groq")
-                    return result
-                
-                elif provider_name == 'gemini':
-                    import google.generativeai as genai
-                    genai.configure(api_key=api_key)
-                    model = genai.GenerativeModel('gemini-2.5-flash')
-                    
-                    combined_prompt = compressed_prompt
-                    if system_prompt:
-                        combined_prompt = f"{system_prompt}\n\n{compressed_prompt}"
-                    
-                    response = await model.generate_content_async(combined_prompt)
-                    result = response.text
-                    print(f"[OK] Cloud fallback succeeded using Gemini")
-                    return result
-                
-                elif provider_name == 'openai':
-                    from openai import AsyncOpenAI
-                    client = AsyncOpenAI(api_key=api_key)
-                    messages = []
-                    if system_prompt:
-                        messages.append({"role": "system", "content": system_prompt})
-                    messages.append({"role": "user", "content": compressed_prompt})
-                    
-                    # Token guard for OpenAI
-                    try:
-                        from ai.smart_model_selector import fit_openai_messages_to_context
-                        trimmed_messages, prompt_tokens = fit_openai_messages_to_context(
-                            messages=messages,
-                            model_name="gpt-4",
-                            context_window=8192,
-                            max_completion_tokens=4000,
-                            safety_margin=200,
-                        )
-                        if prompt_tokens > 0:
-                            print(f"[TOKEN_GUARD] OpenAI prompt tokens: {prompt_tokens}")
-                        messages = trimmed_messages
-                    except Exception as _guard_err:
-                        print(f"[WARN] Token guard failed: {_guard_err}")
-                    
-                    response = await client.chat.completions.create(
-                        model="gpt-4",
-                        messages=messages,
-                        temperature=0.2,
-                        max_tokens=4000
-                    )
-                    result = response.choices[0].message.content
-                    print(f"[OK] Cloud fallback succeeded using OpenAI GPT-4")
-                    return result
-            
-            except Exception as e:
-                print(f"[WARN] Cloud provider {provider_name} failed: {e}. Trying next...")
-                continue
-        
-        # All cloud providers failed
-        raise Exception("All cloud providers failed. Please check API keys in secrets store.")
-    
-    # ============================================================================
-    # RAG CONTEXT RETRIEVAL
-    # ============================================================================
-    
-    async def retrieve_rag_context(self, query: str, force_refresh: bool = False, max_retries: int = 3) -> str:
-        """Retrieve relevant context using ENHANCED RAG with caching and retry logic"""
-        if not self.collection or not self.cfg:
-            print("[WARN] RAG system not available")
-            return ""
-        
-        # Check cache first
-        if not force_refresh:
-            cached_context = self.cache.get_context(query)
-            if cached_context:
-                self.rag_context = cached_context
-                return cached_context
-        
-        # Retry logic with exponential backoff
-        import time
-        for attempt in range(max_retries):
-            try:
-                if attempt > 0:
-                    wait_time = 2 ** attempt  # Exponential backoff: 2s, 4s, 8s
-                    print(f"[RAG] Retry attempt {attempt + 1}/{max_retries} after {wait_time}s...")
-                    time.sleep(wait_time)
-                
-                return await self._retrieve_rag_context_internal(query)
-                
-            except Exception as e:
-                print(f"[ERROR] RAG retrieval attempt {attempt + 1} failed: {e}")
-                if attempt == max_retries - 1:
-                    # Last attempt failed
-                    print(f"[ERROR] RAG retrieval failed after {max_retries} attempts")
-                    import traceback
-                    traceback.print_exc()
-                    return ""
-        
-        return ""
-    
-    async def _retrieve_rag_context_internal(self, query: str) -> str:
-        """Internal RAG retrieval implementation - ALWAYS uses advanced RAG + Smart Code Analysis"""
-        try:
-            # STEP 0: PROGRAMMATIC CODE ANALYSIS (NEW - reduces AI noise)
-            programmatic_context = ""
-            try:
-                from components.smart_code_analyzer import get_smart_analyzer
-                from pathlib import Path
-                
-                # Find project root (same logic as repo analysis)
-                current = Path(".").resolve()
-                project_root = current
-                if current.name == "architect_ai_cursor_poc" or "architect_ai" in str(current):
-                    project_root = current.parent.resolve()
-                
-                analyzer = get_smart_analyzer()
-                print("[SMART_ANALYSIS] 🧠 Running programmatic code analysis...")
-                analysis = analyzer.analyze_project(project_root)
-                programmatic_context = analyzer.format_for_ai(analysis)
-                
-                print(f"[SMART_ANALYSIS] ✅ Extracted {len(analysis['api_endpoints'])} APIs, "
-                      f"{len(analysis['database_models'])} models, "
-                      f"{len(analysis['ui_components'])} components")
-            except Exception as e:
-                print(f"[WARN] Smart code analysis failed: {e}")
-                programmatic_context = ""
-            
-            # FORCE ADVANCED RAG - Override config to ALWAYS enable advanced features
-            intelligence_cfg = self.cfg.get("intelligence", {})
-            
-            # Force enable all advanced features for artifact generation
-            if "query_expansion" not in intelligence_cfg:
-                intelligence_cfg["query_expansion"] = {}
-            if "reranking" not in intelligence_cfg:
-                intelligence_cfg["reranking"] = {}
-            if "context_optimization" not in intelligence_cfg:
-                intelligence_cfg["context_optimization"] = {}
-            
-            intelligence_cfg["query_expansion"]["enabled"] = True
-            intelligence_cfg["reranking"]["enabled"] = True
-            intelligence_cfg["reranking"]["strategy"] = "hybrid"
-            intelligence_cfg["reranking"]["top_k"] = 18
-            intelligence_cfg["context_optimization"]["enabled"] = True
-            intelligence_cfg["context_optimization"]["max_tokens"] = 8000
-            
-            print("[RAG] ✅ ADVANCED RAG ENABLED (forced) - Query Expansion + Hybrid Reranking + Context Optimization")
-            
-            # Step 1: Query Expansion (ALWAYS enabled)
-            queries = [query]
-            if True:  # Force enable
-                try:
-                    from rag.query_processor import get_query_expander
-                    expander = get_query_expander()
-                    analysis = expander.analyze_query(query)
-                    # Use original + expanded queries (limit to 3 total)
-                    queries = [analysis.original_query] + analysis.expanded_queries[:2]
-                    print(f"[RAG] ✅ Expanded to {len(queries)} queries")
-                except Exception as e:
-                    print(f"[WARN] Query expansion failed: {e}, continuing with original query")
-                    queries = [query]
-            
-            # Step 2: Retrieve for all queries
-            docs = self._load_docs_from_chroma()
-            
-            # Continue with the RAG pipeline...
-            # (Full implementation below in duplicate method)
-            # This is a stub - the real implementation is at line 1330+
-            return "RAG_STUB"  # Placeholder
-            
-        except Exception as e:
-            # Re-raise to trigger retry in outer method
-            raise Exception(f"RAG internal retrieval stub failed: {e}")
-    
-    # NOTE: The REAL _retrieve_rag_context_internal implementation follows below
-    #       This stub exists due to orphaned code cleanup
+    # NOTE: _call_cloud_provider is implemented around line 1064 (improved version with artifact_model_mapping)
     
     def _load_docs_from_chroma(self):
         """Load documents from Chroma"""
@@ -1301,13 +1082,12 @@ USER REQUEST:
                 return cached_context
         
         # Retry logic with exponential backoff
-        import time
         for attempt in range(max_retries):
             try:
                 if attempt > 0:
                     wait_time = 2 ** attempt  # Exponential backoff: 2s, 4s, 8s
                     print(f"[RAG] Retry attempt {attempt + 1}/{max_retries} after {wait_time}s...")
-                    time.sleep(wait_time)
+                    await asyncio.sleep(wait_time)
                 
                 return await self._retrieve_rag_context_internal(query)
                 
