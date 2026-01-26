@@ -72,7 +72,9 @@ class VersionService:
     
     def _save_versions(self, artifact_id: str):
         """Save version history to disk."""
-        version_file = self.versions_dir / f"{artifact_id}.json"
+        # Sanitize filename for Windows (replace : with _)
+        safe_id = artifact_id.replace(":", "_")
+        version_file = self.versions_dir / f"{safe_id}.json"
         try:
             with open(version_file, 'w', encoding='utf-8') as f:
                 json.dump(self.versions.get(artifact_id, []), f, indent=2, default=str)

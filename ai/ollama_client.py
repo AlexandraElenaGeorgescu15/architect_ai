@@ -616,3 +616,7 @@ def get_ollama_client(base_url: str = "http://localhost:11434", timeout: int = 1
         _ollama_client = OllamaClient(base_url, timeout, vram_limit_gb)
     return _ollama_client
 
+
+# Alias for compatibility
+get_client = get_ollama_client
+

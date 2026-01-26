@@ -88,181 +88,185 @@ export default function ArtifactViewer({ artifact, onUpdate }: ArtifactViewerPro
   }
 
   return (
-    <div className="bg-card border border-border rounded-lg overflow-hidden">
-      {/* Header */}
-      <div className="p-4 border-b border-border flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div>
-            <h3 className="font-semibold capitalize">{artifact.type.replace(/_/g, ' ')}</h3>
-            <p className="text-sm text-muted-foreground">
-              {new Date(artifact.created_at).toLocaleString()}
-            </p>
-          </div>
-          {artifact.score !== undefined && (
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-              artifact.score >= 80 ? 'bg-green-500/20 text-green-500' :
-              artifact.score >= 60 ? 'bg-yellow-500/20 text-yellow-500' :
-              'bg-red-500/20 text-red-500'
-            }`}>
-              {artifact.score}%
-            </span>
-          )}
-        </div>
-        
-        {/* Model and Attempt Info */}
-        {(artifact.model_used || artifact.attempts) && (
-          <div className="flex items-center gap-3 text-xs text-muted-foreground px-6 pb-2">
-            {artifact.model_used && (
-              <span className="px-2 py-1 bg-primary/10 text-primary rounded font-medium">
-                Model: {artifact.model_used.replace('ollama:', '').replace('huggingface:', '')}
-              </span>
-            )}
-            {artifact.attempts && artifact.attempts.length > 0 && (
-              <span className="px-2 py-1 bg-secondary text-muted-foreground rounded">
-                Attempt {artifact.attempts[artifact.attempts.length - 1].retry + 1} of {artifact.attempts.length}
+    <>
+      <div className="bg-card border border-border rounded-lg overflow-hidden">
+        {/* Header */}
+        <div className="p-4 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div>
+              <h3 className="font-semibold capitalize">{artifact.type.replace(/_/g, ' ')}</h3>
+              <p className="text-sm text-muted-foreground">
+                {new Date(artifact.created_at).toLocaleString()}
+              </p>
+            </div>
+            {artifact.score !== undefined && (
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${artifact.score >= 80 ? 'bg-green-500/20 text-green-500' :
+                artifact.score >= 60 ? 'bg-yellow-500/20 text-yellow-500' :
+                  'bg-red-500/20 text-red-500'
+                }`}>
+                {artifact.score}%
               </span>
             )}
           </div>
-        )}
 
-        <div className="flex items-center gap-3">
-          {/* Version Selector - use artifact.type as the version key since versions are stored by type */}
-          <VersionSelector
-            artifactId={artifact.type}
-            currentContent={artifact.content}
-            onVersionRestore={(content, version) => {
-              if (onUpdate) {
-                onUpdate({ ...artifact, content })
-              }
-              addNotification('success', `Restored to version ${version}`)
-            }}
-          />
-
-          <div className="flex items-center gap-2 border-l border-border pl-3">
-          <button
-            onClick={handleCopy}
-            className="p-2 hover:bg-accent rounded-lg transition-colors"
-            title="Copy to clipboard"
-          >
-            {copied ? (
-              <Check className="w-4 h-4 text-green-500" />
-            ) : (
-              <Copy className="w-4 h-4" />
-            )}
-          </button>
-          <button
-            onClick={handleDownload}
-            className="p-2 hover:bg-accent rounded-lg transition-colors"
-            title="Download"
-          >
-            <Download className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setComparisonOpen(true)}
-            className="p-2 hover:bg-accent rounded-lg transition-colors"
-            title="Compare versions"
-          >
-            <GitBranch className="w-4 h-4" />
-          </button>
-          {isCode && (
-            <button
-              onClick={() => setIsEditing(!isEditing)}
-              className="p-2 hover:bg-accent rounded-lg transition-colors"
-              title={isEditing ? 'View mode' : 'Edit mode'}
-            >
-              {isEditing ? (
-                <Eye className="w-4 h-4" />
-              ) : (
-                <Edit2 className="w-4 h-4" />
+          {/* Model and Attempt Info */}
+          {(artifact.model_used || artifact.attempts) && (
+            <div className="flex items-center gap-3 text-xs text-muted-foreground px-6 pb-2">
+              {artifact.model_used && (
+                <span className="px-2 py-1 bg-primary/10 text-primary rounded font-medium">
+                  Model: {artifact.model_used.replace('ollama:', '').replace('huggingface:', '')}
+                </span>
               )}
-            </button>
+              {artifact.attempts && artifact.attempts.length > 0 && (
+                <span className="px-2 py-1 bg-secondary text-muted-foreground rounded">
+                  Attempt {artifact.attempts[artifact.attempts.length - 1].retry + 1} of {artifact.attempts.length}
+                </span>
+              )}
+            </div>
           )}
-          </div>
-        </div>
-      </div>
 
-      {/* Content */}
-      <div className="p-6">
-        {isHTML ? (
-          <div className="bg-muted rounded-lg overflow-hidden border border-border">
-            <iframe
-              srcDoc={(artifact as any).html_content || artifact.content}
-              className="w-full h-[600px] border-0"
-              title="HTML Preview"
-              sandbox="allow-scripts allow-same-origin allow-forms"
+          <div className="flex items-center gap-3">
+            {/* Version Selector - use artifact.type as the version key since versions are stored by type */}
+            <VersionSelector
+              artifactId={artifact.type}
+              currentContent={artifact.content}
+              onVersionRestore={(content, version) => {
+                if (onUpdate) {
+                  onUpdate({ ...artifact, content })
+                }
+                addNotification('success', `Restored to version ${version}`)
+              }}
             />
-          </div>
-        ) : isMermaid ? (
-          <div className="bg-muted rounded-lg p-4 overflow-auto">
-            <pre className="text-sm font-mono whitespace-pre-wrap">{artifact.content}</pre>
-            <div className="mt-4 text-xs text-muted-foreground">
-              💡 Mermaid diagrams can be rendered in a diagram viewer
+
+            <div className="flex items-center gap-2 border-l border-border pl-3">
+              <button
+                onClick={handleCopy}
+                className="p-2 hover:bg-accent rounded-lg transition-colors"
+                title="Copy to clipboard"
+              >
+                {copied ? (
+                  <Check className="w-4 h-4 text-green-500" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+              </button>
+              <button
+                onClick={handleDownload}
+                className="p-2 hover:bg-accent rounded-lg transition-colors"
+                title="Download"
+              >
+                <Download className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setComparisonOpen(true)}
+                className="p-2 hover:bg-accent rounded-lg transition-colors"
+                title="Compare versions"
+              >
+                <GitBranch className="w-4 h-4" />
+              </button>
+              {isCode && (
+                <button
+                  onClick={() => setIsEditing(!isEditing)}
+                  className="p-2 hover:bg-accent rounded-lg transition-colors"
+                  title={isEditing ? 'View mode' : 'Edit mode'}
+                >
+                  {isEditing ? (
+                    <Eye className="w-4 h-4" />
+                  ) : (
+                    <Edit2 className="w-4 h-4" />
+                  )}
+                </button>
+              )}
             </div>
           </div>
-        ) : isCode ? (
-          <div className="relative">
-            {isEditing ? (
-              <div className="space-y-2">
-                <textarea
-                  value={editedContent}
-                  onChange={(e) => setEditedContent(e.target.value)}
-                  className="w-full h-96 p-4 border border-border rounded-lg bg-background text-foreground font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-                <div className="flex justify-end gap-2">
-                  <button
-                    onClick={() => {
-                      setIsEditing(false)
-                      setEditedContent(artifact.content)
-                    }}
-                    className="px-4 py-2 border border-border rounded-lg hover:bg-accent"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSave}
-                    className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
-                  >
-                    Save
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-muted rounded-lg p-4 overflow-auto max-h-96">
-                <pre className="text-sm font-mono whitespace-pre-wrap">{artifact.content}</pre>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="prose prose-sm max-w-none dark:prose-invert">
-            <pre className="whitespace-pre-wrap text-sm">{artifact.content}</pre>
-          </div>
-        )}
-      </div>
+        </div>
 
-      {/* Feedback Buttons */}
-      <div className="p-4 border-t border-border bg-muted/50">
-        <div className="flex items-center gap-4">
-          <span className="text-sm font-medium">Was this helpful?</span>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handleFeedback('positive')}
-              className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-500 rounded-lg hover:bg-green-500/30 transition-colors"
-            >
-              <ThumbsUp className="w-4 h-4" />
-              <span className="text-sm">Good</span>
-            </button>
-            <button
-              onClick={() => handleFeedback('negative')}
-              className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500/30 transition-colors"
-            >
-              <ThumbsDown className="w-4 h-4" />
-              <span className="text-sm">Needs Improvement</span>
-            </button>
+        {/* Content */}
+        <div className="p-6">
+          {isHTML ? (
+            <div className="bg-muted rounded-lg overflow-hidden border border-border">
+              <iframe
+                srcDoc={(artifact as any).html_content || artifact.content}
+                className="w-full h-[600px] border-0"
+                title="HTML Preview"
+                sandbox="allow-scripts allow-same-origin allow-forms"
+              />
+            </div>
+          ) : isMermaid ? (
+            <div className="bg-muted rounded-lg p-4 overflow-auto">
+              <pre className="text-sm font-mono whitespace-pre-wrap">{artifact.content}</pre>
+              <div className="mt-4 text-xs text-muted-foreground">
+                💡 Mermaid diagrams can be rendered in a diagram viewer
+              </div>
+            </div>
+          ) : isCode ? (
+            <div className="relative">
+              {isEditing ? (
+                <div className="space-y-2">
+                  <textarea
+                    value={editedContent}
+                    onChange={(e) => setEditedContent(e.target.value)}
+                    className="w-full h-96 p-4 border border-border rounded-lg bg-background text-foreground font-mono text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => {
+                        setIsEditing(false)
+                        setEditedContent(artifact.content)
+                      }}
+                      className="px-4 py-2 border border-border rounded-lg hover:bg-accent"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSave}
+                      className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-muted rounded-lg p-4 overflow-auto max-h-96">
+                  <pre className="text-sm font-mono whitespace-pre-wrap">{artifact.content}</pre>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+              <pre className="whitespace-pre-wrap text-sm">{artifact.content}</pre>
+            </div>
+          )}
+        </div>
+
+        {/* Feedback Buttons */}
+        <div className="p-4 border-t border-border bg-muted/50">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium">Was this helpful?</span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleFeedback('positive')}
+                className="flex items-center gap-2 px-4 py-2 bg-green-500/20 text-green-500 rounded-lg hover:bg-green-500/30 transition-colors"
+              >
+                <ThumbsUp className="w-4 h-4" />
+                <span className="text-sm">Good</span>
+              </button>
+              <button
+                onClick={() => handleFeedback('negative')}
+                className="flex items-center gap-2 px-4 py-2 bg-red-500/20 text-red-500 rounded-lg hover:bg-red-500/30 transition-colors"
+              >
+                <ThumbsDown className="w-4 h-4" />
+                <span className="text-sm">Needs Improvement</span>
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Feedback Modal */}
+
       </div>
 
-      {/* Feedback Modal */}
+      {/* Feedback Modal - Moved outside to avoid overflow clipping */}
       {showFeedbackModal && feedbackType && (
         <FeedbackModal
           artifact={artifact}
@@ -276,7 +280,7 @@ export default function ArtifactViewer({ artifact, onUpdate }: ArtifactViewerPro
       )}
 
       <ArtifactComparisonDrawer artifact={artifact} isOpen={isComparisonOpen} onClose={() => setComparisonOpen(false)} />
-    </div>
+    </>
   )
 }
 

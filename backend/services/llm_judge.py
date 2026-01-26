@@ -8,6 +8,8 @@ from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
 import logging
 import json
+import asyncio
+import asyncio
 
 # Add parent directory for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -144,7 +146,7 @@ class LLMJudge:
         
         # 2. Ollama (Free local option)
         try:
-            from ai.ollama_client import get_client
+            from ai.ollama_client import get_ollama_client as get_client
             client = get_client()
             # Try preferred judge models
             for model in settings.llm_judge_preferred_models:

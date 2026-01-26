@@ -7,8 +7,20 @@
     "model_used": "unknown",
     "context": {
       "user": "admin",
-      "timestamp": "2026-01-26T19:18:09.426396"
+      "timestamp": "2026-01-26T20:09:15.260569"
     },
-    "added_at": "2026-01-26T19:18:09.485911"
+    "added_at": "2026-01-26T20:09:15.314776"
+  },
+  {
+    "artifact_type": "unknown",
+    "content": "",
+    "meeting_notes": "",
+    "validation_score": 85.0,
+    "model_used": "unknown",
+    "context": {
+      "user": "admin",
+      "timestamp": "2026-01-26T20:09:21.886369"
+    },
+    "added_at": "2026-01-26T20:09:21.913077"
   }
 ]

@@ -564,5 +564,21 @@
       "actual_file_path": "models\\huggingface\\mradermacher_ViCoder-html-32B-preview-i1-GGUF\\models--mradermacher--ViCoder-html-32B-preview-i1-GGUF\\snapshots\\87ddaa1b8ad1d5bacff9476e5a538d98ebdb91ec\\ViCoder-html-32B-preview.i1-IQ1_M.gguf",
       "usable_via_transformers": true
     }
+  },
+  "huggingface:deepseek-ai-DeepSeek-OCR": {
+    "id": "huggingface:deepseek-ai-DeepSeek-OCR",
+    "name": "deepseek-ai/DeepSeek-OCR (HuggingFace)",
+    "provider": "huggingface",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "downloaded",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "huggingface_id": "deepseek-ai/DeepSeek-OCR",
+      "path": "models\\huggingface\\deepseek-ai_DeepSeek-OCR",
+      "actual_file_path": "models\\huggingface\\deepseek-ai_DeepSeek-OCR\\models--deepseek-ai--DeepSeek-OCR\\snapshots\\9f30c71f441d010e5429c532364a86705536c53a\\config.json",
+      "usable_via_transformers": true
+    }
   }
 }

@@ -204,5 +204,7 @@ def get_service() -> MeetingNotesService:
     global _meeting_notes_service
     if _meeting_notes_service is None:
         _meeting_notes_service = MeetingNotesService()
-    return _meeting_notes_service
+
+# Alias for compatibility
+get_meeting_notes_service = get_service
 

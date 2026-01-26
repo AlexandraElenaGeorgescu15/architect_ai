@@ -834,7 +834,12 @@ class AgenticChatService:
                     overview_parts.append("\n**Important Files:**")
                     key_files = proj_map.get("key_files", [])[:15]
                     for kf in key_files:
-                        overview_parts.append(f"- `{Path(kf).name}`")
+                        # Handle both dict (new format) and str (old format)
+                        if isinstance(kf, dict):
+                            file_name = kf.get("name", str(Path(kf.get("path", ""))))
+                        else:
+                            file_name = Path(str(kf)).name
+                        overview_parts.append(f"- `{file_name}`")
                     logger.info(f"🤖 [AGENTIC_CHAT] Step 3.3.3: Found {len(key_files)} key files")
                 
                 project_overview = "\n".join(overview_parts)
