@@ -192,12 +192,18 @@ class OllamaClient:
             if not await self.is_model_available(model_name):
                 # Auto-pull missing model
                 try:
-                    import subprocess
+                    import asyncio
                     print(f"[INFO] Model {model_name} not found. Pulling via 'ollama pull {model_name}'...")
-                    pull = subprocess.run(["ollama", "pull", model_name], capture_output=True, text=True, timeout=1800)
-                    if pull.returncode != 0:
-                        err = pull.stderr.strip() or pull.stdout.strip()
-                        error_msg = f"Failed to pull model {model_name}: {err}"
+                    process = await asyncio.create_subprocess_exec(
+                        "ollama", "pull", model_name,
+                        stdout=asyncio.subprocess.PIPE,
+                        stderr=asyncio.subprocess.PIPE
+                    )
+                    stdout, stderr = await asyncio.wait_for(process.communicate(), timeout=1800)
+                    
+                    if process.returncode != 0:
+                        err = stderr.decode() or stdout.decode()
+                        error_msg = f"Failed to pull model {model_name}: {err.strip()}"
                         print(f"[ERROR] {error_msg}")
                         self.models[model_name].status = ModelStatus.ERROR
                         self.models[model_name].error_message = error_msg

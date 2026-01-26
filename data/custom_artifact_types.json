@@ -8,6 +8,7 @@
       "description": "A testing plan for the feature described in the meeting notes",
       "validation_rules": [],
       "default_model": null,
+      "output_format": "document",
       "created_at": "2026-01-22T09:26:57.697621",
       "updated_at": "2026-01-22T09:26:57.697621",
       "is_enabled": true
@@ -20,11 +21,12 @@
       "description": "A test custom artifact type",
       "validation_rules": [],
       "default_model": null,
+      "output_format": "document",
       "created_at": "2026-01-22T10:35:53.109970",
       "updated_at": "2026-01-22T10:35:53.109970",
       "is_enabled": true
     }
   },
   "custom_categories": [],
-  "updated_at": "2026-01-22T10:37:47.170208"
+  "updated_at": "2026-01-27T00:55:25.357802"
 }
