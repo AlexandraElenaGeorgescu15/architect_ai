@@ -29,6 +29,7 @@ class CustomArtifactType:
     description: str = ""  # Brief description
     validation_rules: List[str] = field(default_factory=list)  # Optional validation rules
     default_model: Optional[str] = None  # Preferred model for this type
+    output_format: str = "document"  # "document", "html", or "mermaid"
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
     is_enabled: bool = True
@@ -116,7 +117,8 @@ class CustomArtifactService:
         prompt_template: str,
         description: str = "",
         validation_rules: Optional[List[str]] = None,
-        default_model: Optional[str] = None
+        default_model: Optional[str] = None,
+        output_format: str = "document"
     ) -> CustomArtifactType:
         """
         Create a new custom artifact type.
@@ -129,6 +131,7 @@ class CustomArtifactService:
             description: Brief description
             validation_rules: Optional list of validation rules
             default_model: Optional preferred model
+            output_format: Output format (document, html, mermaid)
         
         Returns:
             Created CustomArtifactType
@@ -167,7 +170,8 @@ class CustomArtifactService:
             prompt_template=prompt_template,
             description=description,
             validation_rules=validation_rules or [],
-            default_model=default_model
+            default_model=default_model,
+            output_format=output_format
         )
         
         self.custom_types[id] = custom_type
@@ -209,7 +213,7 @@ class CustomArtifactService:
         
         # Update allowed fields
         allowed_fields = ["name", "category", "prompt_template", "description", 
-                        "validation_rules", "default_model", "is_enabled"]
+                        "validation_rules", "default_model", "is_enabled", "output_format"]
         
         for field, value in updates.items():
             if field in allowed_fields:
@@ -311,7 +315,8 @@ class CustomArtifactService:
                 "is_custom": True,
                 "is_enabled": custom_type.is_enabled,
                 "description": custom_type.description,
-                "default_model": custom_type.default_model
+                "default_model": custom_type.default_model,
+                "output_format": custom_type.output_format
             })
         
         return sorted(all_types, key=lambda t: (t["category"], t["name"]))

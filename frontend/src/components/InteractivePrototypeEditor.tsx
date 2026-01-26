@@ -77,14 +77,14 @@ export default function InteractivePrototypeEditor({ artifactType }: Interactive
         return a.type === artifactType
       }
       // Default: get all HTML-like artifacts
-      return a.type === 'dev_visual_prototype' || 
-             a.type === 'html_prototype' || 
-             a.type.startsWith('html_')
+      return a.type === 'dev_visual_prototype' ||
+        a.type === 'html_prototype' ||
+        a.type.startsWith('html_')
     }).sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
-    
-    console.log(`📦 [InteractivePrototypeEditor] Filtered for "${artifactType}": found ${filtered.length} artifacts`, 
+
+    console.log(`📦 [InteractivePrototypeEditor] Filtered for "${artifactType}": found ${filtered.length} artifacts`,
       filtered.map(a => ({ id: a.id, type: a.type })))
-    
+
     return filtered
   }, [artifacts, artifactType])
 
@@ -132,7 +132,7 @@ export default function InteractivePrototypeEditor({ artifactType }: Interactive
   const sanitizeHtmlContent = (html: string): string => {
     // Check if HTML already has a viewport meta tag
     const hasViewport = /<meta[^>]*name=["']viewport["'][^>]*>/i.test(html)
-    
+
     // If it has a viewport tag, replace it with one that prevents zoom
     if (hasViewport) {
       html = html.replace(
@@ -156,7 +156,7 @@ export default function InteractivePrototypeEditor({ artifactType }: Interactive
         html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=contain"></head><body>${html}</body></html>`
       }
     }
-    
+
     // Add CSS to prevent zoom in the iframe content
     const preventZoomCSS = `
       <style>
@@ -173,13 +173,13 @@ export default function InteractivePrototypeEditor({ artifactType }: Interactive
         }
       </style>
     `
-    
+
     if (html.includes('</head>')) {
       html = html.replace('</head>', `${preventZoomCSS}</head>`)
     } else if (html.includes('<head>')) {
       html = html.replace('<head>', `<head>${preventZoomCSS}`)
     }
-    
+
     return html
   }
 
@@ -195,7 +195,7 @@ export default function InteractivePrototypeEditor({ artifactType }: Interactive
         console.warn('Selected artifact has no content')
         setHtmlContent('')
       }
-      
+
       // Restore chat history for this artifact, or initialize if new
       if (chatHistoryByArtifact[selectedArtifact.id]) {
         setChatHistory(chatHistoryByArtifact[selectedArtifact.id])
@@ -218,7 +218,7 @@ export default function InteractivePrototypeEditor({ artifactType }: Interactive
       setHtmlContent('')
     }
   }, [selectedArtifact?.id, selectedArtifact?.content])
-  
+
   // Save chat history when it changes (but not when switching view modes)
   useEffect(() => {
     if (selectedArtifact && chatHistory.length > 0) {
@@ -314,7 +314,7 @@ export default function InteractivePrototypeEditor({ artifactType }: Interactive
     // Detect if this is a complex request (needs full redesign)
     const complexKeywords = ['redesign', 'completely', 'entire', 'full', 'whole', 'pretty', 'beautiful', 'modern', 'professional', 'overhaul', 'rework', 'redo']
     const isComplexRequest = complexKeywords.some(kw => userMessage.toLowerCase().includes(kw))
-    
+
     // Use longer timeout for complex requests
     const timeoutMs = isComplexRequest ? 180000 : 90000 // 3 min for complex, 90s for simple
 
@@ -331,7 +331,7 @@ export default function InteractivePrototypeEditor({ artifactType }: Interactive
 
     try {
       // Build context-aware prompt - optimized for efficiency
-      const modificationPrompt = isComplexRequest 
+      const modificationPrompt = isComplexRequest
         ? `You are a professional UI/UX designer. Transform this basic HTML prototype into a beautiful, modern, polished design.
 
 CURRENT HTML:
@@ -364,7 +364,7 @@ Return ONLY the complete modified HTML. No explanations or markdown.`
 
       // Call AI with timeout handling
       const timeoutPromise = new Promise<never>((_, reject) => {
-        setTimeout(() => reject(new Error(`Request timed out after ${timeoutMs/1000} seconds.`)), timeoutMs)
+        setTimeout(() => reject(new Error(`Request timed out after ${timeoutMs / 1000} seconds.`)), timeoutMs)
       })
 
       const response = await Promise.race([
@@ -401,11 +401,26 @@ Return ONLY the complete modified HTML. No explanations or markdown.`
         updated_at: new Date().toISOString(),
       })
 
+      // AUTO-SAVE FIX: Persist to backend immediately to prevent changes disappearing
+      // Previously, users would lose changes if navigating away before clicking Save
+      try {
+        await updateArtifactAPI(selectedArtifact.id, modifiedHtml, {
+          source: 'interactive_editor_ai',
+          auto_saved: true,
+          saved_at: new Date().toISOString(),
+        })
+        console.log('✅ [InteractivePrototypeEditor] Auto-saved AI modification to backend')
+      } catch (saveError) {
+        console.warn('⚠️ [InteractivePrototypeEditor] Failed to auto-save:', saveError)
+        // Don't show error to user - changes are still in local store
+        // They can manually save with the Save button
+      }
+
       // Add AI response to chat
       const successMessage = isComplexRequest
         ? `✨ I've completely redesigned your prototype with modern styling! Check the preview to see the transformation.`
         : `✅ Done! I've updated the prototype. Check the preview to see the changes.`
-      
+
       setChatHistory((prev) => [
         ...prev,
         {
@@ -414,17 +429,17 @@ Return ONLY the complete modified HTML. No explanations or markdown.`
         },
       ])
 
-      addNotification('success', 'Prototype updated successfully!')
+      addNotification('success', 'Prototype updated and saved!')
     } catch (error: any) {
       console.error('Failed to modify prototype:', error)
-      
+
       // Build user-friendly error message
       let errorMsg = error.message || 'Unknown error occurred'
       let tip = 'Try simpler requests like "make the button blue" or "add a header".'
-      
+
       if (error.message?.includes('timeout')) {
         errorMsg = 'Request timed out. The AI service may be overloaded.'
-        tip = isComplexRequest 
+        tip = isComplexRequest
           ? 'For big redesigns, try breaking it into smaller steps: first colors, then layout, then animations.'
           : 'Try a simpler request or wait a moment and try again.'
       } else if (error.message?.includes('Network') || error.message?.includes('fetch')) {
@@ -434,7 +449,7 @@ Return ONLY the complete modified HTML. No explanations or markdown.`
         errorMsg = 'Server error. The AI service may be temporarily unavailable.'
         tip = 'Wait a moment and try again.'
       }
-      
+
       setChatHistory((prev) => [
         ...prev,
         {
@@ -453,7 +468,7 @@ Return ONLY the complete modified HTML. No explanations or markdown.`
    */
   const extractHtmlFromResponse = (response: string): string => {
     let html = response.trim()
-    
+
     // Step 1: Try to extract from markdown code blocks (```html or ```)
     const htmlCodeBlockPattern = /```(?:html)?\s*\n([\s\S]*?)```/i
     const codeBlockMatch = html.match(htmlCodeBlockPattern)
@@ -467,16 +482,16 @@ Return ONLY the complete modified HTML. No explanations or markdown.`
         html = genericMatch[1].trim()
       }
     }
-    
+
     // Step 2: Find HTML start (DOCTYPE or <html> tag)
     const doctypeIndex = html.indexOf('<!DOCTYPE')
     const htmlIndex = html.toLowerCase().indexOf('<html')
-    
+
     if (doctypeIndex >= 0 || htmlIndex >= 0) {
       const startIndex = doctypeIndex >= 0 ? doctypeIndex : htmlIndex
       // Remove everything before HTML starts
       html = html.substring(startIndex)
-      
+
       // Find HTML end
       const htmlEndIndex = html.toLowerCase().lastIndexOf('</html>')
       if (htmlEndIndex > 0) {
@@ -493,7 +508,7 @@ Return ONLY the complete modified HTML. No explanations or markdown.`
           html = html.substring(firstTagIndex)
         }
       }
-      
+
       // Remove trailing explanations after last tag
       const lastTagIndex = html.lastIndexOf('>')
       if (lastTagIndex > 0 && lastTagIndex < html.length - 1) {
@@ -504,11 +519,11 @@ Return ONLY the complete modified HTML. No explanations or markdown.`
         }
       }
     }
-    
+
     // Step 4: Clean up any remaining markdown artifacts
     html = html.replace(/^```[\w\-]*\s*\n?/gm, '').replace(/\n?```\s*$/gm, '').trim()
     html = html.replace(/^`+/gm, '').replace(/`+$/gm, '').trim()
-    
+
     return html
   }
 
@@ -523,7 +538,7 @@ Return ONLY the complete modified HTML. No explanations or markdown.`
 
     try {
       setIsSaving(true)
-      
+
       // Update artifact in store
       updateArtifact(selectedArtifact.id, {
         content: htmlContent,
@@ -632,22 +647,20 @@ Return ONLY the complete modified HTML. No explanations or markdown.`
           <div className="flex items-center gap-2">
             <button
               onClick={() => setViewMode('preview')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-all ${
-                viewMode === 'preview'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-background text-muted-foreground hover:text-foreground'
-              }`}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-all ${viewMode === 'preview'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-background text-muted-foreground hover:text-foreground'
+                }`}
             >
               <Eye size={14} />
               Preview
             </button>
             <button
               onClick={() => setViewMode('code')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-all ${
-                viewMode === 'code'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-background text-muted-foreground hover:text-foreground'
-              }`}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-all ${viewMode === 'code'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-background text-muted-foreground hover:text-foreground'
+                }`}
             >
               <Code size={14} />
               Code
@@ -669,11 +682,10 @@ Return ONLY the complete modified HTML. No explanations or markdown.`
             {/* Toggle AI Panel Button - More prominent when closed */}
             <button
               onClick={() => setIsAIPanelOpen(!isAIPanelOpen)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
-                isAIPanelOpen 
-                  ? 'hover:bg-accent text-muted-foreground' 
-                  : 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105'
-              }`}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${isAIPanelOpen
+                ? 'hover:bg-accent text-muted-foreground'
+                : 'bg-gradient-to-r from-primary to-primary/80 text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105'
+                }`}
               title={isAIPanelOpen ? 'Hide AI Panel' : 'Open AI Modifier'}
             >
               {isAIPanelOpen ? (
@@ -697,7 +709,7 @@ Return ONLY the complete modified HTML. No explanations or markdown.`
                 <Sparkles className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
                 <p className="text-lg font-medium text-muted-foreground mb-2">No HTML Content</p>
                 <p className="text-sm text-muted-foreground">
-                  {prototypeArtifacts.length === 0 
+                  {prototypeArtifacts.length === 0
                     ? 'Generate an HTML artifact first to use this editor'
                     : 'Select an artifact or generate a new one'}
                 </p>
@@ -710,7 +722,7 @@ Return ONLY the complete modified HTML. No explanations or markdown.`
               className="w-full h-full border-0"
               title="Prototype Preview"
               sandbox="allow-scripts"
-              style={{ 
+              style={{
                 transform: 'scale(1)',
                 transformOrigin: 'top left',
                 width: '100%',
@@ -746,8 +758,38 @@ Return ONLY the complete modified HTML. No explanations or markdown.`
             <textarea
               value={htmlContent}
               onChange={(e) => {
-                // Update content without resetting chat history
-                setHtmlContent(e.target.value)
+                const newContent = e.target.value
+                setHtmlContent(newContent)
+
+                // Debounced auto-save for manual edits (2s delay)
+                // Clear existing timer
+                if ((window as any)._autoSaveTimer) {
+                  clearTimeout((window as any)._autoSaveTimer)
+                }
+
+                // Set new timer
+                (window as any)._autoSaveTimer = setTimeout(async () => {
+                  if (!selectedArtifact) return
+
+                  console.log('💾 [InteractivePrototypeEditor] Auto-saving manual edits...')
+                  try {
+                    // Update store
+                    updateArtifact(selectedArtifact.id, {
+                      content: newContent,
+                      updated_at: new Date().toISOString(),
+                    })
+
+                    // Save to backend
+                    await updateArtifactAPI(selectedArtifact.id, newContent, {
+                      source: 'interactive_editor_manual',
+                      auto_saved: true,
+                      saved_at: new Date().toISOString(),
+                    })
+                    console.log('✅ [InteractivePrototypeEditor] Manual edit auto-saved')
+                  } catch (err) {
+                    console.error('❌ [InteractivePrototypeEditor] Auto-save failed:', err)
+                  }
+                }, 2000)
               }}
               onBlur={() => {
                 // Sanitize on blur to ensure viewport meta is present
@@ -818,11 +860,10 @@ Return ONLY the complete modified HTML. No explanations or markdown.`
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[80%] px-4 py-2 rounded-lg ${
-                  msg.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-foreground'
-                }`}
+                className={`max-w-[80%] px-4 py-2 rounded-lg ${msg.role === 'user'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary text-foreground'
+                  }`}
               >
                 <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
               </div>

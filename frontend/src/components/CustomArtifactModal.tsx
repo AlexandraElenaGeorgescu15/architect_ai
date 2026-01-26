@@ -10,6 +10,7 @@ interface CustomArtifactType {
   prompt_template: string
   description: string
   default_model?: string
+  output_format?: 'document' | 'html' | 'mermaid'  // Output format for generation
   is_enabled: boolean
   created_at: string
   updated_at: string
@@ -23,7 +24,7 @@ interface CustomArtifactModalProps {
 
 export default function CustomArtifactModal({ isOpen, onClose, onTypeCreated }: CustomArtifactModalProps) {
   const { addNotification } = useUIStore()
-  
+
   // Form state
   const [typeId, setTypeId] = useState('')
   const [name, setName] = useState('')
@@ -44,7 +45,8 @@ Requirements:
 - Include relevant details from the context`
   )
   const [defaultModel, setDefaultModel] = useState('')
-  
+  const [outputFormat, setOutputFormat] = useState<'document' | 'html' | 'mermaid'>('document')
+
   // List state
   const [customTypes, setCustomTypes] = useState<CustomArtifactType[]>([])
   const [categories, setCategories] = useState<string[]>([])
@@ -108,13 +110,14 @@ Requirements:
 - Include relevant details from the context`
     )
     setDefaultModel('')
+    setOutputFormat('document')
     setEditingType(null)
   }
 
   const handleCreate = async () => {
     // Validation
     const finalCategory = category === '__custom__' ? customCategory : category
-    
+
     if (!typeId.trim()) {
       addNotification('error', 'Type ID is required')
       return
@@ -141,7 +144,8 @@ Requirements:
           category: finalCategory.trim(),
           prompt_template: promptTemplate.trim(),
           description: description.trim(),
-          default_model: defaultModel || undefined
+          default_model: defaultModel || undefined,
+          output_format: outputFormat  // FIX: Add output format choice
         }
       })
 
@@ -198,6 +202,7 @@ Requirements:
     setDescription(type.description)
     setPromptTemplate(type.prompt_template)
     setDefaultModel(type.default_model || '')
+    setOutputFormat(type.output_format || 'document')
     setActiveTab('create')
   }
 
@@ -224,22 +229,20 @@ Requirements:
         <div className="flex border-b border-border">
           <button
             onClick={() => { setActiveTab('create'); resetForm(); }}
-            className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === 'create' 
-                ? 'text-primary border-b-2 border-primary bg-primary/5' 
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'create'
+              ? 'text-primary border-b-2 border-primary bg-primary/5'
+              : 'text-muted-foreground hover:text-foreground'
+              }`}
           >
             <Plus className="w-4 h-4 inline mr-1" />
             {editingType ? 'Edit Type' : 'Create New'}
           </button>
           <button
             onClick={() => setActiveTab('manage')}
-            className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${
-              activeTab === 'manage' 
-                ? 'text-primary border-b-2 border-primary bg-primary/5' 
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
+            className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'manage'
+              ? 'text-primary border-b-2 border-primary bg-primary/5'
+              : 'text-muted-foreground hover:text-foreground'
+              }`}
           >
             <Edit2 className="w-4 h-4 inline mr-1" />
             Manage ({customTypes.length})
@@ -355,6 +358,25 @@ Requirements:
                   className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
+
+              {/* Output Format */}
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Output Format
+                </label>
+                <select
+                  value={outputFormat}
+                  onChange={(e) => setOutputFormat(e.target.value as 'document' | 'html' | 'mermaid')}
+                  className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                >
+                  <option value="document">📄 Document (Markdown)</option>
+                  <option value="html">🌐 HTML (Interactive visual)</option>
+                  <option value="mermaid">📊 Mermaid (Diagram)</option>
+                </select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Choose how the artifact should be rendered
+                </p>
+              </div>
             </div>
           ) : (
             <div className="space-y-2">
@@ -376,11 +398,10 @@ Requirements:
                 customTypes.map((type) => (
                   <div
                     key={type.id}
-                    className={`p-3 border rounded-lg ${
-                      type.is_enabled 
-                        ? 'border-border bg-background' 
-                        : 'border-muted bg-muted/30 opacity-60'
-                    }`}
+                    className={`p-3 border rounded-lg ${type.is_enabled
+                      ? 'border-border bg-background'
+                      : 'border-muted bg-muted/30 opacity-60'
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <div>
@@ -397,11 +418,10 @@ Requirements:
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleToggleEnabled(type.id, type.is_enabled)}
-                          className={`px-2 py-1 text-xs rounded ${
-                            type.is_enabled 
-                              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                              : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                          }`}
+                          className={`px-2 py-1 text-xs rounded ${type.is_enabled
+                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                            }`}
                         >
                           {type.is_enabled ? 'Enabled' : 'Disabled'}
                         </button>

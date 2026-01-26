@@ -30,6 +30,14 @@ from backend.utils.tool_detector import get_user_project_directories
 
 logger = get_logger(__name__)
 
+# Optional imports for Ollama (local models)
+try:
+    from ai.ollama_client import OllamaClient
+    OLLAMA_AVAILABLE = True
+except ImportError:
+    OLLAMA_AVAILABLE = False
+    logger.warning("OllamaClient not available for agentic chat. Will use cloud APIs only.")
+
 # Tool definitions for the AI
 AGENT_TOOLS = [
     {
@@ -232,8 +240,9 @@ class AgenticChatService:
         self.kg_builder = get_kg_builder()
         self.pattern_miner = get_miner()
         self.user_projects = get_user_project_directories()
+        self.ollama_client = OllamaClient() if OLLAMA_AVAILABLE else None
         
-        logger.info("Agentic Chat Service initialized with tool-use capabilities")
+        logger.info(f"Agentic Chat Service initialized (Ollama: {'available' if self.ollama_client else 'not available'})")
     
     # =========================================================================
     # TOOL IMPLEMENTATIONS
@@ -1018,6 +1027,31 @@ RESPONSE GUIDELINES:
         
         # Build prompt asking if AI needs more info
         decision_prompt = messages.copy()
+        
+        # Add system instruction to encourage tool usage
+        system_instruction = """
+        You are an intelligent agent analyzing a codebase.
+        
+        CRITICAL INSTRUCTION:
+        If the user asks about specific code implementation, project structure, or details that are NOT in the chat history, 
+        you MUST use a tool (like search_codebase or list_files).
+        
+        Do NOT guess. Do NOT say "I don't know" without trying a tool first.
+        
+        If the question is "how phones are ordered" or similar, use search_codebase with a relevant query.
+        """
+        
+        # Check if we already have a system message
+        has_system = False
+        for msg in decision_prompt:
+            if msg["role"] == "system":
+                msg["content"] += "\n\n" + system_instruction
+                has_system = True
+                break
+        
+        if not has_system:
+            decision_prompt.insert(0, {"role": "system", "content": system_instruction})
+
         decision_prompt.append({
             "role": "user",
             "content": """Based on the user's question and any information gathered so far, do you need to use a tool to get more information?
@@ -1025,13 +1059,13 @@ RESPONSE GUIDELINES:
 If YES, respond with EXACTLY this JSON format (nothing else):
 {"tool": "tool_name", "arguments": {"arg1": "value1"}}
 
-If NO (you have enough info to answer), respond with:
+If NO (you have enough info to answer potentially based on previous tool outputs), respond with:
 {"ready": true}
 
 Choose ONE option only."""
         })
         
-        # Use Groq for fast decision-making
+        # Use Groq for fast decision-making if available
         if settings.groq_api_key:
             try:
                 async with httpx.AsyncClient(timeout=30.0) as client:
@@ -1045,42 +1079,113 @@ Choose ONE option only."""
                             "model": "llama-3.3-70b-versatile",
                             "messages": decision_prompt,
                             "temperature": 0.1,  # Low temperature for consistent decisions
-                            "max_tokens": 200
+                            "max_tokens": 500  # Increased from 200
                         }
                     )
-                    response.raise_for_status()
-                    data = response.json()
                     
-                    if "choices" in data and len(data["choices"]) > 0:
-                        content = data["choices"][0]["message"]["content"].strip()
-                        
-                        # Parse the response
-                        try:
-                            # Try to extract JSON from response
-                            if "{" in content:
-                                json_start = content.index("{")
-                                json_end = content.rindex("}") + 1
-                                json_str = content[json_start:json_end]
-                                decision = json.loads(json_str)
-                                
-                                if decision.get("ready"):
-                                    return None  # Ready to answer
-                                
-                                if "tool" in decision:
-                                    return {
-                                        "name": decision["tool"],
-                                        "arguments": decision.get("arguments", {})
-                                    }
-                        except (json.JSONDecodeError, ValueError):
-                            pass
-                        
-                        # Default: ready to answer
-                        return None
-                        
+                    if response.status_code != 200:
+                        logger.warning(f"Groq tool decision failed with stats {response.status_code}: {response.text}")
+                        # Fallthrough to Ollama
+                    else:
+                        data = response.json()
+                        if "choices" in data and len(data["choices"]) > 0:
+                            content = data["choices"][0]["message"]["content"].strip()
+                            
+                            # Parse the response
+                            try:
+                                # Try to extract JSON from response
+                                if "{" in content:
+                                    json_start = content.index("{")
+                                    json_end = content.rindex("}") + 1
+                                    json_str = content[json_start:json_end]
+                                    decision = json.loads(json_str)
+                                    
+                                    if decision.get("ready"):
+                                        return None  # Ready to answer
+                                    
+                                    if "tool" in decision:
+                                        logger.info(f"🤖 [AGENTIC_CHAT] Tool selected (Groq): {decision['tool']}")
+                                        return {
+                                            "name": decision["tool"],
+                                            "arguments": decision.get("arguments", {})
+                                        }
+                            except (json.JSONDecodeError, ValueError):
+                                pass
+                            
+                            # If we got here but couldn't parse JSON, fallthrough to Ollama might be safer
+                            # or just return None
             except Exception as e:
                 logger.warning(f"Groq decision call failed: {e}")
         
-        # Default: no tool call
+        # Ollama fallback for tool decisions (local models)
+        if self.ollama_client and OLLAMA_AVAILABLE:
+            logger.info("🤖 [AGENTIC_CHAT] Using Ollama for tool decision...")
+            try:
+                # Build a single prompt from messages
+                system_msg = ""
+                user_prompt = ""
+                for msg in decision_prompt:
+                    if msg["role"] == "system":
+                        system_msg = msg["content"]
+                    else:
+                        role_prefix = "USER" if msg["role"] == "user" else "ASSISTANT"
+                        user_prompt += f"{role_prefix}: {msg['content']}\n\n"
+                
+                # Try multiple local models
+                # Prefer smarter models for tool selection
+                local_models = ["mistral-nemo", "llama3", "llama3.2", "mistral", "qwen2.5-coder"]
+                
+                for model_name in local_models:
+                    try:
+                        # Check availability first to avoid timeouts on non-existent models
+                        if not await self.ollama_client.check_model_availability(model_name):
+                            continue
+                            
+                        response = await asyncio.wait_for(
+                            self.ollama_client.generate(
+                                model_name=model_name,
+                                prompt=user_prompt,
+                                system_message=system_msg,
+                                temperature=0.1,
+                                num_ctx=8192,
+                                format="json"  # Force JSON mode if supported
+                            ),
+                            timeout=45.0
+                        )
+                        
+                        if response.success and response.content:
+                            content = response.content.strip()
+                            logger.info(f"🤖 [AGENTIC_CHAT] Ollama ({model_name}) decision: {content[:100]}...")
+                            
+                            # Parse the response
+                            try:
+                                if "{" in content:
+                                    json_start = content.index("{")
+                                    json_end = content.rindex("}") + 1
+                                    json_str = content[json_start:json_end]
+                                    decision = json.loads(json_str)
+                                    
+                                    if decision.get("ready"):
+                                        return None  # Ready to answer
+                                    
+                                    if "tool" in decision:
+                                        return {
+                                            "name": decision["tool"],
+                                            "arguments": decision.get("arguments", {})
+                                        }
+                            except (json.JSONDecodeError, ValueError):
+                                pass
+                                
+                            # If we got a valid response but it wasn't valid JSON, try next model
+                    except asyncio.TimeoutError:
+                        logger.warning(f"Ollama {model_name} timed out, trying next...")
+                    except Exception as e:
+                        logger.warning(f"Ollama {model_name} failed: {e}")
+                        
+            except Exception as e:
+                logger.warning(f"Ollama decision call failed: {e}")
+        
+        # Default: no tool call (ready to answer)
         return None
     
     async def _generate_final_response(
@@ -1161,11 +1266,123 @@ Choose ONE option only."""
             except Exception as e:
                 logger.error(f"Groq final response failed: {e}")
         
+        # Ollama fallback (local models)
+        if self.ollama_client and OLLAMA_AVAILABLE:
+            logger.info("🤖 [AGENTIC_CHAT] Using Ollama for final response...")
+            try:
+                # Build a single prompt from messages
+                system_msg = ""
+                user_prompt = ""
+                for msg in final_messages:
+                    if msg["role"] == "system":
+                        system_msg = msg["content"]
+                    else:
+                        user_prompt += f"{msg['role'].upper()}: {msg['content']}\n\n"
+                
+                # Try multiple local models
+                local_models = ["llama3", "llama3.2", "mistral", "mistral-nemo", "codellama"]
+                
+                for model_name in local_models:
+                    try:
+                        response = await asyncio.wait_for(
+                            self.ollama_client.generate(
+                                model_name=model_name,
+                                prompt=user_prompt,
+                                system_message=system_msg,
+                                temperature=0.7,
+                                num_ctx=settings.local_model_context_window
+                            ),
+                            timeout=settings.generation_timeout
+                        )
+                        
+                        if response.success and response.content and len(response.content.strip()) > 50:
+                            content = response.content.strip()
+                            logger.info(f"🤖 [AGENTIC_CHAT] Ollama ({model_name}) response: {len(content)} chars")
+                            
+                            # Stream the response
+                            chunk_size = max(20, len(content) // 30)
+                            for i in range(0, len(content), chunk_size):
+                                yield {
+                                    "type": "chunk",
+                                    "content": content[i:i+chunk_size],
+                                    "model": model_name,
+                                    "provider": "ollama"
+                                }
+                                await asyncio.sleep(0.02)
+                            
+                            # Final complete message
+                            yield {
+                                "type": "complete",
+                                "content": content,
+                                "model": model_name,
+                                "provider": "ollama",
+                                "tools_used": [tr["tool"] for tr in tool_results]
+                            }
+                            return
+                            
+                    except asyncio.TimeoutError:
+                        logger.warning(f"Ollama {model_name} timed out, trying next...")
+                    except Exception as e:
+                        logger.warning(f"Ollama {model_name} failed: {e}")
+                        
+            except Exception as e:
+                logger.error(f"Ollama final response failed: {e}")
+        
+        # Gemini fallback (cloud)
+        gemini_key = settings.google_api_key or settings.gemini_api_key
+        if gemini_key:
+            logger.info("🤖 [AGENTIC_CHAT] Using Gemini for final response...")
+            try:
+                import httpx
+                # Build prompt for Gemini
+                combined_prompt = ""
+                for msg in final_messages:
+                    if msg["role"] == "system":
+                        combined_prompt = msg["content"] + "\n\n"
+                    else:
+                        combined_prompt += f"{msg['content']}\n\n"
+                
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.default_chat_model}:generateContent?key={gemini_key}"
+                    
+                    response = await client.post(url, json={
+                        "contents": [{"role": "user", "parts": [{"text": combined_prompt}]}],
+                        "generationConfig": {"temperature": 0.7, "maxOutputTokens": 4096}
+                    })
+                    response.raise_for_status()
+                    data = response.json()
+                    
+                    if "candidates" in data and len(data["candidates"]) > 0:
+                        content = data["candidates"][0]["content"]["parts"][0]["text"]
+                        
+                        # Stream the response
+                        chunk_size = max(20, len(content) // 30)
+                        for i in range(0, len(content), chunk_size):
+                            yield {
+                                "type": "chunk",
+                                "content": content[i:i+chunk_size],
+                                "model": settings.default_chat_model,
+                                "provider": "gemini"
+                            }
+                            await asyncio.sleep(0.02)
+                        
+                        yield {
+                            "type": "complete",
+                            "content": content,
+                            "model": settings.default_chat_model,
+                            "provider": "gemini",
+                            "tools_used": [tr["tool"] for tr in tool_results]
+                        }
+                        return
+                        
+            except Exception as e:
+                logger.error(f"Gemini final response failed: {e}")
+        
         # Fallback error
         yield {
             "type": "error",
-            "content": "I apologize, but I couldn't generate a response. Please try again.",
-            "error": "All providers failed"
+            "content": "I apologize, but I couldn't generate a response. Please ensure Ollama is running or configure a cloud API key.",
+            "error": "All providers failed (Groq, Ollama, Gemini)"
         }
 
 

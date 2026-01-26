@@ -838,20 +838,46 @@ class EnhancedGenerationService:
                 "artifact_id": artifact_id
             }
         else:
-            error_msg = "All generation attempts failed. Please check model availability and API keys."
-            logger.error(error_msg)
+            # Build diagnostic info from attempts
+            attempted_models = [a.get("model", "unknown") for a in attempts] if attempts else []
+            attempt_errors = [a.get("error", "unknown error")[:50] for a in attempts if a.get("error")] if attempts else []
+            
+            # Check what's available
+            ollama_status = "running" if OLLAMA_AVAILABLE else "not available"
+            has_api_keys = any([
+                settings.groq_api_key,
+                settings.openai_api_key,
+                getattr(settings, 'anthropic_api_key', None),
+                getattr(settings, 'google_api_key', None)
+            ])
+            
+            # Build detailed error message
+            error_lines = [f"All {len(attempts)} generation attempts failed."]
+            if attempted_models:
+                error_lines.append(f"Tried: {', '.join(attempted_models[:3])}" + (f" +{len(attempted_models)-3} more" if len(attempted_models) > 3 else ""))
+            if attempt_errors:
+                error_lines.append(f"Errors: {'; '.join(attempt_errors[:2])}")
+            error_lines.append(f"Ollama: {ollama_status}, API keys: {'configured' if has_api_keys else 'not configured'}")
+            
+            error_msg = " | ".join(error_lines)
+            logger.error(f"❌ [ENHANCED_GEN] {error_msg}")
             
             # Record metrics for failure
             metrics.increment("generation_failures_total", tags={"artifact_type": artifact_type_str})
             
             if progress_callback:
-                await progress_callback(100.0, f"Error: {error_msg}")
+                await progress_callback(100.0, f"Error: All generation attempts failed")
             return {
                 "success": False,
                 "error": error_msg,
                 "error_type": "all_attempts_failed",
                 "attempts": attempts,
-                "suggestion": "Ensure Ollama is running, models are installed, or cloud API keys are configured"
+                "diagnostics": {
+                    "attempted_models": attempted_models,
+                    "ollama_available": OLLAMA_AVAILABLE,
+                    "has_api_keys": has_api_keys
+                },
+                "suggestion": "Ensure Ollama is running with at least one model (ollama list), or configure cloud API keys"
             }
     
     def _build_prompt(self, meeting_notes: str, rag_context: str, artifact_type: Union[ArtifactType, str], 
@@ -899,20 +925,32 @@ class EnhancedGenerationService:
         
         if rag_context and rag_context.strip():
             parts.append("\n## Project Context (from codebase)")
-            # Sanitize RAG context (already from our own codebase, but still good practice)
-            # FIX: Increased from 3000 to 12000 chars to preserve more important context
-            # The previous 3000 char limit was losing critical architectural details
-            # Most LLMs can handle 8K+ context; Ollama/llama3 supports 8K tokens (~32K chars)
-            safe_context = sanitize_prompt_input(rag_context, max_length=12000)
+            # Sanitize RAG context - INCREASED LIMIT significantly to preserve architectural details
+            # User reported "0 context" - we must provide as much as the model can handle
+            # Modern models (Gemini 1.5/2.0, GPT-4o, Claude 3.5) handle 128k+ to 1M+ context
+            safe_context = sanitize_prompt_input(rag_context, max_length=100000)
             parts.append(safe_context)
         elif not rag_context or not rag_context.strip():
             logger.warning(f"⚠️ [ENHANCED_GEN] RAG context is empty! This may result in generic outputs.")
+            parts.append("No existing codebase context found. Generate a complete solution from scratch based on requirements.")
         
         parts.append("\n## Instructions")
-        parts.append("1. Ensure the output is complete and production-ready")
-        parts.append("2. Follow best practices and conventions")
-        parts.append("3. Include all necessary details")
-        parts.append("4. Validate syntax and correctness")
+        parts.append("1. **Analyze Requirements**: specific user needs versus generic patterns.")
+        parts.append("2. **Analyze Context**: strict consistency with existing codebase (Project Context above).")
+        parts.append("3. **Chain of Thought**: First, think step-by-step about the architecture/logic. Then generate the artifact.")
+        
+        # Artifact-specific instructions to avoid "light/empty" outputs
+        if "mermaid" in artifact_type_str.lower():
+            parts.append("4. **COMPLEXITY REQUIREMENT**: Create a DETAILED, COMPREHENSIVE diagram. Avoid simple/trivial diagrams.")
+            parts.append("5. Include ALL relevant entities, relationships, attributes, and methods.")
+            parts.append("6. Use subgraphs/clusters to organize complex logic.")
+            parts.append("7. ENSURE VALID SYNTAX. Do not include '```mermaid' inside the diagram code blocks if asking for raw code.")
+        elif "code" in artifact_type_str.lower() or "prototype" in artifact_type_str.lower():
+            parts.append("4. **PRODUCTION READY**: Write fully functional, production-grade code. No placeholders.")
+            parts.append("5. Implement all core logic described in requirements.")
+            parts.append("6. Add comments explaining complex logic.")
+        else:
+            parts.append("4. Ensure the output is complete, detailed, and production-ready.")
         
         final_prompt = "\n".join(parts)
         

@@ -33,12 +33,12 @@ export function useGeneration() {
   const [progress, setProgress] = useState<GenerationProgress | null>(null)
   const { addArtifact } = useArtifactStore()
   const { addNotification } = useUIStore()
-  
+
   // Refs to track timeouts and last activity
   const generationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const inactivityTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const lastActivityRef = useRef<number>(Date.now())
-  
+
   // Clear all timeouts
   const clearTimeouts = useCallback(() => {
     if (generationTimeoutRef.current) {
@@ -50,7 +50,7 @@ export function useGeneration() {
       inactivityTimeoutRef.current = null
     }
   }, [])
-  
+
   // Reset inactivity timeout on any activity
   const resetInactivityTimeout = useCallback(() => {
     lastActivityRef.current = Date.now()
@@ -70,7 +70,7 @@ export function useGeneration() {
       }, INACTIVITY_TIMEOUT_MS)
     }
   }, [isGenerating, addNotification])
-  
+
   // Clean up timeouts on unmount
   useEffect(() => {
     return () => clearTimeouts()
@@ -142,10 +142,10 @@ export function useGeneration() {
     setIsGenerating(false)
     console.log('🎉 [FRONTEND] Generation completed successfully, showing notification')
     addNotification('success', `Artifact "${event.artifact.type}" generated successfully!`)
-    
+
     // Trigger celebration effect! 🎉
     window.dispatchEvent(new CustomEvent('celebrate-generation'))
-    
+
     // CRITICAL FIX: Trigger artifact reload to ensure UI updates
     // This ensures artifacts appear even if WebSocket event doesn't fully update the store
     console.log('🔄 [FRONTEND] Triggering artifact reload after generation')
@@ -181,10 +181,10 @@ export function useGeneration() {
         context_id: request.context_id,
         options: request.options
       })
-      
+
       // Clear any existing timeouts
       clearTimeouts()
-      
+
       setIsGenerating(true)
       setProgress({
         jobId: '',
@@ -192,7 +192,7 @@ export function useGeneration() {
         status: 'pending',
         message: 'Initializing generation...',
       })
-      
+
       // Set up generation timeout (3 minutes max)
       generationTimeoutRef.current = setTimeout(() => {
         console.warn('⏰ [FRONTEND] Generation timeout reached (3 minutes)')
@@ -205,7 +205,7 @@ export function useGeneration() {
         } : null)
         addNotification('error', 'Generation timed out. Please try again.')
       }, GENERATION_TIMEOUT_MS)
-      
+
       // Set up inactivity timeout (1 minute of no updates)
       resetInactivityTimeout()
 
@@ -218,10 +218,10 @@ export function useGeneration() {
           has_artifact: !!response.artifact,
           artifact_type: response.artifact?.type
         })
-        
+
         // Reset inactivity timeout on response
         resetInactivityTimeout()
-        
+
         setProgress((prev) => ({
           ...prev!,
           jobId: response.job_id,
@@ -235,9 +235,13 @@ export function useGeneration() {
           addArtifact(response.artifact)
           setIsGenerating(false)
           addNotification('success', `Artifact "${response.artifact.type}" generated successfully!`)
-          
+
           // Trigger celebration effect! 🎉
           window.dispatchEvent(new CustomEvent('celebrate-generation'))
+
+          // CRITICAL FIX: Also trigger reload-artifacts for immediate response case
+          console.log('🔄 [FRONTEND] Triggering artifact reload after immediate generation')
+          window.dispatchEvent(new CustomEvent('reload-artifacts'))
         } else {
           console.log('⏳ [FRONTEND] Artifact not immediately available, waiting for WebSocket event (job_id:', response.job_id, ')')
         }
@@ -260,12 +264,12 @@ export function useGeneration() {
     setProgress(null)
     setIsGenerating(false)
   }, [clearTimeouts])
-  
+
   // Force stop generation (manual cancel)
   const cancelGeneration = useCallback(async () => {
     console.log('🛑 [FRONTEND] Cancelling generation manually')
     clearTimeouts()
-    
+
     // If we have a job ID, cancel it on the backend too
     if (progress?.jobId) {
       try {
@@ -277,7 +281,7 @@ export function useGeneration() {
         // Continue with local cancellation even if backend fails
       }
     }
-    
+
     setIsGenerating(false)
     setProgress(prev => prev ? {
       ...prev,

@@ -105,11 +105,17 @@ export interface GenerationJob {
   completed_at?: string
 }
 
+// Generation timeout - AI operations can take longer than default timeout
+// This matches GENERATION_TIMEOUT_MS in useGeneration.ts
+const GENERATION_API_TIMEOUT = 180000 // 3 minutes
+
 /**
  * Generate an artifact (non-streaming).
  */
 export async function generateArtifact(request: GenerationRequest): Promise<GenerationResponse> {
-  const response = await api.post<GenerationResponse>('/api/generation/generate', request)
+  const response = await api.post<GenerationResponse>('/api/generation/generate', request, {
+    timeout: GENERATION_API_TIMEOUT, // Override default 60s timeout for generation
+  })
   return extractData(response)
 }
 

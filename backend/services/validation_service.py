@@ -178,47 +178,58 @@ class ValidationService:
         # Apply custom validators
         rule_based_dto = self._apply_custom_validators(artifact_type, content, rule_based_dto)
         
-        # Stage 2: LLM-as-a-Judge validation (if enabled and available)
+        # Stage 2: LLM-as-a-Judge validation (if enabled)
         llm_config = get_llm_judge_config()
-        if use_llm_judge and llm_config["enabled"] and self.ollama_client:
+        if use_llm_judge and llm_config["enabled"]:
             try:
-                llm_result = await self._llm_judge_validation(
-                    artifact_type=artifact_type,
-                    content=content,
-                    rule_based_score=rule_based_dto.score,
-                    rule_based_errors=rule_based_dto.errors,
-                    meeting_notes=meeting_notes
+                # Import here to avoid circular dependencies
+                from backend.services.llm_judge import get_judge
+                judge = get_judge()
+                
+                # Get validation context
+                validation_context = context.get("rag_context", "") if context else ""
+                
+                # Call LLM judge
+                llm_score, llm_reasoning = await judge.evaluate_artifact(
+                    content=content, 
+                    artifact_type=artifact_type.value,
+                    meeting_notes=meeting_notes or "",
+                    context=validation_context
                 )
                 
-                if llm_result:
-                    llm_score, llm_reasoning, llm_model = llm_result
-                    
-                    # Combine scores: weighted average
-                    weight = llm_config["weight"]
-                    combined_score = (rule_based_dto.score * (1 - weight)) + (llm_score * weight)
-                    
-                    # Log the scoring
-                    logger.info(
-                        f"🤖 [LLM_JUDGE] Score: {llm_score:.1f}/100 (model: {llm_model})\n"
-                        f"   Rule-based: {rule_based_dto.score:.1f} × {(1-weight):.1f} = {rule_based_dto.score * (1-weight):.1f}\n"
-                        f"   LLM Judge:  {llm_score:.1f} × {weight:.1f} = {llm_score * weight:.1f}\n"
-                        f"   Combined:   {combined_score:.1f}/100"
-                    )
-                    
-                    # Update the DTO with combined score
-                    rule_based_dto.score = combined_score
-                    rule_based_dto.validators["llm_judge"] = {
-                        "score": llm_score,
-                        "model": llm_model,
-                        "reasoning": llm_reasoning[:200] if llm_reasoning else None,  # Truncate for storage
-                        "weight": weight
-                    }
-                    
-                    # Re-evaluate validity based on combined score
-                    # Valid if combined score >= 60 AND no critical errors
-                    has_critical = any(e.startswith("CRITICAL:") for e in rule_based_dto.errors)
-                    rule_based_dto.is_valid = combined_score >= 60.0 and not has_critical
-                    
+                # Determine LLM model used (helper for logging)
+                # In a real implementation this would come from the judge result
+                llm_model = "configured-model" 
+                
+                # Combine scores: weighted average
+                weight = llm_config["weight"]
+                combined_score = (rule_based_dto.score * (1 - weight)) + (llm_score * weight)
+                
+                # Log the scoring
+                logger.info(
+                    f"🤖 [LLM_JUDGE] Score: {llm_score:.1f}/100\n"
+                    f"   Rule-based: {rule_based_dto.score:.1f} × {(1-weight):.1f} = {rule_based_dto.score * (1-weight):.1f}\n"
+                    f"   LLM Judge:  {llm_score:.1f} × {weight:.1f} = {llm_score * weight:.1f}\n"
+                    f"   Combined:   {combined_score:.1f}/100\n"
+                    f"   Reasoning:  {llm_reasoning[:200]}..."
+                )
+                
+                # Update the DTO with combined score
+                rule_based_dto.score = combined_score
+                rule_based_dto.validators["llm_judge"] = {
+                    "score": llm_score,
+                    "reasoning": llm_reasoning[:500],
+                    "weight": weight
+                }
+                
+                # Re-evaluate validity based on combined score
+                # Valid if combined score >= 70 (stricter than before) AND no critical errors
+                has_critical = any(e.startswith("CRITICAL:") for e in rule_based_dto.errors)
+                rule_based_dto.is_valid = combined_score >= 70.0 and not has_critical
+                
+                if not rule_based_dto.is_valid:
+                     logger.info(f"❌ [VALIDATION] Combined score {combined_score:.1f} < 70 or critical errors present")
+                     
             except Exception as e:
                 logger.warning(f"⚠️ [LLM_JUDGE] LLM judge failed, using rule-based score only: {e}")
                 # Continue with rule-based score only
@@ -1323,6 +1334,79 @@ JSON response:"""
             results.append(result)
         
         return results
+    
+    def auto_repair_mermaid(
+        self,
+        content: str,
+        max_attempts: int = 3
+    ) -> Tuple[str, bool, List[str]]:
+        """
+        Auto-repair a Mermaid diagram using validation and iterative fixing.
+        
+        This method is called from generation_service to repair generated diagrams.
+        Uses the UniversalDiagramFixer for comprehensive syntax repairs.
+        
+        Args:
+            content: Raw Mermaid diagram content
+            max_attempts: Maximum repair attempts
+        
+        Returns:
+            Tuple of (repaired_content, is_valid, list_of_fixes_applied)
+        """
+        from typing import Tuple
+        all_fixes = []
+        current_content = content
+        
+        try:
+            # Import the universal fixer
+            from components.universal_diagram_fixer import UniversalDiagramFixer
+            fixer = UniversalDiagramFixer(strict_mode=True)
+        except ImportError:
+            logger.warning("UniversalDiagramFixer not available. Returning original content.")
+            # Just do basic validation
+            errors = self._validate_mermaid(content)
+            is_valid = not any(e.startswith("CRITICAL:") for e in errors)
+            return content, is_valid, []
+        
+        for attempt in range(max_attempts):
+            logger.debug(f"🔧 [VALIDATION] Auto-repair attempt {attempt + 1}/{max_attempts}")
+            
+            # Validate current content
+            errors = self._validate_mermaid(current_content)
+            critical_errors = [e for e in errors if e.startswith("CRITICAL:")]
+            
+            # If no critical errors, we're done
+            if not critical_errors:
+                logger.info(f"✅ [VALIDATION] Mermaid diagram is valid after {attempt} repair(s)")
+                return current_content, True, all_fixes
+            
+            # Apply fixes
+            fixed_content, fixes = fixer.fix_diagram(current_content, max_passes=3, lenient=False)
+            
+            if fixes:
+                all_fixes.extend(fixes)
+                logger.info(f"🔧 [VALIDATION] Applied {len(fixes)} fixes on attempt {attempt + 1}")
+            
+            # If content didn't change and we still have errors, try lenient mode
+            if fixed_content == current_content and attempt == max_attempts - 1:
+                logger.info(f"⚠️ [VALIDATION] Trying lenient mode for final attempt")
+                fixed_content, fixes = fixer.fix_diagram(current_content, max_passes=3, lenient=True)
+                if fixes:
+                    all_fixes.extend(fixes)
+            
+            current_content = fixed_content
+        
+        # Final validation
+        final_errors = self._validate_mermaid(current_content)
+        critical_errors = [e for e in final_errors if e.startswith("CRITICAL:")]
+        is_valid = len(critical_errors) == 0
+        
+        if is_valid:
+            logger.info(f"✅ [VALIDATION] Mermaid diagram repaired successfully with {len(all_fixes)} total fixes")
+        else:
+            logger.warning(f"⚠️ [VALIDATION] Mermaid diagram still has {len(critical_errors)} critical errors after {max_attempts} attempts")
+        
+        return current_content, is_valid, all_fixes
 
 
 # Global service instance

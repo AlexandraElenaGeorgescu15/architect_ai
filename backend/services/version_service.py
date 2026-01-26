@@ -84,7 +84,8 @@ class VersionService:
         artifact_id: str,
         artifact_type: str,
         content: str,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
+        folder_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Create a new version of an artifact.
@@ -94,13 +95,14 @@ class VersionService:
             artifact_type: Type of artifact
             content: Artifact content
             metadata: Optional metadata (validation_score, model_used, etc.)
+            folder_id: Optional folder ID for filtering versions by meeting notes folder
         
         Returns:
             Version information
         """
         logger.info(f"📦 [VERSION] ========== CREATE VERSION STARTED ==========")
         logger.info(f"📦 [VERSION] Step 1: Initializing version creation")
-        logger.info(f"📦 [VERSION] Step 1.1: artifact_id={artifact_id}, artifact_type={artifact_type}, content_length={len(content)}")
+        logger.info(f"📦 [VERSION] Step 1.1: artifact_id={artifact_id}, artifact_type={artifact_type}, content_length={len(content)}, folder_id={folder_id}")
         logger.info(f"📦 [VERSION] Step 1.2: has_metadata={bool(metadata)}, metadata_keys={list(metadata.keys()) if metadata else []}")
         
         if artifact_id not in self.versions:
@@ -117,6 +119,7 @@ class VersionService:
             "artifact_type": artifact_type,
             "content": content,
             "metadata": metadata or {},
+            "folder_id": folder_id,  # FIX: Store folder_id to enable version filtering by folder
             "created_at": datetime.now().isoformat(),
             "is_current": True
         }

@@ -1299,6 +1299,7 @@ async def create_custom_artifact_type(
     prompt_template: str = Query(..., description="Prompt template for generation"),
     description: str = Query("", description="Brief description"),
     default_model: Optional[str] = Query(None, description="Preferred model"),
+    output_format: str = Query("document", description="Output format: document, html, mermaid"),
     current_user: UserPublic = Depends(get_current_user)
 ):
     """
@@ -1316,7 +1317,8 @@ async def create_custom_artifact_type(
             category=category,
             prompt_template=prompt_template,
             description=description,
-            default_model=default_model
+            default_model=default_model,
+            output_format=output_format
         )
         
         return {

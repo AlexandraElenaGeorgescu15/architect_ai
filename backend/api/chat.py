@@ -134,6 +134,38 @@ async def get_project_summary(
                 # Count files in ChromaDB collection
                 if hasattr(rag_retriever, 'collection') and rag_retriever.collection:
                     indexed_files = rag_retriever.collection.count()
+                
+                # FIX: Check MultiRepoService for repo-specific indices
+                try:
+                    from backend.services.multi_repo import get_multi_repo_service
+                    multi_repo = get_multi_repo_service()
+                    repos = multi_repo.get_repositories()
+                    
+                    if repos:
+                        logger.info(f"📊 [CHAT_SUMMARY] Found {len(repos)} multi-repo repositories")
+                        # Add counts from registered repos
+                        for repo in repos:
+                            if repo.indexed:
+                                # Start with stored file count, or check actual index if needed
+                                # For speed, we use the config's file count or a safe estimate
+                                repo_files = repo.file_count
+                                
+                                # If the main index is empty but we have repos, use their counts
+                                # This prevents "Not indexed" error when using multi-repo
+                                if indexed_files == 0:
+                                    indexed_files += repo_files
+                                    
+                                # Initialize per-project stats from multi-repo config which is more accurate
+                                per_project_stats.append(ProjectStats(
+                                    name=repo.name,
+                                    path=repo.path,
+                                    chunk_count=0, # Unknown without querying separate index
+                                    file_count=repo.file_count,
+                                    tech_stack=[repo.language] + ([repo.framework] if repo.framework else [])
+                                ))
+                except Exception as e:
+                    logger.warning(f"Failed to get multi-repo stats: {e}")
+
                     
                     # =============================================================
                     # NEW: Compute per-project chunk counts from indexed metadata

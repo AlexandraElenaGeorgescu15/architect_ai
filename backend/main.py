@@ -63,14 +63,53 @@ class EndpointFilter(logging.Filter):
         return True
 
 
-# Configure structured logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
-)
+# Configure structured logging with colorized output for Windows CMD visibility
+class ColoredFormatter(logging.Formatter):
+    """Colorized log formatter for Windows CMD visibility."""
+    
+    # ANSI colors that work in Windows 10+ CMD
+    COLORS = {
+        'DEBUG': '\033[36m',     # Cyan
+        'INFO': '\033[32m',      # Green
+        'WARNING': '\033[33m',   # Yellow
+        'ERROR': '\033[31m',     # Red
+        'CRITICAL': '\033[35m',  # Magenta
+        'RESET': '\033[0m',      # Reset
+    }
+    
+    def format(self, record: logging.LogRecord) -> str:
+        color = self.COLORS.get(record.levelname, self.COLORS['RESET'])
+        reset = self.COLORS['RESET']
+        record.compact_time = self.formatTime(record, '%H:%M:%S')
+        name = record.name
+        if len(name) > 25:
+            parts = name.split('.')
+            if len(parts) > 2:
+                name = f"{parts[0]}...{parts[-1]}"
+            else:
+                name = name[:25]
+        return f"{record.compact_time} {color}{record.levelname:7}{reset} [{name:25}] {record.getMessage()}"
+
+
+# Enable ANSI colors in Windows CMD
+if sys.platform == 'win32':
+    import ctypes
+    try:
+        kernel32 = ctypes.windll.kernel32
+        kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
+    except Exception:
+        pass
+
+# Set up colorized logging
+_console_handler = logging.StreamHandler(sys.stdout)
+_console_handler.setFormatter(ColoredFormatter())
+_console_handler.setLevel(logging.DEBUG)
+logging.basicConfig(level=logging.INFO, handlers=[_console_handler])
+
+# Ensure key loggers are not silenced
+for _logger_name in ['backend.services', 'backend.api', 'ai', 'agents']:
+    logging.getLogger(_logger_name).setLevel(logging.INFO)
+
 
 # Apply filter to uvicorn loggers to reduce noise from health checks
 _endpoint_filter = EndpointFilter()
@@ -101,14 +140,82 @@ if sys.platform == 'win32':
     except (AttributeError, OSError, ValueError):
         pass
 
-# Create FastAPI app
+
+# =============================================================================
+# Lifespan Context Manager - Startup/Shutdown Events
+# =============================================================================
+from contextlib import asynccontextmanager
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup and shutdown events for the FastAPI application."""
+    # ==========================================================================
+    # STARTUP - Print banner and initialize services
+    # ==========================================================================
+    print("\n" + "=" * 70)
+    print("   🏗️  ARCHITECT.AI BACKEND STARTING")
+    print("=" * 70)
+    print(f"   Version: {settings.app_version}")
+    print(f"   Host: 0.0.0.0:8000")
+    print(f"   Docs: http://localhost:8000/api/docs")
+    print("=" * 70)
+    
+    # Check Ollama availability
+    print("\n🔍 Checking Ollama availability...")
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            response = await client.get(f"{settings.ollama_base_url}/api/tags")
+            if response.status_code == 200:
+                models_data = response.json()
+                models = models_data.get("models", [])
+                model_names = [m.get("name", "unknown") for m in models[:5]]
+                print(f"   ✅ Ollama is running with {len(models)} models")
+                if model_names:
+                    print(f"   📦 Available: {', '.join(model_names)}")
+                logger.info(f"✅ Ollama connected: {len(models)} models available")
+            else:
+                print(f"   ⚠️ Ollama responded with status {response.status_code}")
+    except Exception as e:
+        print(f"   ❌ Ollama not available: {e}")
+        print("   💡 Start Ollama with: ollama serve")
+        logger.warning(f"Ollama not available at startup: {e}")
+    
+    # Check API keys
+    print("\n🔑 Checking API keys...")
+    api_keys = {
+        "Groq": bool(settings.groq_api_key),
+        "OpenAI": bool(settings.openai_api_key),
+        "Google": bool(getattr(settings, 'google_api_key', None)),
+    }
+    for name, configured in api_keys.items():
+        status = "✅" if configured else "❌"
+        print(f"   {status} {name}: {'configured' if configured else 'not set'}")
+    
+    print("\n" + "=" * 70)
+    print("   ✅ STARTUP COMPLETE - Backend ready for requests")
+    print("=" * 70 + "\n")
+    logger.info("🚀 Architect.AI backend started successfully")
+    
+    yield  # Application runs here
+    
+    # ==========================================================================
+    # SHUTDOWN
+    # ==========================================================================
+    print("\n👋 Architect.AI backend shutting down...")
+    logger.info("Backend shutdown complete")
+
+
+# Create FastAPI app with lifespan handler
 app = FastAPI(
     title="Architect.AI API",
     description="FastAPI backend for interactive architecture visualization and artifact generation",
     version=settings.app_version,
     docs_url="/api/docs",
     redoc_url="/api/redoc",
-    openapi_url="/api/openapi.json"
+    openapi_url="/api/openapi.json",
+    lifespan=lifespan  # Use lifespan for startup/shutdown
 )
 
 # Customize OpenAPI schema
@@ -158,6 +265,7 @@ app.openapi = custom_openapi
 PHASE_DEFINITIONS: Dict[str, Dict[str, str]] = {
     "database": {"title": "Database", "description": "Initializing database"},
     "model_registry": {"title": "Model Registry", "description": "Loading model catalog"},
+    "ollama": {"title": "Ollama", "description": "Connecting to local AI models"},
     "rag_indexing": {"title": "RAG Index", "description": "Indexing user projects"},
     "knowledge_graph": {"title": "Knowledge Graph", "description": "Building knowledge graph"},
     "pattern_mining": {"title": "Pattern Mining", "description": "Analyzing patterns"},
@@ -460,6 +568,63 @@ async def startup_event():
         except Exception as e:
             logger.warning(f"Could not refresh cloud models on startup: {e}", exc_info=True)
             update_phase_status("model_registry", "error", f"Model refresh failed: {e}")
+        
+        # Initialize Ollama (local models) - ensure it's ready for agentic chat and generation
+        try:
+            from ai.ollama_client import OllamaClient
+            
+            update_phase_status("ollama", "running", "Connecting to Ollama...")
+            ollama_client = OllamaClient()
+            
+            # Check if Ollama is running and list available models
+            available_models = await ollama_client.list_models()
+            
+            if available_models:
+                model_names = []
+                for model in available_models:
+                    if isinstance(model, dict):
+                        name = model.get("name", model.get("model", "unknown"))
+                    else:
+                        name = str(model)
+                    model_names.append(name)
+                
+                logger.info(f"✅ Ollama ready with {len(model_names)} models: {', '.join(model_names[:5])}{'...' if len(model_names) > 5 else ''}")
+                update_phase_status(
+                    "ollama", 
+                    "complete", 
+                    f"Ollama ready ({len(model_names)} local models)",
+                    details={"models": model_names[:10], "count": len(model_names)}
+                )
+                
+                # Warm up the first available model (pre-load into memory)
+                if model_names and settings.ollama_warmup_enabled:
+                    try:
+                        warmup_model = model_names[0].split(":")[0]  # Get base name
+                        logger.info(f"🔥 Warming up Ollama model: {warmup_model}...")
+                        await ollama_client.generate(
+                            model_name=warmup_model,
+                            prompt="Hello",
+                            system_message="Respond with one word only.",
+                            temperature=0.1,
+                            num_ctx=256
+                        )
+                        logger.info(f"✅ Ollama model {warmup_model} warmed up")
+                    except Exception as e:
+                        logger.debug(f"Warmup skipped: {e}")
+            else:
+                logger.warning("⚠️ Ollama is running but no models are installed")
+                logger.warning("   Run 'ollama pull llama3' to install a model")
+                update_phase_status(
+                    "ollama", 
+                    "complete", 
+                    "Ollama connected (no models installed)",
+                    details={"models": [], "count": 0, "warning": "No models installed"}
+                )
+                
+        except Exception as e:
+            logger.warning(f"⚠️ Ollama not available: {e}")
+            logger.warning("   Agentic chat and local generation will use cloud APIs as fallback")
+            update_phase_status("ollama", "skipped", f"Ollama not available: {e}")
         
         # Start RAG auto-refresh using new RAGIngester service
         # CRITICAL: Index ALL user projects EXCEPT Architect.AI itself

@@ -587,8 +587,8 @@ class GenerationService:
                         "quality_prediction": quality_prediction.to_dict(),
                         "job_id": job_id,  # Keep reference to job_id for tracking
                         "attempts": result.get("attempts", []),  # Include all attempts for tracking
-                        "folder_id": folder_id  # Associate artifact with meeting notes folder
-                    }
+                    },
+                    folder_id=folder_id  # FIX: Pass as parameter for version filtering
                 )
                 logger.info(f"✅ [GEN_SERVICE] Saved artifact to VersionService: artifact_id={artifact_id_for_version}, job_id={job_id}, folder_id={folder_id}")
             except Exception as e:
@@ -835,9 +835,9 @@ class GenerationService:
                 metadata={
                     "update_type": "manual_edit",
                     "updated_at": datetime.now().isoformat(),
-                    "folder_id": folder_id,
                     **(metadata or {})
-                }
+                },
+                folder_id=folder_id  # FIX: Pass as parameter for version filtering
             )
             logger.info(f"✏️ [GEN_SERVICE] Step 3.3: Version created successfully in VersionService")
             

@@ -520,45 +520,58 @@ def get_logger(name: str) -> ContextLogger:
     return ContextLogger(name)
 
 
+
 def setup_logging():
     """Setup structured logging configuration."""
     # Get root logger
     root_logger = logging.getLogger()
-    root_logger.setLevel(getattr(logging, settings.log_level.upper(), logging.INFO))
+    root_logger.setLevel(logging.DEBUG if settings.debug else logging.INFO)
     
     # Remove existing handlers
     root_logger.handlers.clear()
     
-    # Create console handler
+    # Create console handler that writes to sys.stdout
     console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setLevel(logging.DEBUG)
     
-    # Use structured formatter if JSON logging is enabled
+    # Simple formatter for console - easier to read than JSON during dev
     if settings.json_logging:
         formatter = StructuredFormatter()
     else:
-        formatter = logging.Formatter(settings.log_format)
+        # User requested "good logs" - use a clear, colorful format
+        formatter = logging.Formatter(
+            fmt="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            datefmt="%H:%M:%S"
+        )
     
     console_handler.setFormatter(formatter)
     root_logger.addHandler(console_handler)
     
     # Also create a file handler for errors (always structured)
-    error_file_handler = logging.FileHandler(LOGS_DIR / "app.log", encoding="utf-8")
-    error_file_handler.setLevel(logging.WARNING)
-    error_file_handler.setFormatter(StructuredFormatter())
-    root_logger.addHandler(error_file_handler)
+    try:
+        error_file_handler = logging.FileHandler(LOGS_DIR / "app.log", encoding="utf-8")
+        error_file_handler.setLevel(logging.WARNING)
+        error_file_handler.setFormatter(StructuredFormatter())
+        root_logger.addHandler(error_file_handler)
+    except Exception as e:
+        print(f"Failed to setup file logging: {e}", file=sys.stderr)
     
-    # UTF-8 console wrapper for Windows compatibility
-    if sys.platform == 'win32':
-        try:
-            import io
-            if not isinstance(sys.stdout, io.TextIOWrapper) or sys.stdout.encoding != 'utf-8':
-                sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-            if not isinstance(sys.stderr, io.TextIOWrapper) or sys.stderr.encoding != 'utf-8':
-                sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
-        except (AttributeError, OSError, ValueError):
-            pass
+    # Force print to console to verify it works
+    print(f"🟢 [LOGGING] Logging initialized at level {logging.getLevelName(root_logger.level)}")
+    print(f"🟢 [LOGGING] Logs directory: {LOGS_DIR}")
     
-    logging.info("Structured logging configured with JSONL outputs")
+    # Log startup info
+    logging.info(f"Architect.AI Backend v{settings.app_version} starting...")
+    logging.info(f"Debug mode: {settings.debug}")
+    logging.info(f"Log level: {logging.getLevelName(root_logger.level)}")
+
+
+def debug_print(msg: str):
+    """Direct print to stdout for critical debugging when logger fails."""
+    try:
+        print(f"🐛 [DEBUG] {msg}", file=sys.stdout, flush=True)
+    except Exception:
+        pass
 
 
 # =============================================================================

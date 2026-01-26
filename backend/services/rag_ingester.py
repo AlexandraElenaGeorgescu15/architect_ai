@@ -153,55 +153,167 @@ class RAGIngester:
         
         return True
     
-    def _chunk_file_content(self, content: str, file_path: Path, chunk_size: int = 1000, overlap: int = 200) -> List[Dict[str, Any]]:
+    def _chunk_file_content(self, content: str, file_path: Path, chunk_size: int = 1500, overlap: int = 300) -> List[Dict[str, Any]]:
         """
-        Chunk file content into smaller pieces.
+        Chunk file content into smaller pieces using semantic awareness for code.
         
         Args:
             content: File content
             file_path: Path to file
-            chunk_size: Size of each chunk in characters
-            overlap: Overlap between chunks in characters
+            chunk_size: Size of each chunk (increased default to 1500)
+            overlap: Overlap length (increased default to 300)
         
         Returns:
             List of chunk dictionaries
         """
         chunks = []
+        
+        # Determine strictness based on file type
+        suffix = file_path.suffix.lower()
+        is_code = suffix in {'.py', '.js', '.ts', '.tsx', '.jsx', '.java', '.cs', '.go', '.rs', '.cpp', '.c'}
+        
         lines = content.split('\n')
-        current_chunk = []
-        current_length = 0
+        total_lines = len(lines)
         
-        for line in lines:
-            line_length = len(line) + 1  # +1 for newline
+        if not is_code:
+            # Simple text chunking for non-code files
+            current_chunk = []
+            current_length = 0
+            start_line = 1
             
-            if current_length + line_length > chunk_size and current_chunk:
-                # Save current chunk
-                chunk_text = '\n'.join(current_chunk)
+            for i, line in enumerate(lines):
+                line_len = len(line) + 1
+                if current_length + line_len > chunk_size and current_chunk:
+                    # Save chunk
+                    chunk_text = '\n'.join(current_chunk)
+                    chunks.append({
+                        "content": chunk_text,
+                        "file_path": str(file_path),
+                        "start_line": start_line,
+                        "end_line": i
+                    })
+                    # Overlap
+                    overlap_count = 0
+                    overlap_len = 0
+                    new_chunk = []
+                    for prev_line in reversed(current_chunk):
+                        if overlap_len + len(prev_line) > overlap:
+                            break
+                        new_chunk.insert(0, prev_line)
+                        overlap_len += len(prev_line) + 1
+                        overlap_count += 1
+                    
+                    current_chunk = new_chunk + [line]
+                    current_length = sum(len(l) + 1 for l in current_chunk)
+                    start_line = i - overlap_count + 1
+                else:
+                    current_chunk.append(line)
+                    current_length += line_len
+            
+            if current_chunk:
                 chunks.append({
-                    "content": chunk_text,
+                    "content": '\n'.join(current_chunk),
                     "file_path": str(file_path),
-                    "start_line": len(chunks) * (chunk_size - overlap) + 1,
-                    "end_line": len(chunks) * (chunk_size - overlap) + len(current_chunk)
+                    "start_line": start_line,
+                    "end_line": total_lines
                 })
-                
-                # Start new chunk with overlap
-                overlap_lines = current_chunk[-overlap//50:] if len(current_chunk) > overlap//50 else current_chunk
-                current_chunk = overlap_lines + [line]
-                current_length = sum(len(l) + 1 for l in current_chunk)
+        else:
+            # Semantic Code Chunking
+            # Tries to keep classes and functions together
+            
+            # 1. Identify key logical blocks (classes, functions)
+            # Simple regex-based detection to avoid complex AST parsing dependencies
+            import re
+            block_starts = []
+            
+            # Patterns for common languages
+            if suffix == '.py':
+                pattern = r'^(class|def|async def)\s+'
+            elif suffix in {'.ts', '.js', '.tsx', '.jsx', '.java', '.cs'}:
+                pattern = r'^\s*(public|private|protected|export)?\s*(class|interface|function|enum)\s+'
             else:
-                current_chunk.append(line)
-                current_length += line_length
-        
-        # Add final chunk
-        if current_chunk:
-            chunk_text = '\n'.join(current_chunk)
-            chunks.append({
-                "content": chunk_text,
-                "file_path": str(file_path),
-                "start_line": len(chunks) * (chunk_size - overlap) + 1,
-                "end_line": len(chunks) * (chunk_size - overlap) + len(current_chunk)
-            })
-        
+                pattern = r'^\S'  # Fallback: any non-indented line
+                
+            for i, line in enumerate(lines):
+                if re.match(pattern, line):
+                    block_starts.append(i)
+            
+            # Add end of file
+            block_starts.append(total_lines)
+            
+            # 2. Group blocks into chunks
+            current_chunk_lines = []
+            current_token_count = 0 # Approx chars
+            chunk_start_line = 1
+            
+            last_block_start = 0
+            
+            for i in range(len(block_starts) - 1):
+                start = block_starts[i]
+                end = block_starts[i+1]
+                
+                block_lines = lines[start:end]
+                block_text = '\n'.join(block_lines)
+                block_len = len(block_text)
+                
+                if current_token_count + block_len > chunk_size and current_chunk_lines:
+                    # Current chunk is full, save it
+                    chunks.append({
+                        "content": '\n'.join(current_chunk_lines),
+                        "file_path": str(file_path),
+                        "start_line": chunk_start_line,
+                        "end_line": start # Exclusive
+                    })
+                    
+                    # Start new chunk
+                    # For semantic chunking, overlap is tricky. 
+                    # We'll just include the previous block header if possible for context
+                    current_chunk_lines = []
+                    current_token_count = 0
+                    chunk_start_line = start + 1
+                    
+                    # If this single block is huge, we have to split it regularly
+                    if block_len > chunk_size:
+                        # Fallback to line-based splitting for huge block
+                        sub_lines = block_lines
+                        temp_chunk = []
+                        temp_len = 0
+                        temp_start = start + 1
+                        
+                        for j, sl in enumerate(sub_lines):
+                            if temp_len + len(sl) > chunk_size:
+                                chunks.append({
+                                    "content": '\n'.join(temp_chunk),
+                                    "file_path": str(file_path),
+                                    "start_line": temp_start,
+                                    "end_line": start + j
+                                })
+                                temp_chunk = [sl]
+                                temp_len = len(sl)
+                                temp_start = start + j + 1
+                            else:
+                                temp_chunk.append(sl)
+                                temp_len += len(sl)
+                        
+                        if temp_chunk:
+                            current_chunk_lines = temp_chunk
+                            current_token_count = temp_len
+                    else:
+                        current_chunk_lines = block_lines
+                        current_token_count = block_len
+                else:
+                    current_chunk_lines.extend(block_lines)
+                    current_token_count += block_len
+            
+            # Final chunk
+            if current_chunk_lines:
+                chunks.append({
+                    "content": '\n'.join(current_chunk_lines),
+                    "file_path": str(file_path),
+                    "start_line": chunk_start_line,
+                    "end_line": total_lines
+                })
+
         return chunks
     
     async def index_file(self, file_path: Path) -> bool:

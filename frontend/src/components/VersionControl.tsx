@@ -35,41 +35,41 @@ export default function VersionControl() {
   const [allVersions, setAllVersions] = useState<AllVersionsResponse | null>(null)
   const [selectedType, setSelectedType] = useState<string | null>(null)
   const [selectedVersion, setSelectedVersion] = useState<VersionInfo | null>(null)
-  
+
   // Multi-select for comparison
   const [compareSelection, setCompareSelection] = useState<VersionInfo[]>([])
   const [showDiff, setShowDiff] = useState(false)
   const [compareViewMode, setCompareViewMode] = useState<'diff' | 'side-by-side'>('diff')
-  
+
   // Refs for synchronized scrolling in side-by-side view
   const leftPanelRef = useRef<HTMLDivElement>(null)
   const rightPanelRef = useRef<HTMLDivElement>(null)
   const isScrollingSynced = useRef(false)
-  
+
   // Synchronized scroll handler
   const handleSyncScroll = useCallback((source: 'left' | 'right') => {
     if (isScrollingSynced.current) return
     isScrollingSynced.current = true
-    
+
     const sourceRef = source === 'left' ? leftPanelRef : rightPanelRef
     const targetRef = source === 'left' ? rightPanelRef : leftPanelRef
-    
+
     if (sourceRef.current && targetRef.current) {
       targetRef.current.scrollTop = sourceRef.current.scrollTop
     }
-    
+
     requestAnimationFrame(() => {
       isScrollingSynced.current = false
     })
   }, [])
-  
+
   const [isLoading, setIsLoading] = useState(false)
   const [isRestoring, setIsRestoring] = useState(false)
   const [isMigrating, setIsMigrating] = useState(false)
   const [migrationPreview, setMigrationPreview] = useState<any>(null)
   const [showMigrationPanel, setShowMigrationPanel] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
+
   const { addNotification } = useUIStore()
   const { currentFolderId } = useArtifactStore()
 
@@ -81,12 +81,13 @@ export default function VersionControl() {
     setIsLoading(true)
     setError(null)
     try {
-      // Filter versions by folder if one is selected
-      const params = currentFolderId ? { folder_id: currentFolderId } : {}
-      const response = await api.get<AllVersionsResponse>('/api/versions/all', { params })
+      // FIX: Don't filter by folder_id automatically. detailed version history should show EVERYTHING for the project.
+      // User reported "Version control is empty unless i select all projects" which is bad UX.
+      // const params = currentFolderId ? { folder_id: currentFolderId } : {}
+      const response = await api.get<AllVersionsResponse>('/api/versions/all')
       setAllVersions(response.data)
-      console.log(`📁 [VERSION_CONTROL] Loaded ${response.data.total_versions} versions for folder: ${currentFolderId || 'all'}`)
-      
+      console.log(`📁 [VERSION_CONTROL] Loaded ${response.data.total_versions} versions (showing all)`)
+
       if (response.data.artifact_types.length > 0 && !selectedType) {
         setSelectedType(response.data.artifact_types[0])
       }
@@ -110,22 +111,22 @@ export default function VersionControl() {
   // Compute diff between two versions
   const computeDiff = useMemo((): DiffLine[] => {
     if (compareSelection.length !== 2) return []
-    
+
     // Sort by version number to ensure intuitive diff (old -> new)
     const sorted = [...compareSelection].sort((a, b) => a.version - b.version)
     const [vOld, vNew] = sorted
-    
+
     const oldLines = (vOld.content || '').split('\n')
     const newLines = (vNew.content || '').split('\n')
     const diff: DiffLine[] = []
-    
+
     let lineNum = 1
     const maxLen = Math.max(oldLines.length, newLines.length)
-    
+
     for (let i = 0; i < maxLen; i++) {
       const oldLine = oldLines[i]
       const newLine = newLines[i]
-      
+
       if (oldLine === undefined && newLine !== undefined) {
         diff.push({ type: 'added', content: newLine, lineNumber: lineNum++ })
       } else if (newLine === undefined && oldLine !== undefined) {
@@ -137,7 +138,7 @@ export default function VersionControl() {
         diff.push({ type: 'unchanged', content: newLine || '', lineNumber: lineNum++ })
       }
     }
-    
+
     return diff
   }, [compareSelection])
 
@@ -145,18 +146,18 @@ export default function VersionControl() {
     if (!confirm(`Restore version ${version.version} as the current version? This will update the artifact in the library.`)) {
       return
     }
-    
+
     setIsRestoring(true)
     try {
       // Call the restore endpoint
       const response = await api.post(`/api/versions/${version.artifact_id}/restore/${version.version}`)
       const restoredVersion = response.data
-      
+
       // Get all artifacts and find one matching by type (artifact_type)
       // The artifact store uses job_id as 'id', but versions use artifact_type as 'artifact_id'
       const { artifacts, setArtifacts, addArtifact } = useArtifactStore.getState()
       const existingArtifact = artifacts.find(a => a.type === version.artifact_type)
-      
+
       if (existingArtifact) {
         // Update existing artifact
         const updatedArtifacts = artifacts.map(artifact => {
@@ -187,7 +188,7 @@ export default function VersionControl() {
         addArtifact(newArtifact as any)
         addNotification('success', `Version ${version.version} restored. New artifact "${version.artifact_type}" created.`)
       }
-      
+
       // Reload versions to reflect the change
       await loadAllVersions()
     } catch (err: any) {
@@ -235,7 +236,7 @@ export default function VersionControl() {
     if (!confirm('This will consolidate legacy timestamped artifacts into stable IDs. This action cannot be undone. Continue?')) {
       return
     }
-    
+
     setIsMigrating(true)
     try {
       const response = await api.post('/api/versions/migration/run')
@@ -323,7 +324,7 @@ export default function VersionControl() {
                 Consolidate timestamped artifacts into stable IDs for proper version tracking
               </p>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
               {Object.entries(migrationPreview.legacy_groups || {}).map(([baseType, data]: [string, any]) => (
                 <div key={baseType} className="border border-border rounded-lg p-3">
@@ -346,7 +347,7 @@ export default function VersionControl() {
                   </div>
                 </div>
               ))}
-              
+
               {migrationPreview.stable_artifacts?.length > 0 && (
                 <div className="border border-green-500/30 bg-green-500/5 rounded-lg p-3">
                   <h4 className="font-bold text-green-600 dark:text-green-400 text-sm mb-1">Already Using Stable IDs ✓</h4>
@@ -356,7 +357,7 @@ export default function VersionControl() {
                 </div>
               )}
             </div>
-            
+
             <div className="p-4 border-t border-border flex items-center justify-between">
               <button
                 onClick={() => setShowMigrationPanel(false)}
@@ -443,11 +444,10 @@ export default function VersionControl() {
               <div className="flex items-center bg-background/50 rounded-lg p-0.5 border border-border">
                 <button
                   onClick={() => setCompareViewMode('diff')}
-                  className={`px-2 py-1 rounded-md flex items-center gap-1 transition-colors ${
-                    compareViewMode === 'diff' 
-                      ? 'bg-primary text-primary-foreground' 
+                  className={`px-2 py-1 rounded-md flex items-center gap-1 transition-colors ${compareViewMode === 'diff'
+                      ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                    }`}
                   title="Unified Diff View"
                 >
                   <List className="w-3 h-3" />
@@ -455,50 +455,49 @@ export default function VersionControl() {
                 </button>
                 <button
                   onClick={() => setCompareViewMode('side-by-side')}
-                  className={`px-2 py-1 rounded-md flex items-center gap-1 transition-colors ${
-                    compareViewMode === 'side-by-side' 
-                      ? 'bg-primary text-primary-foreground' 
+                  className={`px-2 py-1 rounded-md flex items-center gap-1 transition-colors ${compareViewMode === 'side-by-side'
+                      ? 'bg-primary text-primary-foreground'
                       : 'text-muted-foreground hover:text-foreground'
-                  }`}
+                    }`}
                   title="Side by Side View"
                 >
                   <Columns className="w-3 h-3" />
                   Side by Side
                 </button>
               </div>
-              
+
               {/* Version labels */}
               <div className="flex items-center gap-2">
                 <span className="px-2 py-1 bg-red-500/20 text-red-600 rounded font-medium flex items-center gap-1">
                   <Minus className="w-3 h-3" />
-                  v{[...compareSelection].sort((a,b) => a.version - b.version)[0].version}
+                  v{[...compareSelection].sort((a, b) => a.version - b.version)[0].version}
                 </span>
                 <span className="text-muted-foreground">→</span>
                 <span className="px-2 py-1 bg-green-500/20 text-green-600 rounded font-medium flex items-center gap-1">
                   <Plus className="w-3 h-3" />
-                  v{[...compareSelection].sort((a,b) => a.version - b.version)[1].version}
+                  v{[...compareSelection].sort((a, b) => a.version - b.version)[1].version}
                 </span>
               </div>
             </div>
-            
+
             {/* Restore button */}
-            {[...compareSelection].sort((a,b) => a.version - b.version)[1].is_current ? (
+            {[...compareSelection].sort((a, b) => a.version - b.version)[1].is_current ? (
               <span className="text-xs text-green-600 dark:text-green-400 font-medium px-2 py-1 bg-green-100 dark:bg-green-500/20 rounded flex items-center gap-1">
                 <CheckCircle className="w-3 h-3" />
                 Current
               </span>
             ) : (
               <button
-                onClick={() => handleRestoreVersion([...compareSelection].sort((a,b) => a.version - b.version)[1])}
+                onClick={() => handleRestoreVersion([...compareSelection].sort((a, b) => a.version - b.version)[1])}
                 disabled={isRestoring}
                 className="px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 flex items-center gap-1"
               >
                 {isRestoring ? <Loader2 className="w-3 h-3 animate-spin" /> : <ArrowUpCircle className="w-3 h-3" />}
-                Restore v{[...compareSelection].sort((a,b) => a.version - b.version)[1].version}
+                Restore v{[...compareSelection].sort((a, b) => a.version - b.version)[1].version}
               </button>
             )}
           </div>
-          
+
           {/* Content Area */}
           {compareViewMode === 'diff' ? (
             /* Unified Diff View */
@@ -506,10 +505,9 @@ export default function VersionControl() {
               {computeDiff.map((line, idx) => (
                 <div
                   key={idx}
-                  className={`flex ${
-                    line.type === 'added' ? 'bg-green-500/10' :
-                    line.type === 'removed' ? 'bg-red-500/10' : ''
-                  }`}
+                  className={`flex ${line.type === 'added' ? 'bg-green-500/10' :
+                      line.type === 'removed' ? 'bg-red-500/10' : ''
+                    }`}
                 >
                   <span className="w-8 text-right pr-2 text-muted-foreground select-none border-r border-border mr-2 opacity-50">
                     {line.lineNumber}
@@ -518,10 +516,9 @@ export default function VersionControl() {
                     {line.type === 'added' && <Plus className="w-3 h-3 text-green-500" />}
                     {line.type === 'removed' && <Minus className="w-3 h-3 text-red-500" />}
                   </span>
-                  <span className={`flex-1 whitespace-pre-wrap break-all ${
-                    line.type === 'added' ? 'text-green-600' :
-                    line.type === 'removed' ? 'text-red-600' : 'text-foreground'
-                  }`}>
+                  <span className={`flex-1 whitespace-pre-wrap break-all ${line.type === 'added' ? 'text-green-600' :
+                      line.type === 'removed' ? 'text-red-600' : 'text-foreground'
+                    }`}>
                     {line.content || ' '}
                   </span>
                 </div>
@@ -536,7 +533,7 @@ export default function VersionControl() {
                 const oldLines = (vOld.content || '').split('\n')
                 const newLines = (vNew.content || '').split('\n')
                 const maxLines = Math.max(oldLines.length, newLines.length)
-                
+
                 return (
                   <>
                     {/* Left Panel - Old Version */}
@@ -550,7 +547,7 @@ export default function VersionControl() {
                           {vOld.artifact_id}
                         </span>
                       </div>
-                      <div 
+                      <div
                         ref={leftPanelRef}
                         onScroll={() => handleSyncScroll('left')}
                         className="flex-1 overflow-auto font-mono text-xs bg-background/30"
@@ -559,18 +556,17 @@ export default function VersionControl() {
                           const line = oldLines[idx]
                           const newLine = newLines[idx]
                           const isDifferent = line !== newLine
-                          
+
                           return (
-                            <div 
-                              key={idx} 
+                            <div
+                              key={idx}
                               className={`flex ${isDifferent && line !== undefined ? 'bg-red-500/10' : ''}`}
                             >
                               <span className="w-8 text-right pr-2 text-muted-foreground select-none border-r border-border opacity-50 flex-shrink-0">
                                 {idx + 1}
                               </span>
-                              <span className={`flex-1 px-2 whitespace-pre-wrap break-all ${
-                                isDifferent && line !== undefined ? 'text-red-600' : 'text-foreground'
-                              }`}>
+                              <span className={`flex-1 px-2 whitespace-pre-wrap break-all ${isDifferent && line !== undefined ? 'text-red-600' : 'text-foreground'
+                                }`}>
                                 {line ?? ''}
                               </span>
                             </div>
@@ -578,7 +574,7 @@ export default function VersionControl() {
                         })}
                       </div>
                     </div>
-                    
+
                     {/* Right Panel - New Version */}
                     <div className="flex-1 flex flex-col min-w-0">
                       <div className="p-2 border-b border-border bg-green-500/5 flex items-center gap-2 flex-shrink-0">
@@ -593,7 +589,7 @@ export default function VersionControl() {
                           <span className="text-[10px] px-1.5 py-0.5 bg-green-500 text-white rounded">Current</span>
                         )}
                       </div>
-                      <div 
+                      <div
                         ref={rightPanelRef}
                         onScroll={() => handleSyncScroll('right')}
                         className="flex-1 overflow-auto font-mono text-xs bg-background/30"
@@ -602,18 +598,17 @@ export default function VersionControl() {
                           const oldLine = oldLines[idx]
                           const line = newLines[idx]
                           const isDifferent = oldLine !== line
-                          
+
                           return (
-                            <div 
-                              key={idx} 
+                            <div
+                              key={idx}
                               className={`flex ${isDifferent && line !== undefined ? 'bg-green-500/10' : ''}`}
                             >
                               <span className="w-8 text-right pr-2 text-muted-foreground select-none border-r border-border opacity-50 flex-shrink-0">
                                 {idx + 1}
                               </span>
-                              <span className={`flex-1 px-2 whitespace-pre-wrap break-all ${
-                                isDifferent && line !== undefined ? 'text-green-600' : 'text-foreground'
-                              }`}>
+                              <span className={`flex-1 px-2 whitespace-pre-wrap break-all ${isDifferent && line !== undefined ? 'text-green-600' : 'text-foreground'
+                                }`}>
                                 {line ?? ''}
                               </span>
                             </div>
@@ -642,17 +637,16 @@ export default function VersionControl() {
                 return (
                   <button
                     key={type}
-                    onClick={() => { 
+                    onClick={() => {
                       setSelectedType(type)
                       setSelectedVersion(null)
                     }}
-                    className={`w-full text-left p-2.5 rounded-lg text-xs transition-all ${
-                      selectedType === type
+                    className={`w-full text-left p-2.5 rounded-lg text-xs transition-all ${selectedType === type
                         ? 'bg-primary/10 border-primary border'
                         : hasSelectedVersion
                           ? 'border-blue-500/50 bg-blue-500/5 border'
                           : 'border border-transparent hover:bg-muted/50'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <span className="font-medium text-foreground">{formatArtifactType(type)}</span>
@@ -677,7 +671,7 @@ export default function VersionControl() {
                 {selectedType ? `${formatArtifactType(selectedType)} Versions` : 'Select a Type'}
               </h3>
             </div>
-            
+
             {/* Comparison Selection Bar - Always visible when versions selected */}
             {compareSelection.length > 0 && (
               <div className="mb-3 p-2 bg-blue-500/10 border border-blue-500/30 rounded-lg">
@@ -719,7 +713,7 @@ export default function VersionControl() {
                 </div>
               </div>
             )}
-            
+
             <div className="flex-1 overflow-y-auto space-y-1.5">
               {selectedType ? (
                 getVersionsForType(selectedType).length === 0 ? (
@@ -730,42 +724,41 @@ export default function VersionControl() {
                 ) : [...getVersionsForType(selectedType)].sort((a, b) => b.version - a.version).map((version) => {
                   const isSelected = selectedVersion?.version === version.version
                   const isChecked = compareSelection.some(v => v.artifact_id === version.artifact_id && v.version === version.version)
-                  
+
                   return (
                     <div
                       key={`${version.artifact_id}-${version.version}`}
-                      className={`p-2.5 rounded-lg border text-xs transition-all ${
-                        isSelected ? 'border-primary bg-primary/5' :
-                        version.is_current ? 'border-green-500/30 bg-green-500/5' :
-                        'border-border bg-card/50'
-                      }`}
+                      className={`p-2.5 rounded-lg border text-xs transition-all ${isSelected ? 'border-primary bg-primary/5' :
+                          version.is_current ? 'border-green-500/30 bg-green-500/5' :
+                            'border-border bg-card/50'
+                        }`}
                     >
                       <div className="flex items-center justify-between mb-1.5">
                         <div className="flex items-center gap-2">
-                            <button
-                                onClick={(e) => { e.stopPropagation(); toggleCompareSelect(version); }}
-                                className={`p-0.5 rounded transition-colors ${isChecked ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-                                title="Select for comparison"
-                            >
-                                {isChecked ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
-                            </button>
-                            
-                            <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => setSelectedVersion(version)}>
-                              <GitCommit className="w-3 h-3 text-muted-foreground" />
-                              <span className="font-bold text-foreground">v{version.version}</span>
-                              {version.is_current && (
-                                <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 bg-green-500 text-white rounded-full dark:bg-green-500/20 dark:text-green-400">
-                                  <CheckCircle className="w-2.5 h-2.5" />
-                                  Current
-                                </span>
-                              )}
-                            </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); toggleCompareSelect(version); }}
+                            className={`p-0.5 rounded transition-colors ${isChecked ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                            title="Select for comparison"
+                          >
+                            {isChecked ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                          </button>
+
+                          <div className="flex items-center gap-1.5 cursor-pointer" onClick={() => setSelectedVersion(version)}>
+                            <GitCommit className="w-3 h-3 text-muted-foreground" />
+                            <span className="font-bold text-foreground">v{version.version}</span>
+                            {version.is_current && (
+                              <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 bg-green-500 text-white rounded-full dark:bg-green-500/20 dark:text-green-400">
+                                <CheckCircle className="w-2.5 h-2.5" />
+                                Current
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <span className="text-[10px] text-muted-foreground">
                           {new Date(version.created_at).toLocaleString()}
                         </span>
                       </div>
-                      
+
                       <div className="text-[10px] text-muted-foreground mb-2 pl-6 flex flex-wrap items-center gap-x-2 gap-y-0.5">
                         {version.metadata?.restored_from && (
                           <span className="px-1.5 py-0.5 bg-blue-500/10 text-blue-600 rounded">
@@ -784,13 +777,12 @@ export default function VersionControl() {
                           <span>{version.content.length.toLocaleString()} chars</span>
                         )}
                       </div>
-                      
+
                       <div className="flex gap-1.5 pl-6">
                         <button
                           onClick={() => setSelectedVersion(version)}
-                          className={`flex-1 px-2 py-1 rounded text-[10px] font-medium flex items-center justify-center gap-1 ${
-                            isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
-                          }`}
+                          className={`flex-1 px-2 py-1 rounded text-[10px] font-medium flex items-center justify-center gap-1 ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
+                            }`}
                         >
                           <Eye className="w-3 h-3" />
                           View
@@ -806,14 +798,14 @@ export default function VersionControl() {
                           </button>
                         )}
                       </div>
-                      
+
                       {/* Content Preview if selected */}
                       {isSelected && (
-                         <div className="mt-2 pl-6 pt-2 border-t border-border/50">
-                            <div className="max-h-32 overflow-y-auto bg-muted/30 p-2 rounded text-[10px] font-mono whitespace-pre-wrap">
-                                {version.content}
-                            </div>
-                         </div>
+                        <div className="mt-2 pl-6 pt-2 border-t border-border/50">
+                          <div className="max-h-32 overflow-y-auto bg-muted/30 p-2 rounded text-[10px] font-mono whitespace-pre-wrap">
+                            {version.content}
+                          </div>
+                        </div>
                       )}
                     </div>
                   )
