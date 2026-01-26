@@ -124,37 +124,59 @@ class LLMJudge:
         # 1. Google Gemini (Best free fast option)
         if settings.google_api_key:
             try:
-                from backend.ai.gemini_client import get_client
-                client = get_client()
+                import google.generativeai as genai
+                genai.configure(api_key=settings.google_api_key)
+                
                 # Use flash model for speed
-                return await client.generate_content("gemini-2.5-flash", prompt)
+                model_name = "gemini-2.5-flash"
+                gemini_model = genai.GenerativeModel(model_name)
+                
+                # Run in thread since it's a blocking call in the library
+                response = await asyncio.to_thread(
+                    gemini_model.generate_content,
+                    prompt
+                )
+                
+                if response and response.text:
+                    return response.text
             except Exception as e:
                 logger.warning(f"Judge failed with Gemini: {e}")
         
         # 2. Ollama (Free local option)
         try:
-            from backend.ai.ollama_client import get_client
+            from ai.ollama_client import get_client
             client = get_client()
             # Try preferred judge models
             for model in settings.llm_judge_preferred_models:
                 if await client.check_model_availability(model):
-                    return await client.generate(model, prompt)
+                    response = await client.generate(model, prompt)
+                    if response.success:
+                        return response.content
             
             # Fallback to any available
             models = await client.list_models()
             if models:
-                return await client.generate(models[0], prompt)
+                response = await client.generate(models[0], prompt)
+                if response.success:
+                    return response.content
         except Exception as e:
             logger.warning(f"Judge failed with Ollama: {e}")
             
         # 3. Groq (Fast)
         if settings.groq_api_key:
             try:
-                from backend.ai.groq_client import get_client
-                client = get_client()
-                return await client.generate_content("llama3-8b-8192", prompt)
-            except Exception:
-                pass
+                from groq import AsyncGroq
+                client = AsyncGroq(api_key=settings.groq_api_key)
+                # Use llama3-8b-8192 for fast evaluation
+                response = await client.chat.completions.create(
+                    model="llama3-8b-8192",
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.1
+                )
+                if response.choices and response.choices[0].message.content:
+                    return response.choices[0].message.content
+            except Exception as e:
+                logger.warning(f"Judge failed with Groq: {e}")
 
         raise Exception("No capable LLM provider available for judging")
 

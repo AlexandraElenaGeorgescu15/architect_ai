@@ -144,7 +144,8 @@ class RAGIngester:
         # Skip binary files and common exclusions
         excluded_patterns = [
             '__pycache__', '.git', 'node_modules', '.venv', 'venv', 'env',
-            '.pytest_cache', '.mypy_cache', 'dist', 'build', '.next', '.nuxt'
+            '.pytest_cache', '.mypy_cache', 'dist', 'build', '.next', '.nuxt',
+            'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml', 'composer.lock'
         ]
         
         path_str = str(file_path)

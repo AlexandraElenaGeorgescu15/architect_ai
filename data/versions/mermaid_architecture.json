@@ -86,6 +86,35 @@
       "folder_id": null
     },
     "created_at": "2026-01-22T18:36:33.420848",
+    "is_current": false
+  },
+  {
+    "version": 4,
+    "artifact_id": "mermaid_architecture",
+    "artifact_type": "mermaid_architecture",
+    "content": "flowchart TD\n    subgraph Frontend\n    UI[User Interface]\n    Modal[Modal Pop-up]\n    PhoneList[Phone List Page]\n    Button[Request Phone Swap Button]\n    end\n    subgraph Backend\n    API[API Gateway]\n    Service[Service Layer]\n    DB[(Database)]\n    PhoneService[Phone Service]\n    end\n    UI --> Button --> Modal\n    Modal -->|Submit Request| API --> Service --> DB\n    Modal -->|Cancel| UI\n    Service -->|Validate User Ownership| PhoneService\n    PhoneService -->|Get Phones List| DB\n    DB -->|Return Phones List| PhoneService\n    PhoneService -->|Update Phones List| DB\n    DB -->|Return Updated Phones List| PhoneService\n    UI -->|User Interaction| UI\n    UI -->|Button Click| Modal\n    Modal -->|Form Submission| API\n    API -->|API Endpoint| API\n    Service -->|Business Logic| DB\n    DB -->|Database Operations| PhoneService\n    UI -->|Frontend-Backend Interface| API\n    API -->|Backend-Database Interface| Service",
+    "metadata": {
+      "update_type": "manual_edit",
+      "updated_at": "2026-01-26T17:38:04.675899",
+      "artifact_type": "mermaid_architecture"
+    },
+    "folder_id": null,
+    "created_at": "2026-01-26T17:38:04.680887",
+    "is_current": false
+  },
+  {
+    "version": 5,
+    "artifact_id": "mermaid_architecture",
+    "artifact_type": "mermaid_architecture",
+    "content": "flowchart TD\n    subgraph Frontend\n    UI[User Interface]\n    Modal[Modal Pop-up]\n    PhoneList[Phone List Page]\n    Button[Request Phone Swap Button]\n    end\n    subgraph Backend\n    API[API Gateway]\n    Service[Service Layer]\n    DB[(Database)]\n    PhoneService[Phone Service]\n    end\n    UI --> Button --> Modal\n    Modal -->|Submit Request| API --> Service --> DB\n    Modal -->|Cancel| UI\n    Service -->|Validate User Ownership| PhoneService\n    PhoneService -->|Get Phones List| DB\n    DB -->|Return Phones List| PhoneService\n    PhoneService -->|Update Phones List| DB\n    DB -->|Return Updated Phones List| PhoneService\n    UI -->|User Interaction| UI\n    UI -->|Button Click| Modal\n    Modal -->|Form Submission| API\n    API -->|API Endpoint| API\n    Service -->|Business Logic| DB\n    DB -->|Database Operations| PhoneService\n    UI -->|Frontend-Backend Interface| API\n    API -->|Backend-Database Interface| Service",
+    "metadata": {
+      "updated_by": "admin",
+      "update_type": "manual_edit",
+      "folder_id": null,
+      "artifact_type": "mermaid_architecture"
+    },
+    "folder_id": null,
+    "created_at": "2026-01-26T17:38:04.710910",
     "is_current": true
   }
 ]

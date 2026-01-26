@@ -112,6 +112,12 @@ class OllamaClient:
         Returns:
             List of model names
         """
+        return await self.list_models()
+
+    async def list_models(self) -> List[str]:
+        """
+        Internal implementation for listing models.
+        """
         try:
             client = self._get_http_client()
             response = await client.get(f"{self.base_url}/api/tags")
@@ -136,6 +142,12 @@ class OllamaClient:
             
         Returns:
             True if model is available, False otherwise
+        """
+        return await self.check_model_availability(model_name)
+
+    async def check_model_availability(self, model_name: str) -> bool:
+        """
+        Internal implementation for checking model availability.
         """
         available_models = await self.list_available_models()
         # Check exact match or prefix match (for versioned models)

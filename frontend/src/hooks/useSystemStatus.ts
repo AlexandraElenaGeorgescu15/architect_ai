@@ -14,56 +14,43 @@ export function useSystemStatus(pollInterval = 4000): UseSystemStatusResult {
   const [isChecking, setIsChecking] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
   const [hasSuccess, setHasSuccess] = useState<boolean>(false)
+  const [consecutiveFailures, setConsecutiveFailures] = useState<number>(0)
 
   const checkStatus = useCallback(async () => {
     setIsChecking(true)
     try {
       const result = await fetchSystemHealth()
-      
-      // Normalize ready status - ensure it's always a boolean
+
+      // Normalize ready status
       const normalizedResult = {
         ...result,
         ready: result.ready === true || result.overall_status === 'ready'
       }
-      
-      // Log detailed health check response
-      const wasReady = status?.ready
-      const shouldLog = normalizedResult.ready !== wasReady || wasReady === undefined || normalizedResult.ready === true
-      if (shouldLog) {
-        const phaseStatuses = normalizedResult.phases ? 
-          Object.fromEntries(Object.entries(normalizedResult.phases).map(([k, v]) => [k, (v as any).status])) :
-          {}
-        console.log('🏥 [SYSTEM_STATUS] Health check:', {
-          ready: normalizedResult.ready,
-          overall_status: normalizedResult.overall_status,
-          message: normalizedResult.message,
-          phases_count: Object.keys(normalizedResult.phases || {}).length,
-          phase_statuses: phaseStatuses,
-          raw_ready: result.ready,
-          raw_overall_status: result.overall_status
-        })
-      }
+
       setStatus(normalizedResult)
       setError(null)
+      setConsecutiveFailures(0) // Reset failures on success
+
       if (!hasSuccess) {
         setHasSuccess(true)
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unable to reach backend'
-      console.error('❌ [SYSTEM_STATUS] Health check failed:', message)
+      console.warn('⚠️ [SYSTEM_STATUS] Health check failed:', message)
 
-      // Before the first successful health check, treat errors as "backend still starting"
-      // and avoid showing a scary error message in the UI. After at least one success,
-      // surface errors so the user knows something regressed.
-      if (hasSuccess) {
+      const newFailures = consecutiveFailures + 1
+      setConsecutiveFailures(newFailures)
+
+      // Grace period: Only show error and lose readiness after 3 consecutive failures
+      if (hasSuccess && newFailures >= 3) {
         setError(message)
-      } else {
-        setError(null)
+        // Optionally update status to not-ready if we want to force UI change
+        setStatus(prev => prev ? { ...prev, ready: false } : null)
       }
     } finally {
       setIsChecking(false)
     }
-  }, [status?.ready, hasSuccess])
+  }, [consecutiveFailures, hasSuccess])
 
   useEffect(() => {
     void checkStatus()
@@ -74,7 +61,12 @@ export function useSystemStatus(pollInterval = 4000): UseSystemStatusResult {
     return () => clearInterval(interval)
   }, [checkStatus, pollInterval])
 
-  const isReady = useMemo(() => status?.ready ?? false, [status])
+  // Ready if status says ready OR if we're in a grace period (less than 3 failures)
+  const isReady = useMemo(() => {
+    if (status?.ready) return true
+    if (hasSuccess && consecutiveFailures > 0 && consecutiveFailures < 3) return true
+    return false
+  }, [status?.ready, hasSuccess, consecutiveFailures])
 
   return {
     status,

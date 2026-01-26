@@ -269,7 +269,7 @@ async def get_project_summary(
         # Get main components from KG
         main_components = []
         try:
-            graph_data = kg_builder.get_graph()
+            graph_data = kg_builder.export_to_dict()
             if graph_data and "nodes" in graph_data:
                 nodes = graph_data.get("nodes", [])
                 

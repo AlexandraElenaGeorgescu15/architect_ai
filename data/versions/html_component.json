@@ -171,6 +171,121 @@
       "is_valid": true
     },
     "created_at": "2026-01-24T23:08:35.029514",
+    "is_current": false
+  },
+  {
+    "version": 13,
+    "artifact_id": "html_component",
+    "artifact_type": "html_component",
+    "content": "<!DOCTYPE html><html><head>\n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n        }\n      </style>\n    \n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n        }\n      </style>\n    \n      <style>\n        :root {\n          --primary-color: #333;\n          --secondary-color: #666;\n        }\n        \n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n          background-color: var(--primary-color);\n          color: var(--secondary-color);\n        }\n      </style>\n    \n    <meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=contain\">\n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n          background-color: var(--primary-color);\n          color: var(--secondary-color);\n        }\n      </style>\n\n    <head><body>\n<!-- PhoneSwapModal.html -->\n<div class=\"modal fade\" id=\"phone-swap-modal\" tabindex=\"-1\" aria-labelledby=\"phone-swap-modal-label\" aria-hidden=\"true\">\n  <div class=\"modal-dialog modal-lg\">\n    <div class=\"modal-content\">\n      <div class=\"modal-header\">\n        <h5 id=\"phone-swap-modal-label\" style=\"color: var(--secondary-color)\">Phone Swap Request</h5>\n        <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"modal\" aria-label=\"Close\"></button>\n      </div>\n      <div class=\"modal-body\">\n        <!-- Phone to Request dropdown -->\n        <label for=\"phone-to-request\">Phone to Request:</label>\n        <select id=\"phone-to-request\" class=\"form-select\">\n          <option value=\"\">Select a phone</option>\n          <!-- populated with available phones from main list -->\n        </select>\n\n        <!-- Phone to Exchange dropdown -->\n        <label for=\"phone-to-exchange\">Phone to Exchange:</label>\n        <select id=\"phone-to-exchange\" class=\"form-select\">\n          <option value=\"\">Select a phone</option>\n          <!-- populated with user's currently owned phones -->\n        </select>\n\n        <!-- Reason for Request (Optional) text area -->\n        <label for=\"reason-for-request\">Reason for Request:</label>\n        <textarea id=\"reason-for-request\" class=\"form-control\" rows=\"3\"></textarea>\n\n        <!-- Actions buttons -->\n        <div class=\"d-grid gap-2\">\n          <button type=\"submit\" class=\"btn btn-primary\">Submit Request</button>\n          <button type=\"button\" class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Cancel</button>\n        </div>\n      </div>\n    </div>\n  </div>\n</div>\n\n</body></html>",
+    "metadata": {
+      "update_type": "manual_edit",
+      "updated_at": "2026-01-26T17:35:35.642602",
+      "source": "interactive_editor_ai",
+      "auto_saved": true,
+      "saved_at": "2026-01-26T15:35:35.492Z"
+    },
+    "folder_id": null,
+    "created_at": "2026-01-26T17:35:35.644581",
+    "is_current": false
+  },
+  {
+    "version": 14,
+    "artifact_id": "html_component",
+    "artifact_type": "html_component",
+    "content": "<!DOCTYPE html><html><head>\n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n        }\n      </style>\n    \n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n        }\n      </style>\n    \n      <style>\n        :root {\n          --primary-color: #333;\n          --secondary-color: #666;\n        }\n        \n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n          background-color: var(--primary-color);\n          color: var(--secondary-color);\n        }\n      </style>\n    \n    <meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=contain\">\n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n          background-color: var(--primary-color);\n          color: var(--secondary-color);\n        }\n      </style>\n\n    <head><body>\n<!-- PhoneSwapModal.html -->\n<div class=\"modal fade\" id=\"phone-swap-modal\" tabindex=\"-1\" aria-labelledby=\"phone-swap-modal-label\" aria-hidden=\"true\">\n  <div class=\"modal-dialog modal-lg\">\n    <div class=\"modal-content\">\n      <div class=\"modal-header\">\n        <h5 id=\"phone-swap-modal-label\" style=\"color: var(--secondary-color)\">Phone Swap Request</h5>\n        <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"modal\" aria-label=\"Close\"></button>\n      </div>\n      <div class=\"modal-body\">\n        <!-- Phone to Request dropdown -->\n        <label for=\"phone-to-request\">Phone to Request:</label>\n        <select id=\"phone-to-request\" class=\"form-select\">\n          <option value=\"\">Select a phone</option>\n          <!-- populated with available phones from main list -->\n        </select>\n\n        <!-- Phone to Exchange dropdown -->\n        <label for=\"phone-to-exchange\">Phone to Exchange:</label>\n        <select id=\"phone-to-exchange\" class=\"form-select\">\n          <option value=\"\">Select a phone</option>\n          <!-- populated with user's currently owned phones -->\n        </select>\n\n        <!-- Reason for Request (Optional) text area -->\n        <label for=\"reason-for-request\">Reason for Request:</label>\n        <textarea id=\"reason-for-request\" class=\"form-control\" rows=\"3\"></textarea>\n\n        <!-- Actions buttons -->\n        <div class=\"d-grid gap-2\">\n          <button type=\"submit\" class=\"btn btn-primary\">Submit Request</button>\n          <button type=\"button\" class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Cancel</button>\n        </div>\n      </div>\n    </div>\n  </div>\n</div>\n\n</body></html>",
+    "metadata": {
+      "updated_by": "admin",
+      "update_type": "manual_edit",
+      "folder_id": null,
+      "artifact_type": "html_component",
+      "source": "interactive_editor_ai",
+      "auto_saved": true,
+      "saved_at": "2026-01-26T15:35:35.492Z"
+    },
+    "folder_id": null,
+    "created_at": "2026-01-26T17:35:35.662107",
+    "is_current": false
+  },
+  {
+    "version": 15,
+    "artifact_id": "html_component",
+    "artifact_type": "html_component",
+    "content": "<!DOCTYPE html><html><head>\n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n        }\n      </style>\n    \n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n        }\n      </style>\n    \n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n        }\n      </style>\n    \n      <style>\n        :root {\n          --primary-color: #333;\n          --secondary-color: #666;\n        }\n        \n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n          background-color: var(--primary-color);\n          color: var(--secondary-color);\n        }\n      </style>\n    \n    <meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=contain\">\n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n          background-color: var(--primary-color);\n          color: var(--secondary-color);\n        }\n      </style>\n\n    <head><body>\n<!-- PhoneSwapModal.html -->\n<div class=\"modal fade\" id=\"phone-swap-modal\" tabindex=\"-1\" aria-labelledby=\"phone-swap-modal-label\" aria-hidden=\"true\">\n  <div class=\"modal-dialog modal-lg\">\n    <div class=\"modal-content\">\n      <div class=\"modal-header\">\n        <h5 id=\"phone-swap-modal-label\" style=\"color: var(--secondary-color)\">Phone Swap Request</h5>\n        <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"modal\" aria-label=\"Close\"></button>\n      </div>\n      <div class=\"modal-body\">\n        <!-- Phone to Request dropdown -->\n        <label for=\"phone-to-request\">Phone to Request:</label>\n        <select id=\"phone-to-request\" class=\"form-select\">\n          <option value=\"\">Select a phone</option>\n          <!-- populated with available phones from main list -->\n        </select>\n\n        <!-- Phone to Exchange dropdown -->\n        <label for=\"phone-to-exchange\">Phone to Exchange:</label>\n        <select id=\"phone-to-exchange\" class=\"form-select\">\n          <option value=\"\">Select a phone</option>\n          <!-- populated with user's currently owned phones -->\n        </select>\n\n        <!-- Reason for Request (Optional) text area -->\n        <label for=\"reason-for-request\">Reason for Request:</label>\n        <textarea id=\"reason-for-request\" class=\"form-control\" rows=\"3\"></textarea>\n\n        <!-- Actions buttons -->\n        <div class=\"d-grid gap-2\">\n          <button type=\"submit\" class=\"btn btn-primary\">Submit Request</button>\n          <button type=\"button\" class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Cancel</button>\n        </div>\n      </div>\n    </div>\n  </div>\n</div>\n\n</body></html>",
+    "metadata": {
+      "update_type": "manual_edit",
+      "updated_at": "2026-01-26T17:36:01.697004",
+      "source": "interactive_editor",
+      "saved_at": "2026-01-26T15:36:01.624Z"
+    },
+    "folder_id": null,
+    "created_at": "2026-01-26T17:36:01.708721",
+    "is_current": false
+  },
+  {
+    "version": 16,
+    "artifact_id": "html_component",
+    "artifact_type": "html_component",
+    "content": "<!DOCTYPE html><html><head>\n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n        }\n      </style>\n    \n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n        }\n      </style>\n    \n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n        }\n      </style>\n    \n      <style>\n        :root {\n          --primary-color: #333;\n          --secondary-color: #666;\n        }\n        \n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n          background-color: var(--primary-color);\n          color: var(--secondary-color);\n        }\n      </style>\n    \n    <meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=contain\">\n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n          background-color: var(--primary-color);\n          color: var(--secondary-color);\n        }\n      </style>\n\n    <head><body>\n<!-- PhoneSwapModal.html -->\n<div class=\"modal fade\" id=\"phone-swap-modal\" tabindex=\"-1\" aria-labelledby=\"phone-swap-modal-label\" aria-hidden=\"true\">\n  <div class=\"modal-dialog modal-lg\">\n    <div class=\"modal-content\">\n      <div class=\"modal-header\">\n        <h5 id=\"phone-swap-modal-label\" style=\"color: var(--secondary-color)\">Phone Swap Request</h5>\n        <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"modal\" aria-label=\"Close\"></button>\n      </div>\n      <div class=\"modal-body\">\n        <!-- Phone to Request dropdown -->\n        <label for=\"phone-to-request\">Phone to Request:</label>\n        <select id=\"phone-to-request\" class=\"form-select\">\n          <option value=\"\">Select a phone</option>\n          <!-- populated with available phones from main list -->\n        </select>\n\n        <!-- Phone to Exchange dropdown -->\n        <label for=\"phone-to-exchange\">Phone to Exchange:</label>\n        <select id=\"phone-to-exchange\" class=\"form-select\">\n          <option value=\"\">Select a phone</option>\n          <!-- populated with user's currently owned phones -->\n        </select>\n\n        <!-- Reason for Request (Optional) text area -->\n        <label for=\"reason-for-request\">Reason for Request:</label>\n        <textarea id=\"reason-for-request\" class=\"form-control\" rows=\"3\"></textarea>\n\n        <!-- Actions buttons -->\n        <div class=\"d-grid gap-2\">\n          <button type=\"submit\" class=\"btn btn-primary\">Submit Request</button>\n          <button type=\"button\" class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Cancel</button>\n        </div>\n      </div>\n    </div>\n  </div>\n</div>\n\n</body></html>",
+    "metadata": {
+      "updated_by": "admin",
+      "update_type": "manual_edit",
+      "folder_id": null,
+      "artifact_type": "html_component",
+      "source": "interactive_editor",
+      "saved_at": "2026-01-26T15:36:01.624Z"
+    },
+    "folder_id": null,
+    "created_at": "2026-01-26T17:36:01.748643",
+    "is_current": false
+  },
+  {
+    "version": 17,
+    "artifact_id": "html_component",
+    "artifact_type": "html_component",
+    "content": "<!DOCTYPE html><html><head>\n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n        }\n      </style>\n    \n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n        }\n      </style>\n    \n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n        }\n      </style>\n    \n      <style>\n        :root {\n          --primary-color: #333;\n          --secondary-color: #666;\n        }\n        \n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n          background-color: var(--primary-color);\n          color: var(--secondary-color);\n        }\n      </style>\n    \n    <meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=contain\">\n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n          background-color: var(--primary-color);\n          color: var(--secondary-color);\n        }\n      </style>\n\n    <head><body>\n<!-- PhoneSwapModal.html -->\n<div class=\"modal fade\" id=\"phone-swap-modal\" tabindex=\"-1\" aria-labelledby=\"phone-swap-modal-label\" aria-hidden=\"true\">\n  <div class=\"modal-dialog modal-lg\">\n    <div class=\"modal-content\">\n      <div class=\"modal-header\">\n        <h5 id=\"phone-swap-modal-label\" style=\"color: var(--secondary-color)\">Phone Swap Request</h5>\n        <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"modal\" aria-label=\"Close\"></button>\n      </div>\n      <div class=\"modal-body\">\n        <!-- Phone to Request dropdown -->\n        <label for=\"phone-to-request\">Phone to Request:</label>\n        <select id=\"phone-to-request\" class=\"form-select\">\n          <option value=\"\">Select a phone</option>\n          <!-- populated with available phones from main list -->\n        </select>\n\n        <!-- Phone to Exchange dropdown -->\n        <label for=\"phone-to-exchange\">Phone to Exchange:</label>\n        <select id=\"phone-to-exchange\" class=\"form-select\">\n          <option value=\"\">Select a phone</option>\n          <!-- populated with user's currently owned phones -->\n        </select>\n\n        <!-- Reason for Request (Optional) text area -->\n        <label for=\"reason-for-request\">Reason for Request:</label>\n        <textarea id=\"reason-for-request\" class=\"form-control\" rows=\"3\"></textarea>\n\n        <!-- Actions buttons -->\n        <div class=\"d-grid gap-2\">\n          <button type=\"submit\" class=\"btn btn-primary\">Submit Request</button>\n          <button type=\"button\" class=\"btn btn-secondary\" data-bs-dismiss=\"modal\">Cancel</button>\n        </div>\n      </div>\n    </div>\n  </div>\n</div>\n\n</body></html>",
+    "metadata": {
+      "source": "interactive_editor",
+      "model_used": "manual_edit",
+      "validation_score": 100,
+      "is_valid": true
+    },
+    "folder_id": null,
+    "created_at": "2026-01-26T17:36:01.992588",
+    "is_current": false
+  },
+  {
+    "version": 18,
+    "artifact_id": "html_component",
+    "artifact_type": "html_component",
+    "content": "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=contain\">\n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n        }\n      </style>\n    </head><body>I haven't indexed your project yet. Please run 'Index Project' so I can analyze your codebase and provide a transformed version of the HTML document with a professional and modern design.</body></html>",
+    "metadata": {
+      "update_type": "manual_edit",
+      "updated_at": "2026-01-26T17:36:13.506908",
+      "source": "interactive_editor_ai",
+      "auto_saved": true,
+      "saved_at": "2026-01-26T15:36:13.457Z"
+    },
+    "folder_id": null,
+    "created_at": "2026-01-26T17:36:13.508946",
+    "is_current": false
+  },
+  {
+    "version": 19,
+    "artifact_id": "html_component",
+    "artifact_type": "html_component",
+    "content": "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=contain\">\n      <style>\n        * {\n          -webkit-user-select: none;\n          -moz-user-select: none;\n          -ms-user-select: none;\n          user-select: none;\n        }\n        html, body {\n          zoom: 1 !important;\n          transform: scale(1) !important;\n          overflow: auto;\n        }\n      </style>\n    </head><body>I haven't indexed your project yet. Please run 'Index Project' so I can analyze your codebase and provide a transformed version of the HTML document with a professional and modern design.</body></html>",
+    "metadata": {
+      "updated_by": "admin",
+      "update_type": "manual_edit",
+      "folder_id": null,
+      "artifact_type": "html_component",
+      "source": "interactive_editor_ai",
+      "auto_saved": true,
+      "saved_at": "2026-01-26T15:36:13.457Z"
+    },
+    "folder_id": null,
+    "created_at": "2026-01-26T17:36:13.535220",
     "is_current": true
   }
 ]

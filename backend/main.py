@@ -181,29 +181,112 @@ async def lifespan(app: FastAPI):
     print(f"   Host: 0.0.0.0:8000")
     print(f"   Docs: http://localhost:8000/api/docs")
     print("=" * 70)
-    
-    # Check Ollama availability
-    print("\n🔍 Checking Ollama availability...")
+
+    # Initialize services (replacing @app.on_event("startup"))
     try:
-        import httpx
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(f"{settings.ollama_base_url}/api/tags")
-            if response.status_code == 200:
-                models_data = response.json()
-                models = models_data.get("models", [])
-                model_names = [m.get("name", "unknown") for m in models[:5]]
-                print(f"   ✅ Ollama is running with {len(models)} models")
+        from backend.core.database import init_db
+        
+        logger.info(f"Starting {settings.app_name} v{settings.app_version}")
+        set_overall_status("initializing", "Bootstrapping backend services")
+        
+        # 1. Database
+        update_phase_status("database", "running", "Initializing database...")
+        init_db()
+        update_phase_status("database", "complete", "Database initialized")
+        logger.info("Database initialized")
+        
+        # 2. Model Registry
+        try:
+            from backend.services.model_service import get_service as get_model_service
+            model_service = get_model_service()
+            
+            update_phase_status("model_registry", "running", "Refreshing cloud model registry...")
+            await model_service._refresh_cloud_models()
+            
+            available_count = sum(1 for m in model_service.models.values() if m.status == "available")
+            total_count = len(model_service.models)
+            logger.info(f"Cloud models refreshed: {available_count}/{total_count} models available")
+            update_phase_status(
+                "model_registry",
+                "complete",
+                f"Model registry ready ({available_count}/{total_count} models available)",
+                details={"available_models": available_count, "total_models": total_count},
+            )
+        except Exception as e:
+            logger.warning(f"Could not refresh cloud models on startup: {e}")
+            update_phase_status("model_registry", "error", f"Model refresh failed: {e}")
+
+        # 3. Ollama (local models)
+        print("\n🔍 Checking Ollama availability...")
+        try:
+            from ai.ollama_client import OllamaClient
+            update_phase_status("ollama", "running", "Connecting to Ollama...")
+            ollama_client = OllamaClient()
+            available_models = await ollama_client.list_models()
+            
+            if available_models:
+                model_names = []
+                for model in available_models:
+                    name = model.get("name", model.get("model", "unknown")) if isinstance(model, dict) else str(model)
+                    model_names.append(name)
+                
+                print(f"   ✅ Ollama is running with {len(model_names)} models")
                 if model_names:
-                    print(f"   📦 Available: {', '.join(model_names)}")
-                logger.info(f"✅ Ollama connected: {len(models)} models available")
+                    print(f"   📦 Available: {', '.join(model_names[:5])}")
+                logger.info(f"✅ Ollama connected: {len(model_names)} models available")
+                update_phase_status("ollama", "complete", f"Ollama ready ({len(model_names)} local models)")
             else:
-                print(f"   ⚠️ Ollama responded with status {response.status_code}")
+                print("   ⚠️ Ollama is running but no models are installed")
+                update_phase_status("ollama", "complete", "Ollama connected (no models installed)")
+        except Exception as e:
+            print(f"   ❌ Ollama not available: {e}")
+            logger.warning(f"Ollama not available: {e}")
+            update_phase_status("ollama", "skipped", f"Ollama not available: {e}")
+
+        # 4. RAG and Analysis
+        try:
+            from backend.services.rag_ingester import RAGIngester
+            from backend.utils.tool_detector import get_user_project_directories
+            
+            rag_ingester = RAGIngester()
+            user_project_dirs = get_user_project_directories()
+            
+            if user_project_dirs:
+                update_phase_status("rag_indexing", "running", f"Indexing {len(user_project_dirs)} projects...")
+                
+                # Initial indexing and following automated tasks in background
+                async def init_rag_system():
+                    try:
+                        for idx, directory in enumerate(user_project_dirs, 1):
+                            await rag_ingester.index_directory(directory)
+                            update_phase_status("rag_indexing", "running", f"Indexed {idx}/{len(user_project_dirs)} projects", progress=(idx/len(user_project_dirs))*50)
+                        
+                        update_phase_status("rag_indexing", "complete", "Projects indexed")
+                        
+                        # Trigger KG and Patterns
+                        await run_background_analysis(user_project_dirs)
+                        
+                    except Exception as e:
+                        logger.error(f"RAG init error: {e}", exc_info=True)
+                
+                asyncio.create_task(init_rag_system())
+                
+                # Start watchers
+                update_phase_status("watchers", "running", "Starting watchers...")
+                for d in user_project_dirs:
+                    rag_ingester.start_watching(d)
+                update_phase_status("watchers", "complete", "Watchers active")
+                app.state.rag_ingester = rag_ingester
+            else:
+                update_phase_status("rag_indexing", "skipped", "No projects found")
+                mark_system_ready("API running without user project context")
+        except Exception as e:
+            logger.error(f"RAG setup error: {e}")
+
     except Exception as e:
-        print(f"   ❌ Ollama not available: {e}")
-        print("   💡 Start Ollama with: ollama serve")
-        logger.warning(f"Ollama not available at startup: {e}")
+        logger.error(f"CRITICAL startup failure: {e}", exc_info=True)
     
-    # Check API keys
+    # Check API keys for banner
     print("\n🔑 Checking API keys...")
     api_keys = {
         "Groq": bool(settings.groq_api_key),
@@ -215,17 +298,52 @@ async def lifespan(app: FastAPI):
         print(f"   {status} {name}: {'configured' if configured else 'not set'}")
     
     print("\n" + "=" * 70)
-    print("   ✅ STARTUP COMPLETE - Backend ready for requests")
+    print("   ✅ STARTUP SEQUENCE INITIALIZED")
     print("=" * 70 + "\n")
-    logger.info("🚀 Architect.AI backend started successfully")
+    logger.info("🚀 Architect.AI initialization triggered")
     
     yield  # Application runs here
     
     # ==========================================================================
-    # SHUTDOWN
+    # SHUTDOWN - Replacing @app.on_event("shutdown")
     # ==========================================================================
     print("\n👋 Architect.AI backend shutting down...")
+    if hasattr(app.state, 'rag_ingester'):
+        try:
+            app.state.rag_ingester.stop_watching()
+            logger.info("RAG auto-refresh stopped")
+        except Exception as e:
+            logger.error(f"Error stopping RAG: {e}")
     logger.info("Backend shutdown complete")
+
+async def run_background_analysis(user_project_dirs):
+    """Background task to build KG and run Pattern Mining."""
+    try:
+        update_phase_status("knowledge_graph", "running", "Building knowledge graph...")
+        from backend.services.knowledge_graph import get_builder as get_kg_builder
+        kg_builder = get_kg_builder()
+        # simplified build for all
+        for d in user_project_dirs:
+            await asyncio.to_thread(kg_builder.build_graph, Path(d))
+        update_phase_status("knowledge_graph", "complete", "Knowledge graph ready")
+        
+        update_phase_status("pattern_mining", "running", "Analyzing patterns...")
+        from backend.services.pattern_mining import get_miner
+        pattern_miner = get_miner()
+        for d in user_project_dirs:
+            await asyncio.to_thread(pattern_miner.analyze_project, Path(d))
+        update_phase_status("pattern_mining", "complete", "Pattern mining ready")
+        
+        # Finally Universal Context
+        update_phase_status("universal_context", "running", "Building powerhouse context...")
+        from backend.services.universal_context import get_universal_context_service
+        universal_service = get_universal_context_service()
+        await universal_service.build_universal_context()
+        update_phase_status("universal_context", "complete", "Universal powerhouse ready")
+        
+        mark_system_ready("System fully initialized and analyzed")
+    except Exception as e:
+        logger.error(f"Background analysis failed: {e}", exc_info=True)
 
 
 # Create FastAPI app with lifespan handler
@@ -549,354 +667,8 @@ async def root() -> Dict[str, str]:
         "docs": "/api/docs"
     }
 
-# Database initialization
-@app.on_event("startup")
-async def startup_event():
-    """Initialize services on application startup."""
-    try:
-        from backend.core.database import init_db
-        from backend.core.config import settings
-        
-        logger.info(f"Starting {settings.app_name} v{settings.app_version}")
-        set_overall_status("initializing", "Bootstrapping backend services")
-        update_phase_status("database", "running", "Initializing database...")
-        init_db()
-        update_phase_status("database", "complete", "Database initialized")
-        logger.info("Database initialized")
-        
-        # Refresh cloud models on startup to ensure they're registered
-        try:
-            from backend.services.model_service import get_service as get_model_service
-            model_service = get_model_service()
-            
-            # Log API key status
-            has_gemini = bool(settings.google_api_key or settings.gemini_api_key)
-            has_groq = bool(settings.groq_api_key)
-            has_openai = bool(settings.openai_api_key)
-            has_anthropic = bool(settings.anthropic_api_key)
-            
-            logger.info(f"API Keys Status - Gemini: {'✅' if has_gemini else '❌'}, Groq: {'✅' if has_groq else '❌'}, OpenAI: {'✅' if has_openai else '❌'}, Anthropic: {'✅' if has_anthropic else '❌'}")
-            
-            update_phase_status("model_registry", "running", "Refreshing cloud model registry...")
-            await model_service._refresh_cloud_models()
-            
-            # Count available models
-            available_count = sum(1 for m in model_service.models.values() if m.status == "available")
-            total_count = len(model_service.models)
-            logger.info(f"Cloud models refreshed: {available_count}/{total_count} models available")
-            update_phase_status(
-                "model_registry",
-                "complete",
-                f"Model registry ready ({available_count}/{total_count} models available)",
-                details={"available_models": available_count, "total_models": total_count},
-            )
-        except Exception as e:
-            logger.warning(f"Could not refresh cloud models on startup: {e}", exc_info=True)
-            update_phase_status("model_registry", "error", f"Model refresh failed: {e}")
-        
-        # Initialize Ollama (local models) - ensure it's ready for agentic chat and generation
-        try:
-            from ai.ollama_client import OllamaClient
-            
-            update_phase_status("ollama", "running", "Connecting to Ollama...")
-            ollama_client = OllamaClient()
-            
-            # Check if Ollama is running and list available models
-            available_models = await ollama_client.list_models()
-            
-            if available_models:
-                model_names = []
-                for model in available_models:
-                    if isinstance(model, dict):
-                        name = model.get("name", model.get("model", "unknown"))
-                    else:
-                        name = str(model)
-                    model_names.append(name)
-                
-                logger.info(f"✅ Ollama ready with {len(model_names)} models: {', '.join(model_names[:5])}{'...' if len(model_names) > 5 else ''}")
-                update_phase_status(
-                    "ollama", 
-                    "complete", 
-                    f"Ollama ready ({len(model_names)} local models)",
-                    details={"models": model_names[:10], "count": len(model_names)}
-                )
-                
-                # Warm up the first available model (pre-load into memory)
-                if model_names and settings.ollama_warmup_enabled:
-                    try:
-                        warmup_model = model_names[0].split(":")[0]  # Get base name
-                        logger.info(f"🔥 Warming up Ollama model: {warmup_model}...")
-                        await ollama_client.generate(
-                            model_name=warmup_model,
-                            prompt="Hello",
-                            system_message="Respond with one word only.",
-                            temperature=0.1,
-                            num_ctx=256
-                        )
-                        logger.info(f"✅ Ollama model {warmup_model} warmed up")
-                    except Exception as e:
-                        logger.debug(f"Warmup skipped: {e}")
-            else:
-                logger.warning("⚠️ Ollama is running but no models are installed")
-                logger.warning("   Run 'ollama pull llama3' to install a model")
-                update_phase_status(
-                    "ollama", 
-                    "complete", 
-                    "Ollama connected (no models installed)",
-                    details={"models": [], "count": 0, "warning": "No models installed"}
-                )
-                
-        except Exception as e:
-            logger.warning(f"⚠️ Ollama not available: {e}")
-            logger.warning("   Agentic chat and local generation will use cloud APIs as fallback")
-            update_phase_status("ollama", "skipped", f"Ollama not available: {e}")
-        
-        # Start RAG auto-refresh using new RAGIngester service
-        # CRITICAL: Index ALL user projects EXCEPT Architect.AI itself
-        try:
-            from backend.services.rag_ingester import RAGIngester
-            from backend.utils.tool_detector import get_user_project_directories, detect_tool_directory
-            
-            rag_ingester = RAGIngester()
-            
-            # Get ALL user project directories (already excludes Architect.AI tool)
-            user_project_dirs = get_user_project_directories()
-            tool_dir = detect_tool_directory()
-            
-            # Double-check: Filter out tool directory just in case
-            user_project_dirs = [d for d in user_project_dirs if d != tool_dir and 'architect_ai' not in str(d).lower()]
-            
-            if user_project_dirs:
-                logger.info(f"🎯 [STARTUP] Found {len(user_project_dirs)} user projects to index (excluding Architect.AI)")
-                for d in user_project_dirs:
-                    logger.info(f"   📂 {d.name}: {d}")
-                update_phase_status(
-                    "rag_indexing",
-                    "running",
-                    f"Indexing {len(user_project_dirs)} project directories...",
-                )
-                
-                # Initial indexing (run in background to not block startup)
-                async def initial_index():
-                    try:
-                        total_dirs = len(user_project_dirs)
-                        for index, directory in enumerate(user_project_dirs, start=1):
-                            try:
-                                logger.info(f"Initial indexing of {directory}...")
-                                stats = await rag_ingester.index_directory(directory)
-                                logger.info(f"Initial indexing complete for {directory}: {stats}")
-                                update_phase_status(
-                                    "rag_indexing",
-                                    "running",
-                                    f"Indexed {index}/{total_dirs} project directories",
-                                    progress=(index / total_dirs) * 40.0,
-                                )
-                            except Exception as e:
-                                logger.error(f"Error during initial indexing of {directory}: {e}", exc_info=True)
-                                update_phase_status(
-                                    "rag_indexing",
-                                    "error",
-                                    f"Initial indexing failed for {directory}: {e}",
-                                )
-                                return
-                        
-                        update_phase_status("rag_indexing", "complete", "Project directories indexed")
-                    
-                        # Auto-build Knowledge Graph and Pattern Mining after RAG indexing
-                        try:
-                            logger.info("🧠 Auto-building Knowledge Graph and Pattern Mining...")
-                            
-                            # Build Knowledge Graph (COMBINED for all directories)
-                            try:
-                                update_phase_status("knowledge_graph", "running", "Building knowledge graph...")
-                                from backend.services.knowledge_graph import get_builder as get_kg_builder
-                                kg_builder = get_kg_builder()
-                                
-                                # Build combined graph for all user directories
-                                import networkx as nx
-                                combined_graph = nx.DiGraph()
-                                
-                                for directory in user_project_dirs:
-                                    logger.info(f"Building Knowledge Graph for {directory}...")
-                                    # Build graph for this directory
-                                    dir_graph = await asyncio.to_thread(kg_builder.build_graph, Path(directory))
-                                    # Merge into combined graph
-                                    combined_graph = nx.compose(combined_graph, dir_graph)
-                                
-                                # Set the combined graph as the builder's graph
-                                kg_builder.graph = combined_graph
-                                
-                                # Cache the COMBINED results once
-                                await asyncio.to_thread(kg_builder.cache_graph)
-                                logger.info(f"✅ Knowledge Graph built successfully: {len(combined_graph.nodes)} nodes, {len(combined_graph.edges)} edges")
-                                update_phase_status(
-                                    "knowledge_graph",
-                                    "complete",
-                                    "Knowledge graph ready",
-                                    details={"nodes": len(combined_graph.nodes), "edges": len(combined_graph.edges)},
-                                )
-                            except Exception as e:
-                                logger.warning(f"Could not build Knowledge Graph: {e}", exc_info=True)
-                                update_phase_status("knowledge_graph", "error", f"Knowledge graph failed: {e}")
-                            
-                            # Build Pattern Mining (COMBINED for all directories)
-                            try:
-                                update_phase_status("pattern_mining", "running", "Analyzing design patterns...")
-                                from backend.services.pattern_mining import get_miner
-                                from backend.services.analysis_service import get_service as get_analysis_service
-                                
-                                pattern_miner = get_miner()
-                                analysis_service = get_analysis_service()
-                                
-                                # Accumulate results from all directories
-                                combined_patterns = []
-                                combined_code_smells = []
-                                combined_security_issues = []
-                                combined_metrics = {}
-                                combined_recommendations = []
-                                
-                                for directory in user_project_dirs:
-                                    logger.info(f"Analyzing patterns for {directory}...")
-                                    # Use analyze_project method
-                                    result = await asyncio.to_thread(
-                                        pattern_miner.analyze_project,
-                                        Path(directory)
-                                    )
-                                    
-                                    # Accumulate results
-                                    if hasattr(result, 'patterns'):
-                                        combined_patterns.extend(result.patterns)
-                                    if hasattr(result, 'code_smells'):
-                                        combined_code_smells.extend(result.code_smells)
-                                    if hasattr(result, 'security_issues'):
-                                        combined_security_issues.extend(result.security_issues)
-                                    if hasattr(result, 'metrics'):
-                                        combined_metrics.update(result.metrics)
-                                    if hasattr(result, 'recommendations'):
-                                        combined_recommendations.extend(result.recommendations)
-                                
-                                # Store COMBINED results in analysis service
-                                analysis_service.last_analysis = {
-                                    "patterns": combined_patterns,
-                                    "code_smells": combined_code_smells,
-                                    "security_issues": combined_security_issues,
-                                    "metrics": combined_metrics,
-                                    "recommendations": combined_recommendations
-                                }
-                                
-                                # Cache the combined results once
-                                await asyncio.to_thread(pattern_miner.cache_results)
-                                logger.info(f"✅ Pattern Mining completed successfully: {len(combined_patterns)} patterns found")
-                                update_phase_status(
-                                    "pattern_mining",
-                                    "complete",
-                                    "Pattern mining ready",
-                                    details={"patterns_found": len(combined_patterns)},
-                                )
-                            except Exception as e:
-                                logger.warning(f"Could not build Pattern Mining: {e}", exc_info=True)
-                                update_phase_status("pattern_mining", "error", f"Pattern mining failed: {e}")
-                            
-                            # 🚀 POWERHOUSE: Build Universal Context (combines everything!)
-                            try:
-                                update_phase_status("universal_context", "running", "Building universal context...")
-                                logger.info("🚀 Building Universal Context - The RAG Powerhouse that knows your entire project by heart!")
-                                from backend.services.universal_context import get_universal_context_service
-                                
-                                universal_service = get_universal_context_service()
-                                universal_ctx = await universal_service.build_universal_context()
-                                
-                                logger.info(f"✅ Universal Context built successfully!")
-                                logger.info(f"   📂 Project directories: {len(universal_ctx['project_directories'])}")
-                                logger.info(f"   📄 Total files indexed: {universal_ctx['total_files']}")
-                                logger.info(f"   🏗️ KG nodes: {universal_ctx['knowledge_graph']['total_nodes']}")
-                                logger.info(f"   🔍 Patterns found: {universal_ctx['patterns']['total_patterns']}")
-                                logger.info(f"   ⭐ Key entities: {len(universal_ctx['key_entities'])}")
-                                logger.info(f"   ⏱️ Build time: {universal_ctx['build_duration_seconds']:.2f}s")
-                                logger.info("🎉 RAG POWERHOUSE READY - Your project is now known by heart!")
-                                update_phase_status(
-                                    "universal_context",
-                                    "complete",
-                                    "Universal context ready",
-                                    details={
-                                        "project_directories": len(universal_ctx['project_directories']),
-                                        "total_files": universal_ctx['total_files'],
-                                        "knowledge_graph_nodes": universal_ctx['knowledge_graph']['total_nodes'],
-                                        "patterns_found": universal_ctx['patterns']['total_patterns'],
-                                    },
-                                )
-                                # Mark system as ready after universal context is complete
-                                mark_system_ready("Universal context built successfully - system ready!")
-                            except Exception as e:
-                                logger.warning(f"Could not build Universal Context: {e}", exc_info=True)
-                                update_phase_status("universal_context", "error", f"Universal context failed: {e}")
-                        
-                        except Exception as e:
-                            logger.warning(f"Auto-build of KG/PM failed: {e}")
-                    except Exception as e:
-                        logger.error(f"Error in initial_index: {e}", exc_info=True)
-                    finally:
-                        _evaluate_overall_status()
-                
-                # Start initial indexing in background
-                asyncio.create_task(initial_index())
-                
-                # Start watching for changes (synchronous, but fast)
-                update_phase_status("watchers", "running", "Starting directory watchers...")
-                for directory in user_project_dirs:
-                    try:
-                        rag_ingester.start_watching(directory)
-                        logger.info(f"✅ Started watching {directory} for file changes")
-                    except Exception as e:
-                        logger.error(f"Error starting watcher for {directory}: {e}", exc_info=True)
-                        update_phase_status("watchers", "error", f"Failed to watch {directory}: {e}")
-                        break
-                else:
-                    update_phase_status(
-                        "watchers",
-                        "complete",
-                        f"Watching {len(user_project_dirs)} directories for changes",
-                        details={"directories": user_project_dirs},
-                    )
-                
-                # Store reference for shutdown
-                app.state.rag_ingester = rag_ingester
-                
-                # Log index stats
-                stats = rag_ingester.get_index_stats()
-                logger.info(f"RAG auto-refresh started - monitoring {len(user_project_dirs)} directories")
-                logger.info(f"RAG index stats: {stats}")
-            else:
-                logger.warning("No user project directories found. RAG auto-refresh not started.")
-                logger.info("Tip: Make sure you're running from a directory that contains your project")
-                update_phase_status("rag_indexing", "skipped", "No user project directories detected")
-                update_phase_status("knowledge_graph", "skipped", "No project files to analyze")
-                update_phase_status("pattern_mining", "skipped", "No project files to analyze")
-                update_phase_status("universal_context", "skipped", "Universal context disabled (no project data)")
-                update_phase_status("watchers", "skipped", "No directories to watch")
-                mark_system_ready("API running without user project context")
-        except ImportError as e:
-            logger.warning(f"RAG auto-refresh not available: {e}")
-        except Exception as e:
-            logger.error(f"Error starting RAG auto-refresh: {e}", exc_info=True)
-            
-    except ImportError as e:
-        logger.warning(f"Database modules not available: {e}. Skipping database initialization.")
-        logger.info("Architect.AI API starting (database disabled)...")
 
 
-@app.on_event("shutdown")
-async def shutdown_event():
-    """Cleanup on application shutdown."""
-    # Stop RAG auto-refresh if running
-    if hasattr(app.state, 'rag_ingester'):
-        try:
-            app.state.rag_ingester.stop_watching()
-            logger.info("RAG auto-refresh stopped")
-        except Exception as e:
-            logger.error(f"Error stopping RAG auto-refresh: {e}")
-    
-    logger.info("Shutting down application")
 
 # Import routers
 from backend.api import websocket as ws_router
