@@ -19,18 +19,6 @@ if (isDarkMode) {
   }
 }
 
-// FIX: Clear stale ngrok backend URL if present
-// This fixes the "2000 errors" caused by connecting to a dead tunnel
-try {
-  const backendUrl = localStorage.getItem('architect_ai_backend_url')
-  if (backendUrl && backendUrl.includes('ngrok')) {
-    console.warn('Removing stale ngrok backend URL:', backendUrl)
-    localStorage.removeItem('architect_ai_backend_url')
-  }
-} catch (e) {
-  console.error('Failed to clean backend URL:', e)
-}
-
 // Error boundary for development
 const rootElement = document.getElementById('root')
 if (!rootElement) {

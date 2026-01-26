@@ -15,6 +15,14 @@ const DEFAULT_BACKEND_URL = '' // Empty = relative to current origin (for local 
 export function getBackendUrl(): string {
   // Check localStorage first (user-configured)
   const stored = localStorage.getItem(BACKEND_URL_KEY)
+
+  // FIX: Detect and ignore stale ngrok URLs
+  if (stored && stored.includes('ngrok')) {
+    console.warn('Ignoring and clearing stale ngrok backend URL:', stored)
+    localStorage.removeItem(BACKEND_URL_KEY)
+    return import.meta.env.VITE_API_URL || DEFAULT_BACKEND_URL
+  }
+
   if (stored !== null) {
     return stored
   }
@@ -57,7 +65,7 @@ export async function testBackendConnection(url?: string): Promise<{
 }> {
   const testUrl = url ?? getBackendUrl()
   const start = Date.now()
-  
+
   try {
     const response = await axios.get(`${testUrl}/api/health`, {
       timeout: 5000, // 5 second timeout for health check
@@ -67,7 +75,7 @@ export async function testBackendConnection(url?: string): Promise<{
       },
     })
     const latency = Date.now() - start
-    
+
     return {
       connected: true,
       version: response.data?.version || 'unknown',

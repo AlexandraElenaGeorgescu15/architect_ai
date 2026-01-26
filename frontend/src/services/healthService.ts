@@ -36,6 +36,12 @@ export interface SystemHealthResponse {
 
 export async function fetchSystemHealth(): Promise<SystemHealthResponse> {
   const response = await api.get<SystemHealthResponse>('/api/health')
+
+  // Validate response - Vercel might return index.html (string) for 404s
+  if (typeof response.data === 'string' || !response.data || typeof response.data !== 'object') {
+    throw new Error('Invalid backend response (received HTML or empty)')
+  }
+
   return response.data
 }
 
