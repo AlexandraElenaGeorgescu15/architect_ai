@@ -5,7 +5,7 @@ function getApiBaseUrl(): string {
   // First check for custom backend URL (set by user in BackendSettings)
   const customUrl = getBackendUrl()
   if (customUrl) return customUrl
-  
+
   // Fall back to environment variable or empty string for relative URLs
   return import.meta.env.VITE_API_URL || ''
 }
@@ -57,7 +57,8 @@ export function loadConversationFromStorage(): ChatMessage[] {
   try {
     const saved = localStorage.getItem(CHAT_MESSAGES_KEY)
     if (saved) {
-      return JSON.parse(saved)
+      const parsed = JSON.parse(saved)
+      return Array.isArray(parsed) ? parsed : []
     }
   } catch (e) {
     console.warn('Could not load chat messages from storage:', e)
@@ -121,19 +122,19 @@ export async function* streamChatMessage(
 ): AsyncGenerator<{ type: string; content: string; tool?: string; is_write_tool?: boolean }, void, unknown> {
   // Get auth token for streaming request
   const token = localStorage.getItem('access_token')
-  
+
   // Get the backend URL dynamically (respects custom backend settings)
   const baseUrl = getApiBaseUrl()
-  
+
   // Use agentic endpoint if enabled
   const endpoint = agenticMode ? '/api/chat/agent/stream' : '/api/chat/stream'
-  
+
   // Include write_mode in request if agentic mode and write mode are both enabled
   const requestWithWriteMode = {
     ...request,
     write_mode: agenticMode && writeMode
   }
-  
+
   const response = await fetch(`${baseUrl}${endpoint}`, {
     method: 'POST',
     headers: {

@@ -23,7 +23,7 @@ function Studio() {
   const [contextId, setContextId] = useState<string | null>(null)
   const [showCustomArtifactModal, setShowCustomArtifactModal] = useState(false)
   const [customTypes, setCustomTypes] = useState<CustomTypeInfo[]>([])
-  
+
   const { isGenerating, progress, generate, clearProgress, cancelGeneration } = useGeneration()
   const { isBuilding, build } = useContext()
   const { artifacts, getArtifactsByType, setArtifacts, setLoading, currentFolderId } = useArtifactStore()
@@ -48,7 +48,7 @@ function Studio() {
       if (payload.artifact_types?.length) {
         setSelectedArtifactType(payload.artifact_types[0])
       }
-      
+
       // Clean up state
       window.history.replaceState({}, document.title)
     }
@@ -81,8 +81,8 @@ function Studio() {
         setLoading(true)
         // Filter artifacts by current folder if one is selected
         const loadedArtifacts = await listArtifacts(currentFolderId)
-        setArtifacts(loadedArtifacts)
-        console.log(`📁 [STUDIO] Loaded ${loadedArtifacts.length} artifacts for folder: ${currentFolderId || 'all'}`)
+        setArtifacts(Array.isArray(loadedArtifacts) ? loadedArtifacts : [])
+        console.log(`📁 [STUDIO] Loaded ${loadedArtifacts?.length ?? 0} artifacts for folder: ${currentFolderId || 'all'}`)
       } catch (error) {
         console.error('Failed to load artifacts:', error)
       } finally {
@@ -90,20 +90,20 @@ function Studio() {
       }
     }
     loadArtifacts()
-    
+
     // Also reload when window regains focus (user navigated back)
     const handleFocus = () => {
       loadArtifacts()
     }
     window.addEventListener('focus', handleFocus)
-    
+
     // CRITICAL FIX: Reload artifacts when generation completes
     const handleReloadArtifacts = () => {
       console.log('🔄 [STUDIO] Reloading artifacts after generation complete')
       loadArtifacts()
     }
     window.addEventListener('reload-artifacts', handleReloadArtifacts)
-    
+
     return () => {
       window.removeEventListener('focus', handleFocus)
       window.removeEventListener('reload-artifacts', handleReloadArtifacts)
@@ -204,26 +204,26 @@ function Studio() {
     <div className="w-full animate-fade-in-up">
       <div className="px-4 py-3">
         <UnifiedStudioTabs
-        meetingNotes={meetingNotes}
-        setMeetingNotes={setMeetingNotes}
-        selectedArtifactType={selectedArtifactType}
-        setSelectedArtifactType={setSelectedArtifactType}
-        contextId={contextId}
-        setContextId={setContextId}
-        isGenerating={isGenerating}
-        progress={progress}
-        generate={generate}
-        clearProgress={clearProgress}
-        cancelGeneration={cancelGeneration}
-        isBuilding={isBuilding}
-        build={build}
-        artifacts={artifacts}
-        getArtifactsByType={getArtifactsByType}
-        artifactTypes={artifactTypes}
-        onOpenCustomArtifactModal={() => setShowCustomArtifactModal(true)}
+          meetingNotes={meetingNotes}
+          setMeetingNotes={setMeetingNotes}
+          selectedArtifactType={selectedArtifactType}
+          setSelectedArtifactType={setSelectedArtifactType}
+          contextId={contextId}
+          setContextId={setContextId}
+          isGenerating={isGenerating}
+          progress={progress}
+          generate={generate}
+          clearProgress={clearProgress}
+          cancelGeneration={cancelGeneration}
+          isBuilding={isBuilding}
+          build={build}
+          artifacts={artifacts}
+          getArtifactsByType={getArtifactsByType}
+          artifactTypes={artifactTypes}
+          onOpenCustomArtifactModal={() => setShowCustomArtifactModal(true)}
         />
       </div>
-      
+
       {/* Custom Artifact Type Modal */}
       <CustomArtifactModal
         isOpen={showCustomArtifactModal}

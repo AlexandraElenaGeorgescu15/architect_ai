@@ -56,8 +56,8 @@ export function useAppLoading(): UseAppLoadingResult {
       setLoadingState(prev => ({ ...prev, artifacts: false }))
       console.log('📥 [APP_LOADING] Loading artifacts...')
       const loadedArtifacts = await listArtifacts()
-      console.log(`✅ [APP_LOADING] Loaded ${loadedArtifacts.length} artifacts`)
-      setArtifacts(loadedArtifacts)
+      console.log(`✅ [APP_LOADING] Loaded ${loadedArtifacts?.length ?? 0} artifacts`)
+      setArtifacts(Array.isArray(loadedArtifacts) ? loadedArtifacts : [])
       setLoadingState(prev => ({ ...prev, artifacts: true }))
     } catch (error) {
       console.error('❌ [APP_LOADING] Failed to load artifacts:', error)
