@@ -48,6 +48,13 @@ export default function BackendSettings() {
     }
   }, [isOpen])
 
+  // Listen for custom event to open settings
+  useEffect(() => {
+    const handleOpenSettings = () => setIsOpen(true)
+    window.addEventListener('architect:open-backend-settings', handleOpenSettings)
+    return () => window.removeEventListener('architect:open-backend-settings', handleOpenSettings)
+  }, [])
+
   // Auto-check connection every 30 seconds (always, not just when dialog is open)
   useEffect(() => {
     const interval = setInterval(checkConnection, 30000)

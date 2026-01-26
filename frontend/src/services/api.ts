@@ -16,13 +16,6 @@ export function getBackendUrl(): string {
   // Check localStorage first (user-configured)
   const stored = localStorage.getItem(BACKEND_URL_KEY)
 
-  // FIX: Detect and ignore stale ngrok URLs
-  if (stored && stored.includes('ngrok')) {
-    console.warn('Ignoring and clearing stale ngrok backend URL:', stored)
-    localStorage.removeItem(BACKEND_URL_KEY)
-    return import.meta.env.VITE_API_URL || DEFAULT_BACKEND_URL
-  }
-
   if (stored !== null) {
     return stored
   }
