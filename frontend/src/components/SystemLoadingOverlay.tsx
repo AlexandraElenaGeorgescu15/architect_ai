@@ -52,38 +52,41 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
 
   // Check if user manually skipped the overlay
   const skipFlag = localStorage.getItem('skip_loading_overlay') === 'true'
-  
+
   // Check if backend is ready - multiple fallback checks
-  const allPhasesComplete = phases.length > 0 && phases.every(([_, phase]) => 
+  const allPhasesComplete = phases.length > 0 && phases.every(([_, phase]) =>
     phase.status === 'complete' || phase.status === 'skipped'
   )
-  
+
   // If status is null, we're still initializing - show overlay
   const isInitializing = status === null
-  
+
   // Check for errors (health check failures)
   const hasError = error !== null && error !== undefined
-  
+
   // Backend is ready if: status indicates ready AND no errors AND all phases complete
   // Don't use skipFlag to determine if backend is ready - that's just a UI preference
-  const isReady = (status !== null && status.ready === true && !hasError) || 
+  const isReady = (status !== null && status.ready === true && !hasError) ||
     (status !== null && status.overall_status === 'ready' && !hasError) ||
     (status !== null && status.status === 'ready' && !hasError) ||
     (status !== null && allPhasesComplete && !hasError)
-  
+
   // Show overlay if:
-  // 1. There are errors (always show on errors, even if skip flag is set)
-  // 2. Backend is initializing (status is null)
+  // 1. Backend is initializing (status is null)
+  // 2. There are errors (UNLESS skip flag is set)
   // 3. Backend is not ready AND (not skipped OR actively checking)
-  // 4. Health checks are in progress and backend is not ready
-  // 5. Loading progress is less than 100%
+  // 4. Loading progress is less than 100%
   // 
-  // Exception: If skip flag is set AND backend is actually ready AND no errors, hide overlay
-  const showOverlay = hasError || // Always show on errors (even if skip flag is set)
-    isInitializing || // Always show when initializing
-    (!isReady && (!skipFlag || isChecking === true)) || // Show when not ready (respect skip flag only if actually ready)
-    (loadingProgress !== undefined && loadingProgress < 100) // Show when loading
-  
+  // Show overlay if:
+  // 1. Backend is initializing (status is null)
+  // 2. There are errors (Show unless user explicitly actively bypassed - but we want them to fix it)
+  // 3. Backend is not ready AND (not skipped OR actively checking)
+  // 4. Loading progress is less than 100%
+  const showOverlay = hasError || // Always show on errors so they see the error message
+    isInitializing ||
+    (!isReady && (!skipFlag || isChecking === true)) ||
+    (loadingProgress !== undefined && loadingProgress < 100)
+
   // Debug logging
   console.log('🎨 [LOADING_OVERLAY] Show decision:', {
     skipFlag,
@@ -98,7 +101,7 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
     overall_status: status?.overall_status,
     loadingMessage
   })
-  
+
   // Log detailed status for debugging
   if (status) {
     const phaseStatuses = Object.fromEntries(
@@ -116,7 +119,7 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
       phases_keys: status.phases ? Object.keys(status.phases) : []
     })
   }
-  
+
   if (!showOverlay) {
     console.log('✅ [LOADING_OVERLAY] Backend ready, hiding overlay', {
       skipFlag,
@@ -128,7 +131,7 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
     })
     return null
   }
-  
+
   console.log('🎨 [LOADING_OVERLAY] Showing overlay', {
     skipFlag,
     isInitializing,
@@ -157,7 +160,7 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
               {loadingProgress !== undefined && (
                 <div className="mt-4">
                   <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-                    <div 
+                    <div
                       className="bg-primary h-full transition-all duration-300 ease-out"
                       style={{ width: `${loadingProgress}%` }}
                     />
@@ -169,7 +172,7 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
               )}
             </div>
           </div>
-          
+
           {/* Interactive Robot Game - Full Width */}
           <div className="w-full flex justify-center">
             <div className="w-full max-w-md">
@@ -238,7 +241,7 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
           <div className="text-xs text-muted-foreground">
             {error ? (
               <span className="text-destructive font-medium">
-                Unable to reach backend: {error}. Retrying {isChecking ? 'now…' : 'shortly'}.
+                Unable to reach backend. Click the <span className="font-bold border border-destructive/20 rounded px-1">WiFi Icon</span> at bottom-left to configure.
               </span>
             ) : (
               <span>Backend is warming up. This can take around a minute.</span>

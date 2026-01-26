@@ -30,7 +30,7 @@ export function useAppLoading(): UseAppLoadingResult {
   const { isReady: backendReady, status: systemStatus } = useSystemStatus(2000)
   const { artifacts, setArtifacts, setLoading: setArtifactLoading } = useArtifactStore()
   const { models, fetchModels, isLoading: modelsLoading } = useModelStore()
-  
+
   const [loadingState, setLoadingState] = useState<LoadingState>({
     backend: false,
     artifacts: false,
@@ -38,7 +38,7 @@ export function useAppLoading(): UseAppLoadingResult {
     versions: false,
     routing: false,
   })
-  
+
   const [versionsLoaded, setVersionsLoaded] = useState<Set<string>>(new Set())
   const [routingLoaded, setRoutingLoaded] = useState(false)
 
@@ -50,7 +50,7 @@ export function useAppLoading(): UseAppLoadingResult {
   // Load artifacts
   const loadArtifacts = useCallback(async () => {
     if (!backendReady) return
-    
+
     try {
       setArtifactLoading(true)
       setLoadingState(prev => ({ ...prev, artifacts: false }))
@@ -70,7 +70,7 @@ export function useAppLoading(): UseAppLoadingResult {
   // Load models
   const loadModels = useCallback(async () => {
     if (!backendReady) return
-    
+
     try {
       setLoadingState(prev => ({ ...prev, models: false }))
       console.log('📥 [APP_LOADING] Loading models...')
@@ -86,7 +86,7 @@ export function useAppLoading(): UseAppLoadingResult {
   // Load routing
   const loadRouting = useCallback(async () => {
     if (!backendReady) return
-    
+
     try {
       setLoadingState(prev => ({ ...prev, routing: false }))
       console.log('📥 [APP_LOADING] Loading model routing...')
@@ -103,11 +103,11 @@ export function useAppLoading(): UseAppLoadingResult {
   // Load versions for all artifacts
   const loadVersions = useCallback(async () => {
     if (!backendReady || artifacts.length === 0) return
-    
+
     try {
       setLoadingState(prev => ({ ...prev, versions: false }))
       console.log(`📥 [APP_LOADING] Loading versions for ${artifacts.length} artifacts...`)
-      
+
       const versionPromises = artifacts.map(async (artifact) => {
         try {
           await api.get(`/api/versions/${artifact.id}`)
@@ -117,7 +117,7 @@ export function useAppLoading(): UseAppLoadingResult {
           return artifact.id
         }
       })
-      
+
       await Promise.all(versionPromises)
       setVersionsLoaded(new Set(artifacts.map(a => a.id)))
       console.log(`✅ [APP_LOADING] Versions loaded for all artifacts`)
@@ -178,11 +178,11 @@ export function useAppLoading(): UseAppLoadingResult {
       if (phases.length > 0) {
         const completedCount = phases.filter((p: any) => p.status === 'complete' || p.status === 'skipped').length
         const runningCount = phases.filter((p: any) => p.status === 'running').length
-        
+
         // Calculate fraction of backend phases done
         // Give 0.5 weight to running phases
         const phaseFraction = (completedCount + (runningCount * 0.5)) / phases.length
-        
+
         // Apply to backend weight, capped at 95% of backend weight to ensure a jump when actually ready
         progress += Math.min(phaseFraction * WEIGHTS.backend, WEIGHTS.backend * 0.95)
       }
@@ -200,14 +200,14 @@ export function useAppLoading(): UseAppLoadingResult {
   // Determine loading message
   const loadingMessage = useCallback(() => {
     if (!loadingState.backend) {
-        // If we have detailed phase info, show it
-        if (systemStatus?.phases) {
-            const runningPhase = Object.values(systemStatus.phases).find((p: any) => p.status === 'running')
-            if (runningPhase) {
-                return `Initializing: ${runningPhase.title || runningPhase.name}...`
-            }
+      // If we have detailed phase info, show it
+      if (systemStatus?.phases) {
+        const runningPhase = Object.values(systemStatus.phases).find((p: any) => p.status === 'running')
+        if (runningPhase) {
+          return `Initializing: ${runningPhase.title || runningPhase.name}...`
         }
-        return 'Initializing backend services...'
+      }
+      return 'Initializing backend services...'
     }
     if (!loadingState.artifacts) return 'Loading artifacts...'
     if (!loadingState.models) return 'Loading models...'
@@ -216,7 +216,11 @@ export function useAppLoading(): UseAppLoadingResult {
     return 'Almost ready...'
   }, [loadingState, systemStatus])
 
-  const isFullyLoaded = Object.values(loadingState).every(Boolean)
+  // Check for strict skip flag
+  const skipFlag = localStorage.getItem('skip_loading_overlay') === 'true'
+
+  // If skipped, we consider it fully loaded regardless of actual state
+  const isFullyLoaded = skipFlag || Object.values(loadingState).every(Boolean)
 
   return {
     isFullyLoaded,

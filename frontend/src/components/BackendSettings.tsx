@@ -5,19 +5,19 @@
  */
 
 import { useState, useEffect } from 'react'
-import { 
-  Server, 
-  CheckCircle2, 
-  XCircle, 
-  Loader2, 
+import {
+  Server,
+  CheckCircle2,
+  XCircle,
+  Loader2,
   RefreshCw,
   ExternalLink
 } from 'lucide-react'
-import { 
-  getBackendUrl, 
-  setBackendUrl, 
-  isUsingCustomBackend, 
-  testBackendConnection 
+import {
+  getBackendUrl,
+  setBackendUrl,
+  isUsingCustomBackend,
+  testBackendConnection
 } from '../services/api'
 
 interface ConnectionStatus {
@@ -75,12 +75,12 @@ export default function BackendSettings() {
     setBackendUrl(urlToSave)
     setUrl(urlToSave)
     setTestUrl('')
-    
+
     // Test the new connection
     const result = await testBackendConnection()
     setStatus({ ...result, lastChecked: new Date() })
     setIsSaving(false)
-    
+
     // Reload the page to apply new backend URL to all components
     if (result.connected) {
       window.location.reload()
@@ -102,11 +102,10 @@ export default function BackendSettings() {
       {/* Minimal connection indicator - small dot that shows status */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-3 left-3 z-[1100] w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 opacity-50 hover:opacity-100 hover:scale-110 ${
-          status?.connected 
-            ? 'bg-green-500/20 border border-green-500/40 hover:bg-green-500/30' 
-            : 'bg-red-500/20 border border-red-500/40 hover:bg-red-500/30 animate-pulse'
-        }`}
+        className={`fixed bottom-3 left-3 z-[2000] w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 opacity-50 hover:opacity-100 hover:scale-110 ${status?.connected
+          ? 'bg-green-500/20 border border-green-500/40 hover:bg-green-500/30'
+          : 'bg-red-500/20 border border-red-500/40 hover:bg-red-500/30 animate-pulse'
+          }`}
         title={status?.connected ? `Connected${isCustomBackend ? ' (Custom)' : ''}` : 'Disconnected - Click to configure'}
       >
         {status?.connected ? (
@@ -116,9 +115,9 @@ export default function BackendSettings() {
         )}
       </button>
 
-      {/* Modal - z-[1200] to be above both loading overlay and floating button */}
+      {/* Modal - z-[2100] to be above both loading overlay and floating button */}
       {isOpen && (
-        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-[2100] flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
             {/* Header */}
             <div className="px-6 py-4 border-b border-border bg-secondary/20">
@@ -144,11 +143,10 @@ export default function BackendSettings() {
             {/* Content */}
             <div className="p-6 space-y-6">
               {/* Connection Status */}
-              <div className={`p-4 rounded-xl border ${
-                status?.connected 
-                  ? 'bg-green-500/5 border-green-500/20' 
-                  : 'bg-red-500/5 border-red-500/20'
-              }`}>
+              <div className={`p-4 rounded-xl border ${status?.connected
+                ? 'bg-green-500/5 border-green-500/20'
+                : 'bg-red-500/5 border-red-500/20'
+                }`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     {isTesting ? (
@@ -163,7 +161,7 @@ export default function BackendSettings() {
                         {status?.connected ? 'Connected' : 'Not Connected'}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {status?.connected 
+                        {status?.connected
                           ? `v${status.version} • ${status.latency}ms latency`
                           : status?.error || 'Unable to reach backend'
                         }
