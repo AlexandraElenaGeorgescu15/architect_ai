@@ -117,6 +117,23 @@ api.interceptors.request.use(
 // Response interceptor - Handle errors
 api.interceptors.response.use(
   (response) => {
+    // Check for HTML response from API endpoints (indicates misconfigured backend URL)
+    const contentType = response.headers['content-type']
+    if (
+      contentType &&
+      (contentType.includes('text/html') || contentType.includes('application/xhtml+xml')) &&
+      response.config.url?.startsWith('/api') &&
+      !response.config.url?.includes('/download')
+    ) {
+      const error = new AxiosError(
+        'Invalid API response: Received HTML. Please check backend URL configuration.',
+        'ERR_INVALID_RESPONSE_TYPE',
+        response.config,
+        response.request,
+        response
+      )
+      return Promise.reject(error)
+    }
     return response
   },
   async (error: AxiosError) => {
