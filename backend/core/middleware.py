@@ -365,6 +365,7 @@ def setup_security_middleware(app, allowed_hosts: list = None):
             # Allow any ngrok subdomain
             "*.ngrok.io",
             "*.ngrok-free.app",
+            "*.ngrok-free.dev",
             "*.ngrok.app",
             # Frontend origins (extracted from CORS settings)
             "localhost:3000",

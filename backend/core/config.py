@@ -2,6 +2,7 @@
 Application configuration using Pydantic settings.
 """
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 from typing import Optional
 from pathlib import Path
@@ -28,7 +29,7 @@ class Settings(BaseSettings):
     redis_url: Optional[str] = None
     
     # CORS
-    cors_origins: list[str] = ["*"]
+    cors_origins: list[str] = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5173", "https://architect-ai-mvm.vercel.app"]
     
     # JWT
     jwt_secret_key: str = "your-secret-key-change-in-production"
@@ -136,6 +137,16 @@ class Settings(BaseSettings):
         case_sensitive = False
         # Also load from environment variables directly
         extra = "ignore"
+
+
+    @model_validator(mode='after')
+    def sync_google_keys(self) -> 'Settings':
+        """Synchronize google_api_key and gemini_api_key if only one is provided."""
+        if self.gemini_api_key and not self.google_api_key:
+            self.google_api_key = self.gemini_api_key
+        elif self.google_api_key and not self.gemini_api_key:
+            self.gemini_api_key = self.google_api_key
+        return self
 
 
 # Global settings instance

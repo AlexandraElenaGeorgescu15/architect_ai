@@ -404,14 +404,6 @@ def mark_system_ready(message: str) -> None:
     set_overall_status("ready", message)
     logger.info(f"✅ [SYSTEM_STATUS] System marked as ready: {message}")
 
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 # Custom middleware (order matters - last added is first executed)
 app.add_middleware(StructuredLoggingMiddleware)
@@ -425,6 +417,18 @@ limiter = setup_rate_limiting(app)
 # This adds protection against vulnerability scanners and ensures
 # requests only come from trusted hosts (localhost, frontend, ngrok)
 ip_ban_manager = setup_security_middleware(app)
+
+# CORS middleware (OUTERMOST - must be added last in FastAPI/Starlette)
+# Supporting local development, Vercel, and dynamic ngrok tunnels
+# Improved regex to support .app, .io, and .dev ngrok suffixes
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_origin_regex=r"https://.*\.ngrok(-free)?\.(app|io|dev)",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Global exception handler
 @app.exception_handler(Exception)
