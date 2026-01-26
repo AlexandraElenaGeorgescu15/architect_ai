@@ -1,0 +1,90 @@
+{
+  "ollama_adaptive_loop": {
+    "import": "PASS",
+    "initialization": "PASS",
+    "feedback_recording": "PASS",
+    "events_recorded": 3,
+    "reward_calculator": "PASS",
+    "statistics": "PASS",
+    "stats": {
+      "total_feedback": 3,
+      "avg_reward": 0.7000000000000001,
+      "feedback_by_type": {
+        "success": 1,
+        "user_correction": 1,
+        "validation_failure": 0,
+        "explicit_positive": 1,
+        "explicit_negative": 0
+      },
+      "training_batches_created": 0,
+      "total_training_examples": 0,
+      "avg_validation_score": 85.0
+    },
+    "storage": "PASS"
+  },
+  "huggingface_pipeline": {
+    "import": "PASS",
+    "initialization": "PASS",
+    "available_models": [
+      "codellama-7b",
+      "llama3-8b",
+      "mistral-7b",
+      "deepseek-coder-6.7b",
+      "mermaid-mistral-7b",
+      "deepseek-coder-ollama",
+      "llama3-ollama",
+      "mistral-ollama",
+      "qwen-coder-ollama",
+      "code-llama-lora-sql",
+      "mistral-lora-instruct"
+    ],
+    "environment": {
+      "status": "PASS",
+      "details": {
+        "os": "Windows",
+        "has_cuda": true,
+        "has_bitsandbytes": true,
+        "ready": true,
+        "message": "Environment ready for local fine-tuning.",
+        "vram_gb": 11.99365234375
+      }
+    },
+    "system_info": {
+      "status": "PASS",
+      "details": {
+        "ram_gb": 31.692127227783203,
+        "cpu_count": 32,
+        "disk_free_gb": 583.22216796875,
+        "python_version": "3.8+",
+        "cuda_available": true,
+        "bitsandbytes_available": true,
+        "environment_ready": true
+      }
+    },
+    "dataset_builder": {
+      "status": "PASS",
+      "examples_generated": 484,
+      "report": {
+        "total": 484,
+        "feedback": 0,
+        "files": 49
+      }
+    },
+    "training_config": "PASS",
+    "lr_validation": "SKIP: No model loaded",
+    "checkpoint_management": {
+      "status": "PASS",
+      "existing_models": 0
+    },
+    "incremental_training": {
+      "status": "PASS",
+      "downloaded_models": 4
+    }
+  },
+  "timestamp": "2026-01-26T14:03:34.960818",
+  "summary": {
+    "ollama_adaptive_loop": "PASS",
+    "huggingface_pipeline": "PASS",
+    "overall": "PASS"
+  }
+}

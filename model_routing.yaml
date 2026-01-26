@@ -13,10 +13,11 @@ backlog:
 code_prototype:
   enabled: true
   fallback_models:
+  - ollama:deepseek-coder:6.7b-instruct-q4_K_M
   - ollama:qwen2.5-coder:7b-instruct-q4_K_M
   - ollama:codellama:7b-instruct-q4_K_M
   - gemini:gemini-2.5-flash
-  primary_model: ollama:deepseek-coder:6.7b-instruct-q4_K_M
+  primary_model: qwen2.5-coder:7b-instruct-q4_K_M
 dev_visual_prototype:
   enabled: true
   fallback_models:

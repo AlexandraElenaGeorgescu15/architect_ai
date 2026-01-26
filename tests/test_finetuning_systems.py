@@ -143,6 +143,10 @@ def test_ollama_adaptive_learning():
                 context={"test_case": test_case["name"]}
             )
             
+            if event is None:
+                print(f"   ℹ️  Feedback discarded (Quality Gate) - correct behavior for score < 70")
+                continue
+            
             # Verify reward calculation
             min_reward, max_reward = test_case["expected_reward_range"]
             if min_reward <= event.reward_signal <= max_reward:

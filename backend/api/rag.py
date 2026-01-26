@@ -305,10 +305,23 @@ async def search_rag(
     if use_cache:
         cached = cache.get_context(query)
         if cached:
+            # Reconstruct snippets from cached string to maintain API consistency (List[dict])
+            # Cache stores snippets joined by "\n---\n"
+            raw_snippets = cached.split("\n---\n")
+            cached_results = []
+            for s in raw_snippets:
+                if s.strip():
+                    cached_results.append({
+                        "content": s,
+                        "source_file": "cached",
+                        "similarity_score": 1.0,
+                        "metadata": {"cached": True}
+                    })
+            
             return {
-                "results": cached,
+                "results": cached_results,
                 "from_cache": True,
-                "num_results": len(cached.split("---"))
+                "num_results": len(cached_results)
             }
     
     # Perform hybrid search

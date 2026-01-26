@@ -20,6 +20,27 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.openapi.utils import get_openapi
 import logging
+import sys
+
+# ============================================================================
+# LOGGING CONFIGURATION (CRITICAL FOR DEBUGGING)
+# ============================================================================
+# Force encoding to utf-8 for Windows console
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ],
+    force=True  # Override any existing config
+)
+logger = logging.getLogger("backend")
+logger.info("✅ Logging configured to stdout")
+
 from datetime import datetime
 from typing import Dict, Any, Optional
 from backend.core.middleware import (

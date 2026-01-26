@@ -107,45 +107,22 @@ async def get_current_user(
     credentials: Optional[HTTPAuthorizationCredentials] = Security(bearer_scheme)
 ):
     """
-    Get current user from JWT token.
-    
-    Args:
-        credentials: HTTP Bearer credentials
-    
-    Returns:
-        UserPublic model instance or default user if no auth
+    Get current user - BYPASSED for local demo/POC.
+    Always returns admin user to remove login requirement as requested.
     """
     from backend.models.dto import UserPublic
     
-    if not credentials:
-        # Return default user for development (no auth required)
-        return UserPublic(
-            id="default",
-            username="default",
-            email="default@example.com",
-            role="user"
-        )
-    
-    payload = decode_access_token(credentials.credentials)
-    if payload is None:
-        # Return default user if token invalid
-        return UserPublic(
-            id="default",
-            username="default",
-            email="default@example.com",
-            role="user"
-        )
-    
-    # Convert dict to UserPublic
+    # ALWAYS RETURN ADMIN USER (Bypass Auth)
     return UserPublic(
-        id=payload.get("id") or payload.get("sub"),
-        username=payload.get("username"),
-        email=payload.get("email"),
-        role=payload.get("role"),
-        sub=payload.get("sub"),
-        exp=payload.get("exp"),
-        iat=payload.get("iat")
+        id="admin",
+        username="admin",
+        email="admin@architect.ai",
+        role="admin",
+        sub="admin"
     )
+
+    # Original logic bypassed:
+    # if not credentials: ...
 
 
 async def get_api_key(

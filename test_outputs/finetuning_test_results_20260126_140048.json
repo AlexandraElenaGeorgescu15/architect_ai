@@ -1,0 +1,72 @@
+{
+  "ollama_adaptive_loop": {
+    "import": "PASS",
+    "initialization": "PASS",
+    "feedback_recording": "FAIL: 'NoneType' object has no attribute 'reward_signal'"
+  },
+  "huggingface_pipeline": {
+    "import": "PASS",
+    "initialization": "PASS",
+    "available_models": [
+      "codellama-7b",
+      "llama3-8b",
+      "mistral-7b",
+      "deepseek-coder-6.7b",
+      "mermaid-mistral-7b",
+      "deepseek-coder-ollama",
+      "llama3-ollama",
+      "mistral-ollama",
+      "qwen-coder-ollama",
+      "code-llama-lora-sql",
+      "mistral-lora-instruct"
+    ],
+    "environment": {
+      "status": "PASS",
+      "details": {
+        "os": "Windows",
+        "has_cuda": true,
+        "has_bitsandbytes": true,
+        "ready": true,
+        "message": "Environment ready for local fine-tuning.",
+        "vram_gb": 11.99365234375
+      }
+    },
+    "system_info": {
+      "status": "PASS",
+      "details": {
+        "ram_gb": 31.692127227783203,
+        "cpu_count": 32,
+        "disk_free_gb": 583.2322196960449,
+        "python_version": "3.8+",
+        "cuda_available": true,
+        "bitsandbytes_available": true,
+        "environment_ready": true
+      }
+    },
+    "dataset_builder": {
+      "status": "PASS",
+      "examples_generated": 484,
+      "report": {
+        "total": 484,
+        "feedback": 0,
+        "files": 49
+      }
+    },
+    "training_config": "PASS",
+    "lr_validation": "SKIP: No model loaded",
+    "checkpoint_management": {
+      "status": "PASS",
+      "existing_models": 0
+    },
+    "incremental_training": {
+      "status": "PASS",
+      "downloaded_models": 4
+    }
+  },
+  "timestamp": "2026-01-26T14:00:31.467812",
+  "summary": {
+    "ollama_adaptive_loop": "FAIL",
+    "huggingface_pipeline": "PASS",
+    "overall": "FAIL"
+  }
+}

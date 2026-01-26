@@ -492,7 +492,16 @@ class RAGRetriever:
             logger.info(f"🔍 [RAG] Step 6.1.9: Top result RRF score: {sorted_docs[0]['rrf_score']:.3f}")
         
         # Return as list of (doc, score) tuples
-        return [(item["doc"], item["rrf_score"]) for item in sorted_docs]
+        final_list = []
+        for item in sorted_docs:
+            doc = item["doc"]
+            # SAFEGUARD: Ensure data is dict
+            if isinstance(doc, str):
+                 # Try to recover if it somehow became a string
+                 doc = {"content": doc, "meta": {}}
+            final_list.append((doc, item["rrf_score"]))
+            
+        return final_list
         
         # Fallback: Original weighted averaging (kept for reference)
         # Normalize scores
