@@ -941,7 +941,7 @@ class EnhancedGenerationService:
             safe_context = sanitize_prompt_input(rag_context, max_length=100000)
             parts.append(safe_context)
         elif not rag_context or not rag_context.strip():
-            logger.warning(f"⚠️ [ENHANCED_GEN] RAG context is empty! This may result in generic outputs.")
+            logger.warning(f"⚠️ [ENHANCED_GEN] RAG context is empty! Generating generic output. TIP: Ensure project path is correct and files are indexed.")
             parts.append("No existing codebase context found. Generate a complete solution from scratch based on requirements.")
         
         parts.append("\n## Instructions")

@@ -555,7 +555,7 @@ JSON response:"""
                     errors.append(f"Wrong diagram type: expected {expected_keyword}")
         # Apply STRICT threshold (User request: "too easy" -> but now "too strict")
         # Adjusted to be balanced: 70.0 is acceptable, 80.0 is good
-        STRICT_THRESHOLD = 70.0  # Relaxed from 80.0
+        STRICT_THRESHOLD = 75.0  # Balanced threshold (70 was too loose, 80 too strict)
         if final_score < STRICT_THRESHOLD:
             # Enforce 70.0 for "valid"
             rule_based_dto.is_valid = False

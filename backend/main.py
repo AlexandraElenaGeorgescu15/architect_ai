@@ -896,7 +896,7 @@ async def shutdown_event():
 
 # Import routers
 from backend.api import websocket as ws_router
-from backend.api import auth as auth_router
+
 from backend.api import rag as rag_router
 from backend.api import knowledge_graph as kg_router
 from backend.api import pattern_mining as pm_router
@@ -908,7 +908,7 @@ from backend.api import universal_context as universal_context_router
 from backend.api import ml_features as ml_router  # ML Feature Engineering endpoints
 
 app.include_router(ws_router.router, tags=["websocket"])
-app.include_router(auth_router.router)
+
 app.include_router(rag_router.router)
 app.include_router(kg_router.router)
 app.include_router(pm_router.router)
