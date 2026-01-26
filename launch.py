@@ -107,7 +107,9 @@ def main():
         "backend.main:app",
         "--reload",
         "--host", "0.0.0.0",
-        "--port", "8000"
+        "--port", "8000",
+        "--log-level", "debug",
+        "--use-colors"
     ]
     
     # Start frontend
@@ -116,7 +118,9 @@ def main():
     try:
         if platform.system() == 'Windows':
             # Windows: Start in separate windows
-            subprocess.Popen(backend_cmd, creationflags=subprocess.CREATE_NEW_CONSOLE)
+            # Windows: Start in separate windows (Frontend only)
+            # Backend runs in same console to show logs
+            subprocess.Popen(backend_cmd)
             time.sleep(3)
             subprocess.Popen(frontend_cmd, cwd=frontend_dir, creationflags=subprocess.CREATE_NEW_CONSOLE)
             print("✅ Both servers started in separate windows")

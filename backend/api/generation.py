@@ -681,7 +681,7 @@ async def list_artifacts(
     artifact_ids_seen = set()  # Track to avoid duplicates
     
     # CONSTANT: Default folder for orphan artifacts (with null folder_id)
-    DEFAULT_ORPHAN_FOLDER = "swap phones"
+    DEFAULT_ORPHAN_FOLDER = "Orphaned Artifacts"
     
     # Use centralized ArtifactCleaner service (avoids code duplication)
     from backend.services.artifact_cleaner import get_cleaner

@@ -168,10 +168,6 @@ async def get_api_key(
     return api_key
 
 
-def require_auth(
-    credentials: Optional[HTTPAuthorizationCredentials] = Security(bearer_scheme),
-    api_key: Optional[str] = Security(api_key_header)
-) -> Dict[str, Any]:
     """
     Require either JWT token or API key authentication.
     
@@ -185,23 +181,20 @@ def require_auth(
     Raises:
         HTTPException: If authentication fails
     """
-    # Try JWT first
-    if credentials:
-        payload = decode_access_token(credentials.credentials)
-        if payload:
-            return {"type": "jwt", "data": payload}
+    # BYPASS AUTHENTICATION (User Request)
+    # Always return admin access
+    return {
+        "type": "jwt",
+        "data": {
+            "sub": "admin",
+            "username": "admin",
+            "role": "admin",
+            "id": "admin"
+        }
+    }
     
-    # Try API key
-    if api_key:
-        # TODO: Validate against database
-        return {"type": "api_key", "data": {"key": api_key}}
-    
-    # No valid authentication
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Authentication required",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    # Original logic disabled below
+    # if credentials: ...
 
 
 def generate_api_key() -> str:

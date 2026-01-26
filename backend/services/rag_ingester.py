@@ -153,15 +153,15 @@ class RAGIngester:
         
         return True
     
-    def _chunk_file_content(self, content: str, file_path: Path, chunk_size: int = 1500, overlap: int = 300) -> List[Dict[str, Any]]:
+    def _chunk_file_content(self, content: str, file_path: Path, chunk_size: int = 2000, overlap: int = 400) -> List[Dict[str, Any]]:
         """
         Chunk file content into smaller pieces using semantic awareness for code.
         
         Args:
             content: File content
             file_path: Path to file
-            chunk_size: Size of each chunk (increased default to 1500)
-            overlap: Overlap length (increased default to 300)
+            chunk_size: Size of each chunk (increased default to 2000)
+            overlap: Overlap length (increased default to 400)
         
         Returns:
             List of chunk dictionaries

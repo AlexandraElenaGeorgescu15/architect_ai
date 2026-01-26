@@ -419,7 +419,7 @@ class ProjectAwareChatService:
             logger.error(f"💬 [CHAT] Step 6.ERROR: Cloud chat failed: {e}", exc_info=True)
             yield {
                 "type": "error",
-                "content": f"I apologize, but I encountered an error. Please try again.",
+                "content": f"Error encountered: {str(e)}",
                 "error": str(e)
             }
         

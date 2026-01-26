@@ -223,9 +223,9 @@ class ValidationService:
                 }
                 
                 # Re-evaluate validity based on combined score
-                # Valid if combined score >= 70 (stricter than before) AND no critical errors
+                # Valid if combined score >= 80 (stricter than before) AND no critical errors
                 has_critical = any(e.startswith("CRITICAL:") for e in rule_based_dto.errors)
-                rule_based_dto.is_valid = combined_score >= 70.0 and not has_critical
+                rule_based_dto.is_valid = combined_score >= 80.0 and not has_critical
                 
                 if not rule_based_dto.is_valid:
                      logger.info(f"❌ [VALIDATION] Combined score {combined_score:.1f} < 70 or critical errors present")
@@ -233,6 +233,33 @@ class ValidationService:
             except Exception as e:
                 logger.warning(f"⚠️ [LLM_JUDGE] LLM judge failed, using rule-based score only: {e}")
                 # Continue with rule-based score only
+        
+        # =================================================================
+        # FINAL STRICT VALIDATION CHECK
+        # =================================================================
+        final_score = rule_based_dto.score
+        critical_errors = [e for e in rule_based_dto.errors if "CRITICAL" in e]
+        
+        # Apply critical penalties - OVERRIDE validity
+        if critical_errors:
+            logger.warning(f"❌ [VALIDATION] Critical errors found: {critical_errors}")
+            # Cap score at 40.0 if critical syntax errors exist
+            final_score = min(final_score, 40.0)
+            rule_based_dto.score = final_score
+            rule_based_dto.is_valid = False
+            # Ensure critical errors are in the list
+            for err in critical_errors:
+                if err not in rule_based_dto.errors:
+                     rule_based_dto.errors.append(err)
+        
+        # Apply STRICT threshold (User request: "too easy")
+        STRICT_THRESHOLD = 80.0
+        if final_score < STRICT_THRESHOLD:
+            # Enforce 80.0 for "valid"
+            rule_based_dto.is_valid = False
+            msg = f"Score {final_score:.1f} is below strict threshold {STRICT_THRESHOLD}"
+            if msg not in rule_based_dto.errors:
+                rule_based_dto.errors.append(msg)
         
         logger.info(
             f"✅ [VALIDATION] Final result: score={rule_based_dto.score:.1f}, "
@@ -564,11 +591,11 @@ JSON response:"""
         
         # STRICT validity check:
         # - No critical errors
-        # - Score must be >= 60
+        # - Score must be >= 80
         # - Total errors must be <= 2 (minor issues OK)
         is_valid = (
             not has_critical_error and 
-            score >= 60.0 and 
+            score >= 80.0 and 
             len([e for e in errors if e.startswith("CRITICAL:")]) == 0
         )
         
