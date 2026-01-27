@@ -1,0 +1,42 @@
+[
+  {
+    "version": 1,
+    "artifact_id": "test_html_artifact",
+    "artifact_type": "html_prototype",
+    "content": "<!DOCTYPE html>\n<html>\n<head>\n    <title>Test Prototype</title>\n    <style>\n        body { font-family: sans-serif; padding: 20px; }\n        .card { border: 1px solid #ccc; padding: 20px; border-radius: 8px; }\n    </style>\n</head>\n<body>\n    <div class=\"card\">\n        <h1>Hello Architect!</h1>\n        <p>This is a test artifact for interactive editing.</p>\n        <button>Click Me</button>\n    </div>\n</body>\n</html>",
+    "metadata": {
+      "source": "test_verification"
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:57:33.894576",
+    "is_current": false
+  },
+  {
+    "version": 2,
+    "artifact_id": "test_html_artifact",
+    "artifact_type": "html_prototype",
+    "content": "<!DOCTYPE html>\n<html>\n<head>\n    <title>Test Prototype</title>\n    <style>\n        body { font-family: sans-serif; padding: 20px; background-color: #333; color: #ccc; }\n        .card { border: 1px solid #444; padding: 20px; border-radius: 8px; background-color: #222; color: #fff; }\n    </style>\n</head>\n<body>\n    <div class=\"card\">\n        <h1 style=\"color: #aaa;\">Hello Architect!</h1>\n        <p style=\"color: #999;\">This is a test artifact for interactive editing.</p>\n        <button style=\"background-color: #444; color: #fff;\">Click Me</button>\n    </div>\n</body>\n</html>",
+    "metadata": {
+      "update_type": "manual_edit",
+      "updated_at": "2026-01-27T17:57:59.133138",
+      "source": "test_make_dark"
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:57:59.135846",
+    "is_current": false
+  },
+  {
+    "version": 3,
+    "artifact_id": "test_html_artifact",
+    "artifact_type": "html_prototype",
+    "content": "<!DOCTYPE html>\n<html>\n<head>\n    <title>Modern Prototype</title>\n    <style>\n        :root {\n            --primary-color: #3498db;\n            --secondary-color: #f1c40f;\n            --background-color: #333;\n            --text-color: #fff;\n            --shadow-color: rgba(0, 0, 0, 0.5);\n        }\n\n        body {\n            font-family: Arial, sans-serif;\n            padding: 20px;\n            background-color: var(--background-color);\n            color: var(--text-color);\n        }\n\n        .card {\n            position: relative;\n            border-radius: 8px;\n            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1), 0px 6px 12px rgba(0, 0, 0, 0.1);\n            background-color: var(--primary-color);\n            padding: 24px;\n            margin-top: 40px;\n        }\n\n        .card h1 {\n            font-size: 24px;\n            color: var(--text-color);\n            margin-bottom: 16px;\n        }\n\n        .card p {\n            font-size: 18px;\n            line-height: 28px;\n            color: var(--text-color);\n        }\n\n        button[type=\"button\"] {\n            background-color: var(--secondary-color);\n            border: none;\n            padding: 12px 24px;\n            font-size: 16px;\n            cursor: pointer;\n            border-radius: 8px;\n            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1), 0px 6px 12px rgba(0, 0, 0, 0.1);\n        }\n\n        button[type=\"button\"]:hover {\n            background-color: var(--primary-color);\n            box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3), 0px 6px 12px rgba(0, 0, 0, 0.3);\n        }\n    </style>\n</head>\n<body>\n    <div class=\"card\">\n        <h1>Hello Architect!</h1>\n        <p>This is a test artifact for interactive editing.</p>\n        <button type=\"button\">Click Me</button>\n    </div>\n</body>\n</html>",
+    "metadata": {
+      "update_type": "manual_edit",
+      "updated_at": "2026-01-27T17:58:16.438673",
+      "source": "test_make_pretty"
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:58:16.441229",
+    "is_current": true
+  }
+]
