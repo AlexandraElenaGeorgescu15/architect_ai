@@ -490,6 +490,28 @@ class GenerationService:
                 logger.debug(f"📊 [GEN_SERVICE] Artifact score {validation_score:.1f} < 85.0, "
                             f"skipping finetuning pool (job_id={job_id})")
             
+            # INJECT VALIDATION WARNING: If artifact is invalid, add a visible warning to content
+            # This ensures the user sees that it's a "best attempt" and not a perfect generation
+            if not is_valid and opts["use_validation"]:
+                logger.warning(f"⚠️ [GEN_SERVICE] Artifact invalid (score={validation_score:.1f}), injecting warning marker")
+                warning_marker = f"<!-- VALIDATION WARNING: Score {validation_score:.1f}/100 - Issues Detected -->\n"
+                
+                # Prepend to content
+                if artifact_content.startswith("<!--"):
+                    # If already has comments, append after them but before content
+                    lines = artifact_content.split('\n')
+                    inserted = False
+                    for i, line in enumerate(lines):
+                        if not line.strip().startswith("<!--") and line.strip():
+                            lines.insert(i, warning_marker)
+                            inserted = True
+                            break
+                    if not inserted:
+                        lines.insert(0, warning_marker)
+                    artifact_content = '\n'.join(lines)
+                else:
+                    artifact_content = warning_marker + artifact_content
+            
             # Step 5: Generate HTML version if needed
             html_content = None
             if artifact_type_str.startswith("mermaid_"):
