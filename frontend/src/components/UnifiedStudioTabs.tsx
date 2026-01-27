@@ -228,8 +228,8 @@ const ArtifactTypeButton = memo(function ArtifactTypeButton({
     <button
       onClick={onClick}
       className={`text-left px-3 py-2.5 text-xs rounded-lg border transition-all ${isSelected
-          ? 'border-primary bg-primary/10 text-primary font-bold shadow-sm'
-          : 'border-transparent bg-background/30 hover:bg-background/50 text-muted-foreground hover:text-foreground'
+        ? 'border-primary bg-primary/10 text-primary font-bold shadow-sm'
+        : 'border-transparent bg-background/30 hover:bg-background/50 text-muted-foreground hover:text-foreground'
         }`}
     >
       {type.label}
@@ -371,9 +371,26 @@ const MermaidDiagramViewer = memo(function MermaidDiagramViewer({
     return <DiagramSkeleton />
   }
 
-  // Show skeleton during generation (before artifact is ready)
-  if (isGenerating && !progress?.artifact?.content && !latestArtifact?.content) {
+  // Show skeleton if generating but no data yet (starting up)
+  if (isGenerating && !progress?.artifact?.content && !progress?.chunk && !latestArtifact?.content) {
     return <DiagramSkeleton />
+  }
+
+  // Show streaming preview if generating and we have chunk data
+  // This creates the "Amazing" effect of seeing code appear in real-time
+  if (isGenerating && progress?.chunk && !progress?.artifact?.content) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex-none p-2 bg-muted/30 border-b border-border flex items-center gap-2">
+          <Loader2 className="w-3 h-3 animate-spin text-primary" />
+          <span className="text-xs font-mono text-muted-foreground">Streaming received...</span>
+        </div>
+        <div className="flex-1 p-4 overflow-auto bg-card font-mono text-xs text-muted-foreground whitespace-pre-wrap">
+          {progress.chunk}
+          <span className="animate-pulse">_</span>
+        </div>
+      </div>
+    )
   }
 
   if (latestArtifact?.content) {
@@ -775,8 +792,8 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                             key={category}
                             onClick={() => setSelectedCategory(category)}
                             className={`px-2 py-1 text-[10px] font-medium rounded-md transition-all ${selectedCategory === category
-                                ? 'bg-primary text-primary-foreground shadow-sm'
-                                : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                              ? 'bg-primary text-primary-foreground shadow-sm'
+                              : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
                               }`}
                           >
                             {category}
@@ -875,6 +892,30 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                   </span>
                 </div>
                 <div className="flex-1 overflow-hidden relative bg-background/20 flex flex-col">
+                  {/* Generic Streaming Preview - Shows for ANY artifact type while generating */}
+                  {/* This creates a unified "Amazing" hacker-style experience */}
+                  {props.isGenerating && props.progress?.chunk && !props.progress?.artifact?.content && (
+                    <div className="h-full flex flex-col absolute inset-0 z-50 bg-background/95 backdrop-blur-sm animate-in fade-in zoom-in-95 duration-300">
+                      <div className="flex-none p-3 bg-muted/30 border-b border-border flex items-center gap-3">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        <span className="text-xs font-mono font-bold text-primary uppercase tracking-wider">
+                          AI Thinking & Generating...
+                        </span>
+                        <div className="ml-auto flex items-center gap-2">
+                          <span className="text-[10px] text-muted-foreground font-mono">
+                            {props.progress.chunk.length} chars
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex-1 p-6 overflow-auto custom-scrollbar font-mono text-xs leading-relaxed text-muted-foreground/80">
+                        <div className="whitespace-pre-wrap break-words">
+                          {props.progress.chunk}
+                          <span className="inline-block w-2 h-4 ml-0.5 align-middle bg-primary/50 animate-pulse" />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Render appropriate editor based on artifact type */}
                   {props.selectedArtifactType.includes('mermaid') ? (
                     <>

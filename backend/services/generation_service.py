@@ -356,105 +356,97 @@ class GenerationService:
                 }
             
             # Use Enhanced Generation Service (proper pipeline)
+            # This is the PRIMARY generation path - it handles everything
+            
+            # Context setup
             assembled_context = context.get("assembled_context", "")
             
-            # Use Enhanced Generation Service (implements proper pipeline: local → retry → cloud)
-            # This is the PRIMARY generation path - it handles everything
-            # Pass progress callback for streaming updates
-            progress_updates = []
+            # Setup async queue for streaming progress updates
+            queue = asyncio.Queue()
             
             async def progress_callback(p: float, m: str):
                 """Capture progress updates for streaming."""
-                progress_updates.append((p, m))
-                # Note: We can't yield here since this is called from enhanced_gen
-                # Instead, we'll yield progress updates after generation completes
-            
-            result = await self.enhanced_gen.generate_with_pipeline(
-                artifact_type=artifact_type,
-                meeting_notes=meeting_notes,
-                context_id=context_id,
-                options=opts,
-                progress_callback=progress_callback if stream else None
-            )
-            
-            # Yield progress updates if streaming
-            if stream and progress_updates:
-                for progress, message in progress_updates:
-                    yield {
+                # Check for chunk marker
+                if m.startswith("||CHUNK||"):
+                    chunk_content = m[9:]  # Remove marker
+                    await queue.put({
+                        "type": "chunk",
+                        "job_id": job_id,
+                        "chunk": chunk_content
+                    })
+                else:
+                    # Standard progress update
+                    await queue.put({
                         "type": "progress",
                         "job_id": job_id,
                         "status": "generating",
-                        "progress": progress,
-                        "message": message
-                    }
+                        "progress": p,
+                        "message": m
+                    })
             
-            if result.get("success"):
+            # Define the generation task wrapper
+            async def run_generation_task():
+                try:
+                    gen_result = await self.enhanced_gen.generate_with_pipeline(
+                        artifact_type=artifact_type,
+                        meeting_notes=meeting_notes,
+                        context_id=context_id,
+                        options=opts,
+                        progress_callback=progress_callback if stream else None
+                    )
+                    # Put result in queue
+                    await queue.put({"type": "result", "data": gen_result})
+                except Exception as e:
+                    # Put error in queue
+                    await queue.put({"type": "error", "error": e})
+                finally:
+                    # Put sentinel to signal completion
+                    await queue.put(None)
+
+            # Start generation in background
+            gen_task = asyncio.create_task(run_generation_task())
+            
+            # Consumption loop: yield progress from queue as it arrives
+            result = None
+            
+            while True:
+                # Wait for next item from queue
+                item = await queue.get()
+                
+                # Sentinel means we are done
+                if item is None:
+                    break
+                
+                # Check item type
+                if isinstance(item, dict):
+                    msg_type = item.get("type")
+                    if msg_type == "progress":
+                        # Yield progress update immediately
+                        if stream:
+                            yield item
+                    elif msg_type == "chunk":
+                        # Yield chunk immediately
+                        if stream:
+                            # Forward the chunk event directly to the client
+                            # The client hook useWebSocket('generation.chunk') expects {job_id, chunk}
+                            yield item
+                    elif msg_type == "error":
+                        # Propagate error from background task
+                        raise item.get("error")
+                    elif msg_type == "result":
+                        # Store result for processing after loop
+                        result = item.get("data")
+            
+            # Ensure the task is definitely done (should be if sentinel was received)
+            await gen_task
+            
+            if result and result.get("success"):
                 artifact_content = result["content"]
-                
-                # Clean ALL artifacts to extract only the relevant content
-                if artifact_content:
-                    try:
-                        from backend.services.artifact_cleaner import get_cleaner
-                        cleaner = get_cleaner()
-                        original_length = len(artifact_content)
-                        artifact_content = cleaner.clean_artifact(artifact_content, artifact_type_str)
-                        if len(artifact_content) < original_length:
-                            logger.info(f"🧹 [GEN_SERVICE] Cleaned {artifact_type_str}: removed {original_length - len(artifact_content)} chars of noise (job_id={job_id})")
-                    except Exception as e:
-                        logger.warning(f"⚠️ [GEN_SERVICE] Failed to clean artifact: {e} (job_id={job_id})")
-                    
-                    # For Mermaid diagrams, run comprehensive repair pipeline:
-                    # 1. Universal diagram fixer (removes AI text, fixes structure)
-                    # 2. Validation service auto-repair (fixes syntax errors)
-                    # 3. Re-validation loop until diagram is valid or max attempts reached
-                    if artifact_type_str.startswith("mermaid_"):
-                        try:
-                            from components.universal_diagram_fixer import fix_any_diagram
-                            from backend.services.validation_service import get_service as get_validator
-                            
-                            validator = get_validator()
-                            pre_fix_length = len(artifact_content)
-                            
-                            # Step 1: Universal fixer (removes AI explanatory text, fixes basic structure)
-                            artifact_content, fixer_fixes = fix_any_diagram(artifact_content, max_passes=5)
-                            if fixer_fixes:
-                                logger.info(f"🔧 [GEN_SERVICE] Universal fixer applied {len(fixer_fixes)} fixes (job_id={job_id})")
-                            
-                            # Step 2: Validation service auto-repair (targeted syntax fixes)
-                            artifact_content, is_valid, repair_fixes = validator.auto_repair_mermaid(artifact_content, max_attempts=3)
-                            if repair_fixes:
-                                logger.info(f"🔧 [GEN_SERVICE] Auto-repair applied {len(repair_fixes)} fixes (job_id={job_id}): {repair_fixes[:3]}")
-                            
-                            # Step 3: Final targeted fixes if still not valid
-                            if not is_valid:
-                                mermaid_errors = validator._validate_mermaid(artifact_content)
-                                artifact_content = self._apply_targeted_mermaid_fixes(artifact_content, mermaid_errors)
-                                
-                                # Re-check validity
-                                final_errors = validator._validate_mermaid(artifact_content)
-                                critical_errors = [e for e in final_errors if e.startswith("CRITICAL:")]
-                                
-                                if critical_errors:
-                                    logger.warning(f"⚠️ [GEN_SERVICE] Mermaid diagram still has {len(critical_errors)} critical errors after all repairs (job_id={job_id}): {critical_errors[:2]}")
-                                else:
-                                    logger.info(f"✅ [GEN_SERVICE] Mermaid diagram repaired successfully (job_id={job_id})")
-                            else:
-                                logger.info(f"✅ [GEN_SERVICE] Mermaid diagram is valid (job_id={job_id})")
-                            
-                            chars_removed = pre_fix_length - len(artifact_content)
-                            if chars_removed > 10:
-                                logger.info(f"🔧 [GEN_SERVICE] Total cleanup: removed {chars_removed} chars from {artifact_type_str} (job_id={job_id})")
-                        except Exception as e:
-                            logger.warning(f"⚠️ [GEN_SERVICE] Mermaid repair pipeline failed: {e} (job_id={job_id})")
-                
                 validation_score = result.get("validation_score", 0.0)
                 model_used = result.get("model_used", "unknown")
-                logger.info(f"✅ [GEN_SERVICE] Generation successful: job_id={job_id}, "
-                           f"model={model_used}, validation_score={validation_score:.1f}, "
-                           f"content_length={len(artifact_content)}")
             else:
                 # Enhanced generation failed - log error and return failure
-                error_msg = result.get("error", "Generation failed")
+                error_msg = result.get("error", "Generation failed") if result else "Generation failed (no result)"
                 logger.error(f"❌ [GEN_SERVICE] Enhanced generation failed: job_id={job_id}, error={error_msg}")
                 artifact_content = f"# {artifact_type_str}\n\nError: {error_msg}"
                 validation_score = 0.0

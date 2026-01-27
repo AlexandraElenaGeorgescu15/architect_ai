@@ -407,13 +407,61 @@ class EnhancedGenerationService:
                         
                         # Generate with context window from centralized config
                         logger.info(f"⚡ [ENHANCED_GEN] Step 3.{model_idx + 1}.{retry + 1}.5: Generating with {model_name}...")
-                        response = await self.ollama_client.generate(
-                            model_name=model_name,
-                            prompt=current_prompt,
-                            system_message=self._get_system_message(artifact_type),
-                            temperature=opts["temperature"],
-                            num_ctx=settings.local_model_context_window
-                        )
+                        
+                        # Use streaming if callback provided
+                        if progress_callback:
+                            content_accumulator = []
+                            last_update_time = datetime.now()
+                            token_count = 0
+                            
+                            start_time = datetime.now().timestamp()
+                            
+                            async for chunk in self.ollama_client.generate_stream(
+                                model_name=model_name,
+                                prompt=current_prompt,
+                                system_message=self._get_system_message(artifact_type),
+                                temperature=opts["temperature"],
+                                num_ctx=settings.local_model_context_window
+                            ):
+                                if chunk.startswith("Error:"):
+                                    # Handle streaming error
+                                    logger.error(f"❌ [ENHANCED_GEN] Streaming error: {chunk}")
+                                    break
+                                
+                                content_accumulator.append(chunk)
+                                token_count += 1
+                                
+                                # Send progress update for tokens (every 20 tokens or 100ms)
+                                now = datetime.now()
+                                if token_count % 10 == 0 or (now - last_update_time).total_seconds() > 0.1:
+                                    await progress_callback(
+                                        40.0 + (model_idx / len(local_models)) * 30.0 + min(20.0, token_count / 100),
+                                        f"||CHUNK||{chunk}"  # Send with marker
+                                    )
+                                    last_update_time = now
+                            
+                            full_content = "".join(content_accumulator)
+                            generation_time = datetime.now().timestamp() - start_time
+                            
+                            # Create response object
+                            from ai.ollama_client import GenerationResponse as OllamaResponse
+                            response = OllamaResponse(
+                                content=full_content,
+                                model_used=model_name,
+                                generation_time=generation_time,
+                                tokens_generated=token_count,
+                                success=bool(full_content) and not full_content.startswith("Error:"),
+                                error_message=full_content if full_content.startswith("Error:") else ""
+                            )
+                        else:
+                            # Standard non-streaming generation
+                            response = await self.ollama_client.generate(
+                                model_name=model_name,
+                                prompt=current_prompt,
+                                system_message=self._get_system_message(artifact_type),
+                                temperature=opts["temperature"],
+                                num_ctx=settings.local_model_context_window
+                            )
                     elif provider == "huggingface":
                         # Use HuggingFace client
                         logger.info(f"⚡ [ENHANCED_GEN] Step 3.{model_idx + 1}.{retry + 1}.4: Generating with HuggingFace model: {hf_model_id or model_name}...")

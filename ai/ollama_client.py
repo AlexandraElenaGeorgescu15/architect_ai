@@ -72,14 +72,10 @@ class OllamaClient:
         self.models: Dict[str, ModelInfo] = {}
         self._http_client = None
         
-        # VRAM management (NEW for 12GB constraint)
+        # VRAM management (Dynamic)
         self.persistent_models: set = set()  # Models that should stay loaded
         self.active_models: set = set()      # Currently loaded models
-        self.model_sizes: Dict[str, float] = {
-            "codellama:7b-instruct-q4_K_M": 3.8,
-            "llama3:8b-instruct-q4_K_M": 4.7,
-            "mistral:7b-instruct-q4_K_M": 4.1
-        }
+        self.model_sizes: Dict[str, float] = {} # Populated dynamically
         
     def _get_http_client(self) -> httpx.AsyncClient:
         """Get or create HTTP client"""
@@ -116,7 +112,7 @@ class OllamaClient:
 
     async def list_models(self) -> List[str]:
         """
-        Internal implementation for listing models.
+        Internal implementation for listing models and updating sizes.
         """
         try:
             client = self._get_http_client()
@@ -125,6 +121,17 @@ class OllamaClient:
             if response.status_code == 200:
                 data = response.json()
                 models = data.get("models", [])
+                
+                # Update model sizes map dynamically
+                for model in models:
+                    name = model.get("name")
+                    size_bytes = model.get("size", 0)
+                    if name and size_bytes:
+                        # Convert to GB (10^9 bytes usually for disk, but VRAM is 2^30? using 10^9 for safety/conservative)
+                        # Ollama reports bytes on disk. VRAM usage is roughly similar for GGUF + context.
+                        # Let's use binary GB (GiB) as standard VRAM is measured in GiB.
+                        self.model_sizes[name] = size_bytes / (1024 ** 3)
+                        
                 return [model.get("name", "") for model in models]
             else:
                 print(f"[ERROR] Failed to list models: {response.status_code}")
@@ -396,6 +403,94 @@ class OllamaClient:
                 success=False,
                 error_message=error_msg
             )
+    
+    async def generate_stream(
+        self,
+        model_name: str,
+        prompt: str,
+        system: Optional[str] = None,
+        system_message: Optional[str] = None,
+        temperature: float = 0.0,
+        max_tokens: Optional[int] = None,
+        num_ctx: int = 16384,
+        **kwargs
+    ):
+        """
+        Generate text using a model with streaming.
+        
+        Yields:
+            Chunks of generated text
+        """
+        # Handle system_message alias
+        if system_message and not system:
+            system = system_message
+        
+        # Ensure model is loaded
+        if model_name not in self.models or self.models[model_name].status != ModelStatus.READY:
+            loaded = await self.load_model(model_name, show_progress=True)
+            if not loaded:
+                yield f"Error: Failed to load model {model_name}"
+                return
+        
+        # Set status to in use
+        self.models[model_name].status = ModelStatus.IN_USE
+        self.models[model_name].total_requests += 1
+        self.models[model_name].last_used = datetime.now()
+        
+        try:
+            client = self._get_http_client()
+            
+            # Build request
+            request_data = {
+                "model": model_name,
+                "prompt": prompt,
+                "stream": True,  # Enable streaming
+                "options": {
+                    "temperature": temperature,
+                    "num_ctx": num_ctx
+                }
+            }
+            
+            if system:
+                request_data["system"] = system
+            
+            if max_tokens:
+                request_data["options"]["num_predict"] = max_tokens
+            
+            # Merge additional options
+            for k, v in kwargs.items():
+                if k != "num_ctx":
+                    request_data["options"][k] = v
+            
+            # Stream response
+            async with client.stream("POST", f"{self.base_url}/api/generate", json=request_data) as response:
+                if response.status_code != 200:
+                    yield f"Error: HTTP {response.status_code}"
+                    return
+
+                async for line in response.aiter_lines():
+                    if not line:
+                        continue
+                    
+                    try:
+                        import json
+                        chunk_data = json.loads(line)
+                        
+                        if "response" in chunk_data:
+                            yield chunk_data["response"]
+                            
+                        if chunk_data.get("done", False):
+                            break
+                    except Exception:
+                        continue
+                        
+            self.models[model_name].status = ModelStatus.READY
+            self.models[model_name].successful_requests += 1
+
+        except Exception as e:
+            print(f"[ERROR] Stream generation failed: {e}")
+            self.models[model_name].status = ModelStatus.READY
+            yield f"Error: {str(e)}"
     
     def get_model_status(self, model_name: str) -> ModelStatus:
         """
