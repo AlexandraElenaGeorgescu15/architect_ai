@@ -531,7 +531,25 @@ def setup_logging():
     root_logger.handlers.clear()
     
     # Create console handler that writes to sys.stdout
-    console_handler = logging.StreamHandler(sys.stdout)
+    class SafeStreamHandler(logging.StreamHandler):
+        """StreamHandler that swallows UnicodeEncodeError."""
+        def emit(self, record):
+            try:
+                msg = self.format(record)
+                stream = self.stream
+                # Try to write with replacement for errors
+                try:
+                    stream.write(msg + self.terminator)
+                    self.flush()
+                except UnicodeEncodeError:
+                    # Fallback: encode/decode to clean string
+                    clean_msg = msg.encode('ascii', 'replace').decode('ascii')
+                    stream.write(clean_msg + self.terminator)
+                    self.flush()
+            except Exception:
+                self.handleError(record)
+
+    console_handler = SafeStreamHandler(sys.stdout)
     console_handler.setLevel(logging.DEBUG)
     
     # Simple formatter for console - easier to read than JSON during dev
@@ -557,8 +575,8 @@ def setup_logging():
         print(f"Failed to setup file logging: {e}", file=sys.stderr)
     
     # Force print to console to verify it works
-    print(f"🟢 [LOGGING] Logging initialized at level {logging.getLevelName(root_logger.level)}")
-    print(f"🟢 [LOGGING] Logs directory: {LOGS_DIR}")
+    print(f"[LOGGING] Logging initialized at level {logging.getLevelName(root_logger.level)}")
+    print(f"[LOGGING] Logs directory: {LOGS_DIR}")
     
     # Log startup info
     logging.info(f"Architect.AI Backend v{settings.app_version} starting...")
@@ -569,7 +587,7 @@ def setup_logging():
 def debug_print(msg: str):
     """Direct print to stdout for critical debugging when logger fails."""
     try:
-        print(f"🐛 [DEBUG] {msg}", file=sys.stdout, flush=True)
+        print(f"[DEBUG] {msg}", file=sys.stdout, flush=True)
     except Exception:
         pass
 

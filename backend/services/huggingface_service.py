@@ -219,50 +219,60 @@ class HuggingFaceService:
                     gguf_files = [f for f in model_files if f.endswith(".gguf")]
                     
                     if gguf_files:
-                        # Get file sizes to download the largest (best quality)
-                        gguf_sizes = {}
-                        try:
-                            if hasattr(model_info, 'siblings') and model_info.siblings:
-                                for file in model_info.siblings:
-                                    if file.rfilename.endswith(".gguf"):
-                                        file_size = getattr(file, 'size', None)
-                                        # Only add if size is not None and is a valid number
-                                        if file_size is not None and isinstance(file_size, (int, float)) and file_size > 0:
-                                            gguf_sizes[file.rfilename] = file_size
-                        except (AttributeError, KeyError, TypeError) as e:
-                            logger.debug(f"Could not get GGUF file sizes for {model_id}: {e}")
+                        # Smarter GGUF selection logic
+                        # Priority: Q4_K_M > Q5_K_M > Q8_0 > Q4_0 > Any other
+                        # Avoid: _full, -fp16 (too large)
                         
-                        if gguf_sizes:
-                            # Filter out None values before max
-                            valid_sizes = {k: v for k, v in gguf_sizes.items() if v is not None and v > 0}
-                            if valid_sizes:
-                                largest_gguf = max(valid_sizes.items(), key=lambda x: x[1])[0]
-                                logger.info(f"⬇️ [HF_DOWNLOAD] Downloading GGUF file: {largest_gguf} (size: {gguf_sizes[largest_gguf] / (1024**3):.2f} GB)")
-                                self.active_downloads[model_id]["progress"] = 0.3
-                                downloaded_path = hf_hub_download(
-                                    repo_id=model_id,
-                                    filename=largest_gguf,
-                                    cache_dir=str(model_dir),
-                                    force_download=False  # Allow resume (resume_download is deprecated)
-                                )
-                                logger.info(f"✅ [HF_DOWNLOAD] Downloaded GGUF file: {largest_gguf}")
-                                self.active_downloads[model_id]["progress"] = 0.8
-                            else:
-                                # Fallback: download first GGUF file if sizes are invalid
-                                downloaded_path = hf_hub_download(
-                                    repo_id=model_id,
-                                    filename=gguf_files[0],
-                                    cache_dir=str(model_dir)
-                                )
-                                logger.info(f"Downloaded GGUF file: {gguf_files[0]} (size info unavailable)")
-                        else:
-                            # Download first GGUF file if no size info available
+                        selected_gguf = None
+                        
+                        # rank by preference (lower index = higher priority)
+                        preferences = ["q4_k_m", "q5_k_m", "q8_0", "q4_0", "q6_k", "q5_0"]
+                        
+                        # Create a map for sorting
+                        gguf_map = {f: f.lower() for f in gguf_files}
+                        
+                        # 1. Try to find preferred quantizations
+                        for pref in preferences:
+                            matches = [f for f, lower in gguf_map.items() if pref in lower]
+                            if matches:
+                                # Pick the first match for this preference
+                                selected_gguf = matches[0]
+                                logger.info(f"🎯 [HF_DOWNLOAD] Selected priority GGUF: {selected_gguf} (matched '{pref}')")
+                                break
+                        
+                        # 2. If no preference match, try to find ANY preferred quant excluding "full" or "fp16"
+                        if not selected_gguf:
+                            candidates = [
+                                f for f, lower in gguf_map.items() 
+                                if "fp16" not in lower and "full" not in lower
+                            ]
+                            if candidates:
+                                # Pick the smallest one? Or just the first one?
+                                # Let's pick the one with "q4" if possible, else just first
+                                q4_candidates = [f for f in candidates if "q4" in f.lower()]
+                                if q4_candidates:
+                                    selected_gguf = q4_candidates[0]
+                                else:
+                                    selected_gguf = candidates[0]
+                                logger.info(f"🎯 [HF_DOWNLOAD] Selected heuristic GGUF: {selected_gguf}")
+                                
+                        # 3. Last fallback: any GGUF
+                        if not selected_gguf:
+                            selected_gguf = gguf_files[0]
+                            logger.info(f"🎯 [HF_DOWNLOAD] Selected fallback GGUF: {selected_gguf}")
+                            
+                        # Download selected file
+                        if selected_gguf:
+                            logger.info(f"⬇️ [HF_DOWNLOAD] Downloading GGUF file: {selected_gguf}")
+                            self.active_downloads[model_id]["progress"] = 0.3
                             downloaded_path = hf_hub_download(
                                 repo_id=model_id,
-                                filename=gguf_files[0],
-                                cache_dir=str(model_dir)
+                                filename=selected_gguf,
+                                cache_dir=str(model_dir),
+                                force_download=False  # Allow resume
                             )
-                            logger.info(f"Downloaded GGUF file: {gguf_files[0]}")
+                            logger.info(f"✅ [HF_DOWNLOAD] Downloaded GGUF file: {selected_gguf}")
+                            self.active_downloads[model_id]["progress"] = 0.8
                 
                 if not downloaded_path:
                     # No GGUF file, try to download config.json as fallback
@@ -416,6 +426,8 @@ class HuggingFaceService:
         Returns:
             Dict with success status, ollama_name, and message
         """
+        import shutil
+        
         try:
             logger.info(f"Converting {model_id} to Ollama format...")
             logger.debug(f"model_dir: {model_dir}, gguf_file_path: {gguf_file_path}")
@@ -426,13 +438,10 @@ class HuggingFaceService:
                 except Exception:
                     pass  # Ignore callback errors
             
-            # Check if Ollama is available
-            try:
-                result = await _run_subprocess("ollama --version")
-                if result.returncode != 0:
-                    raise FileNotFoundError("Ollama not found")
-            except FileNotFoundError:
-                error_msg = "Ollama CLI not found. Please install Ollama from https://ollama.ai"
+            # Check if Ollama is available using shutil.which for cross-platform reliability
+            ollama_bin = shutil.which("ollama")
+            if not ollama_bin:
+                error_msg = "Ollama CLI not found in PATH. Please install Ollama from https://ollama.ai"
                 logger.error(error_msg)
                 return {
                     "success": False,
@@ -441,7 +450,14 @@ class HuggingFaceService:
                 }
             
             # Clean model name for Ollama (no slashes, lowercase, max 64 chars)
-            ollama_name = model_id.replace("/", "-").replace("_", "-").lower()
+            # e.g. "TheBloke/CodeLlama-7B-Instruct-GGUF" -> "code-llama-7b-instruct"
+            ollama_name = model_id.split("/")[-1].lower()
+            ollama_name = ollama_name.replace("_", "-").replace(".", "-")
+            # Remove messy suffixes often found in HF model names
+            for suffix in ["-gguf", "-hf", "-gptq", "-awq"]:
+                if ollama_name.endswith(suffix):
+                    ollama_name = ollama_name[:-len(suffix)]
+            
             # Ollama model names have a limit
             if len(ollama_name) > 64:
                 ollama_name = ollama_name[:64]
@@ -454,7 +470,7 @@ class HuggingFaceService:
             
             # Check if model is already in Ollama
             try:
-                result = await _run_subprocess("ollama list")
+                result = await _run_subprocess(f'"{ollama_bin}" list')
                 existing_models = (result.stdout or "").lower()
                 if ollama_name.lower() in existing_models:
                     logger.info(f"Model {ollama_name} already exists in Ollama")
@@ -516,9 +532,11 @@ PARAMETER top_k 40
                 
                 # Use ollama create with Modelfile (works reliably with GGUF)
                 # Quote the path for Windows compatibility
-                modelfile_path_str = str(modelfile_path).replace("\\", "/")
+                modelfile_path_str = str(modelfile_path.resolve()).replace("\\", "/")
+                
+                logger.info(f"Running ollama create {ollama_name} -f \"{modelfile_path_str}\"")
                 result = await _run_subprocess(
-                    f'ollama create {ollama_name} -f "{modelfile_path_str}"'
+                    f'"{ollama_bin}" create {ollama_name} -f "{modelfile_path_str}"'
                 )
                 stdout = result.stdout or ""
                 stderr = result.stderr or ""

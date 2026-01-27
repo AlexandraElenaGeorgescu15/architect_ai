@@ -594,5 +594,37 @@
       "size": 6687240356,
       "created_at": "2026-01-26T20:32:26.77897+02:00"
     }
+  },
+  "huggingface:TheBloke-TinyLlama-1.1B-Chat-v1.0-GGUF": {
+    "id": "huggingface:TheBloke-TinyLlama-1.1B-Chat-v1.0-GGUF",
+    "name": "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF (HuggingFace)",
+    "provider": "huggingface",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "downloaded",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "huggingface_id": "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF",
+      "path": "models\\huggingface\\TheBloke_TinyLlama-1.1B-Chat-v1.0-GGUF",
+      "actual_file_path": "models\\huggingface\\TheBloke_TinyLlama-1.1B-Chat-v1.0-GGUF\\models--TheBloke--TinyLlama-1.1B-Chat-v1.0-GGUF\\snapshots\\52e7645ba7c309695bec7ac98f4f005b139cf465\\tinyllama-1.1b-chat-v1.0.Q4_K_M.gguf",
+      "source": "huggingface",
+      "usable_via_transformers": true
+    }
+  },
+  "ollama:tinyllama-1-1b-chat-v1-0": {
+    "id": "ollama:tinyllama-1-1b-chat-v1-0",
+    "name": "tinyllama-1-1b-chat-v1-0 (from TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF)",
+    "provider": "ollama",
+    "size_gb": null,
+    "vram_required_gb": null,
+    "status": "downloaded",
+    "is_trained": false,
+    "base_model": null,
+    "metadata": {
+      "huggingface_id": "TheBloke/TinyLlama-1.1B-Chat-v1.0-GGUF",
+      "ollama_name": "tinyllama-1-1b-chat-v1-0",
+      "source": "huggingface"
+    }
   }
 }
