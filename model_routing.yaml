@@ -238,11 +238,12 @@ mermaid_data_flow:
 mermaid_erd:
   enabled: true
   fallback_models:
+  - codellama:7b-instruct-q4_K_M
   - ollama:mermaid-mistral-22b:latest
   - ollama:codellama:7b-instruct-q4_K_M
   - ollama:llama3:8b-instruct-q4_K_M
   - gemini:gemini-2.5-flash
-  primary_model: codellama:7b-instruct-q4_K_M
+  primary_model: llama3:8b-instruct-q4_K_M
 mermaid_flowchart:
   enabled: true
   fallback_models:

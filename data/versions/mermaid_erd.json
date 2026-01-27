@@ -1,17 +1,5 @@
 [
   {
-    "version": 15,
-    "artifact_id": "mermaid_erd",
-    "artifact_type": "unknown",
-    "content": null,
-    "metadata": {
-      "updated_by": "default",
-      "update_type": "manual_edit"
-    },
-    "created_at": "2025-12-09T16:53:33.190665",
-    "is_current": false
-  },
-  {
     "version": 16,
     "artifact_id": "mermaid_erd",
     "artifact_type": "mermaid_erd",
@@ -3151,6 +3139,120 @@
     },
     "folder_id": null,
     "created_at": "2026-01-28T01:06:32.095554",
+    "is_current": false
+  },
+  {
+    "version": 51,
+    "artifact_id": "mermaid_erd",
+    "artifact_type": "mermaid_erd",
+    "content": "erDiagram\n    USER {\n        +id string PK\n        +email string\n        +password string\n        +firstName string\n        +lastName string\n    }\n    ROLE {\n        +id string PK\n        +name string\n        +description string\n    }\n    USER ||--o{ ROLE : has_role\n\n    NOTE \"The relationships are one-to-many (User-Role) and many-to-one (Role-User).\"",
+    "metadata": {
+      "model_used": "llama3:8b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 94.0,
+      "is_valid": true,
+      "meeting_notes": "A simple user management system with Users and Roles",
+      "html_content": "\n        <!DOCTYPE html>\n        <html lang=\"en\">\n        <head>\n            <meta charset=\"UTF-8\">\n            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n            <title>Mermaid Diagram</title>\n            <script src=\"https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js\"></script>\n            <style>\n                body {\n                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n                    margin: 0;\n                    padding: 20px;\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    min-height: 100vh;\n                }\n                .container {\n                    max-width: 1200px;\n                    margin: 0 auto;\n                    background: white;\n                    border-radius: 12px;\n                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);\n                    overflow: hidden;\n                }\n                .header {\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    color: white;\n                    padding: 20px;\n                    text-align: center;\n                }\n                .header h1 {\n                    margin: 0;\n                    font-size: 24px;\n                    font-weight: 300;\n                }\n                .diagram-container {\n                    padding: 30px;\n                    text-align: center;\n                }\n                .mermaid {\n                    background: #f8f9fa;\n                    border-radius: 8px;\n                    padding: 20px;\n                    margin: 20px 0;\n                }\n                .info {\n                    background: #e3f2fd;\n                    border-left: 4px solid #2196f3;\n                    padding: 15px;\n                    margin: 20px 0;\n                    border-radius: 4px;\n                }\n                .info h3 {\n                    margin: 0 0 10px 0;\n                    color: #1976d2;\n                }\n                .info p {\n                    margin: 0;\n                    color: #424242;\n                }\n                .footer {\n                    background: #f5f5f5;\n                    padding: 15px;\n                    text-align: center;\n                    color: #666;\n                    font-size: 12px;\n                }\n            </style>\n        </head>\n        <body>\n            <div class=\"container\">\n                <div class=\"header\">\n                    <h1>\ud83c\udfa8 Mermaid Diagram Visualization</h1>\n                </div>\n                \n                <div class=\"diagram-container\">\n                    <div class=\"info\">\n                        <h3>\ud83d\udcca Interactive Diagram</h3>\n                        <p>This diagram is rendered using Mermaid.js and is fully interactive. You can zoom, pan, and interact with the elements.</p>\n                    </div>\n                    \n                    <div class=\"mermaid\" id=\"erd_diagram\">\n                        erDiagram\n    USER {\n        +id string PK\n        +email string\n        +password string\n        +firstName string\n        +lastName string\n    }\n    ROLE {\n        +id string PK\n        +name string\n        +description string\n    }\n    USER ||--o{ ROLE : has_role\n\n    NOTE \"The relationships are one-to-many (User-Role) and many-to-one (Role-User).\"\n                    </div>\n                    \n                    <div class=\"info\">\n                        <h3>\ud83d\udd27 Technical Details</h3>\n                        <p><strong>Diagram ID:</strong> erd_diagram</p>\n                        <p><strong>Generated:</strong> 2026-01-28 01:11:02</p>\n                        <p><strong>Mermaid Version:</strong> 10.6.1</p>\n                    </div>\n                </div>\n                \n                <div class=\"footer\">\n                    <p>Generated by Architect.AI - Mermaid HTML Renderer</p>\n                </div>\n            </div>\n            \n            <script>\n                mermaid.initialize({\n                    startOnLoad: true,\n                    theme: 'default',\n                    themeVariables: {\n                        primaryColor: '#667eea',\n                        primaryTextColor: '#333',\n                        primaryBorderColor: '#764ba2',\n                        lineColor: '#666',\n                        secondaryColor: '#f8f9fa',\n                        tertiaryColor: '#e3f2fd'\n                    },\n                    flowchart: {\n                        useMaxWidth: true,\n                        htmlLabels: true\n                    },\n                    sequence: {\n                        useMaxWidth: true,\n                        wrap: true\n                    },\n                    gantt: {\n                        useMaxWidth: true\n                    }\n                });\n                \n                // Add interactivity\n                document.addEventListener('DOMContentLoaded', function() {\n                    const diagram = document.getElementById('erd_diagram');\n                    if (diagram) {\n                        diagram.style.cursor = 'grab';\n                        diagram.addEventListener('click', function(e) {\n                            console.log('Diagram clicked:', e.target);\n                        });\n                    }\n                });\n            </script>\n        </body>\n        </html>\n        ",
+      "quality_prediction": {
+        "label": "medium",
+        "confidence": 0.5,
+        "score": 0.5,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": 0.1
+        }
+      },
+      "job_id": "gen_26120532",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "\nHere is a Mermaid ERD based on the given requirements and context:\n\nerDiagram\n    USER {\n        id PK\n        email\n        password\n        first_name\n        last_name\n    }\n    ROLE {\n        id PK\n        name\n    }\n    USER_ROLES {\n        user_id FK\n        role_id FK\n    }\n    ORDER {\n        id PK\n        date\n        amount\n        status\n    }\n    PRODUCT {\n        id PK\n        name\n        price\n        description\n    }\n    ORDER_PRODUCTS {\n        order_id FK\n        product_id FK\n        quantity\n    }\n    USER ||--o{ ORDER : places\n    ORDER ||--o{ PRODUCT : contains\n    ROLE ||--|{ USER : is assigned to\n    PRODUCT ||--|{ ORDER : is in\n\nNote: The above ERD does not include all possible entities, attributes, and relationships. It is just a basic example based on the given requirements and context.",
+          "score": 70.0,
+          "is_valid": false,
+          "errors": [
+            "Score 70.0 is below strict threshold 80.0"
+          ],
+          "retry": 0
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "\nerDiagram\n    USER {\n        int id PK\n        string email\n        string password\n        string first_name\n        string last_name\n    }\n    ROLE {\n        int id PK\n        string name\n        string description\n    }\n    USER_ROLE {\n        user_id FK\n        role_id FK\n    }\n    ORDER {\n        int id PK\n        user_id FK\n        datetime created_at\n    }\n    ITEM {\n        int id PK\n        string name\n        float price\n    }\n    ORDER_ITEM {\n        order_id FK\n        item_id FK\n        int quantity\n    }\n```",
+          "score": 37.0,
+          "is_valid": false,
+          "errors": [
+            "ERD: No valid relationships between entities",
+            "Score 67.0 is below strict threshold 80.0",
+            "ERD: No valid relationships between entities"
+          ],
+          "retry": 1
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "\nHere's a corrected Entity-Relationship Diagram (ERD) in Mermaid syntax for the given requirements and project context:\n```mermaid\nerDiagram\n    USER {\n        int id PK\n        string name\n        string email\n    }\n    ROLE {\n        int id PK\n        string role_name\n    }\n    USER ||--o{ ROLE : belongs_to\n    ROLE ||--|{ USER : is_belonging_to\n```\nIn this ERD, we have two entities: `USER` and `ROLE`. The `USER` entity has an integer primary key (`id`) field, a string name field, and an email field. The `ROLE` entity has an integer primary key (`id`) field, a string role name field. The relationship between the two entities is one-to-many (one user can have multiple roles, but each role belongs to only one user).\n\nThe ERD also includes the cardinalities of the relationships, which are represented as arrows pointing from `USER` to `ROLE`, and from `ROLE` to `USER`. The cardinality of the relationship between `USER` and `ROLE` is one-to-many (one user can have multiple roles, but each role belongs to only one user). The cardinality of the relationship between `ROLE` and `USER` is one-to-one (each role belongs to exactly one user).\n\nThe relationships are represented using Mermaid's syntax for representing ERD relationships. The syntax for representing a one-to-many relationship is:\n```mermaid\nentity ||--o{ entity : relationship_label\n```\nIn this case, the `USER` entity is represented as `|`, and the `ROLE` entity is represented as `_`. The arrow points from the `USER` entity to the `ROLE` entity, indicating that a user can have multiple roles. The label for the relationship is `belongs_to`, which indicates that each role belongs to only one user.\n\nThe syntax for representing a one-to-one relationship is:\n```mermaid\nentity ||--|{ entity : relationship_label\n```\nIn this case, the `ROLE` entity is represented as `|`, and the `USER` entity is represented as `_`. The arrow points from the `ROLE` entity to the `USER` entity, indicating that each role belongs to exactly one user. The label for the relationship is `is_belonging_to`, which indicates that each user has a single role.\n\nNote: In this ERD, we have not included any attributes or methods for the entities. This is because the requirements did not specify that these were required in the artifact. However, if attributes or methods are needed to support the logic of the system, they can be added as appropriate.",
+          "score": 66.0,
+          "is_valid": false,
+          "errors": [
+            "Score 66.0 is below strict threshold 80.0"
+          ],
+          "retry": 2
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "\nerDiagram\n    USER {\n        int id PK\n        string email\n        string password\n        string first_name\n        string last_name\n        datetime created_at\n    }\n    ROLE {\n        int id PK\n        string name\n        datetime created_at\n    }\n    USER_ROLES {\n        int user_id FK\n        int role_id FK\n        datetime created_at\n    }\n    ORDER {\n        int id PK\n        int user_id FK\n        datetime created_at\n    }\n    PRODUCT {\n        int id PK\n        string name\n        float price\n        string category\n        datetime created_at\n    }\n    ORDER_PRODUCTS {\n        int order_id FK\n        int product_id FK\n        datetime created_at\n    }\n    USER ||--o{ ORDER : places\n    PRODUCT ||--o{ ORDER_PRODUCTS : contains\n```",
+          "score": 78.0,
+          "is_valid": false,
+          "errors": [
+            "Score 78.0 is below strict threshold 80.0"
+          ],
+          "retry": 3
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "\n8. **Documentation**: Provide extensive documentation that includes your detailed thought process.",
+          "score": 3.0,
+          "is_valid": false,
+          "errors": [
+            "CRITICAL: Missing Mermaid diagram type declaration",
+            "CRITICAL: Diagram has too few elements (less than 3 lines)",
+            "Score 33.0 is below strict threshold 80.0",
+            "CRITICAL: Missing Mermaid diagram type declaration",
+            "CRITICAL: Diagram has too few elements (less than 3 lines)"
+          ],
+          "retry": 0
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "\n\n## Additional Tips\n1. **Syntax Errors**:\n   - Fixed critical syntactical issues in mermaid diagrams from previous attempts. Now, all Mermaid diagrams are correctly declared and formatted as per the project context.\n2. **Subgraph Analysis**: Analyze subgraphs of the codebase to understand the specific logic.\n3. **High-Relevance Context**: The following snippets reveal how critical entities/relationships exist across the codebase:\n   - ```snippet1```\n   - ```snippet2```\n   - ```snippet3```\n   - ```snippet4```\n   - ```snippet5```\n   - ```snippet6```\n   - ```snippet7```\n   - ```snippet8```\n   - ```snippet9```\n   - ```snippet10```\n   - ```snippet11```\n   - ```snippet12```\n   - ```snippet13```\n   - ```snippet14```\n   - ```snippet15```\n   - ```Snippet16``.\n\n--- End-to-End Report ---",
+          "score": 10.0,
+          "is_valid": false,
+          "errors": [
+            "CRITICAL: Missing Mermaid diagram type declaration",
+            "CRITICAL: Diagram has too few elements (less than 3 lines)",
+            "Score 40.0 is below strict threshold 80.0",
+            "CRITICAL: Missing Mermaid diagram type declaration",
+            "CRITICAL: Diagram has too few elements (less than 3 lines)"
+          ],
+          "retry": 2
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Here is a Mermaid ERD based on the provided requirements and context:\n\n```\nerDiagram\n    USER {\n        +id string PK\n        +email string\n        +password string\n        +firstName string\n        +lastName string\n    }\n    ROLE {\n        +id string PK\n        +name string\n        +description string\n    }\n    USER ||--o{ ROLE : has_role\n\n    NOTE \"The relationships are one-to-many (User-Role) and many-to-one (Role-User).\"\n```",
+          "score": 94.0,
+          "is_valid": true,
+          "errors": [],
+          "retry": 0
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-28T01:11:02.101564",
     "is_current": true
   }
 ]
