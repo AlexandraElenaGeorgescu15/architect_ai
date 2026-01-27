@@ -48,7 +48,6 @@ async def create_version(
         metadata = body.get("metadata", {})
         
         if not artifact_id or not content:
-            from fastapi import HTTPException
             raise HTTPException(
                 status_code=400,
                 detail="artifact_id and content are required"
