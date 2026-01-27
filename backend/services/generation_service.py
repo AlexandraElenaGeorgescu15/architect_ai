@@ -299,7 +299,7 @@ class GenerationService:
                     include_rag=True,
                     include_kg=True,
                     include_patterns=True,
-                    include_ml_features=False,  # Skip ML features for speed
+                    include_ml_features=True,  # Enable ML features for deeper context
                     force_refresh=True  # Always get fresh context for generation
                 )
                 logger.info(f"✅ [GEN_SERVICE] Context built successfully: "

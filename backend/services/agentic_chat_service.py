@@ -843,7 +843,35 @@ class AgenticChatService:
                     logger.info(f"🤖 [AGENTIC_CHAT] Step 3.3.3: Found {len(key_files)} key files")
                 
                 project_overview = "\n".join(overview_parts)
-                logger.info(f"🤖 [AGENTIC_CHAT] Step 3.4: Universal context loaded: {len(key_entities)} entities, {universal_ctx.get('total_files', 0)} files, overview_length={len(project_overview)}")
+                
+                # INJECT ML FEATURES
+                try:
+                    from backend.services.ml_features import get_engineer as get_ml_engineer
+                    logger.info(f"🤖 [AGENTIC_CHAT] Step 3.5: Injecting ML Code Intelligence")
+                    
+                    # Get top files from universal context
+                    importance_map = universal_ctx.get("importance_scores", {})
+                    if importance_map:
+                        all_files = list(importance_map.keys())
+                        all_files.sort(key=lambda f: importance_map[f], reverse=True)
+                        target_files = all_files[:30]  # Analyze top 30 for chat speed
+                        
+                        if target_files:
+                            ml_engineer = get_ml_engineer()
+                            ml_analysis = ml_engineer.analyze_project_structure(target_files)
+                            
+                            if "cluster_stats" in ml_analysis:
+                                ml_lines = ["\n**Code Intelligence (ML):**"]
+                                for cid, stats in ml_analysis["cluster_stats"].items():
+                                    samples = ", ".join(stats['samples'][:3])
+                                    ml_lines.append(f"- Cluster {cid}: {stats['size']} files (Avg Complexity: {stats['avg_complexity']:.1f}). e.g. {samples}")
+                                
+                                project_overview += "\n" + "\n".join(ml_lines)
+                                logger.info(f"🤖 [AGENTIC_CHAT] Step 3.5.1: Added ML clusters to overview")
+                except Exception as e:
+                    logger.warning(f"🤖 [AGENTIC_CHAT] Step 3.5: Failed to add ML features: {e}")
+
+                logger.info(f"🤖 [AGENTIC_CHAT] Step 3.6: Universal context loaded: {len(key_entities)} entities, {universal_ctx.get('total_files', 0)} files, overview_length={len(project_overview)}")
             else:
                 logger.warning(f"🤖 [AGENTIC_CHAT] Step 3.3: Universal context returned None")
         except Exception as e:

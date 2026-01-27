@@ -11,6 +11,7 @@ import { Loader2, Brain, Database, Play, RefreshCw, Network, Search as SearchIco
 import KnowledgeGraphViewer from '../components/KnowledgeGraphViewer'
 import PatternMiningResults from '../components/PatternMiningResults'
 import DesignReviewPanel from '../components/DesignReviewPanel'
+import CodeAnalyticsPanel from '../components/CodeAnalyticsPanel'
 import { generateSyntheticData, getAllStats, clearSynthetic, SyntheticStats } from '../services/syntheticDataService'
 import { useUIStore } from '../stores/uiStore'
 import { getBackendUrl } from '../services/api'
@@ -22,18 +23,18 @@ export default function Intelligence() {
   const [isLoading, setIsLoading] = useState(true)
   const [selectedProvider, setSelectedProvider] = useState<'all' | 'ollama' | 'cloud'>('all')
   const [showUnconfiguredModels, setShowUnconfiguredModels] = useState(false)
-  
+
   // Universal Context state
   const [universalContextStatus, setUniversalContextStatus] = useState<any>(null)
   const [isLoadingUniversalContext, setIsLoadingUniversalContext] = useState(false)
   const [isReindexing, setIsReindexing] = useState(false)
-  
+
   // Knowledge Graph and Pattern Mining state
   const [kgData, setKgData] = useState<any>(null)
   const [pmData, setPmData] = useState<any>(null)
   const [isLoadingKG, setIsLoadingKG] = useState(false)
   const [isLoadingPM, setIsLoadingPM] = useState(false)
-  
+
   // Synthetic data state
   const [syntheticStats, setSyntheticStats] = useState<Record<string, SyntheticStats> | null>(null)
   const [isGenerating, setIsGenerating] = useState<string | null>(null)
@@ -61,7 +62,7 @@ export default function Intelligence() {
 
   // Auto-refresh models with proper cleanup (replaces leaky module-level interval)
   useAutoRefreshModels(30000, !isLoading)
-  
+
   const loadUniversalContext = async () => {
     setIsLoadingUniversalContext(true)
     try {
@@ -79,28 +80,28 @@ export default function Intelligence() {
       setIsLoadingUniversalContext(false)
     }
   }
-  
+
   const rebuildUniversalContext = async () => {
     setIsLoadingUniversalContext(true)
     try {
       const backendUrl = getBackendUrl()
-      const response = await fetch(`${backendUrl}/api/universal-context/rebuild`, { 
+      const response = await fetch(`${backendUrl}/api/universal-context/rebuild`, {
         method: 'POST',
         headers: { 'ngrok-skip-browser-warning': 'true' }
       })
       if (response.ok) {
         const rebuildData = await response.json()
         addNotification('success', 'Universal Context rebuild started. This will take a few moments...')
-        
+
         // Track the build ID if provided
         const buildId = rebuildData.build_id
         let pollCount = 0
         const maxPolls = 20 // 60 seconds max (3s interval)
-        
+
         // Poll for completion and refresh all data
         const pollInterval = setInterval(async () => {
           pollCount++
-          
+
           try {
             const status = await fetch(`${backendUrl}/api/universal-context/status`, {
               headers: { 'ngrok-skip-browser-warning': 'true' }
@@ -108,21 +109,21 @@ export default function Intelligence() {
             if (status.ok) {
               const data = await status.json()
               setUniversalContextStatus(data)
-              
+
               // Check if rebuild is complete (check build_id or built_at timestamp)
-              const isComplete = data.is_ready || 
+              const isComplete = data.is_ready ||
                 (buildId && data.build_id === buildId) ||
                 (data.built_at && new Date(data.built_at).getTime() > Date.now() - 60000)
-              
+
               if (isComplete) {
                 clearInterval(pollInterval)
-                
+
                 // Refresh KG and PM data to sync everything
                 await Promise.all([
                   loadKnowledgeGraph(),
                   loadPatternMining()
                 ])
-                
+
                 setIsLoadingUniversalContext(false)
                 addNotification('success', `Universal Context rebuilt successfully! ${data.total_files || 0} files indexed.`)
               } else if (pollCount >= maxPolls) {
@@ -136,7 +137,7 @@ export default function Intelligence() {
             // Don't stop polling on single error, just log it
           }
         }, 3000)
-        
+
         // Safety cleanup after max time
         setTimeout(() => {
           clearInterval(pollInterval)
@@ -164,20 +165,20 @@ export default function Intelligence() {
       setIsLoadingUniversalContext(false)
     }
   }
-  
+
   // Reindex user projects (clears and rebuilds RAG from scratch)
   const reindexUserProjects = async () => {
     setIsReindexing(true)
     try {
       const backendUrl = getBackendUrl()
-      const response = await fetch(`${backendUrl}/api/rag/reindex-user-projects`, { 
+      const response = await fetch(`${backendUrl}/api/rag/reindex-user-projects`, {
         method: 'POST',
         headers: { 'ngrok-skip-browser-warning': 'true' }
       })
       if (response.ok) {
         const data = await response.json()
         addNotification('success', `Reindexing ${data.directories?.length || 0} project(s): ${data.directories?.join(', ') || 'unknown'}`)
-        
+
         // Wait for reindexing to complete then refresh status
         setTimeout(async () => {
           await loadUniversalContext()
@@ -197,7 +198,7 @@ export default function Intelligence() {
       setIsReindexing(false)
     }
   }
-  
+
   const loadKnowledgeGraph = async () => {
     setIsLoadingKG(true)
     try {
@@ -219,13 +220,13 @@ export default function Intelligence() {
       setIsLoadingKG(false)
     }
   }
-  
+
   const rebuildKnowledgeGraph = async () => {
     setIsLoadingKG(true)
     try {
       const backendUrl = getBackendUrl()
       // First clear the cache
-      const clearResponse = await fetch(`${backendUrl}/api/project-target/clear-cache`, { 
+      const clearResponse = await fetch(`${backendUrl}/api/project-target/clear-cache`, {
         method: 'POST',
         headers: { 'ngrok-skip-browser-warning': 'true' }
       })
@@ -233,10 +234,10 @@ export default function Intelligence() {
         const clearData = await clearResponse.json()
         console.log('Cache cleared:', clearData)
       }
-      
+
       // Then rebuild via Universal Context (which rebuilds KG and PM)
       addNotification('info', 'Rebuilding Knowledge Graph and Pattern Mining...')
-      const rebuildResponse = await fetch(`${backendUrl}/api/universal-context/rebuild`, { 
+      const rebuildResponse = await fetch(`${backendUrl}/api/universal-context/rebuild`, {
         method: 'POST',
         headers: { 'ngrok-skip-browser-warning': 'true' }
       })
@@ -264,7 +265,7 @@ export default function Intelligence() {
             console.error('Polling error:', pollError)
           }
         }, 2000)
-        
+
         // Safety cleanup
         setTimeout(() => {
           clearInterval(pollInterval)
@@ -279,7 +280,7 @@ export default function Intelligence() {
       setIsLoadingKG(false)
     }
   }
-  
+
   const loadPatternMining = async () => {
     setIsLoadingPM(true)
     try {
@@ -301,7 +302,7 @@ export default function Intelligence() {
       setIsLoadingPM(false)
     }
   }
-  
+
   const loadSyntheticStats = async () => {
     try {
       const stats = await getAllStats()
@@ -311,7 +312,7 @@ export default function Intelligence() {
       // Silent failure - training section will show default state
     }
   }
-  
+
   const handleGenerateBootstrap = async (artifactType: string) => {
     setIsGenerating(artifactType)
     try {
@@ -322,7 +323,7 @@ export default function Intelligence() {
         complexity: 'Mixed',
         auto_integrate: true
       })
-      
+
       if (result.success) {
         addNotification('success', `Generated ${result.generated_count} ${artifactType} examples using ${result.backend_used}!`)
         await loadSyntheticStats()
@@ -335,12 +336,12 @@ export default function Intelligence() {
       setIsGenerating(null)
     }
   }
-  
+
   const handleClearSynthetic = async (artifactType: string) => {
     if (!confirm(`Remove all synthetic examples for ${artifactType}? This will keep only real feedback examples.`)) {
       return
     }
-    
+
     try {
       const result = await clearSynthetic(artifactType)
       if (result.success) {
@@ -387,11 +388,11 @@ export default function Intelligence() {
   const handleTriggerTraining = async () => {
     const statsForType = syntheticStats?.[selectedArtifactType]
     const count = statsForType?.total_examples ?? 0
-    
+
     // Minimum threshold for training (aligned with backend)
     const MIN_EXAMPLES = 10
     const RECOMMENDED_EXAMPLES = 50
-    
+
     if (count < MIN_EXAMPLES) {
       addNotification(
         'warning',
@@ -399,7 +400,7 @@ export default function Intelligence() {
       )
       return
     }
-    
+
     // Show warning if below recommended but allow training
     if (count < RECOMMENDED_EXAMPLES) {
       addNotification(
@@ -423,12 +424,12 @@ export default function Intelligence() {
     : selectedProvider === 'cloud'
       ? models.filter(m => m.provider !== 'ollama') // Cloud = anything that's not Ollama
       : models.filter(m => m.provider === selectedProvider)
-  
+
   // Then filter by API key status (unless user wants to see unconfigured models)
   if (!showUnconfiguredModels) {
     filteredModels = filteredModels.filter(m => m.status !== 'no_api_key')
   }
-  
+
   // Separate available and unconfigured models for display
   const availableModels = filteredModels.filter(m => m.status !== 'no_api_key')
   const unconfiguredModels = models.filter(m => m.status === 'no_api_key')
@@ -506,7 +507,7 @@ export default function Intelligence() {
             </button>
           </div>
         </div>
-        
+
         {isLoadingUniversalContext && !universalContextStatus ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -575,7 +576,7 @@ export default function Intelligence() {
                 </div>
               </div>
             )}
-            
+
             {/* Full Paths (collapsed) */}
             {universalContextStatus.project_directories && universalContextStatus.project_directories.length > 0 && (
               <details className="bg-card/30 rounded-xl p-4 border border-border/50">
@@ -705,6 +706,11 @@ export default function Intelligence() {
         <DesignReviewPanel />
       </div>
 
+      {/* Code Analytics (ML) Section */}
+      <div className="glass-panel rounded-2xl p-8">
+        <CodeAnalyticsPanel />
+      </div>
+
       {/* Model Mapping - Consolidated HuggingFace Search */}
       <ModelMapping />
 
@@ -740,7 +746,7 @@ export default function Intelligence() {
               </button>
             </div>
           </div>
-          
+
           {unconfiguredModels.length > 0 && (
             <div className="mb-4 flex items-center gap-2 text-sm">
               <label className="flex items-center gap-2 text-muted-foreground cursor-pointer hover:text-foreground transition-colors">
@@ -760,11 +766,11 @@ export default function Intelligence() {
               <div className="text-center py-8 text-foreground">
                 <p>No models found</p>
                 <p className="text-xs mt-2 text-foreground">
-                  {selectedProvider === 'cloud' 
+                  {selectedProvider === 'cloud'
                     ? 'Cloud models will appear when API keys are configured.'
                     : selectedProvider === 'ollama'
-                    ? 'Ollama models will appear when Ollama is running.'
-                    : 'Make sure API keys are configured or Ollama is running'}
+                      ? 'Ollama models will appear when Ollama is running.'
+                      : 'Make sure API keys are configured or Ollama is running'}
                 </p>
               </div>
             ) : (
@@ -782,12 +788,11 @@ export default function Intelligence() {
                         </span>
                       )}
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      model.status === 'available' ? 'bg-green-500/20 text-green-500' :
+                    <span className={`text-xs px-2 py-1 rounded ${model.status === 'available' ? 'bg-green-500/20 text-green-500' :
                       model.status === 'downloading' ? 'bg-yellow-500/20 text-yellow-500' :
-                      model.status === 'no_api_key' ? 'bg-yellow-500/20 text-yellow-500' :
-                      'bg-red-500/20 text-red-500'
-                    }`}>
+                        model.status === 'no_api_key' ? 'bg-yellow-500/20 text-yellow-500' :
+                          'bg-red-500/20 text-red-500'
+                      }`}>
                       {model.status === 'no_api_key' ? 'API Key Needed' : model.status}
                     </span>
                   </div>
@@ -853,7 +858,7 @@ export default function Intelligence() {
                 )
               })}
             </select>
-            
+
             {/* Show selected artifact details */}
             {selectedArtifactType && syntheticStats?.[selectedArtifactType] && (
               <div className="mt-3 p-3 rounded-lg bg-muted/30 border border-border">
@@ -861,11 +866,10 @@ export default function Intelligence() {
                   <span className="text-sm font-medium text-foreground">
                     {selectedArtifactType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                   </span>
-                  <span className={`text-sm font-bold ${
-                    (syntheticStats?.[selectedArtifactType]?.total_examples ?? 0) >= 10 
-                      ? 'text-green-500' 
-                      : 'text-yellow-500'
-                  }`}>
+                  <span className={`text-sm font-bold ${(syntheticStats?.[selectedArtifactType]?.total_examples ?? 0) >= 10
+                    ? 'text-green-500'
+                    : 'text-yellow-500'
+                    }`}>
                     {(syntheticStats?.[selectedArtifactType]?.total_examples ?? 0) >= 10 ? '✅ Ready' : '⚠️ Need More'}
                   </span>
                 </div>
@@ -874,7 +878,7 @@ export default function Intelligence() {
                 </div>
               </div>
             )}
-            
+
             <button
               onClick={handleTriggerTraining}
               disabled={isTraining}
@@ -911,8 +915,8 @@ export default function Intelligence() {
                       {job.progress !== undefined && (
                         <>
                           <div className="h-2 bg-background rounded-full overflow-hidden mb-1">
-                            <div 
-                              className="h-full bg-primary transition-all" 
+                            <div
+                              className="h-full bg-primary transition-all"
                               style={{ width: `${job.progress}%` }}
                             />
                           </div>

@@ -346,6 +346,72 @@ class MLFeatureEngineer:
             "model_score": float(rf.score(feature_matrix, target_labels))
         }
     
+    def analyze_project_structure(self, file_paths: List[str]) -> Dict[str, Any]:
+        """
+        Analyze project structure by extracting features from key files and clustering them.
+        
+        Args:
+            file_paths: List of absolute file paths to analyze
+            
+        Returns:
+            Dictionary with clustering results and statistics
+        """
+        feature_list = []
+        valid_files = []
+        
+        for file_path_str in file_paths:
+            try:
+                path = Path(file_path_str)
+                if not path.exists() or not path.is_file():
+                    continue
+                    
+                # Skip non-code files
+                if path.suffix.lower() not in ['.py', '.ts', '.tsx', '.js', '.jsx', '.cs', '.java']:
+                    continue
+                    
+                content = path.read_text(encoding='utf-8', errors='ignore')
+                if not content.strip():
+                    continue
+                    
+                features = self.extract_code_features(content, str(path))
+                feature_list.append(features)
+                valid_files.append(str(path))
+                
+            except Exception as e:
+                logger.warning(f"Failed to process file {file_path_str} for clustering: {e}")
+                continue
+        
+        if not feature_list:
+            return {"error": "No valid code files found to analyze"}
+            
+        # Cluster
+        n_clusters = min(5, len(feature_list))
+        if n_clusters < 2:
+             return {
+                "cluster_labels": [0] * len(feature_list),
+                "cluster_stats": {
+                    0: {
+                        "size": len(feature_list),
+                        "samples": [str(Path(f).name) for f in valid_files],
+                        "avg_complexity": sum(f.get("cyclomatic_complexity_estimate", 0) for f in feature_list) / len(feature_list)
+                    }
+                },
+                "n_clusters": 1,
+                "note": "Not enough samples for clustering"
+            }
+            
+        result = self.cluster_features(feature_list, n_clusters=n_clusters)
+        
+        # Clean up result for context (basenames only)
+        if "cluster_stats" in result:
+            for cid, stats in result["cluster_stats"].items():
+                if "samples" in stats:
+                    # Keep full paths in backend for reference if needed, but summary usually wants names
+                    # For context builder, names are better
+                    stats["samples"] = [str(Path(p).name) for p in stats["samples"]]
+                    
+        return result
+
     def _features_to_matrix(self, features_list: List[Dict[str, Any]]) -> np.ndarray:
         """Convert list of feature dictionaries to numpy matrix."""
         # Get numeric features only

@@ -471,12 +471,37 @@ class ContextBuilder:
     async def _build_ml_features_context(self, meeting_notes: str) -> Dict[str, Any]:
         """Build ML Features context."""
         try:
-            # Extract features from meeting notes itself
-            features = self.ml_engineer.extract_code_features(meeting_notes, "meeting_notes.txt")
+            # 1. Get Universal Context to find key files
+            universal_ctx = await self.universal_context_service.get_universal_context()
+            
+            # Use importance map keys which are absolute paths
+            all_files = list(universal_ctx.get("importance_scores", {}).keys())
+            
+            # Sort by importance and take top 50
+            all_files.sort(key=lambda f: universal_ctx["importance_scores"][f], reverse=True)
+            target_files = all_files[:50]
+            
+            if not target_files:
+                return {"error": "No files found for ML analysis"}
+            
+            # 2. Run analysis using MLFeatureEngineer
+            analysis = self.ml_engineer.analyze_project_structure(target_files)
+            
+            # 3. Format into a readable summary string for the prompt
+            summary_lines = ["\n📊 === CODE INTELLIGENCE (ML Analysis) ==="]
+            
+            if "cluster_stats" in analysis:
+                summary_lines.append(f"Project Structure (clustered by complexity/style):")
+                for cid, stats in analysis["cluster_stats"].items():
+                    samples = ", ".join(stats['samples'][:3])
+                    summary_lines.append(f"  • Cluster {cid}: {stats['size']} files. Avg Complexity: {stats['avg_complexity']:.1f}. Examples: {samples}...")
+            
+            features_context = "\n".join(summary_lines)
             
             return {
-                "meeting_notes_features": features,
-                "note": "ML features extracted from meeting notes. For code/diagram features, use /api/analysis/ml-features"
+                "ml_context": features_context,
+                "raw_analysis": analysis,
+                "note": "ML analysis of top 50 key project files"
             }
         except Exception as e:
             logger.error(f"Error building ML features context: {e}", exc_info=True)
@@ -691,6 +716,19 @@ class ContextBuilder:
                     kg_patterns_section += f"🔒 Security issues: {len(security_issues)} detected\n"
         
         assembled_parts.append(_add_section(kg_patterns_section, kg_patterns_budget, "KG/Patterns"))
+        
+        # ============================================================
+        # PRIORITY 6: ML Code Intelligence (New!)
+        # ============================================================
+        ml_section = ""
+        if "ml_features" in context.get("sources", {}):
+            ml_source = context["sources"]["ml_features"]
+            if "ml_context" in ml_source:
+                ml_section = ml_source["ml_context"]
+        
+        # Give it a small but dedicated budget
+        ml_budget = int(max_tokens * 0.15) 
+        assembled_parts.append(_add_section(ml_section, ml_budget, "ML Code Intelligence"))
         
         # ============================================================
         # PRIORITY 5: Low-Priority RAG (only if space permits)

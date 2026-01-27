@@ -181,6 +181,9 @@ class ProjectAwareChatService:
                 # Get Pattern Mining insights
                 pattern_context = await self._get_pattern_insights(message)
                 
+                # Get ML insights
+                ml_context = await self._get_ml_insights(message)
+                
                 # Assemble context
                 project_context_parts = []
                 
@@ -240,6 +243,9 @@ class ProjectAwareChatService:
                 
                 if pattern_context:
                     project_context_parts.append(f"\n## Pattern Mining Insights:\n{pattern_context}")
+                
+                if ml_context:
+                    project_context_parts.append(f"\n{ml_context}")
                 
                 # Include meeting notes context (most important for user's specific project)
                 if meeting_notes_context:
@@ -599,6 +605,50 @@ class ProjectAwareChatService:
             logger.warning(f"Error getting pattern insights: {e}")
             return ""
     
+    async def _get_ml_insights(self, query: str) -> str:
+        """
+        Get ML Code Intelligence insights (clustering/complexity).
+        """
+        try:
+            from backend.services.universal_context import get_universal_context_service
+            from backend.services.ml_features import get_engineer as get_ml_engineer
+            
+            universal_service = get_universal_context_service()
+            universal_ctx = await universal_service.get_universal_context()
+            
+            if not universal_ctx:
+                return ""
+            
+            # Get importance map
+            importance_map = universal_ctx.get("importance_scores", {})
+            if not importance_map:
+                return ""
+                
+            # Take top 30 files
+            all_files = list(importance_map.keys())
+            all_files.sort(key=lambda f: importance_map[f], reverse=True)
+            target_files = all_files[:30]
+            
+            if not target_files:
+                return ""
+            
+            # Run analysis
+            ml_engineer = get_ml_engineer()
+            analysis = ml_engineer.analyze_project_structure(target_files)
+            
+            insights = []
+            if "cluster_stats" in analysis:
+                insights.append("## Code Intelligence (ML Analysis):")
+                for cid, stats in analysis["cluster_stats"].items():
+                    samples = ", ".join(stats.get('samples', [])[:3])
+                    insights.append(f"- Cluster {cid}: {stats.get('size', 0)} files (Avg Complexity: {stats.get('avg_complexity', 0):.1f}). Examples: {samples}...")
+            
+            return "\n".join(insights)
+            
+        except Exception as e:
+            logger.warning(f"Error getting ML insights: {e}")
+            return ""
+
     def _build_system_message(self, include_project_context: bool) -> str:
         """Build system message for chat with actual project information."""
         from backend.utils.target_project import get_target_project_name, get_target_project_info
