@@ -812,7 +812,8 @@ class EnhancedGenerationService:
                 assembled_context=assembled_context,
                 context=context,
                 threshold=opts["validation_threshold"],
-                progress_callback=progress_callback
+                progress_callback=progress_callback,
+                custom_prompt_template=custom_prompt_template
             )
             
             if cloud_result:
@@ -1257,7 +1258,8 @@ Follow the repository's coding style and test patterns. Make tests realistic and
         assembled_context: str,
         context: Dict[str, Any],
         threshold: float,
-        progress_callback: Optional[callable] = None
+        progress_callback: Optional[callable] = None,
+        custom_prompt_template: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """Try cloud models as fallback."""
         # Get cloud models from routing first, then fallback to defaults

@@ -1,0 +1,344 @@
+[
+  {
+    "version": 1,
+    "artifact_id": "api_frontend_test_custom",
+    "artifact_type": "api_frontend_test_custom",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 95.0,
+      "is_valid": true,
+      "meeting_notes": "Custom notes",
+      "html_content": null,
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_0795d4b1",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 95.0,
+          "is_valid": true,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2412829348432'>",
+          "retry": 0
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:32:09.331982",
+    "is_current": false
+  },
+  {
+    "version": 2,
+    "artifact_id": "api_frontend_test_custom",
+    "artifact_type": "api_frontend_test_custom",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 95.0,
+      "is_valid": true,
+      "meeting_notes": "Custom notes",
+      "html_content": null,
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_bb69c01b",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 95.0,
+          "is_valid": true,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2498727388432'>",
+          "retry": 0
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:33:23.591611",
+    "is_current": false
+  },
+  {
+    "version": 3,
+    "artifact_id": "api_frontend_test_custom",
+    "artifact_type": "api_frontend_test_custom",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 95.0,
+      "is_valid": true,
+      "meeting_notes": "Custom notes",
+      "html_content": null,
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_aa19231f",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 95.0,
+          "is_valid": true,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1826656562384'>",
+          "retry": 0
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:34:32.947214",
+    "is_current": false
+  },
+  {
+    "version": 4,
+    "artifact_id": "api_frontend_test_custom",
+    "artifact_type": "api_frontend_test_custom",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 95.0,
+      "is_valid": true,
+      "meeting_notes": "Custom notes",
+      "html_content": null,
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_68351dbe",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 95.0,
+          "is_valid": true,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2217404866512'>",
+          "retry": 0
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:37:06.716217",
+    "is_current": false
+  },
+  {
+    "version": 5,
+    "artifact_id": "api_frontend_test_custom",
+    "artifact_type": "api_frontend_test_custom",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 95.0,
+      "is_valid": true,
+      "meeting_notes": "Custom notes",
+      "html_content": null,
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_04a2a924",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 95.0,
+          "is_valid": true,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2814402037776'>",
+          "retry": 0
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:38:33.742391",
+    "is_current": false
+  },
+  {
+    "version": 6,
+    "artifact_id": "api_frontend_test_custom",
+    "artifact_type": "api_frontend_test_custom",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 95.0,
+      "is_valid": true,
+      "meeting_notes": "Custom notes",
+      "html_content": null,
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_527a323d",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 95.0,
+          "is_valid": true,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2356990740112'>",
+          "retry": 0
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:41:06.634012",
+    "is_current": false
+  },
+  {
+    "version": 7,
+    "artifact_id": "api_frontend_test_custom",
+    "artifact_type": "api_frontend_test_custom",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 95.0,
+      "is_valid": true,
+      "meeting_notes": "Custom notes",
+      "html_content": null,
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_e4fffc58",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 95.0,
+          "is_valid": true,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1989772610896'>",
+          "retry": 0
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:45:09.085249",
+    "is_current": false
+  },
+  {
+    "version": 8,
+    "artifact_id": "api_frontend_test_custom",
+    "artifact_type": "api_frontend_test_custom",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 95.0,
+      "is_valid": true,
+      "meeting_notes": "Custom notes",
+      "html_content": null,
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_d53e96a9",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 95.0,
+          "is_valid": true,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2331215680336'>",
+          "retry": 0
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:49:49.319093",
+    "is_current": false
+  },
+  {
+    "version": 9,
+    "artifact_id": "api_frontend_test_custom",
+    "artifact_type": "api_frontend_test_custom",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 95.0,
+      "is_valid": true,
+      "meeting_notes": "Custom notes",
+      "html_content": null,
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_6ef9a041",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 95.0,
+          "is_valid": true,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1536644255376'>",
+          "retry": 0
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:52:19.837057",
+    "is_current": true
+  }
+]

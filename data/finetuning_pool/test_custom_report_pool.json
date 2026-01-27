@@ -1,0 +1,24 @@
+[
+  {
+    "artifact_type": "test_custom_report",
+    "content": "Mocked Artifact Content\nGraph TD;\nA-->B;",
+    "meeting_notes": "Report requirements",
+    "validation_score": 90.0,
+    "model_used": "codellama:7b-instruct-q4_K_M",
+    "context": {
+      "meeting_notes": "Test Requirements",
+      "assembled_context": "## Requirements\nTest Requirements Test Requirements Test Requirements Test Requirements Test Requirements Test Requirements Test Requirements Test Requirements Test Requirements Test Requirements ",
+      "rag": true
+    },
+    "added_at": "2026-01-27T17:24:28.787042"
+  },
+  {
+    "artifact_type": "test_custom_report",
+    "content": "Mocked Artifact Content\nGraph TD;\nA-->B;",
+    "meeting_notes": "Report requirements",
+    "validation_score": 90.0,
+    "model_used": "codellama:7b-instruct-q4_K_M",
+    "context": {},
+    "added_at": "2026-01-27T17:24:28.810601"
+  }
+]

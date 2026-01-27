@@ -1,0 +1,24 @@
+[
+  {
+    "artifact_type": "api_frontend_test_custom",
+    "content": "Mocked API Content",
+    "meeting_notes": "Custom notes",
+    "validation_score": 95.0,
+    "model_used": "codellama:7b-instruct-q4_K_M",
+    "context": {
+      "meeting_notes": "Custom notes",
+      "assembled_context": "## Notes",
+      "rag": false
+    },
+    "added_at": "2026-01-27T17:52:19.831506"
+  },
+  {
+    "artifact_type": "api_frontend_test_custom",
+    "content": "Mocked API Content",
+    "meeting_notes": "Custom notes",
+    "validation_score": 95.0,
+    "model_used": "codellama:7b-instruct-q4_K_M",
+    "context": {},
+    "added_at": "2026-01-27T17:52:19.834743"
+  }
+]

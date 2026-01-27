@@ -87,6 +87,21 @@
     },
     "folder_id": null,
     "created_at": "2026-01-27T16:55:59.521156",
+    "is_current": false
+  },
+  {
+    "version": 7,
+    "artifact_id": "chat_text_note",
+    "artifact_type": "text_note",
+    "content": "Deep verification content",
+    "metadata": {
+      "created_by": "agentic_chat",
+      "description": "Deep test",
+      "created_timestamp": "2026-01-27T17:03:21.835794",
+      "migrated_from": "chat_text_note_20260127_170321"
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:03:21.835794",
     "is_current": true
   }
 ]

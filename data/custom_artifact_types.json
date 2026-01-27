@@ -25,8 +25,23 @@
       "created_at": "2026-01-22T10:35:53.109970",
       "updated_at": "2026-01-22T10:35:53.109970",
       "is_enabled": true
+    },
+    "test_custom_report": {
+      "id": "test_custom_report",
+      "name": "Test Custom Report",
+      "category": "Testing",
+      "prompt_template": "Generate a report for: {{meeting_notes}}",
+      "description": "A test report type",
+      "validation_rules": [],
+      "default_model": null,
+      "output_format": "document",
+      "created_at": "2026-01-27T17:30:01.975149",
+      "updated_at": "2026-01-27T17:30:01.975149",
+      "is_enabled": true
     }
   },
-  "custom_categories": [],
-  "updated_at": "2026-01-27T00:55:25.357802"
+  "custom_categories": [
+    "Test"
+  ],
+  "updated_at": "2026-01-27T17:52:20.272091"
 }

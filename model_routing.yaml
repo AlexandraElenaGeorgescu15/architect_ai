@@ -4,6 +4,12 @@ api_docs:
   - ollama:codellama:7b-instruct-q4_K_M
   - gemini:gemini-2.5-flash
   primary_model: ollama:deepseek-coder:6.7b-instruct-q4_K_M
+api_frontend_test_custom:
+  enabled: true
+  fallback_models:
+  - ollama:llama3
+  - gemini:gemini-2.5-flash
+  primary_model: codellama:7b-instruct-q4_K_M
 backlog:
   enabled: true
   fallback_models:
@@ -232,10 +238,11 @@ mermaid_data_flow:
 mermaid_erd:
   enabled: true
   fallback_models:
+  - ollama:mermaid-mistral-22b:latest
   - ollama:codellama:7b-instruct-q4_K_M
   - ollama:llama3:8b-instruct-q4_K_M
   - gemini:gemini-2.5-flash
-  primary_model: ollama:mermaid-mistral-22b:latest
+  primary_model: codellama:7b-instruct-q4_K_M
 mermaid_flowchart:
   enabled: true
   fallback_models:

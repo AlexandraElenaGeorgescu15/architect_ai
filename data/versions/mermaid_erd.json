@@ -1,199 +1,5 @@
 [
   {
-    "version": 1,
-    "artifact_id": "mermaid_erd",
-    "artifact_type": "mermaid_erd",
-    "content": "```mermaid\ngraph LR\n    A[Product Manager] --> B[UX Designer]\n    B --> C[Lead Frontend Developer]\n    C --> D[Lead Backend Developer]\n\n    subgraph UI/UX\n        A --> E[New Button]\n        E --> F[Modal (Pop-up)]\n        F --> G[Form with fields: Phone to Request, Phone to Exchange, Reason for Request (Optional), Submit Request, Cancel buttons]\n        F --> H[Confirmation Message]\n    end\n\n    subgraph Backend Logic\n        F --> I[API Endpoint (POST /api/phone-swaps)]\n        I --> J[Database Table: Swap Requests]\n        J --> K[Validation to ensure user ownership of offered phone in exchange]\n    end\n\n    A --> L[Jira Ticket with User Story and Acceptance Criteria]\n```",
-    "metadata": {
-      "model_used": "gemini-2.0-flash-exp",
-      "provider": "gemini",
-      "validation_score": 85.0,
-      "is_valid": true,
-      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
-      "html_content": null,
-      "migrated_from": "mermaid_erd_20251124_180123"
-    },
-    "created_at": "2025-11-24T18:01:23.474443",
-    "is_current": false
-  },
-  {
-    "version": 2,
-    "artifact_id": "mermaid_erd",
-    "artifact_type": "mermaid_erd",
-    "content": "Here's a comprehensive Mermaid ERD (Entity-Relationship Diagram) based on the requirements:\n\n```mermaid\nerDiagram\n  User ||--o{ Phone: owns\n  Phone ||--|{ SwapRequest: contains\n  SwapRequest }|--> ReasonForRequest : has\n  SwapRequest }|--> Status : has\n\nclassDef phone green fill, stroke;\nclassDef swapRequest blue fill, stroke;\nclassDef reasonForRequest orange fill, stroke;\nclassDef status red fill, stroke;\n\nclass Phone {\n  - id string\n  - ownerId string\n  - modelName string\n}\n\nclass SwapRequest {\n  - id string\n  - requestId string references User(id)\n  - requestedPhoneId string references Phone(id)\n  - offeredPhoneId string references Phone(id)\n  - comment text\n  - status Status default \"Pending\"\n}\n\nclass ReasonForRequest {\n  - id string\n  - requestSwapRequestId string references SwapRequest(id)\n  - reason text\n}\n\nclass Status {\n  - id string\n  - name string\n  - description text\n}\n```\n\nThis ERD defines the following entities:\n\n1. **User**: represents a user who owns phones.\n2. **Phone**: represents a phone that can be requested or offered in exchange.\n3. **SwapRequest**: represents a request to swap one phone for another. It has relationships with:\n\t* **ReasonForRequest**: an optional reason for the request (if provided).\n\t* **Status**: the status of the request (defaulting to \"Pending\").\n4. **ReasonForRequest**: an entity that stores the reason for a swap request.\n5. **Status**: an enumeration of possible statuses for a swap request.\n\nThe relationships between entities are as follows:\n\n1. A user owns multiple phones (one-to-many).\n2. A phone can be requested or offered in exchange (many-to-many).\n3. A swap request is associated with one reason and one status.\n4. A status applies to multiple swap requests.\n\nThis ERD captures the essential relationships and entities required for implementing the Phone Swap Request feature.",
-    "metadata": {
-      "model_used": "llama3",
-      "provider": "ollama",
-      "validation_score": 90.0,
-      "is_valid": true,
-      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
-      "html_content": null,
-      "migrated_from": "mermaid_erd_20251124_180441"
-    },
-    "created_at": "2025-11-24T18:04:41.347501",
-    "is_current": false
-  },
-  {
-    "version": 3,
-    "artifact_id": "mermaid_erd",
-    "artifact_type": "mermaid_erd",
-    "content": "Here is a Mermaid ERD (Entity-Relationship Diagram) based on the requirements:\n\n```mermaid\nerDiagram\n  Phone-Swap ||--o{ User : owns\n  Phone-Swap ||--| { Phone : requested-for, offered-in-exchange\n  Phone-Swap ||--o{ Status : has\n\n  User {\n    id int primary key,\n    name string\n  }\n\n  Phone {\n    id int primary key,\n    model string,\n    condition string\n  }\n\n  Phone-Swap {\n    id int primary key,\n    requester-id int references User(id),\n    requested-phone-id int references Phone(id),\n    offered-phone-id int references Phone(id),\n    comment text,\n    status-id int references Status(id)\n  }\n\n  Status {\n    id int primary key,\n    name string\n  }\n```\n\nThis ERD represents the main entities involved in the phone swap request feature: `User`, `Phone`, and `Phone-Swap`. The relationships between these entities are as follows:\n\n* A `User` can own multiple `Phone`s (one-to-many).\n* A `Phone-Swap` is requested by a `User` who owns one or more `Phone`s. This relationship is represented by the `owns` association.\n* A `Phone-Swap` involves two `Phone`s: the one being requested and the one being offered in exchange. This relationship is represented by the `requested-for` and `offered-in-exchange` associations.\n* The status of a `Phone-Swap` is represented by the `Status` entity, which has a many-to-one relationship with `Phone-Swap`.\n\nThe ERD also includes the necessary attributes for each entity: `id`, `name`, `model`, `condition`, and `comment`.",
-    "metadata": {
-      "model_used": "llama3",
-      "provider": "ollama",
-      "validation_score": 80.0,
-      "is_valid": true,
-      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
-      "migrated_from": "mermaid_erd_20251126_163029"
-    },
-    "created_at": "2025-11-26T16:30:29.635260",
-    "is_current": false
-  },
-  {
-    "version": 4,
-    "artifact_id": "mermaid_erd",
-    "artifact_type": "mermaid_erd",
-    "content": "Here's a comprehensive Mermaid ERD (Entity-Relationship Diagram) for the Phone Swap Request feature:\n\n```mermaid\nerDiagram\n  USER ||--o{ PHONE : owns\n  PHONE ||--|{ SWAP_REQUEST : offered_in_exchange\n  PHONE ||--|{ AVAIL_PHONE : requested_phone\n  SWAP_REQUEST ||--|{ COMMENT : reason_for_request\n\n  CLASS USER {\n    - id (primary key)\n    - email\n  }\n\n  CLASS PHONE {\n    - id (primary key)\n    - name\n    - description\n    - user_id (foreign key referencing the USER table)\n  }\n\n  CLASS SWAP_REQUEST {\n    - id (primary key)\n    - user_id (foreign key referencing the USER table)\n    - requested_phone_id (foreign key referencing the PHONE table)\n    - offered_phone_id (foreign key referencing the PHONE table)\n    - status (default: 'Pending')\n    - comment\n  }\n\n  CLASS AVAIL_PHONE {\n    - id (primary key)\n    - name\n    - description\n  }\n\n  CLASS COMMENT {\n    - id (primary key)\n    - text\n    - swap_request_id (foreign key referencing the SWAP_REQUEST table)\n  }\n```\n\nThis ERD represents the relationships between the entities involved in the Phone Swap Request feature:\n\n1. A user owns one or more phones.\n2. Each phone has a unique ID and is offered in exchange for another phone through a swap request.\n3. The requested phone and the offered phone are both instances of the PHONE entity.\n4. A swap request belongs to a specific user and includes information about the requested phone, the offered phone, and any additional comments.\n5. Comments are associated with each swap request.\n\nThis ERD should provide a solid foundation for designing the database schema and implementing the Phone Swap Request feature.",
-    "metadata": {
-      "model_used": "llama3",
-      "provider": "ollama",
-      "validation_score": 100.0,
-      "is_valid": true,
-      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
-      "html_content": null,
-      "migrated_from": "mermaid_erd_20251126_173132"
-    },
-    "created_at": "2025-11-26T17:31:32.278935",
-    "is_current": false
-  },
-  {
-    "version": 5,
-    "artifact_id": "mermaid_erd",
-    "artifact_type": "mermaid_erd",
-    "content": "**Mermaid Flowchart for Phone Swap Request Feature**\n\n```mermaid\ngraph LR\n    A[User clicks \"Request Phone Swap\" button] -->|Triggers modal popup| B[Modal with form]\n    B -->|Contains fields: Phone to Request, Phone to Exchange, Reason for Request (Optional), Actions| C[Form submission]\n    C -->|Validates user's ownership of offered phone| D[Backend validation]\n    D -->|Successful submission| E[Confirmation message displayed]\n    E -->|Modal closes| F[User sees confirmation message]\n    C -->|Invalid submission| G[Error message displayed]\n    G -->|Modal stays open until corrected| H[Form resubmission]\n```\n\n**Explanation**\n\n1. The user clicks the \"Request Phone Swap\" button, triggering a modal popup to appear.\n2. The modal contains a form with three fields: Phone to Request (dropdown list of available phones), Phone to Exchange (dropdown list of phones owned by the logged-in user), and Reason for Request (optional text area).\n3. When the user submits the form, the backend validation checks if the user is the actual owner of the phone being offered in exchange.\n4. If the submission is successful, a confirmation message is displayed, and the modal closes.\n5. If the submission is invalid (e.g., the user is not the owner of the offered phone), an error message is displayed, and the modal stays open until the issue is corrected.\n\n**Notes**\n\n* The wireframe for the modal and form should be created by EOD October 17 as per the action item.\n* The new API endpoint (POST /api/phone-swaps) will handle form submissions.\n* A new table will be created in the database to store swap requests, including columns for the requester's ID, requested phone, offered phone, status, and comment.\n\n**Validation**\n\nThe Mermaid flowchart ensures that all possible paths are accounted for, from the user clicking the \"Request Phone Swap\" button to the successful or unsuccessful submission of the form. The validation process checks if the user is the actual owner of the phone being offered in exchange, preventing potential issues with swap requests.",
-    "metadata": {
-      "model_used": "llama3",
-      "provider": "ollama",
-      "validation_score": 100.0,
-      "is_valid": true,
-      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
-      "html_content": null,
-      "migrated_from": "mermaid_erd_20251126_194139"
-    },
-    "created_at": "2025-11-26T19:41:39.321866",
-    "is_current": false
-  },
-  {
-    "version": 6,
-    "artifact_id": "mermaid_erd",
-    "artifact_type": "mermaid_erd",
-    "content": "**Mermaid ERD for Phone Swap Request Feature**\n\n```mermaid\nerDiagram\n  CUSTOMER ||--o{ PHONE_SWAP_REQUEST : has\n  PHONE_SWAP_REQUEST ||--|{ PHONE : requested\n  PHONE_SWAP_REQUEST ||--|{ PHONE : offered\n  CUSTOMER }|..|{ PHONE : owns\n\n  TABLE PHONE_SWAP_REQUEST (\n    id int primary key,\n    requester_id int references CUSTOMER(id),\n    requested_phone_id int references PHONE(id),\n    offered_phone_id int references PHONE(id),\n    status varchar(10) default 'Pending',\n    comment text\n  )\n\n  TABLE PHONE (\n    id int primary key,\n    customer_id int references CUSTOMER(id)\n  )\n```\n\n**Explanation**\n\nThis ERD diagram represents the entities and relationships involved in the Phone Swap Request feature. The main entities are:\n\n* `CUSTOMER`: represents a user who can request a phone swap.\n* `PHONE_SWAP_REQUEST`: represents a request to exchange one phone for another.\n* `PHONE`: represents a phone that can be requested or offered as part of a swap.\n\nThe relationships between these entities are:\n\n* A customer (`CUSTOMER`) has many phone swap requests (`PHONE_SWAP_REQUEST`).\n* A phone swap request (`PHONE_SWAP_REQUEST`) is related to two phones: the one being requested (`requested_phone`) and the one being offered in exchange (`offered_phone`).\n* A customer (`CUSTOMER`) owns many phones (`PHONE`).\n\nThe `PHONE_SWAP_REQUEST` table has the following columns:\n\n* `id`: a unique identifier for each request.\n* `requester_id`: the ID of the customer making the request, referencing the `CUSTOMER` table.\n* `requested_phone_id`: the ID of the phone being requested, referencing the `PHONE` table.\n* `offered_phone_id`: the ID of the phone being offered in exchange, referencing the `PHONE` table.\n* `status`: the status of the request (defaulting to 'Pending').\n* `comment`: any additional comments provided by the customer.\n\nThe `PHONE` table has the following columns:\n\n* `id`: a unique identifier for each phone.\n* `customer_id`: the ID of the customer who owns the phone, referencing the `CUSTOMER` table.\n\nThis ERD diagram captures the key entities and relationships involved in the Phone Swap Request feature, ensuring that the data is properly structured to support the required functionality.",
-    "metadata": {
-      "model_used": "llama3",
-      "provider": "ollama",
-      "validation_score": 100.0,
-      "is_valid": true,
-      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
-      "html_content": null,
-      "migrated_from": "mermaid_erd_20251126_195949"
-    },
-    "created_at": "2025-11-26T19:59:49.186016",
-    "is_current": false
-  },
-  {
-    "version": 7,
-    "artifact_id": "mermaid_erd",
-    "artifact_type": "mermaid_erd",
-    "content": "Here is a comprehensive Mermaid ERD (Entity-Relationship Diagram) for the Phone Swap Request Feature:\n\n```mermaid\nerDiagram\n  USER ||--o{ PHONE : owns\n  PHONE ||--|{ SWAP_REQUEST : requested_in_exchange\n  SWAP_REQUEST ||--|{ PHONE : offered_in_exchange\n\n  class USER {\n    - id (primary key)\n    - username\n  }\n\n  class PHONE {\n    - id (primary key)\n    - name\n    - description\n    - available boolean\n    - user_id (foreign key references USER(id))\n  }\n\n  class SWAP_REQUEST {\n    - id (primary key)\n    - requester_id (foreign key references USER(id))\n    - requested_phone_id (foreign key references PHONE(id))\n    - offered_phone_id (foreign key references PHONE(id))\n    - status (default 'Pending', possible values: ['Pending', 'Approved', 'Denied'])\n    - comment (text area input)\n  }\n```\n\nThis ERD captures the entities and relationships involved in the Phone Swap Request Feature:\n\n1. **USER**: Represents the users of the system, with a unique ID and username.\n2. **PHONE**: Represents the phones available for swap, with a unique ID, name, description, availability status, and foreign key referencing the user who owns it.\n3. **SWAP_REQUEST**: Represents the phone swap requests made by users, with a unique ID, foreign keys referencing the requester's user ID, requested phone ID, and offered phone ID, as well as a status (default 'Pending') and comment.\n\nThe relationships between these entities are:\n\n* A user can own multiple phones (one-to-many).\n* A phone can be requested for swap by multiple users (many-to-many).\n* A swap request is made by one user and involves two phones (many-to-one).\n\nThis ERD provides a clear visual representation of the data model, which can help guide the implementation of the feature.",
-    "metadata": {
-      "model_used": "llama3",
-      "provider": "ollama",
-      "validation_score": 100.0,
-      "is_valid": true,
-      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
-      "html_content": null,
-      "migrated_from": "mermaid_erd_20251126_200400"
-    },
-    "created_at": "2025-11-26T20:04:00.066331",
-    "is_current": false
-  },
-  {
-    "version": 8,
-    "artifact_id": "mermaid_erd",
-    "artifact_type": "mermaid_erd",
-    "content": "**Mermaid ERD for Phone Swap Request Feature**\n\n```mermaid\nerDiagram\n  CUSTOMER ||--o{ PHONE_SWAP_REQUEST : has\n  PHONE_SWAP_REQUEST ||--|{ PHONE : requested\n  PHONE_SWAP_REQUEST ||--|{ PHONE : offered\n  CUSTOMER }|..|{ PHONE : owns\n\n  TABLE PHONE_SWAP_REQUEST (\n    id int primary key,\n    requester_id int references CUSTOMER(id),\n    requested_phone_id int references PHONE(id),\n    offered_phone_id int references PHONE(id),\n    status varchar(10) default 'Pending',\n    comment text\n  )\n\n  TABLE PHONE (\n    id int primary key,\n    customer_id int references CUSTOMER(id)\n  )\n```\n\n**Explanation**\n\nThis ERD diagram represents the entities and relationships involved in the Phone Swap Request feature. The main entities are:\n\n* `CUSTOMER`: represents a user who can request a phone swap.\n* `PHONE_SWAP_REQUEST`: represents a request to exchange one phone for another.\n* `PHONE`: represents a phone that can be requested or offered as part of a swap.\n\nThe relationships between these entities are:\n\n* A customer (`CUSTOMER`) has many phone swap requests (`PHONE_SWAP_REQUEST`).\n* A phone swap request (`PHONE_SWAP_REQUEST`) is related to two phones: the one being requested (`requested_phone`) and the one being offered in exchange (`offered_phone`).\n* A customer (`CUSTOMER`) owns many phones (`PHONE`).\n\nThe `PHONE_SWAP_REQUEST` table has the following columns:\n\n* `id`: a unique identifier for each request.\n* `requester_id`: the ID of the customer making the request, referencing the `CUSTOMER` table.\n* `requested_phone_id`: the ID of the phone being requested, referencing the `PHONE` table.\n* `offered_phone_id`: the ID of the phone being offered in exchange, referencing the `PHONE` table.\n* `status`: the status of the request (defaulting to 'Pending').\n* `comment`: any additional comments provided by the customer.\n\nThe `PHONE` table has the following columns:\n\n* `id`: a unique identifier for each phone.\n* `customer_id`: the ID of the customer who owns the phone, referencing the `CUSTOMER` table.\n\nThis ERD diagram captures the key entities and relationships involved in the Phone Swap Request feature, ensuring that the data is properly structured to support the required functionality.",
-    "metadata": {
-      "model_used": "llama3",
-      "provider": "ollama",
-      "validation_score": 100.0,
-      "is_valid": true,
-      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
-      "html_content": null,
-      "migrated_from": "mermaid_erd_20251126_195949",
-      "restored_from": 6,
-      "restored_at": "2025-12-09T16:05:05.106443"
-    },
-    "created_at": "2025-12-09T16:05:05.106443",
-    "is_current": false
-  },
-  {
-    "version": 9,
-    "artifact_id": "mermaid_erd",
-    "artifact_type": "mermaid_erd",
-    "content": "Here is a comprehensive Mermaid ERD (Entity-Relationship Diagram) for the Phone Swap Request Feature:\n\n```mermaid\nerDiagram\n  USER ||--o{ PHONE : owns\n  PHONE ||--|{ SWAP_REQUEST : requested_in_exchange\n  SWAP_REQUEST ||--|{ PHONE : offered_in_exchange\n\n  class USER {\n    - id (primary key)\n    - username\n  }\n\n  class PHONE {\n    - id (primary key)\n    - name\n    - description\n    - available boolean\n    - user_id (foreign key references USER(id))\n  }\n\n  class SWAP_REQUEST {\n    - id (primary key)\n    - requester_id (foreign key references USER(id))\n    - requested_phone_id (foreign key references PHONE(id))\n    - offered_phone_id (foreign key references PHONE(id))\n    - status (default 'Pending', possible values: ['Pending', 'Approved', 'Denied'])\n    - comment (text area input)\n  }\n```\n\nThis ERD captures the entities and relationships involved in the Phone Swap Request Feature:\n\n1. **USER**: Represents the users of the system, with a unique ID and username.\n2. **PHONE**: Represents the phones available for swap, with a unique ID, name, description, availability status, and foreign key referencing the user who owns it.\n3. **SWAP_REQUEST**: Represents the phone swap requests made by users, with a unique ID, foreign keys referencing the requester's user ID, requested phone ID, and offered phone ID, as well as a status (default 'Pending') and comment.\n\nThe relationships between these entities are:\n\n* A user can own multiple phones (one-to-many).\n* A phone can be requested for swap by multiple users (many-to-many).\n* A swap request is made by one user and involves two phones (many-to-one).\n\nThis ERD provides a clear visual representation of the data model, which can help guide the implementation of the feature.",
-    "metadata": {
-      "model_used": "llama3",
-      "provider": "ollama",
-      "validation_score": 100.0,
-      "is_valid": true,
-      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
-      "html_content": null,
-      "migrated_from": "mermaid_erd_20251126_200400",
-      "restored_from": 7,
-      "restored_at": "2025-12-09T16:05:30.849555"
-    },
-    "created_at": "2025-12-09T16:05:30.849555",
-    "is_current": false
-  },
-  {
-    "version": 10,
-    "artifact_id": "mermaid_erd",
-    "artifact_type": "mermaid_erd",
-    "content": "Here's a comprehensive Mermaid ERD (Entity-Relationship Diagram) for the Phone Swap Request feature:\n\n```mermaid\nerDiagram\n  USER ||--o{ PHONE : owns\n  PHONE ||--|{ SWAP_REQUEST : offered_in_exchange\n  PHONE ||--|{ AVAIL_PHONE : requested_phone\n  SWAP_REQUEST ||--|{ COMMENT : reason_for_request\n\n  CLASS USER {\n    - id (primary key)\n    - email\n  }\n\n  CLASS PHONE {\n    - id (primary key)\n    - name\n    - description\n    - user_id (foreign key referencing the USER table)\n  }\n\n  CLASS SWAP_REQUEST {\n    - id (primary key)\n    - user_id (foreign key referencing the USER table)\n    - requested_phone_id (foreign key referencing the PHONE table)\n    - offered_phone_id (foreign key referencing the PHONE table)\n    - status (default: 'Pending')\n    - comment\n  }\n\n  CLASS AVAIL_PHONE {\n    - id (primary key)\n    - name\n    - description\n  }\n\n  CLASS COMMENT {\n    - id (primary key)\n    - text\n    - swap_request_id (foreign key referencing the SWAP_REQUEST table)\n  }\n```\n\nThis ERD represents the relationships between the entities involved in the Phone Swap Request feature:\n\n1. A user owns one or more phones.\n2. Each phone has a unique ID and is offered in exchange for another phone through a swap request.\n3. The requested phone and the offered phone are both instances of the PHONE entity.\n4. A swap request belongs to a specific user and includes information about the requested phone, the offered phone, and any additional comments.\n5. Comments are associated with each swap request.\n\nThis ERD should provide a solid foundation for designing the database schema and implementing the Phone Swap Request feature.",
-    "metadata": {
-      "model_used": "llama3",
-      "provider": "ollama",
-      "validation_score": 100.0,
-      "is_valid": true,
-      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
-      "html_content": null,
-      "migrated_from": "mermaid_erd_20251126_173132",
-      "restored_from": 4,
-      "restored_at": "2025-12-09T16:08:13.902576"
-    },
-    "created_at": "2025-12-09T16:08:13.902576",
-    "is_current": false
-  },
-  {
-    "version": 11,
-    "artifact_id": "mermaid_erd",
-    "artifact_type": "mermaid_erd",
-    "content": "**Mermaid ERD for Phone Swap Request Feature**\n\n```mermaid\nerDiagram\n  CUSTOMER ||--o{ PHONE_SWAP_REQUEST : has\n  PHONE_SWAP_REQUEST ||--|{ PHONE : requested\n  PHONE_SWAP_REQUEST ||--|{ PHONE : offered\n  CUSTOMER }|..|{ PHONE : owns\n\n  TABLE PHONE_SWAP_REQUEST (\n    id int primary key,\n    requester_id int references CUSTOMER(id),\n    requested_phone_id int references PHONE(id),\n    offered_phone_id int references PHONE(id),\n    status varchar(10) default 'Pending',\n    comment text\n  )\n\n  TABLE PHONE (\n    id int primary key,\n    customer_id int references CUSTOMER(id)\n  )\n```\n\n**Explanation**\n\nThis ERD diagram represents the entities and relationships involved in the Phone Swap Request feature. The main entities are:\n\n* `CUSTOMER`: represents a user who can request a phone swap.\n* `PHONE_SWAP_REQUEST`: represents a request to exchange one phone for another.\n* `PHONE`: represents a phone that can be requested or offered as part of a swap.\n\nThe relationships between these entities are:\n\n* A customer (`CUSTOMER`) has many phone swap requests (`PHONE_SWAP_REQUEST`).\n* A phone swap request (`PHONE_SWAP_REQUEST`) is related to two phones: the one being requested (`requested_phone`) and the one being offered in exchange (`offered_phone`).\n* A customer (`CUSTOMER`) owns many phones (`PHONE`).\n\nThe `PHONE_SWAP_REQUEST` table has the following columns:\n\n* `id`: a unique identifier for each request.\n* `requester_id`: the ID of the customer making the request, referencing the `CUSTOMER` table.\n* `requested_phone_id`: the ID of the phone being requested, referencing the `PHONE` table.\n* `offered_phone_id`: the ID of the phone being offered in exchange, referencing the `PHONE` table.\n* `status`: the status of the request (defaulting to 'Pending').\n* `comment`: any additional comments provided by the customer.\n\nThe `PHONE` table has the following columns:\n\n* `id`: a unique identifier for each phone.\n* `customer_id`: the ID of the customer who owns the phone, referencing the `CUSTOMER` table.\n\nThis ERD diagram captures the key entities and relationships involved in the Phone Swap Request feature, ensuring that the data is properly structured to support the required functionality.",
-    "metadata": {
-      "model_used": "llama3",
-      "provider": "ollama",
-      "validation_score": 100.0,
-      "is_valid": true,
-      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
-      "html_content": null,
-      "migrated_from": "mermaid_erd_20251126_195949",
-      "restored_from": 6,
-      "restored_at": "2025-12-09T16:08:36.761736"
-    },
-    "created_at": "2025-12-09T16:08:36.761736",
-    "is_current": false
-  },
-  {
     "version": 12,
     "artifact_id": "mermaid_erd",
     "artifact_type": "mermaid_erd",
@@ -1711,6 +1517,1573 @@
     },
     "folder_id": null,
     "created_at": "2026-01-26T19:19:43.137115",
+    "is_current": false
+  },
+  {
+    "version": 51,
+    "artifact_id": "mermaid_erd",
+    "artifact_type": "mermaid_erd",
+    "content": "<!-- VALIDATION WARNING: Score 0.0/100 - Issues Detected -->\n# mermaid_erd\n\nError: All 12 generation attempts failed. | Tried: mermaid-mistral-22b:latest, mermaid-mistral-22b:latest, mermaid-mistral-22b:latest +9 more | Ollama: running, API keys: configured",
+    "metadata": {
+      "model_used": "failed",
+      "provider": "cloud",
+      "validation_score": 0.0,
+      "is_valid": false,
+      "meeting_notes": "Create a login system ERD",
+      "html_content": "\n        <!DOCTYPE html>\n        <html lang=\"en\">\n        <head>\n            <meta charset=\"UTF-8\">\n            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n            <title>Mermaid Diagram</title>\n            <script src=\"https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js\"></script>\n            <style>\n                body {\n                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n                    margin: 0;\n                    padding: 20px;\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    min-height: 100vh;\n                }\n                .container {\n                    max-width: 1200px;\n                    margin: 0 auto;\n                    background: white;\n                    border-radius: 12px;\n                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);\n                    overflow: hidden;\n                }\n                .header {\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    color: white;\n                    padding: 20px;\n                    text-align: center;\n                }\n                .header h1 {\n                    margin: 0;\n                    font-size: 24px;\n                    font-weight: 300;\n                }\n                .diagram-container {\n                    padding: 30px;\n                    text-align: center;\n                }\n                .mermaid {\n                    background: #f8f9fa;\n                    border-radius: 8px;\n                    padding: 20px;\n                    margin: 20px 0;\n                }\n                .info {\n                    background: #e3f2fd;\n                    border-left: 4px solid #2196f3;\n                    padding: 15px;\n                    margin: 20px 0;\n                    border-radius: 4px;\n                }\n                .info h3 {\n                    margin: 0 0 10px 0;\n                    color: #1976d2;\n                }\n                .info p {\n                    margin: 0;\n                    color: #424242;\n                }\n                .footer {\n                    background: #f5f5f5;\n                    padding: 15px;\n                    text-align: center;\n                    color: #666;\n                    font-size: 12px;\n                }\n            </style>\n        </head>\n        <body>\n            <div class=\"container\">\n                <div class=\"header\">\n                    <h1>\ud83c\udfa8 Mermaid Diagram Visualization</h1>\n                </div>\n                \n                <div class=\"diagram-container\">\n                    <div class=\"info\">\n                        <h3>\ud83d\udcca Interactive Diagram</h3>\n                        <p>This diagram is rendered using Mermaid.js and is fully interactive. You can zoom, pan, and interact with the elements.</p>\n                    </div>\n                    \n                    <div class=\"mermaid\" id=\"erd_diagram\">\n                        <!-- VALIDATION WARNING: Score 0.0/100 - Issues Detected -->\n# mermaid_erd\n\nError: All 12 generation attempts failed. | Tried: mermaid-mistral-22b:latest, mermaid-mistral-22b:latest, mermaid-mistral-22b:latest +9 more | Ollama: running, API keys: configured\n                    </div>\n                    \n                    <div class=\"info\">\n                        <h3>\ud83d\udd27 Technical Details</h3>\n                        <p><strong>Diagram ID:</strong> erd_diagram</p>\n                        <p><strong>Generated:</strong> 2026-01-27 17:30:01</p>\n                        <p><strong>Mermaid Version:</strong> 10.6.1</p>\n                    </div>\n                </div>\n                \n                <div class=\"footer\">\n                    <p>Generated by Architect.AI - Mermaid HTML Renderer</p>\n                </div>\n            </div>\n            \n            <script>\n                mermaid.initialize({\n                    startOnLoad: true,\n                    theme: 'default',\n                    themeVariables: {\n                        primaryColor: '#667eea',\n                        primaryTextColor: '#333',\n                        primaryBorderColor: '#764ba2',\n                        lineColor: '#666',\n                        secondaryColor: '#f8f9fa',\n                        tertiaryColor: '#e3f2fd'\n                    },\n                    flowchart: {\n                        useMaxWidth: true,\n                        htmlLabels: true\n                    },\n                    sequence: {\n                        useMaxWidth: true,\n                        wrap: true\n                    },\n                    gantt: {\n                        useMaxWidth: true\n                    }\n                });\n                \n                // Add interactivity\n                document.addEventListener('DOMContentLoaded', function() {\n                    const diagram = document.getElementById('erd_diagram');\n                    if (diagram) {\n                        diagram.style.cursor = 'grab';\n                        diagram.addEventListener('click', function(e) {\n                            console.log('Diagram clicked:', e.target);\n                        });\n                    }\n                });\n            </script>\n        </body>\n        </html>\n        ",
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_215462e0",
+      "attempts": [
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked Artifact Content\nGraph TD;\nA-->B;",
+          "score": 0.0,
+          "is_valid": false,
+          "errors": [
+            "Content is too short or empty",
+            "CRITICAL: Missing Mermaid diagram type declaration",
+            "Score 16.0 is below strict threshold 80.0",
+            "CRITICAL: Missing Mermaid diagram type declaration"
+          ],
+          "retry": 0
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked Artifact Content\nGraph TD;\nA-->B;",
+          "score": 0.0,
+          "is_valid": false,
+          "errors": [
+            "Content is too short or empty",
+            "CRITICAL: Missing Mermaid diagram type declaration",
+            "Score 16.0 is below strict threshold 80.0",
+            "CRITICAL: Missing Mermaid diagram type declaration"
+          ],
+          "retry": 1
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked Artifact Content\nGraph TD;\nA-->B;",
+          "score": 0.0,
+          "is_valid": false,
+          "errors": [
+            "Content is too short or empty",
+            "CRITICAL: Missing Mermaid diagram type declaration",
+            "Score 16.0 is below strict threshold 80.0",
+            "CRITICAL: Missing Mermaid diagram type declaration"
+          ],
+          "retry": 2
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked Artifact Content\nGraph TD;\nA-->B;",
+          "score": 0.0,
+          "is_valid": false,
+          "errors": [
+            "Content is too short or empty",
+            "CRITICAL: Missing Mermaid diagram type declaration",
+            "Score 16.0 is below strict threshold 80.0",
+            "CRITICAL: Missing Mermaid diagram type declaration"
+          ],
+          "retry": 3
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked Artifact Content\nGraph TD;\nA-->B;",
+          "score": 0.0,
+          "is_valid": false,
+          "errors": [
+            "Content is too short or empty",
+            "CRITICAL: Missing Mermaid diagram type declaration",
+            "Score 16.0 is below strict threshold 80.0",
+            "CRITICAL: Missing Mermaid diagram type declaration"
+          ],
+          "retry": 0
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked Artifact Content\nGraph TD;\nA-->B;",
+          "score": 0.0,
+          "is_valid": false,
+          "errors": [
+            "Content is too short or empty",
+            "CRITICAL: Missing Mermaid diagram type declaration",
+            "Score 16.0 is below strict threshold 80.0",
+            "CRITICAL: Missing Mermaid diagram type declaration"
+          ],
+          "retry": 1
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked Artifact Content\nGraph TD;\nA-->B;",
+          "score": 0.0,
+          "is_valid": false,
+          "errors": [
+            "Content is too short or empty",
+            "CRITICAL: Missing Mermaid diagram type declaration",
+            "Score 16.0 is below strict threshold 80.0",
+            "CRITICAL: Missing Mermaid diagram type declaration"
+          ],
+          "retry": 2
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked Artifact Content\nGraph TD;\nA-->B;",
+          "score": 0.0,
+          "is_valid": false,
+          "errors": [
+            "Content is too short or empty",
+            "CRITICAL: Missing Mermaid diagram type declaration",
+            "Score 16.0 is below strict threshold 80.0",
+            "CRITICAL: Missing Mermaid diagram type declaration"
+          ],
+          "retry": 3
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked Artifact Content\nGraph TD;\nA-->B;",
+          "score": 0.0,
+          "is_valid": false,
+          "errors": [
+            "Content is too short or empty",
+            "CRITICAL: Missing Mermaid diagram type declaration",
+            "Score 16.0 is below strict threshold 80.0",
+            "CRITICAL: Missing Mermaid diagram type declaration"
+          ],
+          "retry": 0
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked Artifact Content\nGraph TD;\nA-->B;",
+          "score": 0.0,
+          "is_valid": false,
+          "errors": [
+            "Content is too short or empty",
+            "CRITICAL: Missing Mermaid diagram type declaration",
+            "Score 16.0 is below strict threshold 80.0",
+            "CRITICAL: Missing Mermaid diagram type declaration"
+          ],
+          "retry": 1
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked Artifact Content\nGraph TD;\nA-->B;",
+          "score": 0.0,
+          "is_valid": false,
+          "errors": [
+            "Content is too short or empty",
+            "CRITICAL: Missing Mermaid diagram type declaration",
+            "Score 16.0 is below strict threshold 80.0",
+            "CRITICAL: Missing Mermaid diagram type declaration"
+          ],
+          "retry": 2
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked Artifact Content\nGraph TD;\nA-->B;",
+          "score": 0.0,
+          "is_valid": false,
+          "errors": [
+            "Content is too short or empty",
+            "CRITICAL: Missing Mermaid diagram type declaration",
+            "Score 16.0 is below strict threshold 80.0",
+            "CRITICAL: Missing Mermaid diagram type declaration"
+          ],
+          "retry": 3
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:30:01.936618",
+    "is_current": false
+  },
+  {
+    "version": 51,
+    "artifact_id": "mermaid_erd",
+    "artifact_type": "mermaid_erd",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 65.0,
+      "is_valid": true,
+      "meeting_notes": "Create a user database ERD",
+      "html_content": "\n        <!DOCTYPE html>\n        <html lang=\"en\">\n        <head>\n            <meta charset=\"UTF-8\">\n            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n            <title>Mermaid Diagram</title>\n            <script src=\"https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js\"></script>\n            <style>\n                body {\n                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n                    margin: 0;\n                    padding: 20px;\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    min-height: 100vh;\n                }\n                .container {\n                    max-width: 1200px;\n                    margin: 0 auto;\n                    background: white;\n                    border-radius: 12px;\n                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);\n                    overflow: hidden;\n                }\n                .header {\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    color: white;\n                    padding: 20px;\n                    text-align: center;\n                }\n                .header h1 {\n                    margin: 0;\n                    font-size: 24px;\n                    font-weight: 300;\n                }\n                .diagram-container {\n                    padding: 30px;\n                    text-align: center;\n                }\n                .mermaid {\n                    background: #f8f9fa;\n                    border-radius: 8px;\n                    padding: 20px;\n                    margin: 20px 0;\n                }\n                .info {\n                    background: #e3f2fd;\n                    border-left: 4px solid #2196f3;\n                    padding: 15px;\n                    margin: 20px 0;\n                    border-radius: 4px;\n                }\n                .info h3 {\n                    margin: 0 0 10px 0;\n                    color: #1976d2;\n                }\n                .info p {\n                    margin: 0;\n                    color: #424242;\n                }\n                .footer {\n                    background: #f5f5f5;\n                    padding: 15px;\n                    text-align: center;\n                    color: #666;\n                    font-size: 12px;\n                }\n            </style>\n        </head>\n        <body>\n            <div class=\"container\">\n                <div class=\"header\">\n                    <h1>\ud83c\udfa8 Mermaid Diagram Visualization</h1>\n                </div>\n                \n                <div class=\"diagram-container\">\n                    <div class=\"info\">\n                        <h3>\ud83d\udcca Interactive Diagram</h3>\n                        <p>This diagram is rendered using Mermaid.js and is fully interactive. You can zoom, pan, and interact with the elements.</p>\n                    </div>\n                    \n                    <div class=\"mermaid\" id=\"erd_diagram\">\n                        Mocked API Content\n                    </div>\n                    \n                    <div class=\"info\">\n                        <h3>\ud83d\udd27 Technical Details</h3>\n                        <p><strong>Diagram ID:</strong> erd_diagram</p>\n                        <p><strong>Generated:</strong> 2026-01-27 17:32:09</p>\n                        <p><strong>Mermaid Version:</strong> 10.6.1</p>\n                    </div>\n                </div>\n                \n                <div class=\"footer\">\n                    <p>Generated by Architect.AI - Mermaid HTML Renderer</p>\n                </div>\n            </div>\n            \n            <script>\n                mermaid.initialize({\n                    startOnLoad: true,\n                    theme: 'default',\n                    themeVariables: {\n                        primaryColor: '#667eea',\n                        primaryTextColor: '#333',\n                        primaryBorderColor: '#764ba2',\n                        lineColor: '#666',\n                        secondaryColor: '#f8f9fa',\n                        tertiaryColor: '#e3f2fd'\n                    },\n                    flowchart: {\n                        useMaxWidth: true,\n                        htmlLabels: true\n                    },\n                    sequence: {\n                        useMaxWidth: true,\n                        wrap: true\n                    },\n                    gantt: {\n                        useMaxWidth: true\n                    }\n                });\n                \n                // Add interactivity\n                document.addEventListener('DOMContentLoaded', function() {\n                    const diagram = document.getElementById('erd_diagram');\n                    if (diagram) {\n                        diagram.style.cursor = 'grab';\n                        diagram.addEventListener('click', function(e) {\n                            console.log('Diagram clicked:', e.target);\n                        });\n                    }\n                });\n            </script>\n        </body>\n        </html>\n        ",
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_c6593aab",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2412828302608'>",
+          "retry": 0
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2412828302608'>",
+          "retry": 1
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2412828302608'>",
+          "retry": 2
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2412828302608'>",
+          "retry": 3
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2412828302608'>",
+          "retry": 0
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2412828302608'>",
+          "retry": 1
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2412828302608'>",
+          "retry": 2
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2412828302608'>",
+          "retry": 3
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2412828302608'>",
+          "retry": 0
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2412828302608'>",
+          "retry": 1
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2412828302608'>",
+          "retry": 2
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2412828302608'>",
+          "retry": 3
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:32:09.110693",
+    "is_current": false
+  },
+  {
+    "version": 51,
+    "artifact_id": "mermaid_erd",
+    "artifact_type": "mermaid_erd",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 65.0,
+      "is_valid": true,
+      "meeting_notes": "Create a user database ERD",
+      "html_content": "\n        <!DOCTYPE html>\n        <html lang=\"en\">\n        <head>\n            <meta charset=\"UTF-8\">\n            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n            <title>Mermaid Diagram</title>\n            <script src=\"https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js\"></script>\n            <style>\n                body {\n                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n                    margin: 0;\n                    padding: 20px;\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    min-height: 100vh;\n                }\n                .container {\n                    max-width: 1200px;\n                    margin: 0 auto;\n                    background: white;\n                    border-radius: 12px;\n                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);\n                    overflow: hidden;\n                }\n                .header {\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    color: white;\n                    padding: 20px;\n                    text-align: center;\n                }\n                .header h1 {\n                    margin: 0;\n                    font-size: 24px;\n                    font-weight: 300;\n                }\n                .diagram-container {\n                    padding: 30px;\n                    text-align: center;\n                }\n                .mermaid {\n                    background: #f8f9fa;\n                    border-radius: 8px;\n                    padding: 20px;\n                    margin: 20px 0;\n                }\n                .info {\n                    background: #e3f2fd;\n                    border-left: 4px solid #2196f3;\n                    padding: 15px;\n                    margin: 20px 0;\n                    border-radius: 4px;\n                }\n                .info h3 {\n                    margin: 0 0 10px 0;\n                    color: #1976d2;\n                }\n                .info p {\n                    margin: 0;\n                    color: #424242;\n                }\n                .footer {\n                    background: #f5f5f5;\n                    padding: 15px;\n                    text-align: center;\n                    color: #666;\n                    font-size: 12px;\n                }\n            </style>\n        </head>\n        <body>\n            <div class=\"container\">\n                <div class=\"header\">\n                    <h1>\ud83c\udfa8 Mermaid Diagram Visualization</h1>\n                </div>\n                \n                <div class=\"diagram-container\">\n                    <div class=\"info\">\n                        <h3>\ud83d\udcca Interactive Diagram</h3>\n                        <p>This diagram is rendered using Mermaid.js and is fully interactive. You can zoom, pan, and interact with the elements.</p>\n                    </div>\n                    \n                    <div class=\"mermaid\" id=\"erd_diagram\">\n                        Mocked API Content\n                    </div>\n                    \n                    <div class=\"info\">\n                        <h3>\ud83d\udd27 Technical Details</h3>\n                        <p><strong>Diagram ID:</strong> erd_diagram</p>\n                        <p><strong>Generated:</strong> 2026-01-27 17:33:23</p>\n                        <p><strong>Mermaid Version:</strong> 10.6.1</p>\n                    </div>\n                </div>\n                \n                <div class=\"footer\">\n                    <p>Generated by Architect.AI - Mermaid HTML Renderer</p>\n                </div>\n            </div>\n            \n            <script>\n                mermaid.initialize({\n                    startOnLoad: true,\n                    theme: 'default',\n                    themeVariables: {\n                        primaryColor: '#667eea',\n                        primaryTextColor: '#333',\n                        primaryBorderColor: '#764ba2',\n                        lineColor: '#666',\n                        secondaryColor: '#f8f9fa',\n                        tertiaryColor: '#e3f2fd'\n                    },\n                    flowchart: {\n                        useMaxWidth: true,\n                        htmlLabels: true\n                    },\n                    sequence: {\n                        useMaxWidth: true,\n                        wrap: true\n                    },\n                    gantt: {\n                        useMaxWidth: true\n                    }\n                });\n                \n                // Add interactivity\n                document.addEventListener('DOMContentLoaded', function() {\n                    const diagram = document.getElementById('erd_diagram');\n                    if (diagram) {\n                        diagram.style.cursor = 'grab';\n                        diagram.addEventListener('click', function(e) {\n                            console.log('Diagram clicked:', e.target);\n                        });\n                    }\n                });\n            </script>\n        </body>\n        </html>\n        ",
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_706b951c",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2498726356688'>",
+          "retry": 0
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2498726356688'>",
+          "retry": 1
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2498726356688'>",
+          "retry": 2
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2498726356688'>",
+          "retry": 3
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2498726356688'>",
+          "retry": 0
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2498726356688'>",
+          "retry": 1
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2498726356688'>",
+          "retry": 2
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2498726356688'>",
+          "retry": 3
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2498726356688'>",
+          "retry": 0
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2498726356688'>",
+          "retry": 1
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2498726356688'>",
+          "retry": 2
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2498726356688'>",
+          "retry": 3
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:33:23.449850",
+    "is_current": false
+  },
+  {
+    "version": 51,
+    "artifact_id": "mermaid_erd",
+    "artifact_type": "mermaid_erd",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 65.0,
+      "is_valid": true,
+      "meeting_notes": "Create a user database ERD",
+      "html_content": "\n        <!DOCTYPE html>\n        <html lang=\"en\">\n        <head>\n            <meta charset=\"UTF-8\">\n            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n            <title>Mermaid Diagram</title>\n            <script src=\"https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js\"></script>\n            <style>\n                body {\n                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n                    margin: 0;\n                    padding: 20px;\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    min-height: 100vh;\n                }\n                .container {\n                    max-width: 1200px;\n                    margin: 0 auto;\n                    background: white;\n                    border-radius: 12px;\n                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);\n                    overflow: hidden;\n                }\n                .header {\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    color: white;\n                    padding: 20px;\n                    text-align: center;\n                }\n                .header h1 {\n                    margin: 0;\n                    font-size: 24px;\n                    font-weight: 300;\n                }\n                .diagram-container {\n                    padding: 30px;\n                    text-align: center;\n                }\n                .mermaid {\n                    background: #f8f9fa;\n                    border-radius: 8px;\n                    padding: 20px;\n                    margin: 20px 0;\n                }\n                .info {\n                    background: #e3f2fd;\n                    border-left: 4px solid #2196f3;\n                    padding: 15px;\n                    margin: 20px 0;\n                    border-radius: 4px;\n                }\n                .info h3 {\n                    margin: 0 0 10px 0;\n                    color: #1976d2;\n                }\n                .info p {\n                    margin: 0;\n                    color: #424242;\n                }\n                .footer {\n                    background: #f5f5f5;\n                    padding: 15px;\n                    text-align: center;\n                    color: #666;\n                    font-size: 12px;\n                }\n            </style>\n        </head>\n        <body>\n            <div class=\"container\">\n                <div class=\"header\">\n                    <h1>\ud83c\udfa8 Mermaid Diagram Visualization</h1>\n                </div>\n                \n                <div class=\"diagram-container\">\n                    <div class=\"info\">\n                        <h3>\ud83d\udcca Interactive Diagram</h3>\n                        <p>This diagram is rendered using Mermaid.js and is fully interactive. You can zoom, pan, and interact with the elements.</p>\n                    </div>\n                    \n                    <div class=\"mermaid\" id=\"erd_diagram\">\n                        Mocked API Content\n                    </div>\n                    \n                    <div class=\"info\">\n                        <h3>\ud83d\udd27 Technical Details</h3>\n                        <p><strong>Diagram ID:</strong> erd_diagram</p>\n                        <p><strong>Generated:</strong> 2026-01-27 17:34:32</p>\n                        <p><strong>Mermaid Version:</strong> 10.6.1</p>\n                    </div>\n                </div>\n                \n                <div class=\"footer\">\n                    <p>Generated by Architect.AI - Mermaid HTML Renderer</p>\n                </div>\n            </div>\n            \n            <script>\n                mermaid.initialize({\n                    startOnLoad: true,\n                    theme: 'default',\n                    themeVariables: {\n                        primaryColor: '#667eea',\n                        primaryTextColor: '#333',\n                        primaryBorderColor: '#764ba2',\n                        lineColor: '#666',\n                        secondaryColor: '#f8f9fa',\n                        tertiaryColor: '#e3f2fd'\n                    },\n                    flowchart: {\n                        useMaxWidth: true,\n                        htmlLabels: true\n                    },\n                    sequence: {\n                        useMaxWidth: true,\n                        wrap: true\n                    },\n                    gantt: {\n                        useMaxWidth: true\n                    }\n                });\n                \n                // Add interactivity\n                document.addEventListener('DOMContentLoaded', function() {\n                    const diagram = document.getElementById('erd_diagram');\n                    if (diagram) {\n                        diagram.style.cursor = 'grab';\n                        diagram.addEventListener('click', function(e) {\n                            console.log('Diagram clicked:', e.target);\n                        });\n                    }\n                });\n            </script>\n        </body>\n        </html>\n        ",
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_a57c1110",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1826655515600'>",
+          "retry": 0
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1826655515600'>",
+          "retry": 1
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1826655515600'>",
+          "retry": 2
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1826655515600'>",
+          "retry": 3
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1826655515600'>",
+          "retry": 0
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1826655515600'>",
+          "retry": 1
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1826655515600'>",
+          "retry": 2
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1826655515600'>",
+          "retry": 3
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1826655515600'>",
+          "retry": 0
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1826655515600'>",
+          "retry": 1
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1826655515600'>",
+          "retry": 2
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1826655515600'>",
+          "retry": 3
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:34:32.467428",
+    "is_current": false
+  },
+  {
+    "version": 51,
+    "artifact_id": "mermaid_erd",
+    "artifact_type": "mermaid_erd",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 65.0,
+      "is_valid": true,
+      "meeting_notes": "Create a user database ERD",
+      "html_content": "\n        <!DOCTYPE html>\n        <html lang=\"en\">\n        <head>\n            <meta charset=\"UTF-8\">\n            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n            <title>Mermaid Diagram</title>\n            <script src=\"https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js\"></script>\n            <style>\n                body {\n                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n                    margin: 0;\n                    padding: 20px;\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    min-height: 100vh;\n                }\n                .container {\n                    max-width: 1200px;\n                    margin: 0 auto;\n                    background: white;\n                    border-radius: 12px;\n                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);\n                    overflow: hidden;\n                }\n                .header {\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    color: white;\n                    padding: 20px;\n                    text-align: center;\n                }\n                .header h1 {\n                    margin: 0;\n                    font-size: 24px;\n                    font-weight: 300;\n                }\n                .diagram-container {\n                    padding: 30px;\n                    text-align: center;\n                }\n                .mermaid {\n                    background: #f8f9fa;\n                    border-radius: 8px;\n                    padding: 20px;\n                    margin: 20px 0;\n                }\n                .info {\n                    background: #e3f2fd;\n                    border-left: 4px solid #2196f3;\n                    padding: 15px;\n                    margin: 20px 0;\n                    border-radius: 4px;\n                }\n                .info h3 {\n                    margin: 0 0 10px 0;\n                    color: #1976d2;\n                }\n                .info p {\n                    margin: 0;\n                    color: #424242;\n                }\n                .footer {\n                    background: #f5f5f5;\n                    padding: 15px;\n                    text-align: center;\n                    color: #666;\n                    font-size: 12px;\n                }\n            </style>\n        </head>\n        <body>\n            <div class=\"container\">\n                <div class=\"header\">\n                    <h1>\ud83c\udfa8 Mermaid Diagram Visualization</h1>\n                </div>\n                \n                <div class=\"diagram-container\">\n                    <div class=\"info\">\n                        <h3>\ud83d\udcca Interactive Diagram</h3>\n                        <p>This diagram is rendered using Mermaid.js and is fully interactive. You can zoom, pan, and interact with the elements.</p>\n                    </div>\n                    \n                    <div class=\"mermaid\" id=\"erd_diagram\">\n                        Mocked API Content\n                    </div>\n                    \n                    <div class=\"info\">\n                        <h3>\ud83d\udd27 Technical Details</h3>\n                        <p><strong>Diagram ID:</strong> erd_diagram</p>\n                        <p><strong>Generated:</strong> 2026-01-27 17:37:06</p>\n                        <p><strong>Mermaid Version:</strong> 10.6.1</p>\n                    </div>\n                </div>\n                \n                <div class=\"footer\">\n                    <p>Generated by Architect.AI - Mermaid HTML Renderer</p>\n                </div>\n            </div>\n            \n            <script>\n                mermaid.initialize({\n                    startOnLoad: true,\n                    theme: 'default',\n                    themeVariables: {\n                        primaryColor: '#667eea',\n                        primaryTextColor: '#333',\n                        primaryBorderColor: '#764ba2',\n                        lineColor: '#666',\n                        secondaryColor: '#f8f9fa',\n                        tertiaryColor: '#e3f2fd'\n                    },\n                    flowchart: {\n                        useMaxWidth: true,\n                        htmlLabels: true\n                    },\n                    sequence: {\n                        useMaxWidth: true,\n                        wrap: true\n                    },\n                    gantt: {\n                        useMaxWidth: true\n                    }\n                });\n                \n                // Add interactivity\n                document.addEventListener('DOMContentLoaded', function() {\n                    const diagram = document.getElementById('erd_diagram');\n                    if (diagram) {\n                        diagram.style.cursor = 'grab';\n                        diagram.addEventListener('click', function(e) {\n                            console.log('Diagram clicked:', e.target);\n                        });\n                    }\n                });\n            </script>\n        </body>\n        </html>\n        ",
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_7a6150ca",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2217403268304'>",
+          "retry": 0
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2217403268304'>",
+          "retry": 1
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2217403268304'>",
+          "retry": 2
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2217403268304'>",
+          "retry": 3
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2217403268304'>",
+          "retry": 0
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2217403268304'>",
+          "retry": 1
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2217403268304'>",
+          "retry": 2
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2217403268304'>",
+          "retry": 3
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2217403268304'>",
+          "retry": 0
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2217403268304'>",
+          "retry": 1
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2217403268304'>",
+          "retry": 2
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2217403268304'>",
+          "retry": 3
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:37:06.238183",
+    "is_current": false
+  },
+  {
+    "version": 51,
+    "artifact_id": "mermaid_erd",
+    "artifact_type": "mermaid_erd",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 65.0,
+      "is_valid": true,
+      "meeting_notes": "Create a user database ERD",
+      "html_content": "\n        <!DOCTYPE html>\n        <html lang=\"en\">\n        <head>\n            <meta charset=\"UTF-8\">\n            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n            <title>Mermaid Diagram</title>\n            <script src=\"https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js\"></script>\n            <style>\n                body {\n                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n                    margin: 0;\n                    padding: 20px;\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    min-height: 100vh;\n                }\n                .container {\n                    max-width: 1200px;\n                    margin: 0 auto;\n                    background: white;\n                    border-radius: 12px;\n                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);\n                    overflow: hidden;\n                }\n                .header {\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    color: white;\n                    padding: 20px;\n                    text-align: center;\n                }\n                .header h1 {\n                    margin: 0;\n                    font-size: 24px;\n                    font-weight: 300;\n                }\n                .diagram-container {\n                    padding: 30px;\n                    text-align: center;\n                }\n                .mermaid {\n                    background: #f8f9fa;\n                    border-radius: 8px;\n                    padding: 20px;\n                    margin: 20px 0;\n                }\n                .info {\n                    background: #e3f2fd;\n                    border-left: 4px solid #2196f3;\n                    padding: 15px;\n                    margin: 20px 0;\n                    border-radius: 4px;\n                }\n                .info h3 {\n                    margin: 0 0 10px 0;\n                    color: #1976d2;\n                }\n                .info p {\n                    margin: 0;\n                    color: #424242;\n                }\n                .footer {\n                    background: #f5f5f5;\n                    padding: 15px;\n                    text-align: center;\n                    color: #666;\n                    font-size: 12px;\n                }\n            </style>\n        </head>\n        <body>\n            <div class=\"container\">\n                <div class=\"header\">\n                    <h1>\ud83c\udfa8 Mermaid Diagram Visualization</h1>\n                </div>\n                \n                <div class=\"diagram-container\">\n                    <div class=\"info\">\n                        <h3>\ud83d\udcca Interactive Diagram</h3>\n                        <p>This diagram is rendered using Mermaid.js and is fully interactive. You can zoom, pan, and interact with the elements.</p>\n                    </div>\n                    \n                    <div class=\"mermaid\" id=\"erd_diagram\">\n                        Mocked API Content\n                    </div>\n                    \n                    <div class=\"info\">\n                        <h3>\ud83d\udd27 Technical Details</h3>\n                        <p><strong>Diagram ID:</strong> erd_diagram</p>\n                        <p><strong>Generated:</strong> 2026-01-27 17:38:33</p>\n                        <p><strong>Mermaid Version:</strong> 10.6.1</p>\n                    </div>\n                </div>\n                \n                <div class=\"footer\">\n                    <p>Generated by Architect.AI - Mermaid HTML Renderer</p>\n                </div>\n            </div>\n            \n            <script>\n                mermaid.initialize({\n                    startOnLoad: true,\n                    theme: 'default',\n                    themeVariables: {\n                        primaryColor: '#667eea',\n                        primaryTextColor: '#333',\n                        primaryBorderColor: '#764ba2',\n                        lineColor: '#666',\n                        secondaryColor: '#f8f9fa',\n                        tertiaryColor: '#e3f2fd'\n                    },\n                    flowchart: {\n                        useMaxWidth: true,\n                        htmlLabels: true\n                    },\n                    sequence: {\n                        useMaxWidth: true,\n                        wrap: true\n                    },\n                    gantt: {\n                        useMaxWidth: true\n                    }\n                });\n                \n                // Add interactivity\n                document.addEventListener('DOMContentLoaded', function() {\n                    const diagram = document.getElementById('erd_diagram');\n                    if (diagram) {\n                        diagram.style.cursor = 'grab';\n                        diagram.addEventListener('click', function(e) {\n                            console.log('Diagram clicked:', e.target);\n                        });\n                    }\n                });\n            </script>\n        </body>\n        </html>\n        ",
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_2c218cf1",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2814400990288'>",
+          "retry": 0
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2814400990288'>",
+          "retry": 1
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2814400990288'>",
+          "retry": 2
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2814400990288'>",
+          "retry": 3
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2814400990288'>",
+          "retry": 0
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2814400990288'>",
+          "retry": 1
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2814400990288'>",
+          "retry": 2
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2814400990288'>",
+          "retry": 3
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2814400990288'>",
+          "retry": 0
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2814400990288'>",
+          "retry": 1
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2814400990288'>",
+          "retry": 2
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2814400990288'>",
+          "retry": 3
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:38:33.543766",
+    "is_current": false
+  },
+  {
+    "version": 51,
+    "artifact_id": "mermaid_erd",
+    "artifact_type": "mermaid_erd",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 65.0,
+      "is_valid": true,
+      "meeting_notes": "Create a user database ERD",
+      "html_content": "\n        <!DOCTYPE html>\n        <html lang=\"en\">\n        <head>\n            <meta charset=\"UTF-8\">\n            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n            <title>Mermaid Diagram</title>\n            <script src=\"https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js\"></script>\n            <style>\n                body {\n                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n                    margin: 0;\n                    padding: 20px;\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    min-height: 100vh;\n                }\n                .container {\n                    max-width: 1200px;\n                    margin: 0 auto;\n                    background: white;\n                    border-radius: 12px;\n                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);\n                    overflow: hidden;\n                }\n                .header {\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    color: white;\n                    padding: 20px;\n                    text-align: center;\n                }\n                .header h1 {\n                    margin: 0;\n                    font-size: 24px;\n                    font-weight: 300;\n                }\n                .diagram-container {\n                    padding: 30px;\n                    text-align: center;\n                }\n                .mermaid {\n                    background: #f8f9fa;\n                    border-radius: 8px;\n                    padding: 20px;\n                    margin: 20px 0;\n                }\n                .info {\n                    background: #e3f2fd;\n                    border-left: 4px solid #2196f3;\n                    padding: 15px;\n                    margin: 20px 0;\n                    border-radius: 4px;\n                }\n                .info h3 {\n                    margin: 0 0 10px 0;\n                    color: #1976d2;\n                }\n                .info p {\n                    margin: 0;\n                    color: #424242;\n                }\n                .footer {\n                    background: #f5f5f5;\n                    padding: 15px;\n                    text-align: center;\n                    color: #666;\n                    font-size: 12px;\n                }\n            </style>\n        </head>\n        <body>\n            <div class=\"container\">\n                <div class=\"header\">\n                    <h1>\ud83c\udfa8 Mermaid Diagram Visualization</h1>\n                </div>\n                \n                <div class=\"diagram-container\">\n                    <div class=\"info\">\n                        <h3>\ud83d\udcca Interactive Diagram</h3>\n                        <p>This diagram is rendered using Mermaid.js and is fully interactive. You can zoom, pan, and interact with the elements.</p>\n                    </div>\n                    \n                    <div class=\"mermaid\" id=\"erd_diagram\">\n                        Mocked API Content\n                    </div>\n                    \n                    <div class=\"info\">\n                        <h3>\ud83d\udd27 Technical Details</h3>\n                        <p><strong>Diagram ID:</strong> erd_diagram</p>\n                        <p><strong>Generated:</strong> 2026-01-27 17:41:06</p>\n                        <p><strong>Mermaid Version:</strong> 10.6.1</p>\n                    </div>\n                </div>\n                \n                <div class=\"footer\">\n                    <p>Generated by Architect.AI - Mermaid HTML Renderer</p>\n                </div>\n            </div>\n            \n            <script>\n                mermaid.initialize({\n                    startOnLoad: true,\n                    theme: 'default',\n                    themeVariables: {\n                        primaryColor: '#667eea',\n                        primaryTextColor: '#333',\n                        primaryBorderColor: '#764ba2',\n                        lineColor: '#666',\n                        secondaryColor: '#f8f9fa',\n                        tertiaryColor: '#e3f2fd'\n                    },\n                    flowchart: {\n                        useMaxWidth: true,\n                        htmlLabels: true\n                    },\n                    sequence: {\n                        useMaxWidth: true,\n                        wrap: true\n                    },\n                    gantt: {\n                        useMaxWidth: true\n                    }\n                });\n                \n                // Add interactivity\n                document.addEventListener('DOMContentLoaded', function() {\n                    const diagram = document.getElementById('erd_diagram');\n                    if (diagram) {\n                        diagram.style.cursor = 'grab';\n                        diagram.addEventListener('click', function(e) {\n                            console.log('Diagram clicked:', e.target);\n                        });\n                    }\n                });\n            </script>\n        </body>\n        </html>\n        ",
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_98dfe2ea",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2356989070736'>",
+          "retry": 0
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2356989070736'>",
+          "retry": 1
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2356989070736'>",
+          "retry": 2
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2356989070736'>",
+          "retry": 3
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2356989070736'>",
+          "retry": 0
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2356989070736'>",
+          "retry": 1
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2356989070736'>",
+          "retry": 2
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2356989070736'>",
+          "retry": 3
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2356989070736'>",
+          "retry": 0
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2356989070736'>",
+          "retry": 1
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2356989070736'>",
+          "retry": 2
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2356989070736'>",
+          "retry": 3
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:41:06.139761",
+    "is_current": false
+  },
+  {
+    "version": 51,
+    "artifact_id": "mermaid_erd",
+    "artifact_type": "mermaid_erd",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 65.0,
+      "is_valid": true,
+      "meeting_notes": "Create a user database ERD",
+      "html_content": "\n        <!DOCTYPE html>\n        <html lang=\"en\">\n        <head>\n            <meta charset=\"UTF-8\">\n            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n            <title>Mermaid Diagram</title>\n            <script src=\"https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js\"></script>\n            <style>\n                body {\n                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n                    margin: 0;\n                    padding: 20px;\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    min-height: 100vh;\n                }\n                .container {\n                    max-width: 1200px;\n                    margin: 0 auto;\n                    background: white;\n                    border-radius: 12px;\n                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);\n                    overflow: hidden;\n                }\n                .header {\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    color: white;\n                    padding: 20px;\n                    text-align: center;\n                }\n                .header h1 {\n                    margin: 0;\n                    font-size: 24px;\n                    font-weight: 300;\n                }\n                .diagram-container {\n                    padding: 30px;\n                    text-align: center;\n                }\n                .mermaid {\n                    background: #f8f9fa;\n                    border-radius: 8px;\n                    padding: 20px;\n                    margin: 20px 0;\n                }\n                .info {\n                    background: #e3f2fd;\n                    border-left: 4px solid #2196f3;\n                    padding: 15px;\n                    margin: 20px 0;\n                    border-radius: 4px;\n                }\n                .info h3 {\n                    margin: 0 0 10px 0;\n                    color: #1976d2;\n                }\n                .info p {\n                    margin: 0;\n                    color: #424242;\n                }\n                .footer {\n                    background: #f5f5f5;\n                    padding: 15px;\n                    text-align: center;\n                    color: #666;\n                    font-size: 12px;\n                }\n            </style>\n        </head>\n        <body>\n            <div class=\"container\">\n                <div class=\"header\">\n                    <h1>\ud83c\udfa8 Mermaid Diagram Visualization</h1>\n                </div>\n                \n                <div class=\"diagram-container\">\n                    <div class=\"info\">\n                        <h3>\ud83d\udcca Interactive Diagram</h3>\n                        <p>This diagram is rendered using Mermaid.js and is fully interactive. You can zoom, pan, and interact with the elements.</p>\n                    </div>\n                    \n                    <div class=\"mermaid\" id=\"erd_diagram\">\n                        Mocked API Content\n                    </div>\n                    \n                    <div class=\"info\">\n                        <h3>\ud83d\udd27 Technical Details</h3>\n                        <p><strong>Diagram ID:</strong> erd_diagram</p>\n                        <p><strong>Generated:</strong> 2026-01-27 17:43:32</p>\n                        <p><strong>Mermaid Version:</strong> 10.6.1</p>\n                    </div>\n                </div>\n                \n                <div class=\"footer\">\n                    <p>Generated by Architect.AI - Mermaid HTML Renderer</p>\n                </div>\n            </div>\n            \n            <script>\n                mermaid.initialize({\n                    startOnLoad: true,\n                    theme: 'default',\n                    themeVariables: {\n                        primaryColor: '#667eea',\n                        primaryTextColor: '#333',\n                        primaryBorderColor: '#764ba2',\n                        lineColor: '#666',\n                        secondaryColor: '#f8f9fa',\n                        tertiaryColor: '#e3f2fd'\n                    },\n                    flowchart: {\n                        useMaxWidth: true,\n                        htmlLabels: true\n                    },\n                    sequence: {\n                        useMaxWidth: true,\n                        wrap: true\n                    },\n                    gantt: {\n                        useMaxWidth: true\n                    }\n                });\n                \n                // Add interactivity\n                document.addEventListener('DOMContentLoaded', function() {\n                    const diagram = document.getElementById('erd_diagram');\n                    if (diagram) {\n                        diagram.style.cursor = 'grab';\n                        diagram.addEventListener('click', function(e) {\n                            console.log('Diagram clicked:', e.target);\n                        });\n                    }\n                });\n            </script>\n        </body>\n        </html>\n        ",
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_7f0348dd",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2539525952720'>",
+          "retry": 0
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2539525952720'>",
+          "retry": 1
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2539525952720'>",
+          "retry": 2
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2539525952720'>",
+          "retry": 3
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2539525952720'>",
+          "retry": 0
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2539525952720'>",
+          "retry": 1
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2539525952720'>",
+          "retry": 2
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2539525952720'>",
+          "retry": 3
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2539525952720'>",
+          "retry": 0
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2539525952720'>",
+          "retry": 1
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2539525952720'>",
+          "retry": 2
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2539525952720'>",
+          "retry": 3
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:43:32.525977",
+    "is_current": false
+  },
+  {
+    "version": 51,
+    "artifact_id": "mermaid_erd",
+    "artifact_type": "mermaid_erd",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 65.0,
+      "is_valid": true,
+      "meeting_notes": "Create a user database ERD",
+      "html_content": "\n        <!DOCTYPE html>\n        <html lang=\"en\">\n        <head>\n            <meta charset=\"UTF-8\">\n            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n            <title>Mermaid Diagram</title>\n            <script src=\"https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js\"></script>\n            <style>\n                body {\n                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n                    margin: 0;\n                    padding: 20px;\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    min-height: 100vh;\n                }\n                .container {\n                    max-width: 1200px;\n                    margin: 0 auto;\n                    background: white;\n                    border-radius: 12px;\n                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);\n                    overflow: hidden;\n                }\n                .header {\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    color: white;\n                    padding: 20px;\n                    text-align: center;\n                }\n                .header h1 {\n                    margin: 0;\n                    font-size: 24px;\n                    font-weight: 300;\n                }\n                .diagram-container {\n                    padding: 30px;\n                    text-align: center;\n                }\n                .mermaid {\n                    background: #f8f9fa;\n                    border-radius: 8px;\n                    padding: 20px;\n                    margin: 20px 0;\n                }\n                .info {\n                    background: #e3f2fd;\n                    border-left: 4px solid #2196f3;\n                    padding: 15px;\n                    margin: 20px 0;\n                    border-radius: 4px;\n                }\n                .info h3 {\n                    margin: 0 0 10px 0;\n                    color: #1976d2;\n                }\n                .info p {\n                    margin: 0;\n                    color: #424242;\n                }\n                .footer {\n                    background: #f5f5f5;\n                    padding: 15px;\n                    text-align: center;\n                    color: #666;\n                    font-size: 12px;\n                }\n            </style>\n        </head>\n        <body>\n            <div class=\"container\">\n                <div class=\"header\">\n                    <h1>\ud83c\udfa8 Mermaid Diagram Visualization</h1>\n                </div>\n                \n                <div class=\"diagram-container\">\n                    <div class=\"info\">\n                        <h3>\ud83d\udcca Interactive Diagram</h3>\n                        <p>This diagram is rendered using Mermaid.js and is fully interactive. You can zoom, pan, and interact with the elements.</p>\n                    </div>\n                    \n                    <div class=\"mermaid\" id=\"erd_diagram\">\n                        Mocked API Content\n                    </div>\n                    \n                    <div class=\"info\">\n                        <h3>\ud83d\udd27 Technical Details</h3>\n                        <p><strong>Diagram ID:</strong> erd_diagram</p>\n                        <p><strong>Generated:</strong> 2026-01-27 17:45:08</p>\n                        <p><strong>Mermaid Version:</strong> 10.6.1</p>\n                    </div>\n                </div>\n                \n                <div class=\"footer\">\n                    <p>Generated by Architect.AI - Mermaid HTML Renderer</p>\n                </div>\n            </div>\n            \n            <script>\n                mermaid.initialize({\n                    startOnLoad: true,\n                    theme: 'default',\n                    themeVariables: {\n                        primaryColor: '#667eea',\n                        primaryTextColor: '#333',\n                        primaryBorderColor: '#764ba2',\n                        lineColor: '#666',\n                        secondaryColor: '#f8f9fa',\n                        tertiaryColor: '#e3f2fd'\n                    },\n                    flowchart: {\n                        useMaxWidth: true,\n                        htmlLabels: true\n                    },\n                    sequence: {\n                        useMaxWidth: true,\n                        wrap: true\n                    },\n                    gantt: {\n                        useMaxWidth: true\n                    }\n                });\n                \n                // Add interactivity\n                document.addEventListener('DOMContentLoaded', function() {\n                    const diagram = document.getElementById('erd_diagram');\n                    if (diagram) {\n                        diagram.style.cursor = 'grab';\n                        diagram.addEventListener('click', function(e) {\n                            console.log('Diagram clicked:', e.target);\n                        });\n                    }\n                });\n            </script>\n        </body>\n        </html>\n        ",
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_84a6fff3",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1989770939088'>",
+          "retry": 0
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1989770939088'>",
+          "retry": 1
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1989770939088'>",
+          "retry": 2
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1989770939088'>",
+          "retry": 3
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1989770939088'>",
+          "retry": 0
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1989770939088'>",
+          "retry": 1
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1989770939088'>",
+          "retry": 2
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1989770939088'>",
+          "retry": 3
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1989770939088'>",
+          "retry": 0
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1989770939088'>",
+          "retry": 1
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1989770939088'>",
+          "retry": 2
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1989770939088'>",
+          "retry": 3
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:45:08.846837",
+    "is_current": false
+  },
+  {
+    "version": 51,
+    "artifact_id": "mermaid_erd",
+    "artifact_type": "mermaid_erd",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 65.0,
+      "is_valid": true,
+      "meeting_notes": "Create a user database ERD",
+      "html_content": "\n        <!DOCTYPE html>\n        <html lang=\"en\">\n        <head>\n            <meta charset=\"UTF-8\">\n            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n            <title>Mermaid Diagram</title>\n            <script src=\"https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js\"></script>\n            <style>\n                body {\n                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n                    margin: 0;\n                    padding: 20px;\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    min-height: 100vh;\n                }\n                .container {\n                    max-width: 1200px;\n                    margin: 0 auto;\n                    background: white;\n                    border-radius: 12px;\n                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);\n                    overflow: hidden;\n                }\n                .header {\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    color: white;\n                    padding: 20px;\n                    text-align: center;\n                }\n                .header h1 {\n                    margin: 0;\n                    font-size: 24px;\n                    font-weight: 300;\n                }\n                .diagram-container {\n                    padding: 30px;\n                    text-align: center;\n                }\n                .mermaid {\n                    background: #f8f9fa;\n                    border-radius: 8px;\n                    padding: 20px;\n                    margin: 20px 0;\n                }\n                .info {\n                    background: #e3f2fd;\n                    border-left: 4px solid #2196f3;\n                    padding: 15px;\n                    margin: 20px 0;\n                    border-radius: 4px;\n                }\n                .info h3 {\n                    margin: 0 0 10px 0;\n                    color: #1976d2;\n                }\n                .info p {\n                    margin: 0;\n                    color: #424242;\n                }\n                .footer {\n                    background: #f5f5f5;\n                    padding: 15px;\n                    text-align: center;\n                    color: #666;\n                    font-size: 12px;\n                }\n            </style>\n        </head>\n        <body>\n            <div class=\"container\">\n                <div class=\"header\">\n                    <h1>\ud83c\udfa8 Mermaid Diagram Visualization</h1>\n                </div>\n                \n                <div class=\"diagram-container\">\n                    <div class=\"info\">\n                        <h3>\ud83d\udcca Interactive Diagram</h3>\n                        <p>This diagram is rendered using Mermaid.js and is fully interactive. You can zoom, pan, and interact with the elements.</p>\n                    </div>\n                    \n                    <div class=\"mermaid\" id=\"erd_diagram\">\n                        Mocked API Content\n                    </div>\n                    \n                    <div class=\"info\">\n                        <h3>\ud83d\udd27 Technical Details</h3>\n                        <p><strong>Diagram ID:</strong> erd_diagram</p>\n                        <p><strong>Generated:</strong> 2026-01-27 17:49:49</p>\n                        <p><strong>Mermaid Version:</strong> 10.6.1</p>\n                    </div>\n                </div>\n                \n                <div class=\"footer\">\n                    <p>Generated by Architect.AI - Mermaid HTML Renderer</p>\n                </div>\n            </div>\n            \n            <script>\n                mermaid.initialize({\n                    startOnLoad: true,\n                    theme: 'default',\n                    themeVariables: {\n                        primaryColor: '#667eea',\n                        primaryTextColor: '#333',\n                        primaryBorderColor: '#764ba2',\n                        lineColor: '#666',\n                        secondaryColor: '#f8f9fa',\n                        tertiaryColor: '#e3f2fd'\n                    },\n                    flowchart: {\n                        useMaxWidth: true,\n                        htmlLabels: true\n                    },\n                    sequence: {\n                        useMaxWidth: true,\n                        wrap: true\n                    },\n                    gantt: {\n                        useMaxWidth: true\n                    }\n                });\n                \n                // Add interactivity\n                document.addEventListener('DOMContentLoaded', function() {\n                    const diagram = document.getElementById('erd_diagram');\n                    if (diagram) {\n                        diagram.style.cursor = 'grab';\n                        diagram.addEventListener('click', function(e) {\n                            console.log('Diagram clicked:', e.target);\n                        });\n                    }\n                });\n            </script>\n        </body>\n        </html>\n        ",
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_e4ed71f3",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2331215686544'>",
+          "retry": 0
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2331215686544'>",
+          "retry": 1
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2331215686544'>",
+          "retry": 2
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2331215686544'>",
+          "retry": 3
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2331215686544'>",
+          "retry": 0
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2331215686544'>",
+          "retry": 1
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2331215686544'>",
+          "retry": 2
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2331215686544'>",
+          "retry": 3
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2331215686544'>",
+          "retry": 0
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2331215686544'>",
+          "retry": 1
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2331215686544'>",
+          "retry": 2
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='2331215686544'>",
+          "retry": 3
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:49:49.101093",
+    "is_current": false
+  },
+  {
+    "version": 51,
+    "artifact_id": "mermaid_erd",
+    "artifact_type": "mermaid_erd",
+    "content": "Mocked API Content",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 65.0,
+      "is_valid": true,
+      "meeting_notes": "Create a user database ERD",
+      "html_content": "\n        <!DOCTYPE html>\n        <html lang=\"en\">\n        <head>\n            <meta charset=\"UTF-8\">\n            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n            <title>Mermaid Diagram</title>\n            <script src=\"https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js\"></script>\n            <style>\n                body {\n                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n                    margin: 0;\n                    padding: 20px;\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    min-height: 100vh;\n                }\n                .container {\n                    max-width: 1200px;\n                    margin: 0 auto;\n                    background: white;\n                    border-radius: 12px;\n                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);\n                    overflow: hidden;\n                }\n                .header {\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    color: white;\n                    padding: 20px;\n                    text-align: center;\n                }\n                .header h1 {\n                    margin: 0;\n                    font-size: 24px;\n                    font-weight: 300;\n                }\n                .diagram-container {\n                    padding: 30px;\n                    text-align: center;\n                }\n                .mermaid {\n                    background: #f8f9fa;\n                    border-radius: 8px;\n                    padding: 20px;\n                    margin: 20px 0;\n                }\n                .info {\n                    background: #e3f2fd;\n                    border-left: 4px solid #2196f3;\n                    padding: 15px;\n                    margin: 20px 0;\n                    border-radius: 4px;\n                }\n                .info h3 {\n                    margin: 0 0 10px 0;\n                    color: #1976d2;\n                }\n                .info p {\n                    margin: 0;\n                    color: #424242;\n                }\n                .footer {\n                    background: #f5f5f5;\n                    padding: 15px;\n                    text-align: center;\n                    color: #666;\n                    font-size: 12px;\n                }\n            </style>\n        </head>\n        <body>\n            <div class=\"container\">\n                <div class=\"header\">\n                    <h1>\ud83c\udfa8 Mermaid Diagram Visualization</h1>\n                </div>\n                \n                <div class=\"diagram-container\">\n                    <div class=\"info\">\n                        <h3>\ud83d\udcca Interactive Diagram</h3>\n                        <p>This diagram is rendered using Mermaid.js and is fully interactive. You can zoom, pan, and interact with the elements.</p>\n                    </div>\n                    \n                    <div class=\"mermaid\" id=\"erd_diagram\">\n                        Mocked API Content\n                    </div>\n                    \n                    <div class=\"info\">\n                        <h3>\ud83d\udd27 Technical Details</h3>\n                        <p><strong>Diagram ID:</strong> erd_diagram</p>\n                        <p><strong>Generated:</strong> 2026-01-27 17:52:19</p>\n                        <p><strong>Mermaid Version:</strong> 10.6.1</p>\n                    </div>\n                </div>\n                \n                <div class=\"footer\">\n                    <p>Generated by Architect.AI - Mermaid HTML Renderer</p>\n                </div>\n            </div>\n            \n            <script>\n                mermaid.initialize({\n                    startOnLoad: true,\n                    theme: 'default',\n                    themeVariables: {\n                        primaryColor: '#667eea',\n                        primaryTextColor: '#333',\n                        primaryBorderColor: '#764ba2',\n                        lineColor: '#666',\n                        secondaryColor: '#f8f9fa',\n                        tertiaryColor: '#e3f2fd'\n                    },\n                    flowchart: {\n                        useMaxWidth: true,\n                        htmlLabels: true\n                    },\n                    sequence: {\n                        useMaxWidth: true,\n                        wrap: true\n                    },\n                    gantt: {\n                        useMaxWidth: true\n                    }\n                });\n                \n                // Add interactivity\n                document.addEventListener('DOMContentLoaded', function() {\n                    const diagram = document.getElementById('erd_diagram');\n                    if (diagram) {\n                        diagram.style.cursor = 'grab';\n                        diagram.addEventListener('click', function(e) {\n                            console.log('Diagram clicked:', e.target);\n                        });\n                    }\n                });\n            </script>\n        </body>\n        </html>\n        ",
+      "quality_prediction": {
+        "label": "low",
+        "confidence": 0.30000000000000004,
+        "score": 0.30000000000000004,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": -0.1
+        }
+      },
+      "job_id": "gen_b75c6fdd",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1536645940560'>",
+          "retry": 0
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1536645940560'>",
+          "retry": 1
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1536645940560'>",
+          "retry": 2
+        },
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1536645940560'>",
+          "retry": 3
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1536645940560'>",
+          "retry": 0
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1536645940560'>",
+          "retry": 1
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1536645940560'>",
+          "retry": 2
+        },
+        {
+          "model": "mermaid-mistral-22b:latest",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1536645940560'>",
+          "retry": 3
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1536645940560'>",
+          "retry": 0
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1536645940560'>",
+          "retry": 1
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1536645940560'>",
+          "retry": 2
+        },
+        {
+          "model": "llama3:8b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "Mocked API Content",
+          "score": 65.0,
+          "is_valid": false,
+          "errors": "<AsyncMock name='get_validation_service().validate_artifact().errors' id='1536645940560'>",
+          "retry": 3
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-27T17:52:19.486371",
     "is_current": true
   }
 ]
