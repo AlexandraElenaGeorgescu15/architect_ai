@@ -86,7 +86,7 @@ def show_stats(collection):
     
     for meta in all_results.get("metadatas", []):
         if meta:
-            source = meta.get("source", meta.get("file", "unknown"))
+            source = meta.get("source", meta.get("file", meta.get("file_path", "unknown")))
             files.add(source)
             lang = meta.get("language", "unknown")
             languages[lang] = languages.get(lang, 0) + 1
@@ -108,7 +108,7 @@ def list_indexed_files(collection):
     
     for meta in all_results.get("metadatas", []):
         if meta:
-            source = meta.get("source", meta.get("file", "unknown"))
+            source = meta.get("source", meta.get("file", meta.get("file_path", "unknown")))
             files[source] = files.get(source, 0) + 1
     
     if not files:
@@ -151,7 +151,7 @@ def search_function(collection, query: str, n_results: int = 10):
     print(f"✅ FOUND: {len(documents)} results for '{query}':\n")
     
     for i, (doc, meta, dist) in enumerate(zip(documents, metadatas, distances)):
-        source = meta.get("source", meta.get("file", "unknown"))
+        source = meta.get("source", meta.get("file", meta.get("file_path", "unknown")))
         similarity = 1 - dist  # Convert distance to similarity
         
         # Check if query term appears in document

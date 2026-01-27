@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi.testclient import TestClient
 import sys
 from pathlib import Path
@@ -25,7 +25,7 @@ def mock_generation_service():
 def mock_version_service():
     """Mock the version service."""
     with patch("backend.api.versions.get_version_service") as mock_get:
-        service = AsyncMock()
+        service = MagicMock()
         mock_get.return_value = service
         yield service
 
@@ -50,8 +50,7 @@ def test_repair_diagram_rule_based(mock_generation_service, auth_bypass):
     
     response = client.post("/api/ai/repair-diagram", json={
         "mermaid_code": broken_code,
-        "diagram_type": "mermaid_flowchart",
-        "error_message": "Parse error"
+        "diagram_type": "mermaid_flowchart"
     })
     
     assert response.status_code == 200
