@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect, useCallback, memo } from 'react'
 import { createPortal } from 'react-dom'
 import { MessageSquare, X, Send, Bot, FileCode, GitBranch, Sparkles, Trash2, Zap, Search, Edit3, AlertTriangle } from 'lucide-react'
-import { 
-  sendChatMessage, 
-  streamChatMessage, 
-  getProjectSummary, 
+import {
+  sendChatMessage,
+  streamChatMessage,
+  getProjectSummary,
   ProjectSummary,
   getOrCreateSessionId,
   saveConversationToStorage,
@@ -27,9 +27,8 @@ const DEFAULT_GREETING = "Hello! I'm Architect.AI. Ask me anything about your co
 const ChatMessage = memo(function ChatMessage({ message }: { message: Message }) {
   return (
     <div
-      className={`flex gap-3 animate-fade-in-up ${
-        message.role === 'user' ? 'justify-end' : 'justify-start'
-      }`}
+      className={`flex gap-3 animate-fade-in-up ${message.role === 'user' ? 'justify-end' : 'justify-start'
+        }`}
     >
       {message.role === 'assistant' && (
         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/30 shadow-md">
@@ -37,11 +36,10 @@ const ChatMessage = memo(function ChatMessage({ message }: { message: Message })
         </div>
       )}
       <div
-        className={`max-w-[80%] rounded-2xl p-4 shadow-elegant transition-all duration-300 hover:shadow-elevated backdrop-blur-sm ${
-          message.role === 'user'
+        className={`max-w-[80%] rounded-2xl p-4 shadow-elegant transition-all duration-300 hover:shadow-elevated backdrop-blur-sm ${message.role === 'user'
             ? 'bg-gradient-to-br from-primary to-primary/90 text-primary-foreground shadow-primary/20 rounded-tr-none'
             : 'bg-card/80 text-foreground border border-border/50 rounded-tl-none'
-        }`}
+          }`}
       >
         <p className="whitespace-pre-wrap text-sm leading-relaxed break-words">{message.content}</p>
         <p className="text-[10px] opacity-70 mt-2 text-right font-mono">
@@ -64,7 +62,7 @@ function FloatingChat() {
   const [summaryLoaded, setSummaryLoaded] = useState(false)
   const [sessionId] = useState<string>(() => getOrCreateSessionId())
   const [messagesLoaded, setMessagesLoaded] = useState(false)
-  
+
   // Get current folder ID from artifact store for meeting notes context
   const { currentFolderId } = useArtifactStore()
   const [messages, setMessages] = useState<Message[]>([
@@ -77,10 +75,25 @@ function FloatingChat() {
   ])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [agenticMode, setAgenticMode] = useState(true)  // Agentic mode ON by default
-  const [writeMode, setWriteMode] = useState(false)  // Write mode OFF by default (safety)
+  const [agenticMode, setAgenticMode] = useState(() => {
+    const saved = localStorage.getItem('chat_agentic_mode')
+    return saved !== null ? JSON.parse(saved) : true
+  })
+  const [writeMode, setWriteMode] = useState(() => {
+    const saved = localStorage.getItem('chat_write_mode')
+    return saved !== null ? JSON.parse(saved) : false
+  })
   const [currentToolStatus, setCurrentToolStatus] = useState<string | null>(null)
   const [showWriteConfirm, setShowWriteConfirm] = useState(false)  // Confirmation dialog for write mode
+
+  // Persist mode settings
+  useEffect(() => {
+    localStorage.setItem('chat_agentic_mode', JSON.stringify(agenticMode))
+  }, [agenticMode])
+
+  useEffect(() => {
+    localStorage.setItem('chat_write_mode', JSON.stringify(writeMode))
+  }, [writeMode])
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Load conversation from storage on mount (session persistence)
@@ -162,7 +175,7 @@ function FloatingChat() {
         try {
           const summary = await getProjectSummary()
           setProjectSummary(summary)
-          
+
           // Update the greeting message with project-specific info
           if (summary.greeting_message) {
             setMessages(prev => {
@@ -231,7 +244,7 @@ function FloatingChat() {
       try {
         let fullResponse = ''
         setCurrentToolStatus(null)
-        
+
         // Pass session_id for persistent context across messages
         // Use agentic mode if enabled, and write mode if both agentic and write are enabled
         // Include folder_id for meeting notes context
@@ -375,138 +388,136 @@ function FloatingChat() {
         </div>
 
         {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar bg-gradient-to-b from-background/10 to-background/5">
-              {messages.map((message) => (
-                <ChatMessage key={message.id} message={message} />
-              ))}
-              {isLoading && (
-                <div className="flex gap-3 justify-start animate-fade-in-up">
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/30 shadow-md">
-                    <Bot className="w-5 h-5 text-primary animate-pulse" />
+        <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar bg-gradient-to-b from-background/10 to-background/5">
+          {messages.map((message) => (
+            <ChatMessage key={message.id} message={message} />
+          ))}
+          {isLoading && (
+            <div className="flex gap-3 justify-start animate-fade-in-up">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/30 shadow-md">
+                <Bot className="w-5 h-5 text-primary animate-pulse" />
+              </div>
+              <div className="bg-card/80 rounded-2xl p-4 border border-border/50 shadow-md">
+                {currentToolStatus ? (
+                  // Show what the agent is doing
+                  <div className="flex items-center gap-2 text-sm text-primary">
+                    <Search className="w-4 h-4 animate-pulse" />
+                    <span className="font-medium">{currentToolStatus}</span>
                   </div>
-                  <div className="bg-card/80 rounded-2xl p-4 border border-border/50 shadow-md">
-                    {currentToolStatus ? (
-                      // Show what the agent is doing
-                      <div className="flex items-center gap-2 text-sm text-primary">
-                        <Search className="w-4 h-4 animate-pulse" />
-                        <span className="font-medium">{currentToolStatus}</span>
-                      </div>
-                    ) : (
-                      // Default typing indicator
-                      <div className="flex gap-2">
-                        <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce shadow-sm" style={{ animationDelay: '0ms' }} />
-                        <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce shadow-sm" style={{ animationDelay: '150ms' }} />
-                        <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce shadow-sm" style={{ animationDelay: '300ms' }} />
-                      </div>
-                    )}
+                ) : (
+                  // Default typing indicator
+                  <div className="flex gap-2">
+                    <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce shadow-sm" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce shadow-sm" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2.5 h-2.5 bg-primary rounded-full animate-bounce shadow-sm" style={{ animationDelay: '300ms' }} />
                   </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
+                )}
+              </div>
             </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
 
-            {/* Input */}
-            <div className="p-5 border-t border-border/30 bg-gradient-to-r from-background/30 to-background/10 backdrop-blur-md">
-              {/* Mode Toggles */}
-              <div className="flex items-center justify-between mb-3 px-1 gap-2">
-                <div className="flex items-center gap-2">
-                  {/* Agentic Mode Toggle */}
-                  <button
-                    onClick={() => setAgenticMode(!agenticMode)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                      agenticMode 
-                        ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-500 border border-amber-500/30 shadow-sm' 
-                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+        {/* Input */}
+        <div className="p-5 border-t border-border/30 bg-gradient-to-r from-background/30 to-background/10 backdrop-blur-md">
+          {/* Mode Toggles */}
+          <div className="flex items-center justify-between mb-3 px-1 gap-2">
+            <div className="flex items-center gap-2">
+              {/* Agentic Mode Toggle */}
+              <button
+                onClick={() => setAgenticMode(!agenticMode)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${agenticMode
+                    ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-500 border border-amber-500/30 shadow-sm'
+                    : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                  }`}
+                title={agenticMode ? 'Agent mode: AI will search codebase when needed' : 'Basic mode: Uses pre-loaded context only'}
+              >
+                <Zap className={`w-3.5 h-3.5 ${agenticMode ? 'animate-pulse' : ''}`} />
+                {agenticMode ? 'Agent' : 'Basic'}
+              </button>
+
+              {/* Write Mode Toggle - Only visible in agentic mode */}
+              {agenticMode && (
+                <button
+                  onClick={() => {
+                    if (!writeMode) {
+                      setShowWriteConfirm(true)
+                    } else {
+                      setWriteMode(false)
+                    }
+                  }}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${writeMode
+                      ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 text-red-500 border border-red-500/30 shadow-sm'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted'
                     }`}
-                    title={agenticMode ? 'Agent mode: AI will search codebase when needed' : 'Basic mode: Uses pre-loaded context only'}
-                  >
-                    <Zap className={`w-3.5 h-3.5 ${agenticMode ? 'animate-pulse' : ''}`} />
-                    {agenticMode ? 'Agent' : 'Basic'}
-                  </button>
-                  
-                  {/* Write Mode Toggle - Only visible in agentic mode */}
-                  {agenticMode && (
+                  title={writeMode ? 'Write mode: AI can modify artifacts (click to disable)' : 'Enable write mode to let AI modify artifacts'}
+                >
+                  <Edit3 className={`w-3 h-3 ${writeMode ? 'animate-pulse' : ''}`} />
+                  {writeMode ? 'Write' : 'Read'}
+                </button>
+              )}
+            </div>
+            <span className="text-[10px] text-muted-foreground">
+              {writeMode ? '✏️ Can modify artifacts' : agenticMode ? '🔍 Can search & explore' : '📄 Pre-loaded context'}
+            </span>
+          </div>
+
+          {/* Write Mode Confirmation Dialog */}
+          {showWriteConfirm && (
+            <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+              <div className="flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 mb-1">
+                    Enable Write Mode?
+                  </p>
+                  <p className="text-[10px] text-yellow-600/80 dark:text-yellow-400/80 mb-2">
+                    The AI will be able to update artifacts, create new artifacts, and save files to the outputs folder.
+                  </p>
+                  <div className="flex gap-2">
                     <button
                       onClick={() => {
-                        if (!writeMode) {
-                          setShowWriteConfirm(true)
-                        } else {
-                          setWriteMode(false)
-                        }
+                        setWriteMode(true)
+                        setShowWriteConfirm(false)
                       }}
-                      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                        writeMode 
-                          ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 text-red-500 border border-red-500/30 shadow-sm' 
-                          : 'bg-muted/50 text-muted-foreground hover:bg-muted'
-                      }`}
-                      title={writeMode ? 'Write mode: AI can modify artifacts (click to disable)' : 'Enable write mode to let AI modify artifacts'}
+                      className="px-2 py-1 text-[10px] font-medium bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
                     >
-                      <Edit3 className={`w-3 h-3 ${writeMode ? 'animate-pulse' : ''}`} />
-                      {writeMode ? 'Write' : 'Read'}
+                      Enable Write Mode
                     </button>
-                  )}
-                </div>
-                <span className="text-[10px] text-muted-foreground">
-                  {writeMode ? '✏️ Can modify artifacts' : agenticMode ? '🔍 Can search & explore' : '📄 Pre-loaded context'}
-                </span>
-              </div>
-              
-              {/* Write Mode Confirmation Dialog */}
-              {showWriteConfirm && (
-                <div className="mb-3 p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                    <div className="flex-1">
-                      <p className="text-xs font-medium text-yellow-600 dark:text-yellow-400 mb-1">
-                        Enable Write Mode?
-                      </p>
-                      <p className="text-[10px] text-yellow-600/80 dark:text-yellow-400/80 mb-2">
-                        The AI will be able to update artifacts, create new artifacts, and save files to the outputs folder.
-                      </p>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => {
-                            setWriteMode(true)
-                            setShowWriteConfirm(false)
-                          }}
-                          className="px-2 py-1 text-[10px] font-medium bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors"
-                        >
-                          Enable Write Mode
-                        </button>
-                        <button
-                          onClick={() => setShowWriteConfirm(false)}
-                          className="px-2 py-1 text-[10px] font-medium bg-muted text-muted-foreground rounded hover:bg-muted/80 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
+                    <button
+                      onClick={() => setShowWriteConfirm(false)}
+                      className="px-2 py-1 text-[10px] font-medium bg-muted text-muted-foreground rounded hover:bg-muted/80 transition-colors"
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </div>
-              )}
-              
-              <div className="flex gap-3">
-                <textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder={agenticMode ? "Ask anything - I'll search the codebase if needed..." : "Ask me anything..."}
-                  className="flex-1 p-4 text-sm border border-border/50 rounded-xl bg-card/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-300 shadow-sm focus:shadow-md placeholder:text-muted-foreground/70"
-                  rows={1}
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={!input.trim() || isLoading}
-                  className="px-5 py-3 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-xl hover:from-primary/90 hover:to-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl hover:shadow-primary/50 hover:scale-105 active:scale-100 font-bold"
-                >
-                  {isLoading ? (
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    <Send className="w-5 h-5" />
-                  )}
-                </button>
               </div>
             </div>
+          )}
+
+          <div className="flex gap-3">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder={agenticMode ? "Ask anything - I'll search the codebase if needed..." : "Ask me anything..."}
+              className="flex-1 p-4 text-sm border border-border/50 rounded-xl bg-card/50 text-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all duration-300 shadow-sm focus:shadow-md placeholder:text-muted-foreground/70"
+              rows={1}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || isLoading}
+              className="px-5 py-3 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-xl hover:from-primary/90 hover:to-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2 shadow-lg hover:shadow-xl hover:shadow-primary/50 hover:scale-105 active:scale-100 font-bold"
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Send className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   )
