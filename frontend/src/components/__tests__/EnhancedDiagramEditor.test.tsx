@@ -3,6 +3,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import EnhancedDiagramEditor from '../EnhancedDiagramEditor'
 import * as api from '../../services/api'
 
+import { useArtifactStore } from '../../stores/artifactStore'
+
 // Mock dependencies
 vi.mock('../../stores/artifactStore', () => ({
     useArtifactStore: vi.fn(() => ({
@@ -58,12 +60,11 @@ describe('EnhancedDiagramEditor', () => {
 
     it('shows empty state when no diagram is selected', () => {
         // Override store mock for this test
-        const { useArtifactStore } = require('../../stores/artifactStore')
-        useArtifactStore.mockImplementation(() => ({
+        vi.mocked(useArtifactStore).mockImplementation(() => ({
             artifacts: [],
             updateArtifact: vi.fn(),
             setArtifacts: vi.fn(),
-        }))
+        } as any))
 
         render(<EnhancedDiagramEditor />)
         expect(screen.getByText(/No diagrams available/i)).toBeInTheDocument()
