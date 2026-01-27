@@ -24,9 +24,9 @@ interface GenerationProgress {
 }
 
 // Generation timeout in milliseconds (3 minutes)
-const GENERATION_TIMEOUT_MS = 180000
+const GENERATION_TIMEOUT_MS = 300000
 // Inactivity timeout - if no progress updates for this long, consider it stuck
-const INACTIVITY_TIMEOUT_MS = 60000
+const INACTIVITY_TIMEOUT_MS = 120000
 
 export function useGeneration() {
   const [isGenerating, setIsGenerating] = useState(false)

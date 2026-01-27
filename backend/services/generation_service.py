@@ -268,6 +268,14 @@ class GenerationService:
         logger.info(f"📋 [GEN_SERVICE] Job initialized: {job_id}, folder_id={folder_id}, custom_type={is_custom_type}")
         
         try:
+            # Yield initial status to ensure job_id is captured by API layer immediately
+            yield {
+                "type": "started",
+                "job_id": job_id,
+                "status": GenerationStatus.IN_PROGRESS.value,
+                "created_at": self.active_jobs[job_id]["created_at"]
+            }
+
             # Step 1: Build context (if not provided)
             logger.info(f"🔨 [GEN_SERVICE] Step 1: Building context (job_id={job_id})")
             if stream:
