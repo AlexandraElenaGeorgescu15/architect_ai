@@ -4,15 +4,15 @@ import time
 import json
 import sys
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://127.0.0.1:8000"
 
 def log(msg, status="INFO"):
-    print(f"[{status}] {msg}")
+    print(f"[{status}] {msg}", flush=True)
 
 def test_backend_health():
     log("Checking Backend Health...")
     try:
-        resp = requests.get(f"{BASE_URL}/api/health")
+        resp = requests.get(f"{BASE_URL}/api/health", timeout=10)
         if resp.status_code == 200:
             log("Backend is UP", "PASS")
         else:
@@ -31,8 +31,9 @@ def test_generation_flow():
     }
     
     try:
-        # Start Generation
-        resp = requests.post(f"{BASE_URL}/api/generation/generate", json=payload)
+        log(f"Sending POST to {BASE_URL}/api/generation/generate ...")
+        resp = requests.post(f"{BASE_URL}/api/generation/generate", json=payload, timeout=120)
+        log(f"Response status: {resp.status_code}")
         if resp.status_code != 200:
             log(f"Generation failed: {resp.text}", "FAIL")
             return
@@ -44,7 +45,7 @@ def test_generation_flow():
         # Poll for completion (max 20s)
         for _ in range(10):
             time.sleep(2)
-            check = requests.get(f"{BASE_URL}/api/generation/artifacts/{artifact_id}")
+            check = requests.get(f"{BASE_URL}/api/generation/artifacts/{artifact_id}", timeout=10)
             if check.status_code == 200:
                 artifact = check.json()
                 content = artifact.get("content", "")
@@ -65,7 +66,9 @@ def test_chat_flow():
     }
     
     try:
-        resp = requests.post(f"{BASE_URL}/api/chat/message", json=payload)
+        log(f"Sending POST to {BASE_URL}/api/chat/message ...")
+        resp = requests.post(f"{BASE_URL}/api/chat/message", json=payload, timeout=120)
+        log(f"Response status: {resp.status_code}")
         if resp.status_code == 200:
             log("Chat endpoint responsive", "PASS")
         else:
@@ -75,11 +78,11 @@ def test_chat_flow():
         log(f"Chat flow error: {e}", "FAIL")
 
 def run_all():
-    print("[START] STARTING SMOKE TEST")
+    print("[START] STARTING SMOKE TEST", flush=True)
     test_backend_health()
     test_generation_flow()
     test_chat_flow()
-    print("[DONE] SMOKE TEST COMPLETE")
+    print("[DONE] SMOKE TEST COMPLETE", flush=True)
 
 if __name__ == "__main__":
     run_all()

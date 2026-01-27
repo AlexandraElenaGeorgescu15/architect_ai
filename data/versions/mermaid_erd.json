@@ -1,19 +1,5 @@
 [
   {
-    "version": 14,
-    "artifact_id": "mermaid_erd",
-    "artifact_type": "mermaid_erd",
-    "content": "erDiagram\n  USER {\n    int id PK\n    string email\n  }\n  PHONE {\n    int id PK\n    string name\n    string description\n    int user_id FK\n  }\n  SWAP_REQUEST {\n    int id PK\n    int user_id FK\n    int requested_phone_id FK\n    int offered_phone_id FK\n    string status\n    string comment\n  }\n  AVAIL_PHONE {\n    int id PK\n    string name\n    string description\n  }\n  COMMENT {\n    int id PK\n    string text\n    int swap_request_id FK\n  }\n\n  USER ||--o{ PHONE : \"owns\"\n  PHONE ||--o{ SWAP_REQUEST : \"offered_in_exchange\"\n  PHONE ||--o{ AVAIL_PHONE : \"requested_phone\"\n  SWAP_REQUEST ||--o{ COMMENT : \"reason_for_request\"\n",
-    "metadata": {
-      "source": "canvas_editor",
-      "model_used": "manual_edit",
-      "validation_score": 100,
-      "is_valid": true
-    },
-    "created_at": "2025-12-09T16:32:35.227816",
-    "is_current": false
-  },
-  {
     "version": 15,
     "artifact_id": "mermaid_erd",
     "artifact_type": "unknown",
@@ -3127,6 +3113,44 @@
     },
     "folder_id": null,
     "created_at": "2026-01-27T23:17:00.119684",
+    "is_current": false
+  },
+  {
+    "version": 51,
+    "artifact_id": "mermaid_erd",
+    "artifact_type": "mermaid_erd",
+    "content": "erDiagram\n    USER {\n        int id PK\n        string name\n        string email\n    }\n    ROLE {\n        int id PK\n        string role_name\n    }\n    USER_ROLE {\n        int user_id FK\n        int role_id FK\n        datetime created_at\n    }\n    USER ||--o{ USER_ROLE : places\n    ROLE ||--o{ USER_ROLE : has",
+    "metadata": {
+      "model_used": "codellama:7b-instruct-q4_K_M",
+      "provider": "cloud",
+      "validation_score": 98.4,
+      "is_valid": true,
+      "meeting_notes": "A simple user management system with Users and Roles",
+      "html_content": "\n        <!DOCTYPE html>\n        <html lang=\"en\">\n        <head>\n            <meta charset=\"UTF-8\">\n            <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n            <title>Mermaid Diagram</title>\n            <script src=\"https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js\"></script>\n            <style>\n                body {\n                    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n                    margin: 0;\n                    padding: 20px;\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    min-height: 100vh;\n                }\n                .container {\n                    max-width: 1200px;\n                    margin: 0 auto;\n                    background: white;\n                    border-radius: 12px;\n                    box-shadow: 0 20px 40px rgba(0,0,0,0.1);\n                    overflow: hidden;\n                }\n                .header {\n                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);\n                    color: white;\n                    padding: 20px;\n                    text-align: center;\n                }\n                .header h1 {\n                    margin: 0;\n                    font-size: 24px;\n                    font-weight: 300;\n                }\n                .diagram-container {\n                    padding: 30px;\n                    text-align: center;\n                }\n                .mermaid {\n                    background: #f8f9fa;\n                    border-radius: 8px;\n                    padding: 20px;\n                    margin: 20px 0;\n                }\n                .info {\n                    background: #e3f2fd;\n                    border-left: 4px solid #2196f3;\n                    padding: 15px;\n                    margin: 20px 0;\n                    border-radius: 4px;\n                }\n                .info h3 {\n                    margin: 0 0 10px 0;\n                    color: #1976d2;\n                }\n                .info p {\n                    margin: 0;\n                    color: #424242;\n                }\n                .footer {\n                    background: #f5f5f5;\n                    padding: 15px;\n                    text-align: center;\n                    color: #666;\n                    font-size: 12px;\n                }\n            </style>\n        </head>\n        <body>\n            <div class=\"container\">\n                <div class=\"header\">\n                    <h1>\ud83c\udfa8 Mermaid Diagram Visualization</h1>\n                </div>\n                \n                <div class=\"diagram-container\">\n                    <div class=\"info\">\n                        <h3>\ud83d\udcca Interactive Diagram</h3>\n                        <p>This diagram is rendered using Mermaid.js and is fully interactive. You can zoom, pan, and interact with the elements.</p>\n                    </div>\n                    \n                    <div class=\"mermaid\" id=\"erd_diagram\">\n                        erDiagram\n    USER {\n        int id PK\n        string name\n        string email\n    }\n    ROLE {\n        int id PK\n        string role_name\n    }\n    USER_ROLE {\n        int user_id FK\n        int role_id FK\n        datetime created_at\n    }\n    USER ||--o{ USER_ROLE : places\n    ROLE ||--o{ USER_ROLE : has\n                    </div>\n                    \n                    <div class=\"info\">\n                        <h3>\ud83d\udd27 Technical Details</h3>\n                        <p><strong>Diagram ID:</strong> erd_diagram</p>\n                        <p><strong>Generated:</strong> 2026-01-28 01:06:32</p>\n                        <p><strong>Mermaid Version:</strong> 10.6.1</p>\n                    </div>\n                </div>\n                \n                <div class=\"footer\">\n                    <p>Generated by Architect.AI - Mermaid HTML Renderer</p>\n                </div>\n            </div>\n            \n            <script>\n                mermaid.initialize({\n                    startOnLoad: true,\n                    theme: 'default',\n                    themeVariables: {\n                        primaryColor: '#667eea',\n                        primaryTextColor: '#333',\n                        primaryBorderColor: '#764ba2',\n                        lineColor: '#666',\n                        secondaryColor: '#f8f9fa',\n                        tertiaryColor: '#e3f2fd'\n                    },\n                    flowchart: {\n                        useMaxWidth: true,\n                        htmlLabels: true\n                    },\n                    sequence: {\n                        useMaxWidth: true,\n                        wrap: true\n                    },\n                    gantt: {\n                        useMaxWidth: true\n                    }\n                });\n                \n                // Add interactivity\n                document.addEventListener('DOMContentLoaded', function() {\n                    const diagram = document.getElementById('erd_diagram');\n                    if (diagram) {\n                        diagram.style.cursor = 'grab';\n                        diagram.addEventListener('click', function(e) {\n                            console.log('Diagram clicked:', e.target);\n                        });\n                    }\n                });\n            </script>\n        </body>\n        </html>\n        ",
+      "quality_prediction": {
+        "label": "medium",
+        "confidence": 0.5,
+        "score": 0.5,
+        "reasons": {
+          "notes_depth": -0.15,
+          "context_rag": 0.1
+        }
+      },
+      "job_id": "gen_8ca494bd",
+      "attempts": [
+        {
+          "model": "codellama:7b-instruct-q4_K_M",
+          "provider": "ollama",
+          "content": "\nBased on the provided context, here is a detailed Entity-Relationship Diagram (ERD) in Mermaid syntax that meets the requirements and captures the complex logic of a simple user management system with Users and Roles:\n```mermaid\nerDiagram\n    USER {\n        int id PK\n        string name\n        string email\n    }\n    ROLE {\n        int id PK\n        string role_name\n    }\n    USER_ROLE {\n        int user_id FK\n        int role_id FK\n        datetime created_at\n    }\n    USER ||--o{ USER_ROLE : places\n    ROLE ||--o{ USER_ROLE : has\n```\nIn this diagram, we have three entities: `USER`, `ROLE`, and `USER_ROLE`. The `USER` entity has attributes like `id`, `name`, and `email`, which are the core identity information for a user. The `ROLE` entity has attributes like `id` and `role_name`, which represent the role of a user in the system (e.g., admin, user). The `USER_ROLE` entity represents the relationship between users and roles, with attributes like `user_id`, `role_id`, and `created_at`.\n\nThe relationships between these entities are as follows:\n\n* A user can have multiple roles (`USER ||--o{ USER_ROLE : places`).\n* A role can be assigned to multiple users (`ROLE ||--o{ USER_ROLE : has`).\n\nBy analyzing the requirements and context, we have generated a comprehensive ERD that captures the complex logic of a simple user management system with Users and Roles.",
+          "score": 98.4,
+          "is_valid": true,
+          "errors": [],
+          "retry": 0
+        }
+      ]
+    },
+    "folder_id": null,
+    "created_at": "2026-01-28T01:06:32.095554",
     "is_current": true
   }
 ]
