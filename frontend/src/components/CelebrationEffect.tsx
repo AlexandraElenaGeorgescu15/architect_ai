@@ -24,6 +24,11 @@ export default function CelebrationEffect() {
   const [balloons, setBalloons] = useState<Balloon[]>([])
   const [confetti, setConfetti] = useState<Confetti[]>([])
   const [isVisible, setIsVisible] = useState(false)
+  const [domReady, setDomReady] = useState(false)
+
+  useEffect(() => {
+    setDomReady(true)
+  }, [])
 
   useEffect(() => {
     const handleCelebration = () => {
@@ -94,7 +99,7 @@ export default function CelebrationEffect() {
     }
   }, [])
 
-  if (!isVisible) {
+  if (!isVisible || !domReady || typeof document === 'undefined' || !document.body) {
     return null
   }
 
