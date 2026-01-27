@@ -37,126 +37,7 @@ class SetTargetRequest(BaseModel):
     path: str
 
 
-def _detect_project_markers(directory: Path) -> List[str]:
-    """Detect project type markers in a directory."""
-    markers = []
-    if (directory / 'package.json').exists():
-        markers.append('Node.js')
-    if (directory / 'angular.json').exists():
-        markers.append('Angular')
-    if (directory / 'pom.xml').exists():
-        markers.append('Maven')
-    if (directory / 'build.gradle').exists():
-        markers.append('Gradle')
-    if (directory / 'requirements.txt').exists():
-        markers.append('Python')
-    if (directory / 'Cargo.toml').exists():
-        markers.append('Rust')
-    if (directory / 'go.mod').exists():
-        markers.append('Go')
-    # .NET detection - check root, 1 level, and 2 levels deep for .csproj/.sln
-    # .NET solutions often have nested project structures
-    has_csproj = (any(directory.glob('*.csproj')) or 
-                  any(directory.glob('*/*.csproj')) or 
-                  any(directory.glob('*/*/*.csproj')))
-    has_sln = (any(directory.glob('*.sln')) or 
-               any(directory.glob('*/*.sln')) or 
-               any(directory.glob('*/*/*.sln')))
-    if has_csproj:
-        markers.append('.NET')
-    if has_sln:
-        markers.append('.NET Solution')
-    if (directory / 'src').is_dir():
-        markers.append('Has src/')
-    if (directory / 'frontend').is_dir():
-        markers.append('Has frontend/')
-    if (directory / 'backend').is_dir():
-        markers.append('Has backend/')
-    return markers
 
-
-# Folders that should never appear as user projects (internal/utility folders)
-EXCLUDED_FOLDER_NAMES = {
-    'agents', 'components', 'utils', 'shared', 'common', 'lib', 'libs',
-    'node_modules', '__pycache__', '.git', 'dist', 'build', 'bin', 'obj',
-    'archive', 'backup', 'temp', 'tmp', 'cache', '.cache', 'logs',
-}
-
-
-def _is_excluded_folder(directory: Path) -> bool:
-    """Check if a folder should be excluded from the project list."""
-    name_lower = directory.name.lower()
-    return name_lower in EXCLUDED_FOLDER_NAMES
-
-
-def _score_directory(directory: Path) -> int:
-    """Score a directory to determine if it's a main project."""
-    score = 0
-    name_lower = directory.name.lower()
-    
-    # Already excluded by _is_excluded_folder, but penalize just in case
-    if name_lower in EXCLUDED_FOLDER_NAMES:
-        score -= 100
-    
-    if (directory / 'package.json').exists():
-        score += 50
-    if (directory / 'angular.json').exists():
-        score += 60
-    if (directory / 'pom.xml').exists() or (directory / 'build.gradle').exists():
-        score += 50
-    if (directory / 'Cargo.toml').exists():
-        score += 50
-    if (directory / 'go.mod').exists():
-        score += 50
-    if (directory / 'requirements.txt').exists() or (directory / 'setup.py').exists():
-        score += 40
-    # .NET - check recursively up to 2 levels
-    if any(directory.glob('*.csproj')) or any(directory.glob('*/*.csproj')) or any(directory.glob('*/*/*.csproj')):
-        score += 50
-    if any(directory.glob('*.sln')) or any(directory.glob('*/*.sln')) or any(directory.glob('*/*/*.sln')):
-        score += 55
-    if (directory / 'src').is_dir():
-        score += 30
-    if (directory / 'frontend').is_dir():
-        score += 20
-    if (directory / 'backend').is_dir():
-        score += 20
-    if 'project' in name_lower or 'final' in name_lower:
-        score += 25
-    
-    return score
-
-
-def _get_current_target() -> Path:
-    """Get the currently selected target directory."""
-    from backend.utils.tool_detector import get_user_project_directories, detect_tool_directory
-    
-    # Priority 1: Configured path
-    if settings.target_repo_path:
-        target = Path(settings.target_repo_path)
-        if target.exists():
-            return target
-    
-    # Priority 2: Auto-detection
-    user_dirs = get_user_project_directories()
-    tool_dir = detect_tool_directory()
-    
-    scored_dirs = []
-    for d in user_dirs:
-        # Skip tool directory, non-existent, and excluded folder names
-        if d == tool_dir or not d.exists() or _is_excluded_folder(d):
-            continue
-        score = _score_directory(d)
-        scored_dirs.append((d, score))
-    
-    if scored_dirs:
-        scored_dirs.sort(key=lambda x: x[1], reverse=True)
-        return scored_dirs[0][0]
-    
-    if tool_dir:
-        return tool_dir.parent
-    
-    return Path.cwd()
 
 
 @router.get("/", response_model=TargetResponse)
@@ -166,21 +47,24 @@ async def get_target_info():
     
     This helps users understand which project Architect.AI is analyzing.
     """
-    from backend.utils.tool_detector import get_user_project_directories, detect_tool_directory
+    from backend.utils.tool_detector import detect_tool_directory
+    from backend.utils.target_project import (
+        get_available_projects, 
+        get_target_project_path,
+        _score_directory,
+        detect_project_markers
+    )
     
     tool_dir = detect_tool_directory()
-    current_target = _get_current_target()
-    user_dirs = get_user_project_directories()
+    current_target = get_target_project_path()
+    available_dirs = get_available_projects()
     
     # Build list of available projects
     projects = []
-    for d in user_dirs:
-        # Skip tool directory, non-existent, and excluded folder names (like 'agents')
-        if d == tool_dir or not d.exists() or _is_excluded_folder(d):
-            continue
-        
+    for d in available_dirs:
+        # Markers and scores should already be consistent thanks to centralized utility
         score = _score_directory(d)
-        markers = _detect_project_markers(d)
+        markers = detect_project_markers(d)
         
         projects.append(ProjectInfo(
             path=str(d),
@@ -190,11 +74,13 @@ async def get_target_info():
             markers=markers
         ))
     
-    # Sort by score
+    # Sort by score (though get_available_projects already does this)
     projects.sort(key=lambda x: x.score, reverse=True)
     
+    logger.info(f"📋 [PROJECT_TARGET] Returning {len(projects)} available projects. Current: {current_target}")
+    
     return TargetResponse(
-        current_target=str(current_target),
+        current_target=str(current_target) if current_target else "",
         tool_directory=str(tool_dir) if tool_dir else "",
         available_projects=projects,
         configured_path=settings.target_repo_path

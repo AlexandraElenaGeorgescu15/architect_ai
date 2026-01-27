@@ -18,28 +18,8 @@ import asyncio
 # Add parent directory for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-# Import tool detector from components (legacy location)
-try:
-    from components._tool_detector import should_exclude_path, get_user_project_directories
-except ImportError:
-    # Fallback: try backend.utils if it exists
-    try:
-        from backend.utils.tool_detector import should_exclude_path, get_user_project_directories
-    except ImportError:
-        # Last resort: define minimal versions
-        def should_exclude_path(path: Path) -> bool:
-            """Check if path should be excluded (Architect.AI project files)."""
-            path_str = str(path)
-            return 'architect_ai_cursor_poc' in path_str or '.git' in path_str
-        
-        def get_user_project_directories() -> List[Path]:
-            """Get user project directories (excludes Architect.AI project)."""
-            from pathlib import Path
-            current = Path.cwd()
-            # Return parent directory if we're in architect_ai_cursor_poc
-            if current.name == 'architect_ai_cursor_poc':
-                return [current.parent] if current.parent.exists() else []
-            return [current] if current.exists() else []
+from backend.utils.tool_detector import should_exclude_path
+from backend.utils.target_project import get_available_projects as get_user_project_directories
 from backend.core.config import settings
 
 logger = logging.getLogger(__name__)

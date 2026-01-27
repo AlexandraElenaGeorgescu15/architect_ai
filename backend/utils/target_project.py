@@ -30,11 +30,10 @@ def get_target_project_path() -> Optional[Path]:
         Path to the target project, or None if not determinable
     """
     from backend.core.config import settings
-    from backend.utils.tool_detector import get_user_project_directories, detect_tool_directory
     
     # Priority 1: Explicitly configured target
     if settings.target_repo_path:
-        target = Path(settings.target_repo_path)
+        target = Path(settings.target_repo_path).resolve()
         if target.exists():
             logger.info(f"✅ [TARGET_PROJECT] Using configured path: {target}")
             return target
@@ -42,25 +41,17 @@ def get_target_project_path() -> Optional[Path]:
             logger.warning(f"⚠️ [TARGET_PROJECT] Configured path does not exist: {target}")
     
     # Priority 2: Auto-detect user project directories
-    user_dirs = get_user_project_directories()
-    tool_dir = detect_tool_directory()
+    available = get_available_projects()
     
-    # Filter out the tool directory itself and score remaining directories
-    scored_dirs = []
-    for d in user_dirs:
-        if d == tool_dir or not d.exists():
-            continue
-        score = _score_directory(d)
-        scored_dirs.append((d, score))
-    
-    if scored_dirs:
-        # Sort by score descending and pick the best
-        scored_dirs.sort(key=lambda x: x[1], reverse=True)
-        best_dir = scored_dirs[0][0]
-        logger.info(f"✅ [TARGET_PROJECT] Auto-detected project: {best_dir} (score: {scored_dirs[0][1]})")
+    if available:
+        # Sort by score descending and pick the best (already sorted in get_available_projects)
+        best_dir = available[0]
+        logger.info(f"✅ [TARGET_PROJECT] Auto-detected project: {best_dir} (score: {_score_directory(best_dir)})")
         return best_dir
     
     # Priority 3: Fallback to parent of tool (mother project folder)
+    from backend.utils.tool_detector import detect_tool_directory
+    tool_dir = detect_tool_directory()
     if tool_dir:
         parent = tool_dir.parent
         logger.warning(f"⚠️ [TARGET_PROJECT] Falling back to tool parent: {parent}")
@@ -68,6 +59,42 @@ def get_target_project_path() -> Optional[Path]:
     
     logger.error("❌ [TARGET_PROJECT] Could not determine target project")
     return None
+
+
+def get_available_projects() -> List[Path]:
+    """
+    Get all available user project directories.
+    
+    Returns:
+        Sorted list of project paths (best projects first)
+    """
+    from backend.utils.tool_detector import get_user_project_directories, detect_tool_directory
+    
+    user_dirs = get_user_project_directories()
+    tool_dir = detect_tool_directory()
+    
+    scored_dirs = []
+    for d in user_dirs:
+        # Resolve path for consistent comparison
+        d_resolved = d.resolve()
+        
+        # Skip tool directory and non-existent folders
+        if tool_dir and d_resolved == tool_dir.resolve():
+            continue
+        if not d_resolved.exists():
+            continue
+            
+        score = _score_directory(d_resolved)
+        # Only include dirs that actually look like projects or are clearly NOT utility folders
+        if score > -50:
+            scored_dirs.append((d_resolved, score))
+        else:
+            logger.debug(f"⏭️ [TARGET_PROJECT] Skipping utility directory: {d_resolved.name} (score: {score})")
+    
+    # Sort by score descending
+    scored_dirs.sort(key=lambda x: x[1], reverse=True)
+    
+    return [d for d, s in scored_dirs]
 
 
 def get_target_project_name() -> str:
@@ -120,26 +147,40 @@ def _score_directory(directory: Path) -> int:
     name_lower = directory.name.lower()
     
     # Negative score for utility directories
-    if name_lower in ['agents', 'components', 'utils', 'shared', 'common', 'lib', 'libs', 'tools']:
-        score -= 100
+    # Ported from backend/api/project_target.py EXCLUDED_FOLDER_NAMES
+    EXCLUDED_FOLDER_NAMES = {
+        'agents', 'components', 'utils', 'shared', 'common', 'lib', 'libs', 'tools',
+        'node_modules', '__pycache__', '.git', 'dist', 'build', 'bin', 'obj',
+        'archive', 'backup', 'temp', 'tmp', 'cache', '.cache', 'logs', 'venv', '.venv',
+        'documentation', 'docs', 'reports'
+    }
+    
+    if name_lower in EXCLUDED_FOLDER_NAMES:
+        score -= 200 # Heavily penalize
     
     # Positive scores for project markers
     if (directory / 'package.json').exists():
         score += 50
     if (directory / 'angular.json').exists():
         score += 60
-    if (directory / 'pom.xml').exists() or (directory / 'build.gradle').exists():
+    if (directory / 'pom.xml').exists() or (directory / 'build.gradle').exists() or (directory / 'build.gradle.kts').exists():
         score += 50
     if (directory / 'Cargo.toml').exists():
         score += 50
     if (directory / 'go.mod').exists():
         score += 50
-    if (directory / 'requirements.txt').exists() or (directory / 'setup.py').exists():
+    if (directory / 'requirements.txt').exists() or (directory / 'setup.py').exists() or (directory / 'pyproject.toml').exists():
         score += 40
-    if any(directory.glob('*.csproj')):
+        
+    # .NET detection - root and nested
+    has_csproj = any(directory.glob('*.csproj')) or any(directory.glob('*/*.csproj'))
+    has_sln = any(directory.glob('*.sln')) or any(directory.glob('*/*.sln'))
+    
+    if has_csproj:
         score += 50
-    if any(directory.glob('*.sln')):
+    if has_sln:
         score += 55
+        
     if (directory / 'src').is_dir():
         score += 30
     if (directory / 'frontend').is_dir():
@@ -189,7 +230,8 @@ def detect_tech_stack(project_path: Path) -> List[str]:
         tech_stack.append("Gradle/Java")
     
     # .NET
-    if any(project_path.glob("*.csproj")) or any(project_path.glob("*.sln")):
+    if any(project_path.glob("*.csproj")) or any(project_path.glob("*.sln")) or \
+       any(project_path.glob("*/*.csproj")) or any(project_path.glob("*/*.sln")):
         tech_stack.append(".NET/C#")
     
     # Go
@@ -220,17 +262,19 @@ def detect_project_markers(directory: Path) -> List[str]:
         markers.append('Angular')
     if (directory / 'pom.xml').exists():
         markers.append('Maven')
-    if (directory / 'build.gradle').exists():
+    if (directory / 'build.gradle').exists() or (directory / 'build.gradle.kts').exists():
         markers.append('Gradle')
-    if (directory / 'requirements.txt').exists():
+    if (directory / 'requirements.txt').exists() or (directory / 'pyproject.toml').exists():
         markers.append('Python')
     if (directory / 'Cargo.toml').exists():
         markers.append('Rust')
     if (directory / 'go.mod').exists():
         markers.append('Go')
-    if any(directory.glob('*.csproj')):
+    
+    # .NET detection
+    if any(directory.glob('*.csproj')) or any(directory.glob('*/*.csproj')):
         markers.append('.NET')
-    if any(directory.glob('*.sln')):
+    if any(directory.glob('*.sln')) or any(directory.glob('*/*.sln')):
         markers.append('.NET Solution')
     if (directory / 'src').is_dir():
         markers.append('Has src/')
