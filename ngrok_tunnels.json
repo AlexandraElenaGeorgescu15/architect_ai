@@ -1,1 +1,1 @@
-{"tunnels":[{"name":"command_line","ID":"f210752d5bf3265b1695a8f653dd6d9c","uri":"/api/tunnels/command_line","public_url":"https://verdell-tricky-verena.ngrok-free.dev","proto":"https","config":{"addr":"http://localhost:8000","inspect":true},"metrics":{"conns":{"count":18,"gauge":0,"rate1":0,"rate5":0,"rate15":0,"p50":21598850,"p90":80317970.00000007,"p95":129443300,"p99":129443300},"http":{"count":18,"rate1":0,"rate5":0,"rate15":0,"p50":13363150,"p90":30619210.00000015,"p95":126144400,"p99":126144400}}}],"uri":"/api/tunnels"}
+{"tunnels":[],"uri":"/api/tunnels"}

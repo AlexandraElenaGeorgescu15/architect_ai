@@ -91,6 +91,8 @@ async def get_project_summary(
         # =================================================================
         user_project_dirs = get_user_project_directories()
         tool_dir = detect_tool_directory()
+        logger.info(f"🧐 [DEBUG_SUMMARY] Tool Dir: {tool_dir}")
+        logger.info(f"🧐 [DEBUG_SUMMARY] Raw User Dirs: {user_project_dirs}")
         
         # Folders that should never appear as user projects
         EXCLUDED_FOLDER_NAMES = {
@@ -106,6 +108,7 @@ async def get_project_summary(
             and 'architect_ai' not in str(d).lower()
             and d.name.lower() not in EXCLUDED_FOLDER_NAMES
         ]
+        logger.info(f"🧐 [DEBUG_SUMMARY] Filtered User Dirs: {user_project_dirs}")
         
         # Build project name from all indexed projects
         if len(user_project_dirs) == 1:
@@ -130,10 +133,13 @@ async def get_project_summary(
         try:
             # Get index stats from ChromaDB
             index_path = Path(settings.rag_index_path if hasattr(settings, 'rag_index_path') else "rag/index")
+            logger.info(f"🧐 [DEBUG_SUMMARY] RAG Index Path: {index_path} (Exists: {index_path.exists()})")
+            
             if index_path.exists():
                 # Count files in ChromaDB collection
                 if hasattr(rag_retriever, 'collection') and rag_retriever.collection:
                     indexed_files = rag_retriever.collection.count()
+                    logger.info(f"🧐 [DEBUG_SUMMARY] Collection Count: {indexed_files}")
                 
                 # FIX: Check MultiRepoService for repo-specific indices
                 try:

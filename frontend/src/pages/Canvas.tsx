@@ -14,7 +14,7 @@ export default function Canvas() {
   const [targetType, setTargetType] = useState<string | null>(null)
   const [showSelector, setShowSelector] = useState(false)
   const selectorRef = useRef<HTMLDivElement>(null)
-  
+
   // CRITICAL: Reset diagram state on unmount to prevent stale errors from leaking
   // between diagram views. This fixes the bug where viewing a broken diagram
   // then navigating to a working one would still show the error state.
@@ -23,11 +23,12 @@ export default function Canvas() {
       resetDiagramState()
     }
   }, [resetDiagramState])
-  
+
   // Only show Mermaid diagrams (exclude HTML), filtered by current folder
   const diagramArtifacts = artifacts
     .filter(a => a.type.startsWith('mermaid_'))
-    .filter(a => !currentFolderId || a.folder_id === currentFolderId)  // Filter by folder
+    // FIXED: Allow viewing artifact if it's explicitly selected, even if outside current folder
+    .filter(a => !currentFolderId || a.folder_id === currentFolderId || (selectedArtifactId && a.id === selectedArtifactId))
     .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
 
   // FIXED: If ID is set but not found, fall back to type-based or first diagram
@@ -37,17 +38,17 @@ export default function Canvas() {
     if (selectedArtifactId) {
       const byId = artifacts.find(a => a.id === selectedArtifactId)
       if (byId) return byId
-      
+
       // ID not found - log warning and fall back
       console.warn(`[Canvas] Artifact ID "${selectedArtifactId}" not found, falling back to type/first`)
     }
-    
+
     // Second priority: Find by type
     if (targetType) {
       const byType = diagramArtifacts.find(a => a.type === targetType)
       if (byType) return byType
     }
-    
+
     // Last resort: First available diagram
     return diagramArtifacts[0] || null
   })()
@@ -55,22 +56,22 @@ export default function Canvas() {
   // Initialize selection from navigation state or query param
   // Supports multiple parameter styles: artifactId/artifactType OR diagramId/content
   useEffect(() => {
-    const state = (location.state as { 
-      artifactId?: string; 
+    const state = (location.state as {
+      artifactId?: string;
       artifactType?: string;
       diagramId?: string;  // Alternative key from ArtifactCard (this is an ID, not a type)
       content?: string;    // Optional content for immediate display
     } | null) || {}
     const queryArtifactId = searchParams.get('artifactId') || searchParams.get('diagram')
     const queryArtifactType = searchParams.get('artifactType')
-    
+
     // Support both 'artifactId' and 'diagramId' keys (both are IDs)
     const initialId = state.artifactId || state.diagramId || queryArtifactId
     // Only use artifactType from state or query - diagramId is an ID, not a type!
     const initialType = state.artifactType || queryArtifactType
-    
+
     console.log('[Canvas] Navigation received:', { initialId, initialType, state, diagramArtifacts: diagramArtifacts.map(a => a.id) })
-    
+
     if (initialId) {
       // Verify the artifact exists before setting
       const exists = artifacts.find(a => a.id === initialId)
@@ -97,7 +98,7 @@ export default function Canvas() {
   useEffect(() => {
     // FIXED: Sync selectedArtifactId with actual selection to prevent stale ID issues
     // CRITICAL: Only auto-select on initial mount, NOT when user manually selects
-    
+
     // Case 1: ID is set but artifact not found (stale ID) - sync with actual selection
     if (selectedArtifactId && selectedArtifact && selectedArtifact.id !== selectedArtifactId) {
       console.debug('[Canvas] Syncing stale ID to actual artifact:', selectedArtifact.id)
@@ -106,7 +107,7 @@ export default function Canvas() {
       setTargetType(null)
       return
     }
-    
+
     // Case 2: No ID but have a target type - find by type (ONLY on initial load)
     if (!selectedArtifactId && targetType) {
       const latestOfType = diagramArtifacts.find(a => a.type === targetType)
@@ -117,7 +118,7 @@ export default function Canvas() {
         return
       }
     }
-    
+
     // Case 3: No ID, no type - use first available
     if (diagramArtifacts.length > 0 && !selectedArtifactId) {
       setSelectedArtifactId(diagramArtifacts[0].id)
@@ -142,7 +143,7 @@ export default function Canvas() {
 
   return (
     <div className="w-full h-[calc(100vh-32px)] flex flex-col animate-fade-in-up overflow-hidden">
-      
+
       {/* Folder Indicator + Compact Diagram Selector */}
       {currentFolderId && (
         <div className="mx-4 mb-2 flex items-center gap-2 text-xs text-primary bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20">
@@ -150,7 +151,7 @@ export default function Canvas() {
           <span className="font-medium">Viewing diagrams from: <strong>{currentFolderId}</strong></span>
         </div>
       )}
-      
+
       {diagramArtifacts.length > 1 && (
         <div ref={selectorRef} className="mb-3 mx-4 relative flex-shrink-0 z-50">
           <button
@@ -172,9 +173,8 @@ export default function Canvas() {
                     setTargetType(null)  // Clear targetType to prevent interference
                     setShowSelector(false)
                   }}
-                  className={`w-full px-4 py-2 text-left text-sm hover:bg-primary/10 transition-colors ${
-                    selectedArtifactId === artifact.id ? 'bg-primary/20 font-medium' : ''
-                  }`}
+                  className={`w-full px-4 py-2 text-left text-sm hover:bg-primary/10 transition-colors ${selectedArtifactId === artifact.id ? 'bg-primary/20 font-medium' : ''
+                    }`}
                 >
                   {artifact.type.replace('mermaid_', '').replace(/_/g, ' ')}
                 </button>

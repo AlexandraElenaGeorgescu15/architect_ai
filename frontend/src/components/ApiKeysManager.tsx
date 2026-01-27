@@ -82,8 +82,24 @@ export default function ApiKeysManager() {
     }
   }
 
-  const toggleShowKey = (provider: string) => {
-    setShowKeys((prev) => ({ ...prev, [provider]: !prev[provider] }))
+  const toggleShowKey = async (provider: string) => {
+    const willShow = !showKeys[provider]
+
+    // If we're about to show the key and it's currently masked, fetch the actual key
+    if (willShow && formKeys[provider] === '••••••••') {
+      try {
+        const response = await api.get(`/api/config/api-keys/${provider}`)
+        if (response.data.api_key) {
+          setFormKeys(prev => ({ ...prev, [provider]: response.data.api_key }))
+        }
+      } catch (error) {
+        console.error('Failed to fetch API key:', error)
+        addNotification('error', 'Failed to retrieve API key')
+        return
+      }
+    }
+
+    setShowKeys((prev) => ({ ...prev, [provider]: willShow }))
   }
 
   if (isLoading) {
@@ -111,7 +127,7 @@ export default function ApiKeysManager() {
           API Keys Configuration
         </h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Configure API keys for cloud AI providers. Keys are stored securely in your .env file.
+          Configure API keys for cloud AI providers. Keys are stored securely in your .env file and applied immediately.
         </p>
       </div>
 
@@ -129,11 +145,10 @@ export default function ApiKeysManager() {
             >
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center border-2 transition-all duration-300 ${
-                    isConfigured 
-                      ? 'bg-success/10 border-success/30 group-hover:scale-110' 
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center border-2 transition-all duration-300 ${isConfigured
+                      ? 'bg-success/10 border-success/30 group-hover:scale-110'
                       : 'bg-muted border-border group-hover:scale-105'
-                  }`}>
+                    }`}>
                     <Key className={`w-5 h-5 transition-colors ${isConfigured ? 'text-success' : 'text-muted-foreground'}`} />
                   </div>
                   <div>
@@ -208,10 +223,7 @@ export default function ApiKeysManager() {
                   <div className="text-xs text-muted-foreground bg-info/5 border border-info/20 p-3 rounded-xl flex items-start gap-2">
                     <span className="text-base">💡</span>
                     <div>
-                      <span className="font-medium">Add your {provider.name} key to <code>.env</code> file:</span>
-                      <code className="block mt-1 bg-background px-2 py-1 rounded font-mono text-[10px]">
-                        {provider.id === 'groq' ? 'GROQ_API_KEY=gsk_your_key_here' : 'GEMINI_API_KEY=your_key_here'}
-                      </code>
+                      <span className="font-medium">Keys are saved to <code>backend/.env</code> automatically.</span>
                     </div>
                   </div>
                 )}
@@ -221,10 +233,9 @@ export default function ApiKeysManager() {
         })}
       </div>
 
-      <div className="glass-panel bg-warning/5 border-2 border-warning/20 rounded-xl p-4">
+      <div className="glass-panel bg-success/5 border-2 border-success/20 rounded-xl p-4">
         <p className="text-sm text-muted-foreground leading-relaxed">
-          <strong className="text-foreground font-bold">Note:</strong> API keys are stored in your <code className="bg-background px-2 py-0.5 rounded-md font-mono text-primary">.env</code> file in the backend directory.
-          After saving, restart the backend server for changes to take effect.
+          <strong className="text-foreground font-bold">Note:</strong> API keys are applied immediately and saved to your <code className="bg-background px-2 py-0.5 rounded-md font-mono text-primary">.env</code> file.
         </p>
       </div>
     </div>

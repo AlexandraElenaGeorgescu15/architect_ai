@@ -395,6 +395,83 @@ Output as JSON array of findings."""
             created_at=datetime.now().isoformat()
         )
     
+    async def review_code_quality(
+        self,
+        directory: str,
+        files: List[str]
+    ) -> DesignReviewResult:
+        """
+        Review code quality using AI without a diagram.
+        
+        Checks for:
+        - SOLID principles
+        - Code smell
+        - Maintainability
+        - Error handling
+        """
+        review_id = f"rev_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        findings: List[ReviewFinding] = []
+        
+        # Summarize code for AI context
+        code_summary = self._summarize_code_files(files)
+        
+        prompt = f"""Review the following code structure and file list for general code quality.
+        
+CODE STRUCTURE:
+{code_summary}
+
+Analyze for:
+1. SOLID Principle violations
+2. Obvious code smells (God classes, spaghetti code hints)
+3. Project structure issues
+4. Naming convention inconsistencies
+
+For each finding, provide:
+- Category: patterns
+- Severity: warning/info
+- Title: Brief description
+- Description: Detailed explanation
+- Recommendation: Specific refactoring advice
+
+Output as JSON array of findings."""
+
+        try:
+            # Get AI analysis
+            from backend.models.dto import ArtifactType
+            result = await self.generation_service.generate_with_pipeline(
+                artifact_type=ArtifactType.API_DOCS,  # Use docs type for analysis
+                meeting_notes=prompt,
+                options={"temperature": 0.3}
+            )
+            
+            # Parse AI response
+            ai_findings = self._parse_ai_findings(result.get("content", ""))
+            findings.extend(ai_findings)
+            
+        except Exception as e:
+            logger.error(f"AI code quality analysis failed: {e}")
+            findings.append(ReviewFinding(
+                category="patterns",
+                severity=ReviewSeverity.INFO,
+                title="AI Analysis Failed",
+                description=f"Could not perform AI analysis: {e}",
+                file_path=None,
+                line_number=None,
+                recommendation="Manual review required"
+            ))
+            
+        score = self._calculate_score(findings)
+        
+        return DesignReviewResult(
+            review_id=review_id,
+            review_type="code_quality",
+            files_reviewed=len(files),
+            findings=findings,
+            summary=self._generate_summary(findings),
+            score=score,
+            created_at=datetime.now().isoformat()
+        )
+
     async def full_review(
         self,
         directory: str,
@@ -405,7 +482,8 @@ Output as JSON array of findings."""
         Perform a comprehensive design review.
         
         Combines:
-        - Architecture compliance
+        - Architecture compliance (if diagram provided)
+        - Code Quality (AI fallback if no diagram)
         - Test coverage
         - Security
         - Patterns
@@ -441,6 +519,10 @@ Output as JSON array of findings."""
                 meeting_notes
             )
             all_findings.extend(arch_result.findings)
+        else:
+            # Fallback: General AI Code Quality Review
+            quality_result = await self.review_code_quality(directory, source_files[:50])
+            all_findings.extend(quality_result.findings)
         
         test_result = await self.review_test_coverage(source_files[:50], test_files)
         all_findings.extend(test_result.findings)

@@ -130,3 +130,36 @@ async def save_api_key(
         logger.error(f"Failed to save API key: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to save API key: {str(e)}")
 
+
+@router.get("/api-keys/{provider}")
+async def get_api_key(
+    provider: str,
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """
+    Retrieve the configured API key for a provider.
+    This allows the UI to show the key ("See Key" functionality).
+    """
+    from backend.core.config import settings
+    import os
+    
+    provider = provider.lower()
+    
+    # Map provider names to settings/env
+    if provider == 'groq':
+        key = settings.groq_api_key or os.getenv("GROQ_API_KEY")
+    elif provider in ['gemini', 'google']:
+        key = settings.google_api_key or settings.gemini_api_key or os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+    elif provider == 'openai':
+        key = settings.openai_api_key or os.getenv("OPENAI_API_KEY")
+    elif provider == 'anthropic':
+        key = settings.anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")
+    elif provider == 'xai':
+        key = settings.xai_api_key or os.getenv("XAI_API_KEY")
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown provider: {provider}")
+        
+    if not key:
+        return {"api_key": ""}
+        
+    return {"api_key": key}

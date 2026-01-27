@@ -131,6 +131,7 @@ class RAGIngester:
         """
         # Exclude tool directory
         if should_exclude_path(file_path):
+            logger.debug(f"Skipping tool file: {file_path}")
             return False
         
         # Only index text files
@@ -149,9 +150,13 @@ class RAGIngester:
         ]
         
         path_str = str(file_path)
-        if any(pattern in path_str for pattern in excluded_patterns):
-            return False
+        for pattern in excluded_patterns:
+            if pattern in path_str:
+                logger.debug(f"🚫 [RAG] Skipping excluded pattern '{pattern}': {file_path.name}")
+                return False
         
+        # Log success for tracking
+        # logger.debug(f"✅ [RAG] Accepted file for indexing: {file_path.name}")
         return True
     
     def _chunk_file_content(self, content: str, file_path: Path, chunk_size: int = 2000, overlap: int = 400) -> List[Dict[str, Any]]:
@@ -485,6 +490,7 @@ class RAGIngester:
                 
                 if current_hash == existing_hash and existing_hash:
                     stats["files_skipped"] += 1
+                    logger.debug(f"Skipping unchanged file: {file_path.name}")
                     continue
                 
                 # Index the file

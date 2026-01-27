@@ -153,7 +153,7 @@ def should_exclude_path(path: Path) -> bool:
     try:
         # Check if path is inside tool directory
         path.resolve().relative_to(tool_dir.resolve())
-        logger.debug(f"Excluding tool file: {path}")
+        logger.debug(f"Excluding tool file: {path} (inside {tool_dir})")
         return True
     except ValueError:
         # Path is not relative to tool directory - this is USER code, don't exclude

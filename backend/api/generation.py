@@ -133,7 +133,7 @@ async def generate_artifact(
                 meeting_notes=meeting_notes,
                 context_id=gen_request.context_id,
                 options=gen_request.options.dict() if gen_request.options else None,
-                stream=False,
+                stream=True,  # Enable streaming to capture progress events for WebSocket
                 folder_id=gen_request.folder_id  # Pass folder_id for artifact association
             ):
                 # Capture job_id from first update
