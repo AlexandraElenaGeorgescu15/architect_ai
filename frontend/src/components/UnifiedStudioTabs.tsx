@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspens
 import { useNavigate } from 'react-router-dom'
 import { ArtifactType } from '../services/generationService'
 import { useSystemStatus } from '../hooks/useSystemStatus'
-import { 
-  Loader2, Sparkles, FileText, CheckCircle2, Folder, Code, FileCode, 
+import {
+  Loader2, Sparkles, FileText, CheckCircle2, Folder, Code, FileCode,
   Download, Key, Settings, Search, Network, ListTodo, Sliders, Edit3, GitBranch,
   FolderGit2, Link2, ShieldCheck
 } from 'lucide-react'
@@ -23,9 +23,9 @@ function lazyWithRetry<T extends ComponentType<any>>(
   return lazy(() =>
     importFn().catch((error) => {
       const isChunkError = error.message?.includes('dynamically imported module') ||
-                          error.message?.includes('Loading chunk') ||
-                          error.message?.includes('Failed to fetch')
-      
+        error.message?.includes('Loading chunk') ||
+        error.message?.includes('Failed to fetch')
+
       if (isChunkError && retries > 0) {
         console.warn(`Chunk loading failed, retrying... (${retries} attempts left)`)
         return new Promise<{ default: T }>((resolve) => {
@@ -34,12 +34,12 @@ function lazyWithRetry<T extends ComponentType<any>>(
           }, 1000)
         })
       }
-      
+
       if (isChunkError) {
         console.error('Chunk loading failed, reloading page...')
         window.location.reload()
       }
-      
+
       throw error
     })
   )
@@ -77,14 +77,14 @@ const LibraryView = memo(function LibraryView() {
   const [showSearch, setShowSearch] = useState(false)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const { artifacts, currentFolderId } = useArtifactStore()
-  
+
   // Focus search input when opened
   useEffect(() => {
     if (showSearch && searchInputRef.current) {
       searchInputRef.current.focus()
     }
   }, [showSearch])
-  
+
   // Close search on Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -101,7 +101,7 @@ const LibraryView = memo(function LibraryView() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [showSearch])
-  
+
   return (
     <div className="h-full overflow-auto custom-scrollbar p-4 animate-fade-in-up">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -131,7 +131,7 @@ const LibraryView = memo(function LibraryView() {
                   placeholder="Search artifacts..."
                   className="px-4 py-2 border border-border rounded-xl bg-background text-foreground text-sm w-64 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                 />
-                <button 
+                <button
                   onClick={() => {
                     setShowSearch(false)
                     setSearchQuery('')
@@ -143,7 +143,7 @@ const LibraryView = memo(function LibraryView() {
                 </button>
               </div>
             ) : (
-              <button 
+              <button
                 onClick={() => setShowSearch(true)}
                 className="px-6 py-3 border border-border rounded-xl hover:bg-primary/10 hover:border-primary/30 flex items-center gap-2 text-sm glass-button transition-all duration-300 shadow-sm hover:shadow-md font-bold group"
               >
@@ -183,13 +183,13 @@ interface UnifiedStudioTabsProps {
 }
 
 // Memoized tab button component to prevent unnecessary re-renders
-const TabButton = memo(function TabButton({ 
-  id, 
-  label, 
-  icon: Icon, 
-  isActive, 
-  onClick 
-}: { 
+const TabButton = memo(function TabButton({
+  id,
+  label,
+  icon: Icon,
+  isActive,
+  onClick
+}: {
   id: string
   label: string
   icon: React.ComponentType<{ className?: string }>
@@ -227,11 +227,10 @@ const ArtifactTypeButton = memo(function ArtifactTypeButton({
   return (
     <button
       onClick={onClick}
-      className={`text-left px-3 py-2.5 text-xs rounded-lg border transition-all ${
-        isSelected
+      className={`text-left px-3 py-2.5 text-xs rounded-lg border transition-all ${isSelected
           ? 'border-primary bg-primary/10 text-primary font-bold shadow-sm'
           : 'border-transparent bg-background/30 hover:bg-background/50 text-muted-foreground hover:text-foreground'
-      }`}
+        }`}
     >
       {type.label}
     </button>
@@ -260,21 +259,21 @@ const EditInCanvasButton = memo(function EditInCanvasButton({
     useCallback(state => state.artifacts
       .filter(a => a.type === selectedArtifactType)
       .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))[0],
-    [selectedArtifactType])
+      [selectedArtifactType])
   )
-  
+
   const displayedArtifact = latestArtifact || progress?.artifact || null
-  
+
   const handleEditInCanvas = useCallback(() => {
     if (displayedArtifact) {
       // FIXED: Pass both artifactId AND diagramId for backward compatibility
       // Canvas.tsx checks for both keys
-      navigate('/canvas', { 
-        state: { 
+      navigate('/canvas', {
+        state: {
           artifactId: displayedArtifact.id,
           diagramId: displayedArtifact.id,  // Canvas also checks this key
           artifactType: displayedArtifact.type
-        } 
+        }
       })
     }
   }, [displayedArtifact, navigate])
@@ -349,9 +348,9 @@ const MermaidDiagramViewer = memo(function MermaidDiagramViewer({
     useCallback(state => state.artifacts
       .filter(a => a.type === selectedArtifactType)
       .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))[0],
-    [selectedArtifactType])
+      [selectedArtifactType])
   )
-  
+
   // CRITICAL FIX: Reset diagram state when artifact type changes
   // This prevents "zombie state" where errors from a broken diagram of type A
   // persist when viewing a working diagram of type B
@@ -416,23 +415,23 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
   const [activeView, setActiveView] = useState('context')
   const [selectedCategory, setSelectedCategory] = useState<string>('All')  // Category filter for artifact types
   const navigate = useNavigate()
-  
+
   // CRITICAL FIX: Reset diagram error state when switching artifact types
   // This prevents "zombie state" where errors from broken diagrams persist
   // and infect subsequent working diagrams
   const { resetState: resetDiagramState } = useDiagramStore()
-  
+
   useEffect(() => {
     // Clear stale diagram errors when switching to a different artifact type
     resetDiagramState()
   }, [props.selectedArtifactType, resetDiagramState])
-  
+
   // Get unique categories from artifact types
   const categories = useMemo(() => {
     const cats = ['All', ...new Set(props.artifactTypes.map(t => t.category))]
     return cats
   }, [props.artifactTypes])
-  
+
   // Filter artifact types by selected category
   const filteredArtifactTypes = useMemo(() => {
     if (selectedCategory === 'All') {
@@ -440,7 +439,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
     }
     return props.artifactTypes.filter(t => t.category === selectedCategory)
   }, [props.artifactTypes, selectedCategory])
-  
+
   // Memoize tabs configuration
   const tabs = useMemo(() => [
     { id: 'context', label: 'Context', icon: FileText },
@@ -449,7 +448,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
     { id: 'version-control', label: 'Version Control', icon: GitBranch },
     { id: 'settings', label: 'Settings', icon: Settings },
   ], [])
-  
+
   const [aiQuestion, setAiQuestion] = useState('')
   const [aiResponse, setAiResponse] = useState<string | null>(null)
   const [isAskingAi, setIsAskingAi] = useState(false)
@@ -466,21 +465,21 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
   const { addNotification } = useUIStore()
   const [isBulkDialogOpen, setBulkDialogOpen] = useState(false)
   const [isBulkGenerating, setIsBulkGenerating] = useState(false)
-  
+
   // Meeting notes folder selection state - sync with global store
   const [folders, setFolders] = useState<Array<{ id: string; name: string; notes_count: number }>>([])
   const { currentFolderId, setCurrentFolderId } = useArtifactStore()
-  
+
   // Import useSystemStatus to check backend readiness
   const { isReady: backendReady } = useSystemStatus()
-  
+
   // Load folders when generate tab is active and backend is ready
   useEffect(() => {
     if (backendReady) {
       loadFolders()
     }
   }, [backendReady])
-  
+
   const loadFolders = async () => {
     try {
       const { default: api } = await import('../services/api')
@@ -655,7 +654,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
 
       {/* Content Area - Maximum Space */}
       <div className="flex-1 min-h-0 overflow-auto">
-        
+
         {/* CONTEXT VIEW */}
         {activeView === 'context' && (
           <div className="h-full overflow-auto custom-scrollbar p-1 animate-fade-in-up">
@@ -663,13 +662,13 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
               {/* Meeting Notes Card - Full Width, Centered */}
               <div className="w-full max-w-4xl glass-panel rounded-2xl p-0 flex flex-col shadow-elevated hover:shadow-floating transition-all duration-300 interactive-card bg-card border-border">
                 <div className="p-6 border-b border-border bg-secondary/30 flex items-center gap-3">
-                   <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-md group-hover:shadow-lg transition-shadow duration-300">
-                      <FileText className="w-6 h-6 text-primary" />
-                   </div>
-                   <div className="flex-1">
-                      <h2 className="text-lg font-bold text-foreground truncate-with-ellipsis">Project Context</h2>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider truncate-with-ellipsis">Meeting Notes & Requirements</p>
-                   </div>
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-md group-hover:shadow-lg transition-shadow duration-300">
+                    <FileText className="w-6 h-6 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <h2 className="text-lg font-bold text-foreground truncate-with-ellipsis">Project Context</h2>
+                    <p className="text-xs text-muted-foreground uppercase tracking-wider truncate-with-ellipsis">Meeting Notes & Requirements</p>
+                  </div>
                 </div>
                 <div className="flex-1 overflow-auto custom-scrollbar p-6 bg-background/10">
                   <Suspense fallback={<LoadingFallback />}>
@@ -695,12 +694,12 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                 {/* Generation Controls */}
                 <div className="glass-panel rounded-2xl p-6 flex-shrink-0 border-border shadow-elevated hover:shadow-floating transition-all duration-300 bg-card">
                   <div className="flex items-center gap-3 mb-6">
-                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/30 animate-pulse-glow shadow-lg">
-                        <Sparkles className="w-6 h-6 text-primary" />
-                     </div>
-                     <h2 className="text-xl font-black text-foreground tracking-tight truncate-with-ellipsis">Generator</h2>
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center border border-primary/30 animate-pulse-glow shadow-lg">
+                      <Sparkles className="w-6 h-6 text-primary" />
+                    </div>
+                    <h2 className="text-xl font-black text-foreground tracking-tight truncate-with-ellipsis">Generator</h2>
                   </div>
-                  
+
                   <div className="space-y-5">
                     <div className="space-y-2">
                       <label className="text-[10px] font-bold text-primary uppercase tracking-widest flex items-center gap-2">
@@ -768,29 +767,28 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                           </button>
                         )}
                       </div>
-                      
+
                       {/* Category Tabs */}
                       <div className="flex flex-wrap gap-1 mb-3">
                         {categories.map((category) => (
                           <button
                             key={category}
                             onClick={() => setSelectedCategory(category)}
-                            className={`px-2 py-1 text-[10px] font-medium rounded-md transition-all ${
-                              selectedCategory === category
+                            className={`px-2 py-1 text-[10px] font-medium rounded-md transition-all ${selectedCategory === category
                                 ? 'bg-primary text-primary-foreground shadow-sm'
                                 : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
-                            }`}
+                              }`}
                           >
                             {category}
                             <span className="ml-1 opacity-60">
-                              ({category === 'All' 
-                                ? props.artifactTypes.length 
+                              ({category === 'All'
+                                ? props.artifactTypes.length
                                 : props.artifactTypes.filter(t => t.category === category).length})
                             </span>
                           </button>
                         ))}
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
                         {filteredArtifactTypes.map((type) => (
                           <ArtifactTypeButton
@@ -806,12 +804,19 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                     <button
                       onClick={handleGenerate}
                       disabled={props.isGenerating || (!currentFolderId && props.meetingNotes.length < 10)}
-                      className="w-full py-4 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground rounded-xl font-black uppercase tracking-widest shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 flex items-center justify-center gap-3 transform hover:-translate-y-1 active:translate-y-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                      className={`
+                        w-full py-4 text-primary-foreground rounded-xl font-black uppercase tracking-widest shadow-lg transition-all duration-300 flex items-center justify-center gap-3
+                        ${props.isGenerating
+                          ? 'bg-primary/80 cursor-not-allowed shadow-none'
+                          : 'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 hover:-translate-y-1 active:translate-y-0'
+                        }
+                        disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0
+                      `}
                     >
                       {props.isGenerating ? (
                         <>
                           <Loader2 className="w-5 h-5 animate-spin" />
-                          PROCESSING...
+                          <span className="animate-pulse">GENERATING...</span>
                         </>
                       ) : (
                         <>
@@ -824,33 +829,33 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                     {/* Progress Bar */}
                     {props.isGenerating && props.progress && (
                       <div className="space-y-2 glass-panel p-4 rounded-xl text-xs border-primary/30 mt-4 bg-background/30">
-                         <div className="flex justify-between items-center">
-                            <span className="uppercase tracking-wider text-primary font-bold">{props.progress.status?.replace(/_/g, ' ')}</span>
-                            <span className="font-mono font-bold text-foreground">{props.progress.progress}%</span>
-                         </div>
-                         <div className="h-2 bg-background/50 rounded-full overflow-hidden border border-border/50">
-                            <div 
-                              className="h-full bg-primary transition-all duration-500 shadow-[0_0_10px_rgba(var(--primary),0.8)]"
-                              style={{ width: `${props.progress.progress}%` }} 
-                            />
-                         </div>
-                         {qualityPrediction && (
-                            <div className="flex justify-between items-center text-[10px] text-muted-foreground mt-2 pt-2 border-t border-border/50">
-                              <span>QUALITY FORECAST</span>
-                              <span className={`font-bold px-2 py-0.5 rounded-full ${qualityBadgeClass}`}>
-                                {qualityPrediction.label.toUpperCase()}
-                              </span>
-                            </div>
-                         )}
-                         {/* Cancel Button */}
-                         {props.cancelGeneration && (
-                           <button
-                             onClick={props.cancelGeneration}
-                             className="w-full mt-3 py-2 text-xs font-bold text-destructive bg-destructive/10 hover:bg-destructive/20 border border-destructive/30 rounded-lg transition-all duration-200 uppercase tracking-wider"
-                           >
-                             Cancel Generation
-                           </button>
-                         )}
+                        <div className="flex justify-between items-center">
+                          <span className="uppercase tracking-wider text-primary font-bold">{props.progress.status?.replace(/_/g, ' ')}</span>
+                          <span className="font-mono font-bold text-foreground">{props.progress.progress}%</span>
+                        </div>
+                        <div className="h-2 bg-background/50 rounded-full overflow-hidden border border-border/50">
+                          <div
+                            className="h-full bg-primary transition-all duration-500 shadow-[0_0_10px_rgba(var(--primary),0.8)]"
+                            style={{ width: `${props.progress.progress}%` }}
+                          />
+                        </div>
+                        {qualityPrediction && (
+                          <div className="flex justify-between items-center text-[10px] text-muted-foreground mt-2 pt-2 border-t border-border/50">
+                            <span>QUALITY FORECAST</span>
+                            <span className={`font-bold px-2 py-0.5 rounded-full ${qualityBadgeClass}`}>
+                              {qualityPrediction.label.toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        {/* Cancel Button */}
+                        {props.cancelGeneration && (
+                          <button
+                            onClick={props.cancelGeneration}
+                            className="w-full mt-3 py-2 text-xs font-bold text-destructive bg-destructive/10 hover:bg-destructive/20 border border-destructive/30 rounded-lg transition-all duration-200 uppercase tracking-wider"
+                          >
+                            Cancel Generation
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -859,79 +864,79 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
 
               {/* Right Column: Main Workspace */}
               <div className="lg:col-span-8 glass-panel rounded-2xl overflow-hidden flex flex-col shadow-floating border-border bg-card backdrop-blur-xl hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] transition-shadow duration-500 min-h-[400px]">
-                 <div className="border-b border-border p-4 flex items-center gap-4 bg-secondary/20">
-                    <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 rounded-lg shadow-sm">
-                      <Code className="w-4 h-4 text-primary" />
-                      <span className="text-xs font-bold text-primary uppercase tracking-wider">Editor Mode</span>
-                    </div>
-                    <div className="h-6 w-px bg-border/50" />
-                    <span className="text-sm font-bold text-foreground truncate-with-ellipsis">
-                       {props.artifactTypes.find(t => t.value === props.selectedArtifactType)?.label || 'Select Artifact'}
-                    </span>
-                 </div>
-                 <div className="flex-1 overflow-hidden relative bg-background/20 flex flex-col">
-                    {/* Render appropriate editor based on artifact type */}
-                    {props.selectedArtifactType.includes('mermaid') ? (
-                      <>
-                        {/* Mermaid Diagram Rendering */}
-                        <div className="flex-1 overflow-hidden">
-                          <Suspense fallback={<LoadingFallback />}>
-                            <MermaidDiagramViewer
-                              selectedArtifactType={props.selectedArtifactType}
-                              progress={props.progress}
-                              artifactTypes={props.artifactTypes}
-                              isGenerating={props.isGenerating}
-                              onContentUpdate={async (artifact, newContent) => {
-                                // Update local store (prefer update to avoid duplicates)
-                                updateArtifact(artifact.id, {
-                                  content: newContent,
-                                  updated_at: new Date().toISOString(),
-                                })
-
-                                try {
-                                  await updateArtifactApi(artifact.id, newContent, {
-                                    artifact_type: artifact.type || props.selectedArtifactType
-                                  })
-                                  addNotification('success', 'Diagram updated with AI repair')
-                                } catch (err: any) {
-                                  console.error('Failed to persist AI repair:', err)
-                                  addNotification('warning', 'Diagram updated locally, but saving failed.')
-                                }
-                              }}
-                            />
-                          </Suspense>
-                        </div>
-                        {/* Small Footer - Canvas Editor Link */}
-                        <div className="border-t border-border px-4 py-3 bg-secondary/10 flex items-center justify-between flex-shrink-0">
-                          <span className="text-xs text-muted-foreground flex items-center gap-2">
-                            <Sparkles className="w-3 h-3 text-primary" />
-                            For interactive editing with drag-and-drop, use <strong>Canvas</strong>
-                          </span>
-                          <EditInCanvasButton 
+                <div className="border-b border-border p-4 flex items-center gap-4 bg-secondary/20">
+                  <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/30 rounded-lg shadow-sm">
+                    <Code className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-bold text-primary uppercase tracking-wider">Editor Mode</span>
+                  </div>
+                  <div className="h-6 w-px bg-border/50" />
+                  <span className="text-sm font-bold text-foreground truncate-with-ellipsis">
+                    {props.artifactTypes.find(t => t.value === props.selectedArtifactType)?.label || 'Select Artifact'}
+                  </span>
+                </div>
+                <div className="flex-1 overflow-hidden relative bg-background/20 flex flex-col">
+                  {/* Render appropriate editor based on artifact type */}
+                  {props.selectedArtifactType.includes('mermaid') ? (
+                    <>
+                      {/* Mermaid Diagram Rendering */}
+                      <div className="flex-1 overflow-hidden">
+                        <Suspense fallback={<LoadingFallback />}>
+                          <MermaidDiagramViewer
                             selectedArtifactType={props.selectedArtifactType}
                             progress={props.progress}
-                            navigate={navigate}
+                            artifactTypes={props.artifactTypes}
+                            isGenerating={props.isGenerating}
+                            onContentUpdate={async (artifact, newContent) => {
+                              // Update local store (prefer update to avoid duplicates)
+                              updateArtifact(artifact.id, {
+                                content: newContent,
+                                updated_at: new Date().toISOString(),
+                              })
+
+                              try {
+                                await updateArtifactApi(artifact.id, newContent, {
+                                  artifact_type: artifact.type || props.selectedArtifactType
+                                })
+                                addNotification('success', 'Diagram updated with AI repair')
+                              } catch (err: any) {
+                                console.error('Failed to persist AI repair:', err)
+                                addNotification('warning', 'Diagram updated locally, but saving failed.')
+                              }
+                            }}
                           />
-                        </div>
-                      </>
-                    ) : props.selectedArtifactType === 'code_prototype' ? (
-                      <Suspense fallback={<LoadingFallback />}>
-                        <CodeWithTestsEditor key="code-prototype" />
-                      </Suspense>
-                    ) : ['jira', 'backlog', 'personas', 'workflows', 'estimations', 'feature_scoring', 'api_docs'].includes(props.selectedArtifactType) ? (
-                      /* PM/Documentation artifacts - render as formatted Markdown */
-                      <Suspense fallback={<LoadingFallback />}>
-                        {/* Key forces remount when type changes to ensure clean state */}
-                        <MarkdownArtifactViewer key={`md-${props.selectedArtifactType}`} artifactType={props.selectedArtifactType} />
-                      </Suspense>
-                    ) : (
-                      /* HTML artifacts (visual_prototype, html_*) - render in iframe with AI modifier */
-                      <Suspense fallback={<LoadingFallback />}>
-                        {/* Key forces remount when type changes to ensure clean state */}
-                        <InteractivePrototypeEditor key={`html-${props.selectedArtifactType}`} artifactType={props.selectedArtifactType} />
-                      </Suspense>
-                    )}
-                 </div>
+                        </Suspense>
+                      </div>
+                      {/* Small Footer - Canvas Editor Link */}
+                      <div className="border-t border-border px-4 py-3 bg-secondary/10 flex items-center justify-between flex-shrink-0">
+                        <span className="text-xs text-muted-foreground flex items-center gap-2">
+                          <Sparkles className="w-3 h-3 text-primary" />
+                          For interactive editing with drag-and-drop, use <strong>Canvas</strong>
+                        </span>
+                        <EditInCanvasButton
+                          selectedArtifactType={props.selectedArtifactType}
+                          progress={props.progress}
+                          navigate={navigate}
+                        />
+                      </div>
+                    </>
+                  ) : props.selectedArtifactType === 'code_prototype' ? (
+                    <Suspense fallback={<LoadingFallback />}>
+                      <CodeWithTestsEditor key="code-prototype" />
+                    </Suspense>
+                  ) : ['jira', 'backlog', 'personas', 'workflows', 'estimations', 'feature_scoring', 'api_docs'].includes(props.selectedArtifactType) ? (
+                    /* PM/Documentation artifacts - render as formatted Markdown */
+                    <Suspense fallback={<LoadingFallback />}>
+                      {/* Key forces remount when type changes to ensure clean state */}
+                      <MarkdownArtifactViewer key={`md-${props.selectedArtifactType}`} artifactType={props.selectedArtifactType} />
+                    </Suspense>
+                  ) : (
+                    /* HTML artifacts (visual_prototype, html_*) - render in iframe with AI modifier */
+                    <Suspense fallback={<LoadingFallback />}>
+                      {/* Key forces remount when type changes to ensure clean state */}
+                      <InteractivePrototypeEditor key={`html-${props.selectedArtifactType}`} artifactType={props.selectedArtifactType} />
+                    </Suspense>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -963,94 +968,94 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                 </h2>
                 <p className="text-sm text-muted-foreground mt-2">Manage your application settings and preferences</p>
               </div>
-              
+
               <div className="glass-panel rounded-2xl overflow-hidden shadow-elevated hover:shadow-floating transition-all duration-300 border-border bg-card interactive-card">
-                 <div className="border-b border-border bg-secondary/20 px-8 py-6 backdrop-blur-md">
-                    <h3 className="font-black text-lg flex items-center gap-3 text-foreground">
-                       <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/30">
-                         <Network className="w-5 h-5 text-primary" />
-                       </div>
-                       Model Fine-Tuning
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-2 ml-13">Configure and train custom models</p>
-                 </div>
-                 <div className="p-8">
-                    <div className="text-center py-12">
-                      <Sliders className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                      <p className="text-lg font-medium text-muted-foreground mb-2">Fine-Tuning Settings</p>
-                      <p className="text-sm text-muted-foreground">
-                        Configure model fine-tuning in the <strong>Intelligence</strong> page
-                      </p>
+                <div className="border-b border-border bg-secondary/20 px-8 py-6 backdrop-blur-md">
+                  <h3 className="font-black text-lg flex items-center gap-3 text-foreground">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/30">
+                      <Network className="w-5 h-5 text-primary" />
                     </div>
-                 </div>
+                    Model Fine-Tuning
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-2 ml-13">Configure and train custom models</p>
+                </div>
+                <div className="p-8">
+                  <div className="text-center py-12">
+                    <Sliders className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                    <p className="text-lg font-medium text-muted-foreground mb-2">Fine-Tuning Settings</p>
+                    <p className="text-sm text-muted-foreground">
+                      Configure model fine-tuning in the <strong>Intelligence</strong> page
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="glass-panel rounded-2xl overflow-hidden shadow-elevated hover:shadow-floating transition-all duration-300 border-border bg-card interactive-card">
-                 <div className="border-b border-border bg-secondary/20 px-8 py-6 backdrop-blur-md">
-                    <h3 className="font-black text-lg flex items-center gap-3 text-foreground">
-                       <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center border border-accent/30">
-                         <Key className="w-5 h-5 text-accent" />
-                       </div>
-                       API Keys
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-2 ml-13">Manage your API keys and credentials</p>
-                 </div>
-                 <div className="p-8">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <ApiKeysManager />
-                    </Suspense>
-                 </div>
+                <div className="border-b border-border bg-secondary/20 px-8 py-6 backdrop-blur-md">
+                  <h3 className="font-black text-lg flex items-center gap-3 text-foreground">
+                    <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center border border-accent/30">
+                      <Key className="w-5 h-5 text-accent" />
+                    </div>
+                    API Keys
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-2 ml-13">Manage your API keys and credentials</p>
+                </div>
+                <div className="p-8">
+                  <Suspense fallback={<LoadingFallback />}>
+                    <ApiKeysManager />
+                  </Suspense>
+                </div>
               </div>
 
               <div className="glass-panel rounded-2xl overflow-hidden shadow-elevated hover:shadow-floating transition-all duration-300 border-border bg-card interactive-card">
-                 <div className="border-b border-border bg-secondary/20 px-6 py-5 backdrop-blur-md">
-                    <h3 className="font-black flex items-center gap-3 text-foreground">
-                       <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center border border-accent/30">
-                         <Download className="w-4 h-4 text-accent" />
-                       </div>
-                       Export Options
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1 ml-11 truncate-with-ellipsis">Export your artifacts</p>
-                 </div>
-                 <div className="p-6">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <ExportManager />
-                    </Suspense>
-                 </div>
+                <div className="border-b border-border bg-secondary/20 px-6 py-5 backdrop-blur-md">
+                  <h3 className="font-black flex items-center gap-3 text-foreground">
+                    <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center border border-accent/30">
+                      <Download className="w-4 h-4 text-accent" />
+                    </div>
+                    Export Options
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1 ml-11 truncate-with-ellipsis">Export your artifacts</p>
+                </div>
+                <div className="p-6">
+                  <Suspense fallback={<LoadingFallback />}>
+                    <ExportManager />
+                  </Suspense>
+                </div>
               </div>
 
               <div className="glass-panel rounded-2xl overflow-hidden shadow-elevated hover:shadow-floating transition-all duration-300 border-border bg-card interactive-card">
-                 <div className="border-b border-border bg-secondary/20 px-6 py-5 backdrop-blur-md">
-                    <h3 className="font-black flex items-center gap-3 text-foreground">
-                       <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30">
-                         <FolderGit2 className="w-4 h-4 text-emerald-500" />
-                       </div>
-                       Multi-Repository Analysis
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1 ml-11">Configure multiple repositories for unified architecture analysis</p>
-                 </div>
-                 <div className="p-6">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <MultiRepoManager />
-                    </Suspense>
-                 </div>
+                <div className="border-b border-border bg-secondary/20 px-6 py-5 backdrop-blur-md">
+                  <h3 className="font-black flex items-center gap-3 text-foreground">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/30">
+                      <FolderGit2 className="w-4 h-4 text-emerald-500" />
+                    </div>
+                    Multi-Repository Analysis
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1 ml-11">Configure multiple repositories for unified architecture analysis</p>
+                </div>
+                <div className="p-6">
+                  <Suspense fallback={<LoadingFallback />}>
+                    <MultiRepoManager />
+                  </Suspense>
+                </div>
               </div>
 
               <div className="glass-panel rounded-2xl overflow-hidden shadow-elevated hover:shadow-floating transition-all duration-300 border-border bg-card interactive-card">
-                 <div className="border-b border-border bg-secondary/20 px-6 py-5 backdrop-blur-md">
-                    <h3 className="font-black flex items-center gap-3 text-foreground">
-                       <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center border border-orange-500/30">
-                         <Link2 className="w-4 h-4 text-orange-500" />
-                       </div>
-                       Artifact Dependencies
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1 ml-11">View and manage artifact relationships and staleness</p>
-                 </div>
-                 <div className="p-6">
-                    <Suspense fallback={<LoadingFallback />}>
-                      <ArtifactDependencies />
-                    </Suspense>
-                 </div>
+                <div className="border-b border-border bg-secondary/20 px-6 py-5 backdrop-blur-md">
+                  <h3 className="font-black flex items-center gap-3 text-foreground">
+                    <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center border border-orange-500/30">
+                      <Link2 className="w-4 h-4 text-orange-500" />
+                    </div>
+                    Artifact Dependencies
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1 ml-11">View and manage artifact relationships and staleness</p>
+                </div>
+                <div className="p-6">
+                  <Suspense fallback={<LoadingFallback />}>
+                    <ArtifactDependencies />
+                  </Suspense>
+                </div>
               </div>
             </div>
           </div>

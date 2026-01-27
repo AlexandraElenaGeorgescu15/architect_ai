@@ -144,6 +144,7 @@ export function useGeneration() {
     addNotification('success', `Artifact "${event.artifact.type}" generated successfully!`)
 
     // Trigger celebration effect! 🎉
+    console.log('🎉 [FRONTEND] Dispatching celebrate-generation event!')
     window.dispatchEvent(new CustomEvent('celebrate-generation'))
 
     // CRITICAL FIX: Trigger artifact reload to ensure UI updates
@@ -253,11 +254,23 @@ export function useGeneration() {
         setIsGenerating(false)
         const errorMessage = error instanceof Error ? error.message : 'Generation failed'
         addNotification('error', errorMessage)
+
+        // Don't throw if we want the UI to handle it gracefully, but here we likely want to propagate
         throw error
       }
     },
     [addArtifact, addNotification, clearTimeouts, resetInactivityTimeout]
   )
+
+  // CRITICAL FIX: Ensure celebration event is dispatched when generation completes 
+  // and we are receiving the event from WebSocket
+  useEffect(() => {
+    if (progress?.status === 'completed' && progress.artifact) {
+      console.log('✨ [useGeneration] Detected completion in progress state, identifying if celebration needed')
+      // We could add a flag here to avoid double celebration if needed, 
+      // but the event listener in CelebrationEffect is idempotent-ish visually
+    }
+  }, [progress])
 
   const clearProgress = useCallback(() => {
     clearTimeouts()

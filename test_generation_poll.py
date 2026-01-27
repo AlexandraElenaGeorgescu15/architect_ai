@@ -30,7 +30,7 @@ async def poll_generation():
         # Poll status
         start_time = time.time()
         while time.time() - start_time < 120:
-            status_resp = await client.get(f'http://localhost:8000/api/generation/status/{job_id}')
+            status_resp = await client.get(f'http://localhost:8000/api/generation/jobs/{job_id}')
             if status_resp.status_code != 200:
                 print(f"Failed to get status: {status_resp.status_code}")
                 await asyncio.sleep(2)

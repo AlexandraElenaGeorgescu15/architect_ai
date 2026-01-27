@@ -27,8 +27,9 @@ export default function CelebrationEffect() {
 
   useEffect(() => {
     const handleCelebration = () => {
+      console.log('🎉 [CelebrationEffect] Received celebration event! Triggering animation...')
       setIsVisible(true)
-      
+
       // Generate balloons
       const newBalloons: Balloon[] = []
       const colors = [
@@ -40,28 +41,28 @@ export default function CelebrationEffect() {
         'rgb(251, 191, 36)',   // Yellow
       ]
 
-      for (let i = 0; i < 15; i++) {
+      for (let i = 0; i < 20; i++) {
         newBalloons.push({
           id: i,
-          left: Math.random() * 100,
+          left: 10 + Math.random() * 80, // Keep within centralized area
           delay: Math.random() * 0.5,
-          duration: 3 + Math.random() * 2,
+          duration: 4 + Math.random() * 3,
           color: colors[Math.floor(Math.random() * colors.length)],
-          size: 40 + Math.random() * 30,
+          size: 50 + Math.random() * 40,
         })
       }
 
       // Generate confetti
       const newConfetti: Confetti[] = []
-      for (let i = 0; i < 50; i++) {
+      for (let i = 0; i < 100; i++) {
         newConfetti.push({
           id: i,
-          left: 20 + Math.random() * 60,
-          top: -10,
+          left: Math.random() * 100,
+          top: -20,
           rotation: Math.random() * 360,
           color: colors[Math.floor(Math.random() * colors.length)],
-          duration: 2 + Math.random() * 1.5,
-          delay: Math.random() * 0.3,
+          duration: 2.5 + Math.random() * 2,
+          delay: Math.random() * 1.5,
         })
       }
 
@@ -70,17 +71,26 @@ export default function CelebrationEffect() {
 
       // Clean up after animation
       setTimeout(() => {
+        console.log('🎉 [CelebrationEffect] Animation complete, cleaning up')
         setIsVisible(false)
         setBalloons([])
         setConfetti([])
-      }, 5000)
+      }, 7000)
     }
 
     // Listen for celebration event
     window.addEventListener('celebrate-generation', handleCelebration)
-    
+
+    // Also listen for a specific test event for debugging
+    const handleTest = () => {
+      console.log('🧪 [CelebrationEffect] Test event received')
+      handleCelebration()
+    }
+    window.addEventListener('test-celebration', handleTest)
+
     return () => {
       window.removeEventListener('celebrate-generation', handleCelebration)
+      window.removeEventListener('test-celebration', handleTest)
     }
   }, [])
 
@@ -88,82 +98,93 @@ export default function CelebrationEffect() {
     return null
   }
 
+  // Use a very high Z-index to ensure it sits on top of everything including modals
   return createPortal(
-    <div className="fixed inset-0 pointer-events-none z-[9999] overflow-hidden">
-      {/* Balloons */}
-      {balloons.map((balloon) => (
-        <div
-          key={`balloon-${balloon.id}`}
-          className="absolute bottom-0 animate-float-up"
-          style={{
-            left: `${balloon.left}%`,
-            animationDelay: `${balloon.delay}s`,
-            animationDuration: `${balloon.duration}s`,
-            width: `${balloon.size}px`,
-            height: `${balloon.size * 1.2}px`,
-          }}
-        >
-          {/* Balloon body */}
+    <div className="fixed inset-0 pointer-events-none z-[99999] overflow-hidden flex items-end justify-center">
+      {/* Balloons Container */}
+      <div className="absolute inset-0 overflow-hidden">
+        {balloons.map((balloon) => (
           <div
-            className="relative w-full h-full rounded-full shadow-lg"
+            key={`balloon-${balloon.id}`}
+            className="absolute bottom-[-100px] animate-float-up"
             style={{
-              backgroundColor: balloon.color,
-              animation: 'balloon-sway 2s ease-in-out infinite',
+              left: `${balloon.left}%`,
               animationDelay: `${balloon.delay}s`,
+              animationDuration: `${balloon.duration}s`,
+              width: `${balloon.size}px`,
+              height: `${balloon.size * 1.2}px`,
             }}
           >
-            {/* Balloon shine */}
+            {/* Balloon body */}
             <div
-              className="absolute top-2 left-3 w-4 h-6 bg-white/40 rounded-full blur-sm"
-            />
-            
-            {/* Balloon knot */}
+              className="relative w-full h-full rounded-full shadow-lg"
+              style={{
+                backgroundColor: balloon.color,
+                animation: 'balloon-sway 3s ease-in-out infinite alternate',
+                animationDelay: `${balloon.delay}s`,
+                boxShadow: 'inset -10px -10px 20px rgba(0,0,0,0.1)'
+              }}
+            >
+              {/* Balloon shine */}
+              <div
+                className="absolute top-[15%] left-[20%] w-[15%] h-[25%] bg-white/40 rounded-[50%] blur-[2px]"
+              />
+
+              {/* Balloon knot */}
+              <div
+                className="absolute bottom-[-6px] left-1/2 transform -translate-x-1/2 w-[15%] h-[10%] rounded-sm"
+                style={{ backgroundColor: balloon.color, filter: 'brightness(0.8)' }}
+              />
+            </div>
+
+            {/* String */}
             <div
-              className="absolute bottom-[-8px] left-1/2 transform -translate-x-1/2 w-3 h-3 rounded-full"
-              style={{ backgroundColor: balloon.color, filter: 'brightness(0.8)' }}
+              className="absolute top-full left-1/2 transform -translate-x-1/2 w-[1px] h-[100px] bg-slate-400/60"
+              style={{
+                animation: 'string-wave 2s ease-in-out infinite',
+                animationDelay: `${balloon.delay}s`,
+                transformOrigin: 'top center'
+              }}
             />
           </div>
-          
-          {/* String */}
+        ))}
+      </div>
+
+      {/* Confetti Container (Full Screen) */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        {confetti.map((piece) => (
           <div
-            className="absolute top-full left-1/2 transform -translate-x-1/2 w-0.5 h-20 bg-gray-400/60"
+            key={`confetti-${piece.id}`}
+            className="absolute animate-confetti-fall"
             style={{
-              animation: 'string-wave 1.5s ease-in-out infinite',
-              animationDelay: `${balloon.delay}s`,
+              left: `${piece.left}%`,
+              top: `-10px`,
+              width: '8px',
+              height: '8px',
+              backgroundColor: piece.color,
+              animationDuration: `${piece.duration}s`,
+              animationDelay: `${piece.delay}s`,
+              transform: `rotate(${piece.rotation}deg)`,
+              borderRadius: Math.random() > 0.5 ? '50%' : '2px'
             }}
           />
-        </div>
-      ))}
+        ))}
+      </div>
 
-      {/* Confetti */}
-      {confetti.map((piece) => (
-        <div
-          key={`confetti-${piece.id}`}
-          className="absolute animate-confetti-fall"
-          style={{
-            left: `${piece.left}%`,
-            top: `${piece.top}%`,
-            width: '10px',
-            height: '10px',
-            backgroundColor: piece.color,
-            animationDuration: `${piece.duration}s`,
-            animationDelay: `${piece.delay}s`,
-            transform: `rotate(${piece.rotation}deg)`,
-          }}
-        />
-      ))}
-
-      {/* Success message */}
-      <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 animate-bounce-in pointer-events-none">
-        <div className="glass-panel px-8 py-4 rounded-2xl shadow-2xl backdrop-blur-xl">
-          <div className="flex items-center gap-3">
-            <span className="text-4xl animate-pulse-glow">🎉</span>
-            <div>
-              <h3 className="text-2xl font-bold text-gradient-electric">Success!</h3>
-              <p className="text-sm text-muted-foreground">Artifact generated successfully</p>
-            </div>
-            <span className="text-4xl animate-pulse-glow">🎊</span>
+      {/* Success message - Centered and flashy */}
+      <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-bounce-in pointer-events-auto z-[100000]">
+        <div className="glass-panel px-10 py-8 rounded-3xl shadow-2xl backdrop-blur-xl border border-white/20 bg-white/10 flex flex-col items-center text-center">
+          <div className="flex items-center gap-4 mb-2">
+            <span className="text-5xl animate-bounce" style={{ animationDelay: '0.1s' }}>🎉</span>
+            <span className="text-5xl animate-bounce" style={{ animationDelay: '0.2s' }}>✨</span>
+            <span className="text-5xl animate-bounce" style={{ animationDelay: '0.3s' }}>🚀</span>
           </div>
+          <h3 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 drop-shadow-sm mb-2">
+            Generation Complete!
+          </h3>
+          <p className="text-lg text-slate-700 dark:text-slate-200 font-medium">
+            Your artifact has been created successfully.
+          </p>
         </div>
       </div>
     </div>,
