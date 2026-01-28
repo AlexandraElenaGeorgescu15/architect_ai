@@ -539,10 +539,11 @@ ip_ban_manager = setup_security_middleware(app)
 # CORS middleware (OUTERMOST - must be added last in FastAPI/Starlette)
 # Supporting local development, Vercel, and dynamic ngrok tunnels
 # Improved regex to support .app, .io, and .dev ngrok suffixes
+# Pattern matches: https://*.ngrok-free.dev, https://*.ngrok.app, etc.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_origin_regex=r"https://.*\.ngrok(-free)?\.(app|io|dev)",
+    allow_origin_regex=r"https://.*\.ngrok(-free)?\.(app|io|dev|com)",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

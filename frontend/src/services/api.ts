@@ -100,13 +100,25 @@ const api: AxiosInstance = axios.create({
   timeout: 60000, // 60 seconds
 })
 
-// Request interceptor - Add auth token
+// Request interceptor - Add auth token and dynamically update baseURL
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Dynamically update baseURL on each request to handle backend URL changes
+    const currentBackendUrl = getBackendUrl()
+    if (currentBackendUrl !== config.baseURL) {
+      config.baseURL = currentBackendUrl
+    }
+    
     const token = localStorage.getItem('access_token')
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    
+    // Ensure ngrok header is always present
+    if (config.headers) {
+      config.headers['ngrok-skip-browser-warning'] = 'true'
+    }
+    
     return config
   },
   (error: AxiosError) => {
@@ -164,7 +176,18 @@ api.interceptors.response.use(
         // Server error - handle in UI
       }
     } else if (error.request) {
-      // Network error - handle in UI
+      // Network error - handle connection resets gracefully
+      if (error.code === 'ERR_CONNECTION_CLOSED' || error.code === 'ERR_CONNECTION_RESET') {
+        // ngrok free tier may close connections - this is expected
+        const retryError = new AxiosError(
+          'Connection closed by server. This may be normal with ngrok free tier. Please retry.',
+          error.code,
+          error.config,
+          error.request,
+          error.response
+        )
+        return Promise.reject(retryError)
+      }
     } else {
       // Request setup error - handle in UI
     }
