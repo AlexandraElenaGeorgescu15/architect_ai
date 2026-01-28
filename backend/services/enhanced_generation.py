@@ -1652,6 +1652,16 @@ Output ONLY the code (HTML/CSS/JS or Component).""",
                 if is_rate_limit:
                     logger.warning(f"⚠️ [CLOUD_API] Rate limit hit for {provider}:{model_name} (attempt {attempt + 1}/{max_retries + 1})")
                     metrics.increment("cloud_api_rate_limits", tags={"provider": provider})
+                    
+                    # For quota exceeded (not just rate limit), skip immediately
+                    if "quota exceeded" in error_str or "quota" in error_str:
+                        logger.warning(f"⚠️ [CLOUD_API] Quota exceeded for {provider}:{model_name}, skipping remaining retries")
+                        raise Exception(f"Quota exceeded for {provider}:{model_name}. Please check your API plan.") from e
+                
+                # For invalid API key (401), don't retry
+                if "401" in error_str or "invalid_api_key" in error_str or "unauthorized" in error_str:
+                    logger.error(f"❌ [CLOUD_API] Invalid API key for {provider}:{model_name}, skipping")
+                    raise Exception(f"Invalid API key for {provider}:{model_name}. Please check your API key configuration.") from e
                 
                 if is_transient and attempt < max_retries:
                     # Calculate exponential backoff delay
@@ -2002,7 +2012,12 @@ async def _generate_with_fallback(
                     success=True
                 )
         except Exception as e:
-            logger.warning(f"⚠️ [ENHANCED_GEN] Cloud {provider} failed: {e}")
+            error_str = str(e).lower()
+            # Don't log quota/API key errors as warnings - they're expected in some cases
+            if "quota exceeded" in error_str or "invalid api key" in error_str or "401" in error_str:
+                logger.info(f"ℹ️ [ENHANCED_GEN] Skipping {provider}:{model_name}: {str(e)[:100]}")
+            else:
+                logger.warning(f"⚠️ [ENHANCED_GEN] Cloud {provider}:{model_name} failed: {e}")
             continue
     
     # All attempts failed

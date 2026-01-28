@@ -502,11 +502,28 @@ class UniversalDiagramFixer:
             if inline_entity:
                 entity_name = inline_entity.group(1)
                 field_content = inline_entity.group(2).strip()
-                # Parse fields
+                # Parse fields and fix dash-prefix format
                 fields = []
                 for field_def in field_content.split(','):
                     field_def = field_def.strip()
-                    if field_def:
+                    if not field_def:
+                        continue
+                    
+                    # Fix dash-prefix format: -id string PK -> int id PK
+                    dash_match = re.match(
+                        r'^-\s*(\w+)\s+(' + '|'.join(valid_field_types) + r')\s*(PK|FK|UK)?',
+                        field_def, re.IGNORECASE
+                    )
+                    if dash_match:
+                        field_name = dash_match.group(1)
+                        field_type = dash_match.group(2).lower()
+                        key = f' {dash_match.group(3).upper()}' if dash_match.group(3) else ''
+                        fields.append(f'        {field_type} {field_name}{key}')
+                        self.errors_fixed.append(f"Fixed dash-prefix in inline entity: {field_def[:30]}...")
+                    else:
+                        # Remove dash prefix if present but format is different
+                        if field_def.startswith('-'):
+                            field_def = field_def[1:].strip()
                         fields.append(f'        {field_def}')
                 if fields:
                     entities[entity_name] = fields
@@ -514,6 +531,20 @@ class UniversalDiagramFixer:
             
             # Handle field definitions inside entity
             if current_entity:
+                # Fix: Handle "-attribute type KEY" format (common AI mistake)
+                # Pattern: -id string PK, -name string, -userId int FK
+                dash_prefix_match = re.match(
+                    r'^-\s*(\w+)\s+(' + '|'.join(valid_field_types) + r')\s*(PK|FK|UK)?',
+                    line_stripped, re.IGNORECASE
+                )
+                if dash_prefix_match:
+                    field_name = dash_prefix_match.group(1)
+                    field_type = dash_prefix_match.group(2).lower()
+                    key = f' {dash_prefix_match.group(3).upper()}' if dash_prefix_match.group(3) else ''
+                    current_entity_fields.append(f'        {field_type} {field_name}{key}')
+                    self.errors_fixed.append(f"Fixed dash-prefix field: {line_stripped[:30]}...")
+                    continue
+                
                 # Try to parse as field: "type name KEY"
                 field_match = re.match(
                     r'^(' + '|'.join(valid_field_types) + r')\s+(\w+)\s*(PK|FK|UK)?',

@@ -64,14 +64,16 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
   })()
 
   // Ensure error is always a string, never an object
+  // Since error is typed as string | null, we just need to ensure it's a string
   const errorMessage = (() => {
     if (!error) return null
     if (typeof error === 'string') return error
-    if (error instanceof Error) return error.message
-    if (typeof error === 'object' && error !== null && 'message' in error) {
-      return String(error.message)
+    // Safety check: if somehow an object got through, convert it
+    try {
+      return String(error)
+    } catch {
+      return 'An error occurred'
     }
-    return String(error)
   })()
 
   // Check if backend is ready - multiple fallback checks

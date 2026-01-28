@@ -1272,10 +1272,64 @@ OUTPUT THE CORRECTED CODE ONLY:"""
             )
             logger.info(f"☁️ [AI_REPAIR] Using cloud models: primary={routing.primary_model}, fallbacks={routing.fallback_models}")
         else:
-            # Use configured routing for local models
+            # Use configured routing for local models, but expand to try multiple local models
             routing = configured_routing
+            
+            # Get all available Ollama models to try multiple local models
+            try:
+                from ai.ollama_client import get_ollama_client
+                ollama_client = get_ollama_client()
+                if ollama_client:
+                    # Get list of available models from Ollama (returns List[str])
+                    available_model_names = await ollama_client.list_models()
+                    if available_model_names and len(available_model_names) > 0:
+                        # Extract base model names (remove tags, keep base names)
+                        model_names = []
+                        for model_name_full in available_model_names[:8]:  # Check up to 8 models
+                            # Remove tag suffix (e.g., "llama3:latest" -> "llama3")
+                            model_base = model_name_full.split(':')[0] if ':' in model_name_full else model_name_full
+                            if model_base and model_base not in model_names:
+                                model_names.append(model_base)
+                        
+                        # If we have configured routing, prioritize those models
+                        if routing and hasattr(routing, 'primary_model'):
+                            primary = routing.primary_model
+                            # Remove provider prefix if present (e.g., "ollama:llama3" -> "llama3")
+                            if ':' in primary:
+                                provider, model = primary.split(':', 1)
+                                if provider.lower() == 'ollama':
+                                    primary = model
+                                else:
+                                    primary = provider  # Cloud model, skip
+                            # Put configured primary first if it's a local model
+                            if primary in model_names:
+                                model_names.remove(primary)
+                                model_names.insert(0, primary)
+                            elif primary not in model_names and not any(':' in primary and p.split(':')[0] in ['gemini', 'openai', 'groq', 'anthropic'] for p in [primary]):
+                                # If it's a local model not in the list, add it first
+                                model_names.insert(0, primary)
+                        
+                        # Create expanded routing with multiple local models
+                        if model_names:
+                            # Use first as primary, rest as fallbacks (try up to 3 local models total)
+                            primary_model = model_names[0]
+                            fallback_models = model_names[1:3] if len(model_names) > 1 else []  # Try up to 3 local models total
+                            
+                            class FlexibleRouting:
+                                def __init__(self, primary: str, fallbacks: List[str]):
+                                    self.primary_model = primary
+                                    self.fallback_models = fallbacks
+                            
+                            routing = FlexibleRouting(
+                                primary=primary_model,
+                                fallbacks=fallback_models
+                            )
+                            logger.info(f"🤖 [AI_REPAIR] Expanded to try {len(model_names[:3])} local models: {model_names[:3]}")
+            except Exception as e:
+                logger.warning(f"Could not expand local models for repair: {e}, using configured routing")
+            
             if routing:
-                logger.info(f"🤖 [AI_REPAIR] Using configured routing: primary={routing.primary_model}, fallbacks={routing.fallback_models}")
+                logger.info(f"🤖 [AI_REPAIR] Using routing: primary={routing.primary_model}, fallbacks={getattr(routing, 'fallback_models', [])}")
         
         # Call AI with EXTREMELY STRICT system prompt
         # LLMs consistently ignore instructions - use aggressive negative examples
@@ -1292,7 +1346,7 @@ OUTPUT THE CORRECTED CODE ONLY:"""
     section Development
     Implementation :impl, after design, 10d"""
             gantt_warning = """
-
+            
 🚨 GANTT-SPECIFIC RULES:
 - Task format: "TaskName :taskId, duration" or "TaskName :taskId, after otherId, duration"
 - NEVER use "depend on", "depends on", or "dependencies:" in task lines
@@ -1310,7 +1364,7 @@ OUTPUT THE CORRECTED CODE ONLY:"""
             prompt=prompt,
             model_routing=routing,
             temperature=0.05,  # Near-zero temperature for pure syntax repair
-            max_local_attempts=1 if not use_cloud else 0,  # Try 1 local before cloud, or 0 if forced cloud
+            max_local_attempts=3 if not use_cloud else 0,  # Try up to 3 local models before cloud, or 0 if forced cloud
             system_instruction=f"""YOU ARE A CODE-ONLY MERMAID SYNTAX REPAIR TOOL.
 
 ⚠️ CRITICAL OUTPUT RULES - VIOLATION = FAILURE:

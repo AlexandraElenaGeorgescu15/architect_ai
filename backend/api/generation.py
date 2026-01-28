@@ -324,13 +324,23 @@ async def generate_artifact_stream(
             detail="meeting_notes must be at least 10 characters"
         )
     
+    # Handle both built-in and custom artifact types
     try:
         artifact_type = ArtifactType(artifact_type_str)
     except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid artifact_type: {artifact_type_str}"
-        )
+        # This might be a custom artifact type - check if it exists
+        from backend.services.custom_artifact_service import get_service as get_custom_service
+        custom_service = get_custom_service()
+        custom_type = custom_service.get_type(artifact_type_str)
+        if custom_type:
+            # It's a valid custom type - use as string
+            artifact_type = artifact_type_str
+            logger.info(f"✅ [STREAM] Using custom artifact type: {artifact_type_str}")
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid artifact_type: {artifact_type_str} (not a built-in type and not found in custom types)"
+            )
     
     service = get_service()
     

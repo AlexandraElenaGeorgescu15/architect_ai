@@ -270,16 +270,19 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
     }
   }, [])
 
-  // CRITICAL FIX: Reset error state when content changes
+  // CRITICAL FIX: Reset error state when content or artifact type changes
   // This must happen BEFORE the containerRef check to fix the stale error bug
+  // Also reset when artifactType changes to prevent showing errors from a different diagram type
   useEffect(() => {
-    // When content changes, clear previous error state immediately
+    // When content or artifact type changes, clear previous error state immediately
     // This ensures a fresh render attempt for the new diagram
     setError(null)
     setValidation(null)
     setLastErrorContent(null)
     setMermaidErrorDetail(null)
-  }, [content, setError, setValidation, setLastErrorContent])
+    // Also reset the diagram store state to ensure clean slate
+    resetState()
+  }, [content, artifactType, setError, setValidation, setLastErrorContent, resetState])
   
   // Repair function - AGGRESSIVE: keeps trying until diagram renders (max 3 attempts)
   const handleAIRepair = useCallback(async () => {

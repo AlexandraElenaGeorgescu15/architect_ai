@@ -109,6 +109,26 @@ api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Dynamically update baseURL on each request to handle backend URL changes
     const currentBackendUrl = getBackendUrl()
+    
+    // Check if we're in production (not localhost) and backend URL is not set
+    const isProduction = typeof window !== 'undefined' && 
+      window.location.hostname !== 'localhost' && 
+      window.location.hostname !== '127.0.0.1' &&
+      !window.location.hostname.startsWith('192.168.') &&
+      !window.location.hostname.startsWith('10.')
+    
+    if (isProduction && !currentBackendUrl && config.url?.startsWith('/api')) {
+      // In production without backend URL, reject early with helpful message
+      const error = new AxiosError(
+        'Backend URL not configured. Please click the WiFi icon (bottom-left) and enter your ngrok backend URL.',
+        'ERR_BACKEND_NOT_CONFIGURED',
+        config,
+        undefined,
+        undefined
+      )
+      return Promise.reject(error)
+    }
+    
     if (currentBackendUrl !== config.baseURL) {
       config.baseURL = currentBackendUrl
     }
@@ -141,8 +161,21 @@ api.interceptors.response.use(
       response.config.url?.startsWith('/api') &&
       !response.config.url?.includes('/download')
     ) {
+      // Check if backend URL is configured
+      const backendUrl = getBackendUrl()
+      const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1'
+      
+      let errorMessage = 'Invalid API response: Received HTML instead of JSON.'
+      if (isProduction && !backendUrl) {
+        errorMessage = 'Backend URL not configured. Please click the WiFi icon (bottom-left) and enter your ngrok backend URL.'
+      } else if (!backendUrl) {
+        errorMessage = 'Backend URL not configured. Please set VITE_API_URL or configure backend URL in settings.'
+      } else {
+        errorMessage = `Backend URL may be incorrect. Current: ${backendUrl || '(not set)'}. Please check your backend URL configuration.`
+      }
+      
       const error = new AxiosError(
-        'Invalid API response: Received HTML. Please check backend URL configuration.',
+        errorMessage,
         'ERR_INVALID_RESPONSE_TYPE',
         response.config,
         response.request,

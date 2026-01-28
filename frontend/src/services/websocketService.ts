@@ -2,7 +2,7 @@ import { WebSocketEvent } from '../types'
 import { getBackendUrl } from './api'
 
 // Get WebSocket URL from environment or derive from current location
-const getWebSocketBaseUrl = (): string => {
+const getWebSocketBaseUrl = (): string | null => {
   // First, check for custom backend URL configured by user (for ngrok, etc.)
   const customBackendUrl = getBackendUrl()
   if (customBackendUrl) {
@@ -25,8 +25,24 @@ const getWebSocketBaseUrl = (): string => {
   // Check for API URL and convert to WebSocket
   const apiUrl = import.meta.env.VITE_API_URL
   if (apiUrl) {
-    const url = new URL(apiUrl, window.location.origin)
-    return `${url.protocol === 'https:' ? 'wss:' : 'ws:'}//${url.host}`
+    try {
+      const url = new URL(apiUrl, window.location.origin)
+      return `${url.protocol === 'https:' ? 'wss:' : 'ws:'}//${url.host}`
+    } catch {
+      // Invalid URL
+    }
+  }
+
+  // Check if we're in production (not localhost)
+  const isProduction = typeof window !== 'undefined' && 
+    window.location.hostname !== 'localhost' && 
+    window.location.hostname !== '127.0.0.1' &&
+    !window.location.hostname.startsWith('192.168.') &&
+    !window.location.hostname.startsWith('10.')
+
+  // In production without backend URL, don't connect (return null)
+  if (isProduction && !customBackendUrl && !apiUrl) {
+    return null // Will prevent WebSocket connection
   }
 
   // In development, default to localhost:8000
@@ -40,7 +56,8 @@ const getWebSocketBaseUrl = (): string => {
     return 'ws://localhost:8000'
   }
 
-  // Production: use current origin with appropriate protocol
+  // Production fallback: use current origin with appropriate protocol
+  // (This should rarely be reached if backend URL is properly configured)
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   return `${protocol}//${window.location.host}`
 }
@@ -81,6 +98,15 @@ class WebSocketService {
       this.roomId = roomId
 
       const wsBaseUrl = getWebSocketBaseUrl()
+      
+      // If no WebSocket URL available (backend not configured in production), reject
+      if (!wsBaseUrl) {
+        this.isConnecting = false
+        const error = new Error('WebSocket URL not available. Please configure backend URL in settings.')
+        reject(error)
+        return
+      }
+
       const wsUrl = new URL(`${wsBaseUrl}/ws/${roomId}`)
       if (token) {
         wsUrl.searchParams.set('token', token)
