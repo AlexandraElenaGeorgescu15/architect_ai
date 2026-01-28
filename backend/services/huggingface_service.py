@@ -450,17 +450,27 @@ class HuggingFaceService:
                 }
             
             # Clean model name for Ollama (no slashes, lowercase, max 64 chars)
-            # e.g. "TheBloke/CodeLlama-7B-Instruct-GGUF" -> "code-llama-7b-instruct"
+            # Ollama model names: Must be lowercase, alphanumeric + hyphens
+            import re
             ollama_name = model_id.split("/")[-1].lower()
-            ollama_name = ollama_name.replace("_", "-").replace(".", "-")
+            # Replace non-alphanumeric with hyphens
+            ollama_name = re.sub(r'[^a-z0-9]', '-', ollama_name)
+            # Remove consecutive hyphens
+            ollama_name = re.sub(r'-+', '-', ollama_name)
+            # Strip leading/trailing hyphens
+            ollama_name = ollama_name.strip('-')
+            
             # Remove messy suffixes often found in HF model names
             for suffix in ["-gguf", "-hf", "-gptq", "-awq"]:
                 if ollama_name.endswith(suffix):
                     ollama_name = ollama_name[:-len(suffix)]
             
+            # Final strip in case suffix removal left a trailing hyphen
+            ollama_name = ollama_name.strip('-')
+            
             # Ollama model names have a limit
             if len(ollama_name) > 64:
-                ollama_name = ollama_name[:64]
+                ollama_name = ollama_name[:64].strip('-')
             
             if progress_callback:
                 try:

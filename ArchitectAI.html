@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Architect.AI - The Symbolic Architect</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+/* 1. THE SETUP - ARCHITECT.AI THEME */
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-dark: #0a0a0f;
+  --bg-card: #13131f;
+  --neon-blue: #00f3ff;
+  --neon-purple: #bc13fe;
+  --text-main: #e2e8f0;
+  --text-muted: #94a3b8;
+  --border-color: #1f2937;
+}
+
+body {
+  background-color: #000;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1fr;
+  margin: 0;
+  min-height: 100vh;
+  padding: 20px 0;
+  place-items: center;
+  font-family: 'Inter', sans-serif;
+}
+
+.slide-container {
+  align-items: center;
+  background-color: var(--bg-dark);
+  border-radius: 8px;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  height: 720px;
+  justify-content: center;
+  overflow: hidden;
+  padding: 60px;
+  position: relative;
+  width: 1280px;
+  border: 1px solid #1f1f2e;
+}
+
+/* 1.1 BACKGROUND STYLING - Cyberpunk Grid */
+.slide-container::before {
+  content: '';
+  height: 100%;
+  left: 0;
+  position: absolute;
+  top: 0;
+  width: 100%;
+  z-index: 0;
+  background-image: 
+      linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+}
+
+.slide-container>* {
+  position: relative;
+  z-index: 1;
+}
+
+/* 2. CONSISTENT TYPOGRAPHY */
+
+/* Headings Font - Monospace for "Dev" feel */
+.slide-container h1,
+.slide-container h2,
+.slide-container h3 {
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  margin: 0;
+  letter-spacing: -1px;
+}
+
+.slide-container h1 {
+  font-size: 80px;
+  background: linear-gradient(to right, var(--neon-blue), var(--neon-purple));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.1;
+  text-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
+}
+
+.slide-container .slide-title {
+  font-size: 48px;
+  font-weight: 700;
+  margin-bottom: 40px;
+  text-align: left;
+  width: 100%;
+  border-left: 5px solid var(--neon-blue);
+  padding-left: 20px;
+  color: white;
+}
+
+.slide-container h3 {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 15px;
+  color: var(--neon-blue);
+}
+
+/* Body Text Font */
+.slide-container p,
+.slide-container li,
+.slide-container .subtitle,
+.slide-container .qa-layout p {
+  color: var(--text-muted);
+  font-size: 20px;
+  line-height: 1.6;
+  font-weight: 300;
+}
+
+.slide-container strong {
+  color: var(--text-main);
+  font-weight: 600;
+}
+
+.slide-container .subtitle {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--neon-blue);
+  font-size: 24px;
+  margin-top: 20px;
+}
+
+.slide-container .content-area {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  justify-content: center;
+  width: 100%;
+}
+
+/* 3. LAYOUT DEFINITIONS */
+
+/* Two Column */
+.two-column {
+  align-items: flex-start;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 60px;
+  width: 100%;
+}
+
+.two-column.tiled {
+  align-items: stretch;
+}
+
+.two-column.tiled>div {
+  background-color: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  padding: 40px;
+  text-align: left;
+  transition: transform 0.3s ease;
+}
+
+.two-column.tiled>div:hover {
+  border-color: var(--neon-purple);
+  transform: translateY(-5px);
+}
+
+.two-column ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.two-column li {
+  margin-bottom: 20px;
+  padding-left: 25px;
+  position: relative;
+}
+
+.two-column li::before {
+  content: '>';
+  position: absolute;
+  left: 0;
+  color: var(--neon-purple);
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: bold;
+}
+
+/* Image Wrappers / Visual Containers */
+.visual-container {
+    background-color: #050508;
+    border-radius: 12px;
+    height: 400px;
+    width: 100%;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* CSS GENERATIVE GRAPHICS */
+
+/* Diagram Visual */
+.diagram-visual {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #000 70%);
+}
+.node {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background: #1e1e2e;
+    border: 2px solid var(--neon-blue);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    z-index: 2;
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+}
+.node.center { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80px; height: 80px; border-color: var(--neon-purple); font-size: 32px; }
+.node.top-left { top: 20%; left: 20%; }
+.node.top-right { top: 20%; right: 20%; }
+.node.bottom-left { bottom: 20%; left: 20%; }
+.node.bottom-right { bottom: 20%; right: 20%; }
+
+.connection {
+    position: absolute;
+    background: linear-gradient(90deg, var(--neon-blue), transparent);
+    height: 2px;
+    top: 50%;
+    left: 50%;
+    transform-origin: 0 0;
+    z-index: 1;
+    opacity: 0.5;
+}
+
+/* Editor Visual */
+.editor-visual {
+    background: #0d0d14;
+    width: 90%;
+    height: 90%;
+    border-radius: 8px;
+    border: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+}
+.editor-header {
+    height: 30px;
+    background: #1a1a24;
+    border-bottom: 1px solid #333;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    gap: 6px;
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot.red { background: #ff5f56; }
+.dot.yellow { background: #ffbd2e; }
+.dot.green { background: #27c93f; }
+.editor-body {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    gap: 15px;
+}
+.line-numbers {
+    color: #444;
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: right;
+}
+.code-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.code-line {
+    height: 12px;
+    border-radius: 4px;
+    opacity: 0.7;
+}
+.w-40 { width: 40%; }
+.w-60 { width: 60%; }
+.w-80 { width: 80%; }
+.bg-purple { background: var(--neon-purple); }
+.bg-blue { background: var(--neon-blue); }
+.bg-gray { background: #444; }
+
+/* Cluster Visual */
+.cluster-visual {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, #111 0%, #000 100%);
+}
+.data-point {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    opacity: 0.8;
+}
+
+/* Tiled Content */
+.tiled-content {
+  align-items: stretch;
+  display: flex;
+  gap: 30px;
+  justify-content: center;
+  width: 100%;
+}
+
+.tile {
+  background-color: var(--bg-card);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  padding: 30px;
+  text-align: left;
+}
+
+.tile .icon {
+  color: var(--neon-purple);
+  font-size: 40px;
+  margin-bottom: 20px;
+  background: rgba(188, 19, 254, 0.1);
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+/* Full Background Title */
+.title-bg {
+  background: radial-gradient(circle at 70% 50%, rgba(188, 19, 254, 0.15) 0%, rgba(0, 0, 0, 0) 50%),
+              linear-gradient(to right, #000 40%, #13131f 100%);
+}
+
+.title-bg::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: radial-gradient(#333 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.2;
+    z-index: 0;
+}
+
+.title-bg .content-overlay {
+  text-align: left;
+  max-width: 800px;
+  padding-left: 60px;
+  z-index: 1;
+}
+
+/* Section Title */
+.section-title-layout {
+  text-align: center;
+  z-index: 2;
+}
+
+.section-title-layout h2 {
+  font-size: 80px;
+  background: linear-gradient(to bottom, #fff, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.section-title-layout hr {
+  border: none;
+  height: 2px;
+  background: linear-gradient(to right, transparent, var(--neon-blue), transparent);
+  width: 200px;
+  margin: 30px auto;
+}
+
+/* Bleed Image Right */
+.slide-container.bleed-image-layout {
+  align-items: start;
+  display: grid;
+  gap: 50px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0;
+}
+
+.slide-container.bleed-image-layout>.content-container {
+  padding: 80px 0 80px 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+}
+
+.slide-container.bleed-image-layout>.image-container {
+  height: 100%;
+  width: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-right: 40px;
+}
+
+/* Bullet List Style */
+.bullet-list ul {
+  list-style: none;
+  padding: 0;
+}
+
+.bullet-list li {
+  margin-bottom: 25px;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.bullet-list li i {
+  color: var(--neon-blue);
+  font-size: 24px;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+/* Q&A */
+.qa-layout {
+  text-align: center;
+}
+.qa-layout h2 {
+  font-size: 100px;
+  color: var(--neon-blue);
+}
+    </style>
+</head>
+<body>
+
+<!-- Slide 1: Title_Slide (CSS Gradient Background) -->
+<div class="slide-container title-bg" id="slide1">
+    <div class="content-overlay">
+        <h1>Architect.AI</h1>
+        <p class="subtitle">The 100% Complete Technical Encyclopedia</p>
+        <p style="margin-top: 30px; font-size: 24px; color: #fff;">The definitive guide to every button, service, and algorithm.</p>
+    </div>
+</div>
+
+<!-- Slide 2: Section_Title (Core Features) -->
+<div class="slide-container" id="slide2">
+    <div class="section-title-layout">
+        <h3 style="color: var(--neon-blue); font-family: 'Inter', sans-serif; letter-spacing: 2px;">SECTION 1</h3>
+        <hr>
+        <h2>CORE USER FEATURES</h2>
+        <p class="subtitle">The "Visible" App</p>
+    </div>
+</div>
+
+<!-- Slide 3: Two_Column_Tiled_Text (Chat) -->
+<div class="slide-container" id="slide3">
+    <h2 class="slide-title">1.1 Floating Agentic Chat</h2>
+    <div class="content-area">
+        <div class="two-column tiled">
+            <div>
+                <h3><i class="fa-solid fa-message"></i> Legacy & Context</h3>
+                <p><strong>Legacy Mode:</strong> Standard LLM interaction for quick queries without overhead.</p>
+                <p><strong>Context Awareness:</strong> Automatically injects RAG snippets and ML cluster insights into every conversation.</p>
+            </div>
+            <div>
+                <h3><i class="fa-solid fa-robot"></i> Agentic ReAct Loop</h3>
+                <p><strong>Agent Mode:</strong> Uses tools like <code>read_file</code> and <code>search_code</code> to browse your actual project.</p>
+                <p><strong>Write Mode:</strong> Allows the Agent to directly edit or create artifacts on the Canvas.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 4: Visual (Artifacts - CSS Diagram) -->
+<div class="slide-container bleed-image-layout" id="slide4">
+    <div class="content-container">
+        <h2 class="slide-title" style="margin-bottom: 20px;">1.2 Artifact Generation</h2>
+        <div class="bleed-text-side">
+            <ul style="list-style: none; padding: 0;">
+                <li style="margin-bottom: 20px;"><strong style="color: var(--neon-blue);">Creation:</strong> Generate Mermaid diagrams (10+ types), Interactive HTML prototypes, or Markdown.</li>
+                <li style="margin-bottom: 20px;"><strong style="color: var(--neon-blue);">Update:</strong> Edit code manually or use "AI Edit" to refactor (e.g., "Add a search bar").</li>
+                <li style="margin-bottom: 20px;"><strong style="color: var(--neon-blue);">Versioning:</strong> Every change creates a new saved version in the DB with a "Time-Travel" history.</li>
+                <li style="margin-bottom: 20px;"><strong style="color: var(--neon-blue);">Streaming Terminal:</strong> Real-time visibility into the LLM's thought process.</li>
+            </ul>
+        </div>
+    </div>
+    <div class="image-container">
+        <!-- CSS GENERATED DIAGRAM -->
+        <div class="visual-container">
+            <div class="diagram-visual">
+                <div class="node center"><i class="fa-solid fa-brain"></i></div>
+                <div class="node top-left"><i class="fa-solid fa-database"></i></div>
+                <div class="node top-right"><i class="fa-solid fa-code"></i></div>
+                <div class="node bottom-left"><i class="fa-solid fa-layer-group"></i></div>
+                <div class="node bottom-right"><i class="fa-solid fa-terminal"></i></div>
+                
+                <!-- CSS Connectors -->
+                <div class="connection" style="width: 150px; transform: rotate(135deg) translate(0, -50%);"></div>
+                <div class="connection" style="width: 150px; transform: rotate(45deg) translate(0, -50%);"></div>
+                <div class="connection" style="width: 150px; transform: rotate(225deg) translate(0, -50%);"></div>
+                <div class="connection" style="width: 150px; transform: rotate(315deg) translate(0, -50%);"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 5: Visual (HTML Editor - CSS Mockup) -->
+<div class="slide-container" id="slide5">
+    <h2 class="slide-title">1.3 Interactive HTML Editor</h2>
+    <div class="content-area">
+        <div class="two-column">
+            <div>
+                <p>The "Prototype Powerhouse" of the application.</p>
+                <div class="bullet-list">
+                    <ul>
+                        <li><i class="fa-solid fa-eye"></i> <strong>Live Preview:</strong> Real-time rendering of HTML/CSS/JS in a secured iFrame.</li>
+                        <li><i class="fa-solid fa-wand-magic-sparkles"></i> <strong>Natural Language Transforms:</strong> "Make the button red" or "Turn this into a dashboard."</li>
+                        <li><i class="fa-solid fa-cube"></i> <strong>Component Isolation:</strong> The AI focuses on specific HTML blocks to preserve stability.</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="visual-container">
+                <!-- CSS GENERATED EDITOR MOCKUP -->
+                <div class="editor-visual">
+                    <div class="editor-header">
+                        <div class="dot red"></div>
+                        <div class="dot yellow"></div>
+                        <div class="dot green"></div>
+                    </div>
+                    <div class="editor-body">
+                        <div class="line-numbers">
+                            1<br>2<br>3<br>4<br>5<br>6<br>7
+                        </div>
+                        <div class="code-content">
+                            <div class="code-line w-60 bg-purple"></div>
+                            <div class="code-line w-40 bg-blue"></div>
+                            <div class="code-line w-80 bg-gray"></div>
+                            <div class="code-line w-60 bg-gray"></div>
+                            <div class="code-line w-40 bg-purple"></div>
+                            <div class="code-line w-80 bg-blue"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 6: Section_Title (Intelligence) -->
+<div class="slide-container" id="slide6">
+    <div class="section-title-layout">
+        <h3 style="color: var(--neon-purple); font-family: 'Inter', sans-serif; letter-spacing: 2px;">SECTION 2</h3>
+        <hr style="background: linear-gradient(to right, transparent, var(--neon-purple), transparent);">
+        <h2>THE INTELLIGENCE ENGINE</h2>
+        <p class="subtitle">The "Brain"</p>
+    </div>
+</div>
+
+<!-- Slide 7: Visual (ML Intelligence - CSS Clusters) -->
+<div class="slide-container bleed-image-layout" id="slide7">
+    <div class="content-container">
+        <h2 class="slide-title">2.1 ML Code Intelligence</h2>
+        <div class="bleed-text-side">
+            <h3 style="font-size: 24px; margin-bottom: 10px;">K-Means Clustering</h3>
+            <p>Groups files into 4 complexity archetypes based on 5+ metrics (LOC, depth, etc.).</p>
+            
+            <h3 style="font-size: 24px; margin-bottom: 10px; margin-top: 20px;">Feature Engineering</h3>
+            <p>Extracts structural DNA from your code to inform the AI.</p>
+            
+            <h3 style="font-size: 24px; margin-bottom: 10px; margin-top: 20px;">Project Centrality</h3>
+            <p>Identifies the "Heart" of your codebase using importance mapping.</p>
+        </div>
+    </div>
+    <div class="image-container">
+        <!-- CSS GENERATED CLUSTERS -->
+        <div class="visual-container">
+            <div class="cluster-visual">
+                <!-- Cluster 1 (Purple) -->
+                <div class="data-point" style="top: 30%; left: 30%; background: var(--neon-purple);"></div>
+                <div class="data-point" style="top: 35%; left: 28%; background: var(--neon-purple);"></div>
+                <div class="data-point" style="top: 28%; left: 35%; background: var(--neon-purple);"></div>
+                <div class="data-point" style="top: 32%; left: 33%; background: var(--neon-purple);"></div>
+                
+                <!-- Cluster 2 (Blue) -->
+                <div class="data-point" style="top: 60%; left: 70%; background: var(--neon-blue);"></div>
+                <div class="data-point" style="top: 65%; left: 68%; background: var(--neon-blue);"></div>
+                <div class="data-point" style="top: 58%; left: 75%; background: var(--neon-blue);"></div>
+                <div class="data-point" style="top: 62%; left: 73%; background: var(--neon-blue);"></div>
+                
+                <!-- Cluster 3 (White/Gray) -->
+                <div class="data-point" style="top: 70%; left: 20%; background: #fff;"></div>
+                <div class="data-point" style="top: 75%; left: 25%; background: #fff;"></div>
+                <div class="data-point" style="top: 68%; left: 18%; background: #fff;"></div>
+                
+                <!-- Central Connection Lines -->
+                 <svg style="position: absolute; width: 100%; height: 100%;">
+                    <line x1="30%" y1="30%" x2="70%" y2="60%" style="stroke:rgba(255,255,255,0.1);stroke-width:1" />
+                    <line x1="70%" y1="60%" x2="20%" y2="70%" style="stroke:rgba(255,255,255,0.1);stroke-width:1" />
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 8: Tiled_Text_With_Icons (KG & Pattern Mining) -->
+<div class="slide-container" id="slide8">
+    <h2 class="slide-title">2.2 Knowledge Graph & Pattern Mining</h2>
+    <div class="content-area">
+        <div class="tiled-content">
+            <div class="tile">
+                <div class="icon"><i class="fa-solid fa-project-diagram"></i></div>
+                <h3>Knowledge Graph</h3>
+                <p>Maps every class-to-class relationship in your project. It knows that <code>User.py</code> imports <code>Auth.py</code>.</p>
+            </div>
+            <div class="tile">
+                <div class="icon"><i class="fa-solid fa-bug"></i></div>
+                <h3>Pattern Mining</h3>
+                <p>Detects 15+ design patterns (Factory, Singleton) and security code smells automatically.</p>
+            </div>
+            <div class="tile">
+                <div class="icon"><i class="fa-solid fa-globe"></i></div>
+                <h3>Universal Context</h3>
+                <p>Cross-repository indexing allows the AI to understand dependencies between separate frontend and backend repos.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 9: Section_Title (Infrastructure) -->
+<div class="slide-container" id="slide9">
+    <div class="section-title-layout">
+        <h3 style="color: #45A29E; font-family: 'Inter', sans-serif; letter-spacing: 2px;">SECTION 3</h3>
+        <hr style="background: linear-gradient(to right, transparent, #45A29E, transparent);">
+        <h2>INFRASTRUCTURE & MLOPS</h2>
+        <p class="subtitle">The "Engine Room"</p>
+    </div>
+</div>
+
+<!-- Slide 10: Two_Column_Tiled_Text (Model Service) -->
+<div class="slide-container" id="slide10">
+    <h2 class="slide-title">3.1 Model Dispatch & Local AI</h2>
+    <div class="content-area">
+        <div class="two-column tiled">
+            <div>
+                <h3><i class="fa-solid fa-server"></i> Intelligent Dispatching</h3>
+                <p><strong>Smart Routing:</strong> Automatically routes tasks to the best model (e.g., specialized coders for Mermaid).</p>
+                <p><strong>Tiered Fallback:</strong> Instant failover between Groq, Cerebras, and local Ollama if a provider hits a limit.</p>
+            </div>
+            <div>
+                <h3><i class="fa-solid fa-download"></i> HuggingFace & Local</h3>
+                <p><strong>GGUF Downloader:</strong> Integrated background downloader for Llama/Mistral models.</p>
+                <p><strong>Finetuning Pipeline:</strong> Collects your successful generations to train custom local models.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 11: Styled_Bullet_Points (Resilience) -->
+<div class="slide-container" id="slide11">
+    <h2 class="slide-title">3.3 Production Resilience</h2>
+    <div class="content-area">
+        <div class="bullet-list" style="width: 80%;">
+            <ul>
+                <li>
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <div>
+                        <strong>Security Middleware</strong>
+                        <p>Active IP-banning and rate-limiting (403 protection) to prevent API abuse.</p>
+                    </div>
+                </li>
+                <li>
+                    <i class="fa-solid fa-bolt"></i>
+                    <div>
+                        <strong>WebSocket Streaming</strong>
+                        <p>Reliable real-time events for long-running generation tasks, ensuring no timeouts.</p>
+                    </div>
+                </li>
+                <li>
+                    <i class="fa-solid fa-database"></i>
+                    <div>
+                        <strong>ChromaDB Vector Store</strong>
+                        <p>Secure, local storage for all project embeddings. Data stays on your machine.</p>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Slide 12: Q&A -->
+<div class="slide-container" id="slide12">
+    <div class="qa-layout">
+        <h2 style="font-size: 60px;">FAQ / The Playbook</h2>
+        <div style="text-align: left; max-width: 800px; margin: 40px auto;">
+            <p style="color: var(--neon-blue); margin-bottom: 5px;"><strong>Q: "What makes this different from Copilot?"</strong></p>
+            <p style="margin-bottom: 30px;">A: Copilot is a text-completer. Architect.AI is a Symbolic Architect. It builds a graph of your project and clusters files by complexity.</p>
+            
+            <p style="color: var(--neon-blue); margin-bottom: 5px;"><strong>Q: "Is my data safe?"</strong></p>
+            <p style="margin-bottom: 30px;">A: Yes. With Local-First mode, all index data and model execution stay on your machine via ChromaDB and Ollama.</p>
+
+            <p style="color: var(--neon-blue); margin-bottom: 5px;"><strong>Q: "How do you handle broken code?"</strong></p>
+            <p>A: We use an Agentic Repair Loop. The validation service automatically fixes syntax errors before you see them.</p>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+```

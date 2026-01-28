@@ -122,6 +122,10 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Add request ID header and log request."""
+        # Only process HTTP requests
+        if request.scope.get("type") != "http":
+            return await call_next(request)
+
         request_id = str(uuid.uuid4())
         request.state.request_id = request_id
         
@@ -137,6 +141,10 @@ class TimingMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Add timing information to response headers and record metrics."""
+        # Only process HTTP requests
+        if request.scope.get("type") != "http":
+            return await call_next(request)
+
         from backend.core.metrics import get_metrics_collector
         from backend.core.config import settings
         
@@ -210,6 +218,10 @@ class IPBanMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Check if IP is banned before processing request."""
+        # Only process HTTP requests
+        if request.scope.get("type") != "http":
+            return await call_next(request)
+
         client_ip = request.client.host if request.client else "unknown"
         
         # Check if IP is banned
@@ -253,6 +265,10 @@ class StructuredLoggingMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Log request and response with structured data and context."""
+        # Only process HTTP requests
+        if request.scope.get("type") != "http":
+            return await call_next(request)
+
         from backend.core.logger import request_id_var, user_id_var, operation_var
         
         request_id = getattr(request.state, "request_id", "unknown")
@@ -361,6 +377,8 @@ def setup_security_middleware(app, allowed_hosts: list = None):
         allowed_hosts = [
             "localhost",
             "127.0.0.1",
+            "::1",
+            "[::1]",
             "0.0.0.0",
             # Allow any ngrok subdomain
             "*.ngrok.io",

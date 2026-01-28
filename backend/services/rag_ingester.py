@@ -74,7 +74,8 @@ class RAGIngester:
             results = self.collection.get(include=["metadatas"])
             for metadata in results.get("metadatas", []):
                 if metadata and "file_path" in metadata:
-                    file_path = metadata["file_path"]
+                    # Normalize path from metadata
+                    file_path = str(Path(metadata["file_path"]).resolve())
                     file_hash = metadata.get("file_hash", "")
                     if file_hash:
                         self.file_hashes[file_path] = file_hash
@@ -316,20 +317,24 @@ class RAGIngester:
             return False
         
         try:
+            # Normalize path
+            file_path_abs = file_path.resolve()
+            file_path_str = str(file_path_abs)
+            
             # Check if file has changed
-            current_hash = self._calculate_file_hash(file_path)
-            existing_hash = self.file_hashes.get(str(file_path), "")
+            current_hash = self._calculate_file_hash(file_path_abs)
+            existing_hash = self.file_hashes.get(file_path_str, "")
             
             if current_hash == existing_hash and existing_hash:
-                logger.debug(f"File unchanged, skipping: {file_path}")
+                logger.debug(f"File unchanged, skipping: {file_path_str}")
                 return False
             
             # Read file content
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path_abs, 'r', encoding='utf-8') as f:
                 content = f.read()
             
             # Remove old chunks for this file
-            self._remove_file_chunks(str(file_path))
+            self._remove_file_chunks(file_path_str)
             
             # Chunk content
             chunks = self._chunk_file_content(content, file_path)
@@ -343,10 +348,10 @@ class RAGIngester:
             ids = []
             
             for i, chunk in enumerate(chunks):
-                chunk_id = f"{file_path}_{i}"
+                chunk_id = f"{file_path_str}_{i}"
                 documents.append(chunk["content"])
                 metadatas.append({
-                    "file_path": str(file_path),
+                    "file_path": file_path_str,
                     "start_line": chunk["start_line"],
                     "end_line": chunk["end_line"],
                     "file_hash": current_hash,
@@ -362,9 +367,9 @@ class RAGIngester:
             )
             
             # Update hash tracking
-            self.file_hashes[str(file_path)] = current_hash
+            self.file_hashes[file_path_str] = current_hash
             
-            logger.info(f"Indexed {len(chunks)} chunks from {file_path}")
+            logger.info(f"Indexed {len(chunks)} chunks from {file_path_str}")
             return True
             
         except Exception as e:

@@ -217,8 +217,6 @@ async def cluster_project_code(request: Request, body: Dict[str, Any]):
     context = await uc_service.get_universal_context()
     
     # 2. Get key files (sorted by importance)
-    feature_list = []
-    
     # Use importance map keys which are absolute paths
     all_files = list(context.get("importance_scores", {}).keys())
     
@@ -230,68 +228,75 @@ async def cluster_project_code(request: Request, body: Dict[str, Any]):
     
     engineer = get_engineer()
     
-    # 3. Extract features for each file
-    for file_path_str in target_files:
-        try:
-            path = Path(file_path_str)
-            if not path.exists() or not path.is_file():
-                continue
+    def _run_clustering(files_to_process: list, n_clusters_target: int, engineer_instance) -> dict:
+        """Synchronous function to run heavy clustering logic."""
+        feature_list = []
+        
+        # 3. Extract features for each file
+        for file_path_str in files_to_process:
+            try:
+                path = Path(file_path_str)
+                if not path.exists() or not path.is_file():
+                    continue
+                    
+                # Skip non-code files
+                if path.suffix.lower() not in ['.py', '.ts', '.tsx', '.js', '.jsx', '.cs', '.java']:
+                    continue
+                    
+                content = path.read_text(encoding='utf-8', errors='ignore')
+                if not content.strip():
+                    continue
+                    
+                features = engineer_instance.extract_code_features(content, str(path))
+                feature_list.append(features)
                 
-            # Skip non-code files
-            if path.suffix.lower() not in ['.py', '.ts', '.tsx', '.js', '.jsx', '.cs', '.java']:
+            except Exception as e:
+                logger.warning(f"Failed to process file {file_path_str} for clustering: {e}")
                 continue
-                
-            content = path.read_text(encoding='utf-8', errors='ignore')
-            if not content.strip():
-                continue
-                
-            features = engineer.extract_code_features(content, str(path))
-            feature_list.append(features)
+        
+        if not feature_list:
+            return {
+                "success": False,
+                "message": "No valid code files found to analyze."
+            }
+        
+        # 4. Cluster them
+        # Ensure we don't ask for more clusters than samples
+        safe_clusters = min(n_clusters_target, len(feature_list))
+        if safe_clusters < 2:
+            return {
+                "success": True,
+                "result": {
+                    "cluster_labels": [0] * len(feature_list),
+                    "cluster_stats": {
+                        0: {
+                            "size": len(feature_list),
+                            "samples": [str(Path(f["file_path"]).name) for f in feature_list],
+                            "avg_complexity": sum(f.get("cyclomatic_complexity_estimate", 0) for f in feature_list) / len(feature_list)
+                        }
+                    },
+                    "n_clusters": 1,
+                    "note": "Not enough samples for clustering"
+                },
+                "files_analyzed": len(feature_list)
+            }
             
-        except Exception as e:
-            logger.warning(f"Failed to process file {file_path_str} for clustering: {e}")
-            continue
-    
-    if not feature_list:
-        return {
-            "success": False,
-            "message": "No valid code files found to analyze."
-        }
-    
-    # 4. Cluster them
-    # Ensure we don't ask for more clusters than samples
-    safe_clusters = min(n_clusters, len(feature_list))
-    if safe_clusters < 2:
+        result = engineer_instance.cluster_features(feature_list, n_clusters=safe_clusters)
+        
+        # Clean up result for frontend (basename only)
+        if "cluster_stats" in result:
+            for cid, stats in result["cluster_stats"].items():
+                if "samples" in stats:
+                    stats["samples"] = [str(Path(p).name) for p in stats["samples"]]
+        
         return {
             "success": True,
-            "result": {
-                "cluster_labels": [0] * len(feature_list),
-                "cluster_stats": {
-                    0: {
-                        "size": len(feature_list),
-                        "samples": [str(Path(f["file_path"]).name) for f in feature_list],
-                        "avg_complexity": sum(f.get("cyclomatic_complexity_estimate", 0) for f in feature_list) / len(feature_list)
-                    }
-                },
-                "n_clusters": 1,
-                "note": "Not enough samples for clustering"
-            },
+            "result": result,
             "files_analyzed": len(feature_list)
         }
-        
-    result = engineer.cluster_features(feature_list, n_clusters=safe_clusters)
-    
-    # Clean up result for frontend (basename only)
-    if "cluster_stats" in result:
-        for cid, stats in result["cluster_stats"].items():
-            if "samples" in stats:
-                stats["samples"] = [str(Path(p).name) for p in stats["samples"]]
-    
-    return {
-        "success": True,
-        "result": result,
-        "files_analyzed": len(feature_list)
-    }
+
+    # Run heavy processing in thread
+    return await asyncio.to_thread(_run_clustering, target_files, n_clusters, engineer)
 
 
 
