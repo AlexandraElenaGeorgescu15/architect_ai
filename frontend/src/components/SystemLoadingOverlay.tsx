@@ -75,8 +75,9 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
   const hasError = error !== null && error !== undefined
 
   // Backend is ready if: status indicates ready AND no errors AND all phases complete
-  // Don't use skipFlag to determine if backend is ready - that's just a UI preference
-  const isReady = (status !== null && status.ready === true && !hasError) ||
+  // OR if user has manually skipped (they want to proceed anyway)
+  const isReady = skipFlag || // User skipped - assume ready
+    (status !== null && status.ready === true && !hasError) ||
     (status !== null && status.overall_status === 'ready' && !hasError) ||
     (status !== null && status.status === 'ready' && !hasError) ||
     (status !== null && allPhasesComplete && !hasError)

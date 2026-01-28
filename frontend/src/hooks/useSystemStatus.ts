@@ -9,7 +9,15 @@ interface UseSystemStatusResult {
   retry: () => Promise<void>
 }
 
-export function useSystemStatus(pollInterval = 4000): UseSystemStatusResult {
+export function useSystemStatus(pollInterval?: number): UseSystemStatusResult {
+  // Adaptive polling: slower for ngrok (free tier has connection limits)
+  const effectivePollInterval = pollInterval ?? (() => {
+    if (typeof window !== 'undefined') {
+      const backendUrl = localStorage.getItem('architect_ai_backend_url') || ''
+      return backendUrl.includes('ngrok') ? 10000 : 4000 // 10s for ngrok, 4s for local
+    }
+    return 4000
+  })()
   const [status, setStatus] = useState<SystemHealthResponse | null>(null)
   const [isChecking, setIsChecking] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
@@ -56,10 +64,10 @@ export function useSystemStatus(pollInterval = 4000): UseSystemStatusResult {
     void checkStatus()
     const interval = setInterval(() => {
       void checkStatus()
-    }, pollInterval)
+    }, effectivePollInterval)
 
     return () => clearInterval(interval)
-  }, [checkStatus, pollInterval])
+  }, [checkStatus, effectivePollInterval])
 
   // Ready if status says ready OR if we're in a grace period (less than 3 failures)
   // OR if user has manually skipped the loading overlay (assume ready)

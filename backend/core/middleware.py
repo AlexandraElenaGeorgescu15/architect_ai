@@ -6,7 +6,8 @@ Includes rate limiting, request ID tracking, timing, trusted hosts, and IP banni
 import time
 import uuid
 import logging
-from typing import Callable, Dict, Set
+import re
+from typing import Callable, Dict, Set, List
 from collections import defaultdict
 from datetime import datetime, timedelta
 from fastapi import Request, Response
@@ -358,12 +359,69 @@ def setup_rate_limiting(app):
     return limiter
 
 
+class CustomTrustedHostMiddleware(BaseHTTPMiddleware):
+    """
+    Custom TrustedHostMiddleware that properly handles ngrok wildcards.
+    
+    This replaces Starlette's TrustedHostMiddleware which doesn't support wildcard patterns.
+    """
+    
+    def __init__(self, app, allowed_hosts: List[str]):
+        super().__init__(app)
+        self.allowed_hosts = allowed_hosts
+        # Compile ngrok patterns for faster matching
+        ngrok_patterns = [
+            r".*\.ngrok(-free)?\.(app|io|dev|com)$",
+            r".*\.ngrok\.(app|io)$",
+        ]
+        self.ngrok_regexes = [re.compile(pattern) for pattern in ngrok_patterns]
+    
+    def is_host_allowed(self, host: str) -> bool:
+        """Check if host is in allowed list or matches ngrok patterns."""
+        if not host:
+            return False
+        
+        # Remove port if present
+        host_without_port = host.split(':')[0]
+        
+        # Check exact matches
+        if host_without_port in self.allowed_hosts or host in self.allowed_hosts:
+            return True
+        
+        # Check ngrok patterns
+        return any(regex.match(host_without_port) for regex in self.ngrok_regexes)
+    
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        """Validate Host header before processing request."""
+        # Only process HTTP requests
+        if request.scope.get("type") != "http":
+            return await call_next(request)
+        
+        # Get host from request
+        host = request.headers.get("host", "")
+        
+        # Validate host (includes ngrok pattern checking)
+        if not self.is_host_allowed(host):
+            logger.warning(f"🚫 [TRUSTED_HOST] Rejected request from untrusted host: {host}")
+            return JSONResponse(
+                status_code=403,
+                content={
+                    "error": "Forbidden",
+                    "message": f"Host '{host}' is not allowed. Please use a trusted host.",
+                    "type": "invalid_host"
+                }
+            )
+        
+        return await call_next(request)
+
+
 def setup_security_middleware(app, allowed_hosts: list = None):
     """
     Setup comprehensive security middleware for FastAPI app.
     
     This includes:
-    - TrustedHostMiddleware: Only accept requests from allowed hosts
+    - NgrokHostMiddleware: Allow ngrok domains (runs first)
+    - CustomTrustedHostMiddleware: Only accept requests from allowed hosts (replaces TrustedHostMiddleware)
     - IPBanMiddleware: Block IPs with suspicious behavior (repeated 404s)
     
     Args:
@@ -380,11 +438,6 @@ def setup_security_middleware(app, allowed_hosts: list = None):
             "::1",
             "[::1]",
             "0.0.0.0",
-            # Allow any ngrok subdomain
-            "*.ngrok.io",
-            "*.ngrok-free.app",
-            "*.ngrok-free.dev",
-            "*.ngrok.app",
             # Frontend origins (extracted from CORS settings)
             "localhost:3000",
             "127.0.0.1:3000",
@@ -402,10 +455,11 @@ def setup_security_middleware(app, allowed_hosts: list = None):
                 else:
                     allowed_hosts.append(origin)
     
-    # Add TrustedHostMiddleware (validates Host header)
-    # Note: This must be added after CORS middleware
+    # Add CustomTrustedHostMiddleware (validates Host header, supports ngrok wildcards)
+    # This replaces Starlette's TrustedHostMiddleware which doesn't support wildcard patterns
+    # Note: This must be added after CORS middleware in main.py (CORS is added last, so executes first)
     app.add_middleware(
-        TrustedHostMiddleware,
+        CustomTrustedHostMiddleware,
         allowed_hosts=allowed_hosts
     )
     

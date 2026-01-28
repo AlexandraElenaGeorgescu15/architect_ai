@@ -60,8 +60,12 @@ export async function testBackendConnection(url?: string): Promise<{
   const start = Date.now()
 
   try {
+    // Use longer timeout for ngrok (free tier can be slow)
+    const isNgrok = testUrl.includes('ngrok')
+    const timeout = isNgrok ? 15000 : 5000 // 15s for ngrok, 5s for local
+    
     const response = await axios.get(`${testUrl}/api/health`, {
-      timeout: 5000, // 5 second timeout for health check
+      timeout,
       headers: {
         // Required for ngrok free tier - bypasses the browser warning page
         'ngrok-skip-browser-warning': 'true',
