@@ -57,7 +57,7 @@ async def get_target_info():
     
     tool_dir = detect_tool_directory()
     current_target = get_target_project_path()
-    available_dirs = get_available_projects()
+    available_dirs = get_user_project_directories()
     
     # Build list of available projects
     projects = []

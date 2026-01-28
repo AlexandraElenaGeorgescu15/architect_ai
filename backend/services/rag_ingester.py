@@ -460,6 +460,7 @@ class RAGIngester:
             
             # Check if file should be indexed
             if not self._should_index_file(file_path):
+                logger.debug(f"⏭️ Skipping excluded file: {file_path.name}")
                 stats["files_excluded"] += 1
                 continue
             
@@ -582,6 +583,32 @@ class RAGIngester:
             self.watched_directories.clear()
             logger.info("Stopped file system watching")
     
+    def clear_index(self):
+        """
+        Clear the RAG index and reset file hash tracking.
+        WARNING: This deletes ALL documents in the collection.
+        """
+        try:
+            logger.info("🗑️ [RAG_INGEST] Clearing RAG index and hash tracking...")
+            
+            # Delete all documents from the collection
+            # Using get() to get all IDs and then delete (ChromaDB doesn't have a direct clear)
+            results = self.collection.get()
+            if results["ids"]:
+                # Batch delete
+                batch_size = 100
+                for i in range(0, len(results["ids"]), batch_size):
+                    batch_id_chunk = results["ids"][i:i + batch_size]
+                    self.collection.delete(ids=batch_id_chunk)
+                
+            # Reset hash tracking
+            self.file_hashes = {}
+            
+            logger.info("✅ [RAG_INGEST] RAG index cleared")
+        except Exception as e:
+            logger.error(f"❌ [RAG_INGEST] Error clearing index: {e}")
+            raise
+
     def get_index_stats(self) -> Dict[str, Any]:
         """
         Get statistics about the index.

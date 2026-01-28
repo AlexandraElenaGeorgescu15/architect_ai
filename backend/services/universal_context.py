@@ -264,12 +264,12 @@ class UniversalContextService:
     
     async def _ensure_complete_index(self, user_dirs: List[Path]):
         """Ensure RAG index contains ALL user project files."""
-        logger.info("📥 Ensuring RAG index is complete...")
+        logger.info(f"📥 [UNIVERSAL_CONTEXT] Ensuring RAG index is complete for {len(user_dirs)} directories...")
         
         for directory in user_dirs:
-            logger.info(f"   Indexing: {directory}")
+            logger.info(f"   Indexing project: {directory}")
             stats = await self.rag_ingester.index_directory(directory, recursive=True)
-            logger.info(f"   ✅ Indexed {stats['files_indexed']} files, {stats['chunks_created']} chunks")
+            logger.info(f"   ✅ Indexed: {stats['files_indexed']} files, {stats['chunks_created']} chunks. (Processed: {stats['files_processed']}, Skipped: {stats['files_skipped']}, Excluded: {stats['files_excluded']}, Errors: {stats['errors']})")
     
     async def _build_importance_map(self, user_dirs: List[Path]):
         """Build importance scores for all files."""
@@ -293,7 +293,7 @@ class UniversalContextService:
     
     async def _build_project_map(self, user_dirs: List[Path]):
         """Build high-level project structure map."""
-        logger.info("🗺️ Building project structure map...")
+        logger.info("🗺️ [UNIVERSAL_CONTEXT] Building project structure map...")
         
         self._project_map = {
             "directories": {},
@@ -301,14 +301,17 @@ class UniversalContextService:
             "key_files": []
         }
         
+        total_files_mapped = 0
         for directory in user_dirs:
             dir_name = directory.name
+            logger.info(f"   Mapping directory: {dir_name} ({directory})")
             self._project_map["directories"][dir_name] = {
                 "path": str(directory),
                 "file_count": 0,
                 "subdirectories": []
             }
             
+            project_file_count = 0
             for file_path in directory.rglob("*"):
                 if not file_path.is_file():
                     continue
@@ -317,7 +320,8 @@ class UniversalContextService:
                     continue
                 
                 # Count files
-                self._project_map["directories"][dir_name]["file_count"] += 1
+                project_file_count += 1
+                total_files_mapped += 1
                 
                 # Track file types
                 ext = file_path.suffix
@@ -332,11 +336,14 @@ class UniversalContextService:
                         "name": file_path.name,
                         "importance": importance
                     })
+            
+            self._project_map["directories"][dir_name]["file_count"] = project_file_count
+            logger.info(f"   ✅ Mapped {project_file_count} files in {dir_name}")
         
         # Sort key files by importance
         self._project_map["key_files"].sort(key=lambda x: x["importance"], reverse=True)
         
-        logger.info(f"   ✅ Mapped {len(self._project_map['directories'])} directories")
+        logger.info(f"   ✅ Total files mapped across all projects: {total_files_mapped}")
         logger.info(f"   ✅ Found {len(self._project_map['key_files'])} key files")
     
     async def _build_complete_kg(self, user_dirs: List[Path]) -> Dict[str, Any]:
