@@ -62,7 +62,12 @@ export function useSystemStatus(pollInterval = 4000): UseSystemStatusResult {
   }, [checkStatus, pollInterval])
 
   // Ready if status says ready OR if we're in a grace period (less than 3 failures)
+  // OR if user has manually skipped the loading overlay (assume ready)
   const isReady = useMemo(() => {
+    // Check if user manually skipped (they want to proceed anyway)
+    const skipFlag = typeof window !== 'undefined' && localStorage.getItem('skip_loading_overlay') === 'true'
+    if (skipFlag) return true // User skipped - assume ready
+    
     if (status?.ready) return true
     if (hasSuccess && consecutiveFailures > 0 && consecutiveFailures < 3) return true
     return false

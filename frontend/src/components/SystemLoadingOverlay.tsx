@@ -82,18 +82,12 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
     (status !== null && allPhasesComplete && !hasError)
 
   // Show overlay if:
-  // 1. Backend is initializing (status is null)
-  // 2. There are errors (UNLESS skip flag is set)
+  // 1. Backend is initializing (status is null) AND not skipped
+  // 2. There are errors AND not skipped (user can skip to proceed anyway)
   // 3. Backend is not ready AND (not skipped OR actively checking)
   // 4. Loading progress is less than 100%
-  // 
-  // Show overlay if:
-  // 1. Backend is initializing (status is null)
-  // 2. There are errors (Show unless user explicitly actively bypassed - but we want them to fix it)
-  // 3. Backend is not ready AND (not skipped OR actively checking)
-  // 4. Loading progress is less than 100%
-  const showOverlay = hasError || // Always show on errors so they see the error message
-    isInitializing ||
+  const showOverlay = (hasError && !skipFlag) || // Show errors unless user skipped
+    (isInitializing && !skipFlag) || // Show initialization unless user skipped
     (!isReady && (!skipFlag || isChecking === true)) ||
     (loadingProgress !== undefined && loadingProgress < 100)
 

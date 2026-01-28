@@ -84,8 +84,9 @@ Write-Host "============================================" -ForegroundColor Cyan
 Write-Host ""
 
 # Start the backend
+# Use 0.0.0.0 (not 127.0.0.1) so ngrok can properly forward connections
 try {
-    python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+    python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 } finally {
     # Cleanup ngrok when backend stops
     if ($ngrokProcess) {
