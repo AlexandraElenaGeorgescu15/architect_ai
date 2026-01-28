@@ -28,7 +28,7 @@ if %ERRORLEVEL% NEQ 0 (
 echo [INFO] ngrok detected!
 echo.
 echo Starting ngrok tunnel in background...
-start /B ngrok http 127.0.0.1:8000 --log=stdout > ngrok.log 2>&1
+start /B ngrok http http://127.0.0.1:8000 --log=stdout > ngrok.log 2>&1
 
 :: Wait for ngrok to start
 timeout /t 3 /nobreak >nul
