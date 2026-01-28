@@ -52,6 +52,16 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
 
   // Check if user manually skipped the overlay
   const skipFlag = localStorage.getItem('skip_loading_overlay') === 'true'
+  
+  // Check if using ngrok
+  const isUsingNgrok = (() => {
+    try {
+      const backendUrl = localStorage.getItem('architect_ai_backend_url') || ''
+      return backendUrl.includes('ngrok')
+    } catch {
+      return false
+    }
+  })()
 
   // Check if backend is ready - multiple fallback checks
   const allPhasesComplete = phases.length > 0 && phases.every(([_, phase]) =>
@@ -241,10 +251,22 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
           <div className="text-xs text-muted-foreground">
             {error ? (
               <span className="text-destructive font-medium">
-                Unable to reach backend. Click the <span className="font-bold border border-destructive/20 rounded px-1">WiFi Icon</span> at bottom-left to configure.
+                {isUsingNgrok ? (
+                  <>
+                    ngrok free tier may be blocking connections. The backend is likely running - try clicking <span className="font-bold border border-destructive/20 rounded px-1">Skip</span> to proceed.
+                  </>
+                ) : (
+                  <>
+                    Unable to reach backend. Click the <span className="font-bold border border-destructive/20 rounded px-1">WiFi Icon</span> at bottom-left to configure.
+                  </>
+                )}
               </span>
             ) : (
-              <span>Backend is warming up. This can take around a minute.</span>
+              <span>
+                {isUsingNgrok 
+                  ? 'Connecting via ngrok... (free tier may have connection limits)'
+                  : 'Backend is warming up. This can take around a minute.'}
+              </span>
             )}
           </div>
           <div className="flex gap-2">
@@ -262,9 +284,13 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
                 localStorage.setItem('skip_loading_overlay', 'true')
                 window.location.reload()
               }}
-              className="rounded-full border border-border bg-muted px-4 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:bg-muted/80 transition-colors shadow-sm"
+              className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors shadow-sm ${
+                isUsingNgrok && error
+                  ? 'border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400 hover:bg-amber-500/20'
+                  : 'border-border bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
             >
-              Skip
+              {isUsingNgrok && error ? 'Proceed Anyway' : 'Skip'}
             </button>
           </div>
         </div>
