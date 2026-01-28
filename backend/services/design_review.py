@@ -140,6 +140,18 @@ class DesignReviewService:
             from backend.services.knowledge_graph import KnowledgeGraphBuilder
             self._knowledge_graph = KnowledgeGraphBuilder()
         return self._knowledge_graph
+
+    def _resolve_directory(self, directory: Optional[str] = None) -> Path:
+        """Resolve directory to review, defaulting to target project."""
+        if directory:
+            return Path(directory)
+        
+        from backend.utils.target_project import get_target_project_path
+        target = get_target_project_path()
+        if target:
+            return target
+            
+        return Path(".")
     
     async def review_against_architecture(
         self,
@@ -279,19 +291,22 @@ Output as JSON array of findings."""
     
     async def review_security(
         self,
-        file_paths: List[str]
+        file_paths: Optional[List[str]] = None,
+        directory: Optional[str] = None
     ) -> DesignReviewResult:
         """
         Perform security review of code files.
-        
-        Checks for:
-        - Hardcoded secrets
-        - SQL injection
-        - XSS vulnerabilities
-        - Insecure dependencies
         """
         review_id = f"rev_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         findings: List[ReviewFinding] = []
+        
+        # Resolve files if not provided
+        if not file_paths:
+            path = self._resolve_directory(directory)
+            file_paths = []
+            for ext in {'.py', '.ts', '.tsx', '.js', '.jsx'}:
+                file_paths.extend([str(f) for f in path.glob(f"**/*{ext}")])
+            file_paths = file_paths[:30] # Limit
         
         for file_path in file_paths:
             path = Path(file_path)
@@ -330,7 +345,7 @@ Output as JSON array of findings."""
     
     async def review_patterns(
         self,
-        directory: str
+        directory: Optional[str] = None
     ) -> DesignReviewResult:
         """
         Review code for design patterns and anti-patterns.
@@ -339,7 +354,7 @@ Output as JSON array of findings."""
         findings: List[ReviewFinding] = []
         files_reviewed = 0
         
-        path = Path(directory)
+        path = self._resolve_directory(directory)
         
         # Use pattern mining service
         try:
@@ -397,8 +412,8 @@ Output as JSON array of findings."""
     
     async def review_code_quality(
         self,
-        directory: str,
-        files: List[str]
+        directory: Optional[str] = None,
+        files: Optional[List[str]] = None
     ) -> DesignReviewResult:
         """
         Review code quality using AI without a diagram.
@@ -412,7 +427,15 @@ Output as JSON array of findings."""
         review_id = f"rev_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         findings: List[ReviewFinding] = []
         
+        path = self._resolve_directory(directory)
+        
         # Summarize code for AI context
+        if not files:
+            files = []
+            for ext in {'.py', '.ts', '.tsx', '.js', '.jsx'}:
+                files.extend([str(f) for f in path.glob(f"**/*{ext}")])
+            files = files[:50]
+            
         code_summary = self._summarize_code_files(files)
         
         prompt = f"""Review the following code structure and file list for general code quality.
@@ -474,7 +497,7 @@ Output as JSON array of findings."""
 
     async def full_review(
         self,
-        directory: str,
+        directory: Optional[str] = None,
         architecture_diagram: Optional[str] = None,
         meeting_notes: Optional[str] = None
     ) -> DesignReviewResult:
@@ -491,7 +514,7 @@ Output as JSON array of findings."""
         review_id = f"rev_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         all_findings: List[ReviewFinding] = []
         
-        path = Path(directory)
+        path = self._resolve_directory(directory)
         
         # Get all source and test files
         source_extensions = {'.py', '.ts', '.tsx', '.js', '.jsx', '.cs', '.java'}

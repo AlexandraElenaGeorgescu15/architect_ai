@@ -1,0 +1,97 @@
+{
+  "cluster_labels": [
+    0,
+    0,
+    0,
+    2,
+    0,
+    2,
+    0,
+    2,
+    0,
+    1,
+    1,
+    2,
+    1,
+    2,
+    0,
+    1,
+    4,
+    1,
+    0,
+    0,
+    1,
+    1,
+    4,
+    1,
+    0,
+    3,
+    0
+  ],
+  "cluster_stats": {
+    "0": {
+      "size": 11,
+      "samples": [
+        "Program.cs",
+        "Controller.cs",
+        "WeatherForecastController.cs",
+        "UserService.cs",
+        "authentication.service.ts",
+        "phone.service.ts",
+        "app-routing.module.ts",
+        "login.component.ts",
+        "register.component.ts",
+        "phone.component.ts",
+        "validator.ts"
+      ],
+      "avg_complexity": 2.727272727272727,
+      "avg_lines": 50.18181818181818
+    },
+    "1": {
+      "size": 8,
+      "samples": [
+        "UserDto.cs",
+        "WeatherForecast.cs",
+        "MongoDBSettings.cs",
+        "app.component.ts",
+        "authentication.module.ts",
+        "name-uppercase.pipe.ts",
+        "table-routing.module.ts",
+        "entry-details-modal.component.ts"
+      ],
+      "avg_complexity": 1.125,
+      "avg_lines": 14.5
+    },
+    "2": {
+      "size": 5,
+      "samples": [
+        "IUserService.cs",
+        "authentication.service.spec.ts",
+        "phone.service.spec.ts",
+        "IMongoDBSettings.cs",
+        "main.ts"
+      ],
+      "avg_complexity": 1.0,
+      "avg_lines": 12.8
+    },
+    "3": {
+      "size": 1,
+      "samples": [
+        "table-page.component.ts"
+      ],
+      "avg_complexity": 14.0,
+      "avg_lines": 168.0
+    },
+    "4": {
+      "size": 2,
+      "samples": [
+        "app.module.ts",
+        "table.module.ts"
+      ],
+      "avg_complexity": 1.0,
+      "avg_lines": 47.0
+    }
+  },
+  "n_clusters": 5,
+  "method": "kmeans"
+}

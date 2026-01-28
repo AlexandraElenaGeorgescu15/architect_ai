@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from backend.core.logger import get_logger
 from components._tool_detector import get_user_project_directories
+from backend.utils.target_project import get_target_project_path
 
 logger = get_logger(__name__)
 
@@ -38,26 +39,30 @@ class GitService:
     def _get_repo_root(self) -> Optional[Path]:
         """Get the git repository root directory."""
         try:
-            user_dirs = get_user_project_directories()
-            if not user_dirs:
-                return None
+            # Priority 1: Use the standardized target project path
+            target_path = get_target_project_path()
+            if target_path:
+                # Ensure it's a git repo or check its parents
+                current = target_path.resolve()
+                while current != current.parent:
+                    if (current / ".git").exists():
+                        return current
+                    current = current.parent
             
-            # Try to find git repo in user directories
+            # Priority 2: Try to find git repo in auto-detected user directories
+            user_dirs = get_user_project_directories()
             for user_dir in user_dirs:
                 repo_root = Path(user_dir)
-                # Check if this directory or parent is a git repo
                 current = repo_root.resolve()
                 while current != current.parent:
-                    git_dir = current / ".git"
-                    if git_dir.exists():
+                    if (current / ".git").exists():
                         return current
                     current = current.parent
             
             # Fallback: check if outputs directory is in a git repo
             current = self.outputs_dir.resolve()
             while current != current.parent:
-                git_dir = current / ".git"
-                if git_dir.exists():
+                if (current / ".git").exists():
                     return current
                 current = current.parent
             

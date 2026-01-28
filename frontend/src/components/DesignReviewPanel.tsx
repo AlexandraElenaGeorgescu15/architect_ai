@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
-import { 
-  ShieldCheck, Play, Loader2, AlertTriangle, CheckCircle2, XCircle, 
+import {
+  ShieldCheck, Play, Loader2, AlertTriangle, CheckCircle2, XCircle,
   ChevronDown, ChevronRight, FileCode, Shield, TestTube, Zap, Code
 } from 'lucide-react'
 import api from '../services/api'
@@ -52,70 +52,26 @@ export default function DesignReviewPanel() {
     setReviewResult(null)
 
     try {
-      const response = await api.post<DesignReviewResult>('/api/analysis/design-review', {
+      // Use the correct assistant review endpoint
+      const response = await api.post<DesignReviewResult>('/api/assistant/review', {
+        directory: '', // Backend now defaults to target project if empty
         review_type: reviewType
       })
       setReviewResult(response.data)
-      
+
       // Auto-expand categories with findings
-      const categoriesWithFindings = new Set(
-        response.data.findings.map(f => f.category)
-      )
-      setExpandedCategories(categoriesWithFindings)
-    } catch (err: any) {
-      // If endpoint doesn't exist, create mock result for demo
-      if (err.response?.status === 404) {
-        setReviewResult(createMockReview(reviewType))
-      } else {
-        setError(err.response?.data?.detail || 'Failed to run design review')
+      if (response.data.findings && response.data.findings.length > 0) {
+        const categoriesWithFindings = new Set(
+          response.data.findings.map(f => f.category)
+        )
+        setExpandedCategories(categoriesWithFindings)
       }
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Failed to run design review')
     } finally {
       setIsReviewing(false)
     }
   }, [reviewType])
-
-  const createMockReview = (type: string): DesignReviewResult => {
-    const findings: ReviewFinding[] = [
-      {
-        category: 'architecture',
-        severity: 'info',
-        title: 'Service layer well-organized',
-        description: 'Backend services follow single responsibility principle',
-        recommendation: 'Continue maintaining this structure'
-      },
-      {
-        category: 'security',
-        severity: 'warning',
-        title: 'API key exposure risk',
-        description: 'Some endpoints may not require authentication in development mode',
-        recommendation: 'Ensure production mode enforces authentication'
-      },
-      {
-        category: 'testing',
-        severity: 'suggestion',
-        title: 'Increase test coverage',
-        description: 'Current test coverage could be improved for edge cases',
-        recommendation: 'Add unit tests for validation logic'
-      },
-      {
-        category: 'patterns',
-        severity: 'info',
-        title: 'Repository pattern detected',
-        description: 'Data access follows repository pattern for clean separation',
-        recommendation: 'Consider documenting the pattern for new developers'
-      }
-    ]
-
-    return {
-      review_id: `review-${Date.now()}`,
-      review_type: type,
-      files_reviewed: 45,
-      findings,
-      summary: `Design review completed. Found ${findings.length} items across ${new Set(findings.map(f => f.category)).size} categories.`,
-      score: 85,
-      created_at: new Date().toISOString()
-    }
-  }
 
   const toggleCategory = (category: string) => {
     const newExpanded = new Set(expandedCategories)
@@ -232,7 +188,7 @@ export default function DesignReviewPanel() {
               const isExpanded = expandedCategories.has(category)
               const hasCritical = findings.some(f => f.severity === 'critical')
               const hasWarning = findings.some(f => f.severity === 'warning')
-              
+
               return (
                 <div key={category} className="border border-border rounded-lg overflow-hidden">
                   <button
@@ -240,11 +196,10 @@ export default function DesignReviewPanel() {
                     className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors text-left"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        hasCritical ? 'bg-red-500/10 text-red-500' : 
-                        hasWarning ? 'bg-amber-500/10 text-amber-500' : 
-                        'bg-secondary text-muted-foreground'
-                      }`}>
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${hasCritical ? 'bg-red-500/10 text-red-500' :
+                          hasWarning ? 'bg-amber-500/10 text-amber-500' :
+                            'bg-secondary text-muted-foreground'
+                        }`}>
                         <FileCode className="w-4 h-4" />
                       </div>
                       <div>
@@ -254,7 +209,7 @@ export default function DesignReviewPanel() {
                     </div>
                     {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                   </button>
-                  
+
                   {isExpanded && (
                     <div className="border-t border-border p-4 bg-secondary/10 space-y-3">
                       {findings.map((finding, idx) => {
