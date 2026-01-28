@@ -182,15 +182,32 @@ api.interceptors.response.use(
     } else if (error.request) {
       // Network error - handle connection resets gracefully
       if (error.code === 'ERR_CONNECTION_CLOSED' || error.code === 'ERR_CONNECTION_RESET') {
-        // ngrok free tier may close connections - this is expected
-        const retryError = new AxiosError(
-          'Connection closed by server. This may be normal with ngrok free tier. Please retry.',
+        // Check if this is an ngrok URL
+        const backendUrl = getBackendUrl()
+        const isNgrok = backendUrl.includes('ngrok')
+        
+        if (isNgrok) {
+          // ngrok free tier requires visiting the URL in browser first
+          const retryError = new AxiosError(
+            'Ngrok connection failed. Please visit the ngrok URL in your browser first to accept the warning page, then try again.',
           error.code,
           error.config,
           error.request,
           error.response
-        )
-        return Promise.reject(retryError)
+          )
+          retryError.message = 'Ngrok Browser Warning: Please visit your ngrok URL in a browser first to accept the warning, then refresh this page.'
+          return Promise.reject(retryError)
+        } else {
+          // Regular connection error
+          const retryError = new AxiosError(
+            'Connection closed by server. Please check your backend is running and try again.',
+            error.code,
+            error.config,
+            error.request,
+            error.response
+          )
+          return Promise.reject(retryError)
+        }
       }
     } else {
       // Request setup error - handle in UI

@@ -248,7 +248,7 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
               <span className="text-destructive font-medium">
                 {isUsingNgrok ? (
                   <>
-                    ngrok free tier may be blocking connections. The backend is likely running - try clicking <span className="font-bold border border-destructive/20 rounded px-1">Skip</span> to proceed.
+                    <strong>Ngrok Browser Warning Required:</strong> Visit your ngrok URL in a browser first to accept the warning page, then refresh. Or click <span className="font-bold border border-destructive/20 rounded px-1">Skip</span> to proceed.
                   </>
                 ) : (
                   <>

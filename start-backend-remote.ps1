@@ -38,8 +38,9 @@ if (-not $ngrokInstalled) {
     
     # Start ngrok (HTTP 8000)
     # Use localhost:8000 (works with both 127.0.0.1 and 0.0.0.0 bindings)
+    # Add --host-header to rewrite Host header (helps with some apps)
     Write-Host "Starting ngrok tunnel..." -ForegroundColor Cyan
-    $ngrokProcess = Start-Process -FilePath "ngrok" -ArgumentList "http","localhost:8000","--log=stdout" -RedirectStandardOutput "ngrok.log" -RedirectStandardError "ngrok.err" -PassThru -NoNewWindow
+    $ngrokProcess = Start-Process -FilePath "ngrok" -ArgumentList "http","localhost:8000","--host-header=rewrite","--log=stdout" -RedirectStandardOutput "ngrok.log" -RedirectStandardError "ngrok.err" -PassThru -NoNewWindow
     
     # Wait for ngrok to initialize
     Start-Sleep -Seconds 3
@@ -60,16 +61,32 @@ if (-not $ngrokInstalled) {
             Write-Host ""
             Write-Host "============================================" -ForegroundColor Green
             Write-Host ""
+            Write-Host "⚠️  IMPORTANT - NGROK FREE TIER:" -ForegroundColor Yellow
+            Write-Host "   First, visit this URL in your browser to accept the warning:" -ForegroundColor Yellow
+            Write-Host "   $publicUrl" -ForegroundColor Cyan
+            Write-Host "   (This is required for ngrok free tier)" -ForegroundColor Gray
+            Write-Host ""
             Write-Host "NEXT STEPS:" -ForegroundColor Cyan
-            Write-Host "  1. Open https://architect-ai-mvm.vercel.app/" -ForegroundColor White
-            Write-Host "  2. Click the connection indicator (bottom-left)" -ForegroundColor White
-            Write-Host "  3. Enter: $publicUrl" -ForegroundColor Yellow
-            Write-Host "  4. Click 'Save & Connect'" -ForegroundColor White
+            Write-Host "  1. Visit $publicUrl in your browser (accept warning)" -ForegroundColor White
+            Write-Host "  2. Open https://architect-ai-mvm.vercel.app/" -ForegroundColor White
+            Write-Host "  3. Click the connection indicator (bottom-left)" -ForegroundColor White
+            Write-Host "  4. Enter: $publicUrl" -ForegroundColor Yellow
+            Write-Host "  5. Click 'Save & Connect'" -ForegroundColor White
             Write-Host ""
             
             # Copy to clipboard
             $publicUrl | Set-Clipboard
             Write-Host "[INFO] Public URL copied to clipboard!" -ForegroundColor Green
+            Write-Host ""
+            
+            # Offer to open browser to accept warning
+            Write-Host "Would you like to open the ngrok URL in your browser now?" -ForegroundColor Cyan
+            Write-Host "(This is required to accept the ngrok warning page)" -ForegroundColor Gray
+            $openBrowser = Read-Host "Open browser? (Y/n)"
+            if ($openBrowser -ne "n" -and $openBrowser -ne "N") {
+                Start-Process $publicUrl
+                Write-Host "[INFO] Browser opened. Please click 'Visit Site' on the warning page." -ForegroundColor Green
+            }
             Write-Host ""
         }
     } catch {
