@@ -106,7 +106,10 @@ class ValidationService:
         Returns:
             ValidationResultDTO with score, is_valid, and details
         """
-        logger.info(f"🔍 [VALIDATION] Starting validation: artifact_type={artifact_type.value}, "
+        # Handle artifact_type being string or Enum
+        artifact_type_str = artifact_type.value if isinstance(artifact_type, ArtifactType) else str(artifact_type)
+        
+        logger.info(f"🔍 [VALIDATION] Starting validation: artifact_type={artifact_type_str}, "
                    f"content_length={len(content) if content else 0}, "
                    f"has_meeting_notes={bool(meeting_notes)}, has_context={bool(context)}, "
                    f"use_llm_judge={use_llm_judge}")
@@ -136,8 +139,9 @@ class ValidationService:
                 
                 # ArtifactValidator.validate returns a ValidationResult dataclass.
                 # Convert it into our DTO representation.
+                # Pass string value
                 result = self.validator.validate(
-                    artifact_type=artifact_type.value,
+                    artifact_type=artifact_type_str,
                     content=content,
                     context=validation_context
                 )
@@ -179,7 +183,7 @@ class ValidationService:
         # CRITICAL: Enforce strict Mermaid validation regardless of source
         # (ArtifactValidator might be too lenient or miss specific patterns)
         # ------------------------------------------------------------------
-        if artifact_type.value.startswith("mermaid_"):
+        if artifact_type_str.startswith("mermaid_"):
             # Run our local strict mermaid validator
             strict_errors = self._validate_mermaid(content)
             
@@ -231,7 +235,7 @@ class ValidationService:
                 # Call LLM judge
                 llm_score, llm_reasoning = await judge.evaluate_artifact(
                     content=content, 
-                    artifact_type=artifact_type.value,
+                    artifact_type=artifact_type_str,
                     meeting_notes=meeting_notes or "",
                     context=validation_context
                 )
@@ -354,6 +358,9 @@ class ValidationService:
         Returns:
             ValidationResultDTO
         """
+        # Handle artifact_type being string or Enum
+        artifact_type_str = artifact_type.value if isinstance(artifact_type, ArtifactType) else str(artifact_type)
+        
         errors = []
         warnings = []
         validators = {}
@@ -367,7 +374,7 @@ class ValidationService:
             has_critical_error = True
         
         # Artifact-specific validation with STRICT scoring
-        if artifact_type.value.startswith("mermaid_"):
+        if artifact_type_str.startswith("mermaid_"):
             # Mermaid diagram validation (uses cleaned content internally)
             mermaid_errors = self._validate_mermaid(content)
             
@@ -383,7 +390,7 @@ class ValidationService:
                     score -= 15.0
             
             # Check for required diagram type
-            diagram_type = artifact_type.value.replace("mermaid_", "")
+            diagram_type = artifact_type_str.replace("mermaid_", "")
             # Map artifact type to expected mermaid keyword
             type_mapping = {
                 "erd": "erDiagram",
@@ -438,7 +445,7 @@ class ValidationService:
         )
         
         # Log validation result for debugging
-        logger.info(f"🔍 [VALIDATION] {artifact_type.value}: score={score:.1f}, is_valid={is_valid}, "
+        logger.info(f"🔍 [VALIDATION] {artifact_type_str}: score={score:.1f}, is_valid={is_valid}, "
                    f"errors={len(errors)}, critical={has_critical_error}")
         if errors:
             logger.info(f"   Errors: {errors[:3]}{'...' if len(errors) > 3 else ''}")

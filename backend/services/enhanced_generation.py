@@ -284,7 +284,9 @@ class EnhancedGenerationService:
         
         attempts = []
         best_attempt = None
+        best_attempt = None
         best_score = 0.0
+        all_validation_errors = []  # Collect all errors from local attempts for cloud fallback
         
         # Progress: Starting generation (40%)
         if progress_callback:
@@ -562,6 +564,11 @@ class EnhancedGenerationService:
                                 last_validation_errors.append("Diagram is not runnable (syntax errors)")
                         
                         logger.info(f"❌ [ENHANCED_GEN] Validation failed: score={score:.1f}, errors={len(last_validation_errors)}")
+                        
+                        # Collect unique errors for cloud fallback
+                        for err in last_validation_errors:
+                            if err not in all_validation_errors:
+                                all_validation_errors.append(err)
                     else:
                         last_validation_errors = []
                         logger.info(f"✅ [ENHANCED_GEN] Validation passed: score={score:.1f}")
@@ -813,7 +820,8 @@ class EnhancedGenerationService:
                 context=context,
                 threshold=opts["validation_threshold"],
                 progress_callback=progress_callback,
-                custom_prompt_template=custom_prompt_template
+                custom_prompt_template=custom_prompt_template,
+                previous_errors=all_validation_errors  # Pass collected errors to cloud fallback
             )
             
             if cloud_result:
@@ -1259,7 +1267,8 @@ Follow the repository's coding style and test patterns. Make tests realistic and
         context: Dict[str, Any],
         threshold: float,
         progress_callback: Optional[callable] = None,
-        custom_prompt_template: Optional[str] = None
+        custom_prompt_template: Optional[str] = None,
+        previous_errors: Optional[List[str]] = None
     ) -> Optional[Dict[str, Any]]:
         """Try cloud models as fallback."""
         # Get cloud models from routing first, then fallback to defaults
@@ -1335,7 +1344,8 @@ Follow the repository's coding style and test patterns. Make tests realistic and
                     meeting_notes=meeting_notes,
                     rag_context=assembled_context,
                     artifact_type=artifact_type,
-                    custom_prompt_template=custom_prompt_template
+                    custom_prompt_template=custom_prompt_template,
+                    previous_errors=previous_errors
                 )
                 
                 if not content:
@@ -1500,7 +1510,8 @@ Follow the repository's coding style and test patterns. Make tests realistic and
         meeting_notes: str,
         rag_context: str,
         artifact_type: Union[ArtifactType, str],
-        custom_prompt_template: Optional[str] = None
+        custom_prompt_template: Optional[str] = None,
+        previous_errors: Optional[List[str]] = None
     ) -> Optional[str]:
         """
         Call cloud API directly for artifact generation.
@@ -1526,6 +1537,16 @@ Follow the repository's coding style and test patterns. Make tests realistic and
         try:
             # Build prompt with full context (use custom template if available)
             prompt = self._build_prompt(meeting_notes, rag_context, artifact_type, custom_prompt_template)
+            
+            # Inject previous errors if available (AI Repair)
+            if previous_errors:
+                logger.info(f"🔧 [CLOUD_API] Injecting {len(previous_errors)} validation errors into cloud prompt")
+                error_section = "\n\nCRITICAL: Previous attempts failed with the following errors. You MUST fix them:\n"
+                for err in previous_errors[:10]:  # Limit to 10 errors
+                    error_section += f"- {err}\n"
+                error_section += "\nEnsure strict syntax compliance and fix these specific issues."
+                prompt += error_section
+                
             system_message = self._get_system_message(artifact_type)
             
             logger.info(f"☁️ [CLOUD_API] Calling {provider}:{model_name} directly for {artifact_type_str}")

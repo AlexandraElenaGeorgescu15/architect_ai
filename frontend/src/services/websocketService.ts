@@ -15,26 +15,31 @@ const getWebSocketBaseUrl = (): string => {
       // Invalid URL, fall through to other options
     }
   }
-  
+
   // Check for explicit WS URL in environment
   const envWsUrl = import.meta.env.VITE_WS_URL
   if (envWsUrl) {
     return envWsUrl
   }
-  
+
   // Check for API URL and convert to WebSocket
   const apiUrl = import.meta.env.VITE_API_URL
   if (apiUrl) {
     const url = new URL(apiUrl, window.location.origin)
     return `${url.protocol === 'https:' ? 'wss:' : 'ws:'}//${url.host}`
   }
-  
+
   // In development, default to localhost:8000
-  // In production, use current host
+  // UNLESS we are on a non-localhost origin (e.g. ngrok), in which case we should use the relative path (proxied)
   if (import.meta.env.DEV) {
+    const hostname = window.location.hostname
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+      return `${protocol}//${window.location.host}`
+    }
     return 'ws://localhost:8000'
   }
-  
+
   // Production: use current origin with appropriate protocol
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   return `${protocol}//${window.location.host}`
