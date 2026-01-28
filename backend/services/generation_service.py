@@ -282,9 +282,9 @@ class GenerationService:
                 yield {
                     "type": "progress",
                     "job_id": job_id,
-                    "status": "building_context",
+                    "status": "analyzing_repo",
                     "progress": 10.0,
-                    "message": "Building context from repository..."
+                    "message": "Analyzing repository and reading through files..."
                 }
             
             if context_id:
@@ -313,7 +313,7 @@ class GenerationService:
                     "job_id": job_id,
                     "status": "context_ready",
                     "progress": 30.0,
-                    "message": "Context built successfully"
+                    "message": "Repository analysis complete. Knowledge Graph built."
                 }
             
             logger.info(f"🔮 [GEN_SERVICE] Step 2: Predicting quality (job_id={job_id})")
@@ -352,7 +352,7 @@ class GenerationService:
                     "job_id": job_id,
                     "status": "generating",
                     "progress": 40.0,
-                    "message": f"Generating {artifact_type_str}..."
+                    "message": "Generating code architecture and identifying integration points..." if artifact_type_str == "code_prototype" else f"Generating {artifact_type_str}..."
                 }
             
             # Use Enhanced Generation Service (proper pipeline)

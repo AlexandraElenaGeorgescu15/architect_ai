@@ -146,6 +146,7 @@ class EnhancedGenerationService:
                             include_rag=True,
                             include_kg=True,
                             include_patterns=True,
+                            include_ml_features=True,  # Enable ML features
                             artifact_type=artifact_type_str,  # Pass artifact type for targeted RAG
                             force_refresh=True  # Always get fresh context for generation
                         )
@@ -159,6 +160,7 @@ class EnhancedGenerationService:
                         include_rag=True,
                         include_kg=True,
                         include_patterns=True,
+                        include_ml_features=True,  # Enable ML features for structure analysis
                         artifact_type=artifact_type_str,  # Pass artifact type for targeted RAG
                         force_refresh=True  # Always get fresh context for generation
                     )
@@ -1014,8 +1016,12 @@ class EnhancedGenerationService:
             parts.append("7. ENSURE VALID SYNTAX. Do not include '```mermaid' inside the diagram code blocks if asking for raw code.")
         elif "code" in artifact_type_str.lower() or "prototype" in artifact_type_str.lower():
             parts.append("4. **PRODUCTION READY**: Write fully functional, production-grade code. No placeholders.")
-            parts.append("5. Implement all core logic described in requirements.")
-            parts.append("6. Add comments explaining complex logic.")
+            parts.append("5. **CONTEXTUAL INTEGRATION**: You MUST use the provided 'Project Context'. Import existing classes/functions. Do not pretend to be in a blank repo.")
+            parts.append("6. Implement all core logic described in requirements.")
+            parts.append("7. Add comments explaining complex logic.")
+            
+            if "visual" in artifact_type_str.lower() or "frontend" in artifact_type_str.lower():
+                parts.append("8. **VISUAL CONSISTENCY**: Use the existing design system found in the context (CSS variables, Tailwind classes, etc.).")
         else:
             parts.append("4. Ensure the output is complete, detailed, and production-ready.")
         
@@ -1228,26 +1234,47 @@ CRITICAL RULES:
             ArtifactType.HTML_C4_COMPONENT: f"{base_message} Generate a standalone, interactive HTML C4 Component Diagram. Use modern HTML/CSS/JS (minimal JS) to make it visually appealing and functional. Output ONLY the HTML.",
             ArtifactType.HTML_C4_DEPLOYMENT: f"{base_message} Generate a standalone, interactive HTML C4 Deployment Diagram. Use modern HTML/CSS/JS (minimal JS) to make it visually appealing and functional. Output ONLY the HTML.",
             # Code Artifacts
-            ArtifactType.CODE_PROTOTYPE: f"""{base_message} Generate a complete, production-ready code prototype with comprehensive tests.
+            # Code Artifacts - ENHANCED for Context & Relevance
+            ArtifactType.CODE_PROTOTYPE: f"""{base_message} Generate a complete, production-ready code prototype that integrates seamlessly with the existing codebase ("mother code").
+            
+CRITICAL INTEGRATION REQUIREMENTS:
+1. **ANALYZE MOTHER CODE**: Examine the 'Project Context' for existing patterns, utilities, and naming conventions.
+2. **STRICT CONSISTENCY**: Use the exact same imports, types, and architecture found in the context.
+3. **NO REDUNDANCY**: If a utility (e.g., api service, auth hook, database helper) already exists, USE IT. Do NOT recreate it.
+4. **INTEGRATION PLAN**: Clearly define where each file belongs to maintain project structure.
 
-CRITICAL REQUIREMENTS:
-1. Generate BOTH implementation code AND comprehensive tests
-2. Tests must cover: happy path, edge cases, error handling, validation
-3. Use the appropriate testing framework for the language (Jest/Vitest for TS/JS, pytest for Python, NUnit/xUnit for C#)
-4. Include setup/teardown, mocks where needed, and clear assertions
-5. Aim for 80%+ code coverage
-6. Format output as:
+OUTPUT FORMAT (STRICT):
+Output the result in the following sections, using the EXACT markers:
 
-=== IMPLEMENTATION ===
-[Complete implementation code with proper structure, error handling, and comments]
+=== INTEGRATION PLAN ===
+- Backend Target: [Relative path, e.g., backend/services/new_service.py]
+- Frontend Target: [Relative path, e.g., frontend/src/components/NewComponent.tsx]
+- Justification: [Detailed explanation of why these paths and how it fits with existing "mother code"]
+- Imports Utilized: [List specific files from Project Context you are importing]
+
+=== BACKEND IMPLEMENTATION ===
+// File: [backend target path]
+[Complete backend implementation code]
+
+=== FRONTEND IMPLEMENTATION ===
+// File: [frontend target path]
+[Complete frontend implementation code]
 
 === TESTS ===
-[Comprehensive test suite with multiple test cases]
+[Complete test suite for both parts]
 
 === END ===
+""",
+            ArtifactType.DEV_VISUAL_PROTOTYPE: f"""{base_message} Generate a visual prototype code (HTML/CSS/JS or React) that demonstrates the UI/UX design.
 
-Follow the repository's coding style and test patterns. Make tests realistic and meaningful.""",
-            ArtifactType.DEV_VISUAL_PROTOTYPE: f"{base_message} Generate a visual prototype code (HTML/CSS/JS) that demonstrates the UI/UX design. Make it interactive and visually appealing.",
+CRITICAL CONTEXT REQUIREMENTS:
+1. **VISUAL CONSISTENCY**: Analyze the 'Project Context' for existing design tokens (Tailwind, CSS variables), color schemas, and component libraries.
+2. **MATCH THE THEME**: Your prototype MUST look like it belongs in the existing application. Do NOT use generic styles if project styles are available.
+3. **INTERACTIVITY**: Make it functional. Buttons should click, inputs should type, states should change.
+4. **FRAMEWORK ALIGNMENT**: If the context shows React/Next.js, use that. If plain HTML/JS, use that.
+5. **CODE ALIGNMENT**: This visual prototype MUST be the visual representation of the logic and data structures found in the `CODE_PROTOTYPE` (check 'Project Context'). It acts as the frontend for that implementation.
+
+Output ONLY the code (HTML/CSS/JS or Component).""",
             ArtifactType.API_DOCS: f"{base_message} Generate clear, comprehensive API documentation in Markdown format. Include endpoints, methods, request/response schemas, examples, and error codes.",
             # PM Artifacts
             ArtifactType.JIRA: f"{base_message} Generate detailed Jira tickets in Markdown format. Include title, description, acceptance criteria, estimated effort, and labels.",

@@ -54,6 +54,7 @@ const SemanticSearchPanel = lazyWithRetry(() => import('./SemanticSearchPanel'))
 const ApiKeysManager = lazyWithRetry(() => import('./ApiKeysManager'))
 const InteractivePrototypeEditor = lazyWithRetry(() => import('./InteractivePrototypeEditor'))
 const CodeWithTestsEditor = lazyWithRetry(() => import('./CodeWithTestsEditor'))
+const CodePrototypeViewer = lazyWithRetry(() => import('./artifacts/CodePrototypeViewer'))
 const MermaidRenderer = lazyWithRetry(() => import('./MermaidRenderer'))
 const VersionControl = lazyWithRetry(() => import('./VersionControl'))
 const MultiRepoManager = lazyWithRetry(() => import('./MultiRepoManager'))
@@ -324,6 +325,29 @@ const DiagramSkeleton = memo(function DiagramSkeleton() {
       </div>
     </div>
   )
+})
+
+// Code Prototype Viewer Wrapper to handle reactive artifact fetching
+const CodePrototypeViewerWrapper = memo(function CodePrototypeViewerWrapper({ selectedArtifactType }: { selectedArtifactType: ArtifactType }) {
+  const latestArtifact = useArtifactStore(
+    useCallback(state => state.artifacts
+      .filter(a => a.type === selectedArtifactType)
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))[0],
+      [selectedArtifactType])
+  )
+
+  if (!latestArtifact) {
+    return (
+      <div className="h-full flex items-center justify-center bg-card">
+        <div className="text-center p-8">
+          <Code className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+          <p className="text-sm text-muted-foreground">No code prototype generated yet.</p>
+        </div>
+      </div>
+    )
+  }
+
+  return <CodePrototypeViewer artifact={latestArtifact} />
 })
 
 // MermaidDiagramViewer component that uses store directly for reactivity
@@ -962,7 +986,7 @@ function UnifiedStudioTabs(props: UnifiedStudioTabsProps) {
                     </>
                   ) : props.selectedArtifactType === 'code_prototype' ? (
                     <Suspense fallback={<LoadingFallback />}>
-                      <CodeWithTestsEditor key="code-prototype" />
+                      <CodePrototypeViewerWrapper selectedArtifactType={props.selectedArtifactType} />
                     </Suspense>
                   ) : ['jira', 'backlog', 'personas', 'workflows', 'estimations', 'feature_scoring', 'api_docs'].includes(props.selectedArtifactType) ? (
                     /* PM/Documentation artifacts - render as formatted Markdown */

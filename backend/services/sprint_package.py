@@ -390,6 +390,8 @@ class SprintPackageGenerator:
                 context_parts.append(f"## Previously Generated Architecture:\n```mermaid\n{artifact.content[:1000]}\n```")
             elif artifact.artifact_type == "api_docs":
                 context_parts.append(f"## Previously Generated API Docs:\n{artifact.content[:1500]}")
+            elif artifact.artifact_type == "code_prototype":
+                context_parts.append(f"## Previously Generated Code Implementation (Logic to Visualize):\n{artifact.content[:2000]}")
         
         if context_parts:
             return "\n\n---\n\n".join(context_parts)

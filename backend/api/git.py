@@ -61,3 +61,30 @@ async def get_all_artifacts_git_status(
     result = service.get_all_artifacts_git_status()
     return result
 
+
+@router.post("/commit/{artifact_id}", response_model=Dict[str, Any])
+@limiter.limit("5/minute")
+async def commit_artifact_to_repo(
+    request: Request,
+    artifact_id: str,
+    current_user: UserPublic = Depends(get_current_user)
+):
+    """
+    Trigger the AI Git Agent to apply a code prototype artifact 
+    to the repository and create a Pull Request.
+    """
+    logger.info(f"🤖 [GIT_API] PR Request for artifact: {artifact_id} from {current_user.username}")
+    
+    from backend.services.git_agent import get_git_agent
+    agent = get_git_agent()
+    
+    result = await agent.apply_prototype_and_push(artifact_id)
+    
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=result.get("error", "Failed to apply prototype and create PR")
+        )
+    
+    return result
+

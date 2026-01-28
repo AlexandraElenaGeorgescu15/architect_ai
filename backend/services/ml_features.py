@@ -73,8 +73,8 @@ class MLFeatureEngineer:
             "import_count": code_content.count('import '),
             "comment_lines": sum(1 for line in code_content.split('\n') if line.strip().startswith('#')),
             "blank_lines": sum(1 for line in code_content.split('\n') if not line.strip()),
-            "avg_line_length": np.mean([len(line) for line in code_content.split('\n')]) if code_content else 0,
-            "max_line_length": max([len(line) for line in code_content.split('\n')], default=0),
+            "avg_line_length": float(np.mean([len(line) for line in code_content.split('\n')])) if code_content else 0.0,
+            "max_line_length": int(max([len(line) for line in code_content.split('\n')], default=0)),
             "cyclomatic_complexity_estimate": self._estimate_complexity(code_content),
             "nesting_depth": self._estimate_nesting_depth(code_content),
             "has_docstrings": '"""' in code_content or "'''" in code_content,
@@ -242,11 +242,13 @@ class MLFeatureEngineer:
             cluster_indices = [i for i, label in enumerate(cluster_labels) if label == cluster_id]
             cluster_features = [features_list[i] for i in cluster_indices]
             
-            cluster_stats[cluster_id] = {
-                "size": len(cluster_indices),
+            # Ensure cluster_id is a serializable string for JSON keys
+            cid_key = str(cluster_id)
+            cluster_stats[cid_key] = {
+                "size": int(len(cluster_indices)),
                 "samples": [f.get("file_path", f"sample_{i}") for i, f in enumerate(cluster_features)],
-                "avg_complexity": np.mean([f.get("cyclomatic_complexity_estimate", 0) for f in cluster_features]),
-                "avg_lines": np.mean([f.get("lines_of_code", 0) for f in cluster_features]),
+                "avg_complexity": float(np.mean([f.get("cyclomatic_complexity_estimate", 0) for f in cluster_features])),
+                "avg_lines": float(np.mean([f.get("lines_of_code", 0) for f in cluster_features])),
             }
         
         return {
@@ -356,6 +358,30 @@ class MLFeatureEngineer:
         Returns:
             Dictionary with clustering results and statistics
         """
+        # Create cache directory
+        cache_dir = Path(__file__).parent.parent.parent / "data" / "cache" / "ml"
+        cache_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Generate cache key based on file paths (sorted)
+        # Using a simple hash of file paths is a heuristic. 
+        # Ideally we'd map content hashes, but that's expensive.
+        # This assumes if the list of files changes, we re-cluster.
+        import hashlib
+        paths_str = "|".join(sorted([str(p) for p in file_paths]))
+        cache_key = hashlib.md5(paths_str.encode()).hexdigest()
+        cache_file = cache_dir / f"cluster_{cache_key}.json"
+        
+        # Try to load from cache
+        if cache_file.exists():
+            try:
+                # Check age (invalidate after 24 hours)
+                import time
+                if time.time() - cache_file.stat().st_mtime < 86400:
+                    logger.info(f"Loaded clustering results from cache: {cache_file.name}")
+                    return json.loads(cache_file.read_text(encoding='utf-8'))
+            except Exception as e:
+                logger.warning(f"Failed to load cache: {e}")
+        
         feature_list = []
         valid_files = []
         
@@ -390,7 +416,7 @@ class MLFeatureEngineer:
              return {
                 "cluster_labels": [0] * len(feature_list),
                 "cluster_stats": {
-                    0: {
+                    "0": {  # Use string key for JSON compatibility
                         "size": len(feature_list),
                         "samples": [str(Path(f).name) for f in valid_files],
                         "avg_complexity": sum(f.get("cyclomatic_complexity_estimate", 0) for f in feature_list) / len(feature_list)
@@ -404,12 +430,22 @@ class MLFeatureEngineer:
         
         # Clean up result for context (basenames only)
         if "cluster_stats" in result:
+            new_stats = {}
             for cid, stats in result["cluster_stats"].items():
                 if "samples" in stats:
                     # Keep full paths in backend for reference if needed, but summary usually wants names
                     # For context builder, names are better
                     stats["samples"] = [str(Path(p).name) for p in stats["samples"]]
-                    
+                new_stats[str(cid)] = stats # Ensure string keys for JSON
+            result["cluster_stats"] = new_stats
+            
+        # Save to cache
+        try:
+            cache_file.write_text(json.dumps(result, indent=2), encoding='utf-8')
+            logger.info(f"Saved clustering results to cache: {cache_file.name}")
+        except Exception as e:
+            logger.warning(f"Failed to save cache: {e}")
+            
         return result
 
     def _features_to_matrix(self, features_list: List[Dict[str, Any]]) -> np.ndarray:

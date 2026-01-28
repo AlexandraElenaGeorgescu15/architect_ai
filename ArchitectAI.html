@@ -4,844 +4,645 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Architect.AI - Technical Deck</title>
+    <title>Architect.AI | The Engineering Blueprint</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        /* 1. THE SETUP - ARCHITECT.AI THEME */
-        * {
-            box-sizing: border-box;
-        }
-
         :root {
-            --bg-dark: #0a0a0f;
-            --bg-card: #13131f;
+            --bg: #04040a;
+            --surf: #0c0c1e;
+            --surf-glass: rgba(12, 12, 30, 0.8);
             --neon-blue: #00f3ff;
             --neon-purple: #bc13fe;
-            --text-main: #e2e8f0;
-            --text-muted: #94a3b8;
-            --border-color: #1f2937;
+            --neon-pink: #ff00c1;
+            --text: #e2e8f0;
+            --text-dim: #94a3b8;
+            --grad: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
 
         body {
-            background-color: #000;
-            display: grid;
-            gap: 20px;
-            grid-template-columns: 1fr;
-            margin: 0;
-            min-height: 100vh;
-            padding: 20px 0;
-            place-items: center;
-            font-family: 'Inter', sans-serif;
-        }
-
-        .slide-container {
-            align-items: center;
-            background-color: var(--bg-dark);
-            border-radius: 8px;
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
-            display: flex;
-            flex-direction: column;
-            height: 720px;
-            justify-content: center;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Outfit', sans-serif;
             overflow: hidden;
-            padding: 60px;
-            position: relative;
-            width: 1280px;
-            border: 1px solid #1f1f2e;
+            height: 100vh;
         }
 
-        /* 1.1 BACKGROUND STYLING - Cyberpunk Grid */
-        .slide-container::before {
-            content: '';
-            height: 100%;
-            left: 0;
+        .viewport {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background:
+                radial-gradient(circle at 10% 10%, rgba(0, 243, 255, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 90% 90%, rgba(188, 19, 254, 0.08) 0%, transparent 40%);
+        }
+
+        .bg-grid {
             position: absolute;
             top: 0;
+            left: 0;
             width: 100%;
-            z-index: 0;
+            height: 100%;
             background-image:
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-            mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
-        }
-
-        .slide-container>* {
-            position: relative;
-            z-index: 1;
-        }
-
-        /* 2. CONSISTENT TYPOGRAPHY */
-
-        /* Headings Font - Monospace for "Dev" feel */
-        .slide-container h1,
-        .slide-container h2,
-        .slide-container h3 {
-            color: #fff;
-            font-family: 'JetBrains Mono', monospace;
-            margin: 0;
-            letter-spacing: -1px;
-        }
-
-        .slide-container h1 {
-            font-size: 72px;
-            background: linear-gradient(to right, var(--neon-blue), var(--neon-purple));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            line-height: 1.1;
-            text-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
-        }
-
-        .slide-container .slide-title {
-            font-size: 48px;
-            font-weight: 700;
-            margin-bottom: 40px;
-            text-align: left;
-            width: 100%;
-            border-left: 5px solid var(--neon-blue);
-            padding-left: 20px;
-            color: white;
-        }
-
-        .slide-container h3 {
-            font-size: 24px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: var(--neon-blue);
-        }
-
-        /* Body Text Font */
-        .slide-container p,
-        .slide-container li,
-        .slide-container .subtitle,
-        .slide-container .qa-layout p {
-            color: var(--text-muted);
-            font-size: 18px;
-            line-height: 1.5;
-            font-weight: 300;
-        }
-
-        .slide-container strong {
-            color: var(--text-main);
-            font-weight: 600;
-        }
-
-        .slide-container .subtitle {
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--neon-blue);
-            font-size: 24px;
-            margin-top: 20px;
-        }
-
-        .slide-container .content-area {
-            align-items: center;
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-            justify-content: center;
-            width: 100%;
-        }
-
-        /* 3. LAYOUT DEFINITIONS */
-
-        /* Two Column */
-        .two-column {
-            align-items: flex-start;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 40px;
-            width: 100%;
-        }
-
-        .two-column.tiled {
-            align-items: stretch;
-        }
-
-        .two-column.tiled>div {
-            background-color: var(--bg-card);
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            padding: 30px;
-            text-align: left;
-            transition: transform 0.3s ease;
-        }
-
-        .two-column.tiled>div:hover {
-            border-color: var(--neon-purple);
-            transform: translateY(-5px);
-        }
-
-        .two-column ul {
-            list-style: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        .two-column li {
-            margin-bottom: 15px;
-            padding-left: 25px;
-            position: relative;
-        }
-
-        .two-column li::before {
-            content: '>';
-            position: absolute;
-            left: 0;
-            color: var(--neon-purple);
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: bold;
-        }
-
-        /* Image Wrappers / Visual Containers */
-        .visual-container {
-            background-color: #050508;
-            border-radius: 12px;
-            height: 350px;
-            width: 100%;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        /* CSS GENERATIVE GRAPHICS */
-
-        /* Diagram Visual */
-        .diagram-visual {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #000 70%);
-        }
-
-        .node {
-            position: absolute;
-            width: 60px;
-            height: 60px;
-            background: #1e1e2e;
-            border: 2px solid var(--neon-blue);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 24px;
-            z-index: 2;
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
-        }
-
-        .node.center {
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80px;
-            height: 80px;
-            border-color: var(--neon-purple);
-            font-size: 32px;
-        }
-
-        .node.top-left {
-            top: 20%;
-            left: 20%;
-        }
-
-        .node.top-right {
-            top: 20%;
-            right: 20%;
-        }
-
-        .node.bottom-left {
-            bottom: 20%;
-            left: 20%;
-        }
-
-        .node.bottom-right {
-            bottom: 20%;
-            right: 20%;
-        }
-
-        .connection {
-            position: absolute;
-            background: linear-gradient(90deg, var(--neon-blue), transparent);
-            height: 2px;
-            top: 50%;
-            left: 50%;
-            transform-origin: 0 0;
-            z-index: 1;
-            opacity: 0.5;
-        }
-
-        /* Editor Visual */
-        .editor-visual {
-            background: #0d0d14;
-            width: 90%;
-            height: 90%;
-            border-radius: 8px;
-            border: 1px solid #333;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .editor-header {
-            height: 30px;
-            background: #1a1a24;
-            border-bottom: 1px solid #333;
-            display: flex;
-            align-items: center;
-            padding-left: 10px;
-            gap: 6px;
-        }
-
-        .dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-        }
-
-        .dot.red {
-            background: #ff5f56;
-        }
-
-        .dot.yellow {
-            background: #ffbd2e;
-        }
-
-        .dot.green {
-            background: #27c93f;
-        }
-
-        .editor-body {
-            flex: 1;
-            padding: 20px;
-            display: flex;
-            gap: 15px;
-        }
-
-        .line-numbers {
-            color: #444;
-            font-family: monospace;
-            font-size: 14px;
-            line-height: 1.5;
-            text-align: right;
-        }
-
-        .code-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .code-line {
-            height: 12px;
-            border-radius: 4px;
-            opacity: 0.7;
-        }
-
-        .w-40 {
-            width: 40%;
-        }
-
-        .w-60 {
-            width: 60%;
-        }
-
-        .w-80 {
-            width: 80%;
-        }
-
-        .bg-purple {
-            background: var(--neon-purple);
-        }
-
-        .bg-blue {
-            background: var(--neon-blue);
-        }
-
-        .bg-gray {
-            background: #444;
-        }
-
-        /* Cluster Visual */
-        .cluster-visual {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at center, #111 0%, #000 100%);
-        }
-
-        .data-point {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            opacity: 0.8;
-        }
-
-        /* Tiled Content */
-        .tiled-content {
-            align-items: stretch;
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-            width: 100%;
-        }
-
-        .tile {
-            background-color: var(--bg-card);
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            padding: 25px;
-            text-align: left;
-        }
-
-        .tile .icon {
-            color: var(--neon-purple);
-            font-size: 32px;
-            margin-bottom: 15px;
-            background: rgba(188, 19, 254, 0.1);
-            width: 60px;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-        }
-
-        /* Full Background Title */
-        .title-bg {
-            background: radial-gradient(circle at 70% 50%, rgba(188, 19, 254, 0.15) 0%, rgba(0, 0, 0, 0) 50%),
-                linear-gradient(to right, #000 40%, #13131f 100%);
-        }
-
-        .title-bg::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-image: radial-gradient(#333 1px, transparent 1px);
-            background-size: 40px 40px;
-            opacity: 0.2;
+                linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 60px 60px;
+            mask-image: radial-gradient(circle at center, black, transparent 80%);
             z-index: 0;
         }
 
-        .title-bg .content-overlay {
-            text-align: left;
-            max-width: 900px;
-            padding-left: 60px;
-            z-index: 1;
+        .slides {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            z-index: 10;
         }
 
-        /* Section Title */
-        .section-title-layout {
-            text-align: center;
-            z-index: 2;
-        }
-
-        .section-title-layout h2 {
-            font-size: 80px;
-            background: linear-gradient(to bottom, #fff, #94a3b8);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .section-title-layout hr {
-            border: none;
-            height: 2px;
-            background: linear-gradient(to right, transparent, var(--neon-blue), transparent);
-            width: 200px;
-            margin: 30px auto;
-        }
-
-        /* Bleed Image Right */
-        .slide-container.bleed-image-layout {
-            align-items: start;
-            display: grid;
-            gap: 40px;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            padding: 0;
-        }
-
-        .slide-container.bleed-image-layout>.content-container {
-            padding: 60px 0 60px 60px;
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            height: 100%;
-        }
-
-        .slide-container.bleed-image-layout>.image-container {
-            height: 100%;
-            width: 100%;
-            position: relative;
-            display: flex;
             align-items: center;
             justify-content: center;
-            padding-right: 40px;
+            padding: 60px 100px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(20px);
         }
 
-        /* Bullet List Style */
-        .bullet-list ul {
-            list-style: none;
-            padding: 0;
+        .slide.active {
+            opacity: 1;
+            pointer-events: auto;
+            transform: translateY(0);
         }
 
-        .bullet-list li {
+        h1 {
+            font-size: 6rem;
+            font-weight: 800;
+            background: var(--grad);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             margin-bottom: 20px;
-            display: flex;
-            align-items: flex-start;
+            text-transform: uppercase;
+            letter-spacing: -2px;
+        }
+
+        h2 {
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            color: #fff;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .label {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--neon-blue);
+            font-size: 0.9rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .glass-card {
+            background: var(--surf-glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 1200px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
             gap: 20px;
+            width: 100%;
         }
 
-        .bullet-list li i {
+        .feature-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 1.5rem;
+            transition: 0.3s;
+        }
+
+        .feature-box:hover {
+            border-color: var(--neon-blue);
+            transform: translateY(-5px);
+            background: rgba(0, 243, 255, 0.05);
+        }
+
+        .feature-box i {
+            font-size: 2rem;
+            margin-bottom: 15px;
             color: var(--neon-blue);
-            font-size: 24px;
-            margin-top: 5px;
-            flex-shrink: 0;
         }
 
-        /* Q&A */
-        .qa-layout {
+        .feature-box h3 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .feature-box p {
+            font-size: 0.9rem;
+            color: var(--text-dim);
+            line-height: 1.5;
+        }
+
+        .nav-ui {
+            position: absolute;
+            bottom: 40px;
+            right: 60px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            transition: 0.3s;
+        }
+
+        .btn:hover {
+            background: var(--neon-blue);
+            color: #000;
+        }
+
+        .p-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 4px;
+            background: var(--grad);
+            transition: 0.4s;
+        }
+
+        .slide-num {
+            position: absolute;
+            bottom: 45px;
+            left: 60px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        /* App Blueprint Styles */
+        .blueprint-node {
+            border: 2px solid var(--neon-purple);
+            padding: 15px;
+            border-radius: 12px;
             text-align: center;
+            position: relative;
         }
 
-        .qa-layout h2 {
-            font-size: 80px;
-            color: var(--neon-blue);
+        .blueprint-line {
+            height: 2px;
+            background: var(--neon-purple);
+            flex: 1;
+            margin-top: 25px;
+            position: relative;
+        }
+
+        .blueprint-line::after {
+            content: 'API/WS';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.6rem;
+            color: var(--neon-purple);
+            font-family: 'JetBrains Mono';
         }
     </style>
 </head>
 
 <body>
+    <div class="bg-grid"></div>
+    <div class="p-bar" id="bar"></div>
+    <div class="slide-num" id="num">01 / 18</div>
 
-    <!-- Slide 1: Title_Slide -->
-    <div class="slide-container title-bg" id="slide1">
-        <div class="content-overlay">
-            <h1>Architect.AI</h1>
-            <p class="subtitle">Technical Overview</p>
-            <p style="margin-top: 30px; font-size: 22px; color: #fff;">Symbolic Intelligence + Generative Reasoning</p>
-        </div>
-    </div>
+    <div class="viewport">
+        <div class="slides">
 
-    <!-- Slide 2: Section_Title (The Narrative) -->
-    <div class="slide-container" id="slide2">
-        <div class="section-title-layout">
-            <h3 style="color: var(--neon-blue); font-family: 'Inter', sans-serif; letter-spacing: 2px;">SECTION 1</h3>
-            <hr>
-            <h2>VISION & CORE</h2>
-            <p class="subtitle">Problem Space & Solution</p>
-        </div>
-    </div>
-
-    <!-- Slide 3: The Hook (Problem vs Vision) -->
-    <div class="slide-container" id="slide3">
-        <h2 class="slide-title">1.1 The Paradigm Shift</h2>
-        <div class="content-area">
-            <div class="two-column tiled">
-                <div>
-                    <h3><i class="fa-solid fa-triangle-exclamation"></i> The Problem</h3>
-                    <p>"Software architecture is often detached from the code. Documentation gets outdated, and
-                        understanding complex patterns is manual and slow."</p>
+            <!-- 1. Intro -->
+            <div class="slide active">
+                <span class="label">System Version 2.4.0</span>
+                <h1>Architect.AI</h1>
+                <p style="font-size: 2rem; font-weight: 300; opacity: 0.7;">The Unified Engineering Ecosystem</p>
+                <div style="margin-top: 40px; display: flex; gap: 20px;">
+                    <div class="btn" style="background: var(--neon-blue); color:#000; font-weight: bold;"
+                        onclick="next()">START BLUEPRINT OVERVIEW</div>
                 </div>
-                <div>
-                    <h3><i class="fa-solid fa-lightbulb"></i> The Vision</h3>
-                    <p>"Architect.AI bridges this gap. It's not just a chat; it's a <strong>Symbolic + Generative AI
-                            engine</strong> that understands your codebase's DNA."</p>
+            </div>
+
+            <!-- 2. The Big Picture (Blueprint) -->
+            <div class="slide">
+                <h2>The Blueprint</h2>
+                <div class="glass-card">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
+                        <div class="blueprint-node" style="flex: 1;">
+                            <span class="label" style="font-size: 0.7rem;">FRONTEND</span>
+                            <h3>Unified Studio</h3>
+                            <p style="font-size: 0.8rem; margin-top: 5px;">React/TS Command Center</p>
+                        </div>
+                        <div class="blueprint-line"></div>
+                        <div class="blueprint-node" style="flex: 1; border-color: var(--neon-blue);">
+                            <span class="label" style="font-size: 0.7rem; color: var(--neon-blue);">CORE ENGINE</span>
+                            <h3>FastAPI Backend</h3>
+                            <p style="font-size: 0.8rem; margin-top: 5px;">Python RAG & Agentic Hub</p>
+                        </div>
+                        <div class="blueprint-line"></div>
+                        <div class="blueprint-node" style="flex: 1; border-color: var(--neon-pink);">
+                            <span class="label" style="font-size: 0.7rem; color: var(--neon-pink);">LLM POOL</span>
+                            <h3>Neural Network</h3>
+                            <p style="font-size: 0.8rem; margin-top: 5px;">Gemini / Ollama / GPT-4</p>
+                        </div>
+                    </div>
                 </div>
+                <p style="margin-top: 40px; text-align: center; color: var(--text-dim); max-width: 800px;">Architect.AI
+                    is a <strong>three-tier architecture</strong> designed for high-density code reasoning and
+                    autonomous delivery.</p>
+            </div>
+
+            <!-- 3. Frontend Area: The Studio -->
+            <div class="slide">
+                <span class="label">UI Component: Studio View</span>
+                <h2>The Command Center</h2>
+                <div class="grid-3">
+                    <div class="feature-box">
+                        <i class="fa-solid fa-file-invoice"></i>
+                        <h3>Meeting Hub</h3>
+                        <p>Central vault for the folders and meeting notes. The AI parses these raw transcripts to build
+                            the feature context.</p>
+                    </div>
+                    <div class="feature-box">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <h3>Massive Generator</h3>
+                        <p>Generate 15+ types of artifacts. From ERDs to production-ready Code Prototypes in a single
+                            click.</p>
+                    </div>
+                    <div class="feature-box">
+                        <i class="fa-solid fa-layer-group"></i>
+                        <h3>Artifact Library</h3>
+                        <p>Searchable storage for every version ever generated. Includes <strong>Export Manager</strong>
+                            for SVG/PDF/Code.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. Frontend Area: Intelligence -->
+            <div class="slide">
+                <span class="label">UI Component: Intelligence Page</span>
+                <h2>The Neural Engine</h2>
+                <div class="grid-3">
+                    <div class="feature-box" style="border-color: var(--neon-purple);">
+                        <i class="fa-solid fa-brain"></i>
+                        <h3>Knowledge Graph</h3>
+                        <p>Interactive 3D visualization of your codebase. Maps exports, imports, and component
+                            relationships in real-time.</p>
+                    </div>
+                    <div class="feature-box" style="border-color: var(--neon-purple);">
+                        <i class="fa-solid fa-magnifying-glass-chart"></i>
+                        <h3>Pattern Mining</h3>
+                        <p>Deep scan for Design Patterns (Singleton, Factory) and Anti-patterns. AI-driven architectural
+                            health check.</p>
+                    </div>
+                    <div class="feature-box" style="border-color: var(--neon-purple);">
+                        <i class="fa-solid fa-vial"></i>
+                        <h3>Fine-Tuning Lab</h3>
+                        <p>The bootstrap center. Generates synthetic data from your project to train models specifically
+                            on your team's style.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. Frontend Area: Canvas -->
+            <div class="slide">
+                <span class="label">UI Component: Interactive Canvas</span>
+                <h2>Visual Engineering</h2>
+                <div class="glass-card">
+                    <div style="display: flex; gap: 30px;">
+                        <div style="flex: 1; border: 1px solid var(--border); padding: 20px; border-radius: 15px;">
+                            <h4 style="color: var(--neon-blue); margin-bottom: 10px;">Mermaid Canvas</h4>
+                            <p style="font-size: 0.9rem;">Drag and drop diagrams. Use the <strong>"AI Repair"</strong>
+                                button to fix broken syntax or <strong>"Improve"</strong> to add missing relationships.
+                            </p>
+                        </div>
+                        <div style="flex: 1; border: 1px solid var(--border); padding: 20px; border-radius: 15px;">
+                            <h4 style="color: var(--neon-pink); margin-bottom: 10px;">Visual Prototyper</h4>
+                            <p style="font-size: 0.9rem;">Live-reloading HTML/CSS/JS sandbox. Edit code and see the
+                                visual changes across Desktop, Tablet, and Mobile views instantly.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. Backend Service: Universal Context -->
+            <div class="slide">
+                <span class="label">Backend: universal_context.py</span>
+                <h2>The Memory Hub</h2>
+                <div class="feature-box"
+                    style="width: 100%; max-width: 1000px; padding: 40px; border-color: var(--neon-blue);">
+                    <div style="display: flex; gap: 40px; align-items: center;">
+                        <div style="flex: 1;">
+                            <h3 style="font-size: 2rem;">Total Awareness</h3>
+                            <p style="font-size: 1.1rem; margin-top: 15px;">Every file in your project is indexed. The
+                                system calculates an <strong>Importance Score</strong> (0.0 - 1.0) so the AI focus on
+                                the Entrypoints and Core Services first.</p>
+                            <div
+                                style="margin-top: 20px; font-family: 'JetBrains Mono'; font-size: 0.8rem; opacity: 0.5;">
+                                // Ranking Algorithm Active</div>
+                        </div>
+                        <div style="text-align: center; border-left: 1px solid var(--border); padding-left: 40px;">
+                            <div style="font-size: 3rem; font-weight: 800; color: var(--neon-blue);">1.0s</div>
+                            <p style="font-size: 0.7rem;">BUILD TIME</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. Backend Service: Agentic Chat -->
+            <div class="slide">
+                <span class="label">Backend: agentic_chat_service.py</span>
+                <h2>The Autonomous Worker</h2>
+                <div class="grid-3">
+                    <div class="feature-box">
+                        <strong>Tool Use (ReAct)</strong>
+                        <p>The AI doesn't just talk. It uses 10+ internal tools to <code>read_file</code>,
+                            <code>search_codebase</code>, and <code>list_directory</code> to get its own answers.</p>
+                    </div>
+                    <div class="feature-box">
+                        <strong>Write Mode</strong>
+                        <p>When enabled, the chat can <code>update_artifact</code> or <code>create_artifact</code>
+                            directly. You can literally talk a diagram into existence.</p>
+                    </div>
+                    <div class="feature-box">
+                        <strong>Self-History</strong>
+                        <p>Maintains persistent conversational history with folder-level awareness for long-term project
+                            planning.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. Backend Service: ML Support -->
+            <div class="slide">
+                <span class="label">Backend: ml_features.py</span>
+                <h2>Latent Intelligence</h2>
+                <div class="glass-card">
+                    <p style="margin-bottom: 30px;">Unsupervised ML powers the system's ability to understand "What is
+                        this file?"</p>
+                    <div class="grid-3">
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; color: var(--neon-purple);"><i class="fa-solid fa-cubes"></i>
+                            </div>
+                            <h4 style="margin-top: 10px;">Clustering</h4>
+                            <p style="font-size: 0.7rem;">K-Means grouping of Logic vs Utility vs DTOs.</p>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; color: var(--neon-blue);"><i class="fa-solid fa-link"></i>
+                            </div>
+                            <h4 style="margin-top: 10px;">Centrality</h4>
+                            <p style="font-size: 0.7rem;">Identifying the "Most Connected" files in your repo.</p>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 2rem; color: var(--neon-pink);"><i class="fa-solid fa-gauge"></i>
+                            </div>
+                            <h4 style="margin-top: 10px;">Complexity</h4>
+                            <p style="font-size: 0.7rem;">Predicting if a task needs a stronger model (Stage 2).</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 9. Reliability: Validation Loop -->
+            <div class="slide">
+                <span class="label">Quality Assurance</span>
+                <h2>The Neural Judge Loop</h2>
+                <div style="text-align: center; border: 2px dashed var(--border); padding: 40px; border-radius: 30px;">
+                    <div
+                        style="display: flex; justify-content: center; align-items: center; gap: 20px; font-family: 'JetBrains Mono';">
+                        <div style="border: 1px solid var(--neon-blue); padding: 10px;">GENERATE</div>
+                        <i class="fa-solid fa-arrow-right"></i>
+                        <div
+                            style="border: 2px solid var(--neon-pink); padding: 15px; background: rgba(255,0,193,0.1);">
+                            SCRUTINIZE (JUDGE)</div>
+                        <i class="fa-solid fa-arrow-right"></i>
+                        <div style="border: 1px solid var(--neon-blue); padding: 10px;">HEAL / FIX</div>
+                        <i class="fa-solid fa-arrow-right"></i>
+                        <div style="color: var(--neon-blue);">DELIVER</div>
+                    </div>
+                    <p style="margin-top: 30px; opacity: 0.7;">Zero-trust delivery ensures your Mermaid diagrams don't
+                        break and your code actually follows your team standards.</p>
+                </div>
+            </div>
+
+            <!-- 10. Delivery: GitAgent & PRs -->
+            <div class="slide">
+                <span class="label">Autonomous Delivery</span>
+                <h2>One-Click Shipping</h2>
+                <div class="glass-card">
+                    <div style="display: flex; align-items: center; gap: 30px;">
+                        <i class="fa-brands fa-github" style="font-size: 4rem;"></i>
+                        <div>
+                            <h3>The GitAgent</h3>
+                            <p style="margin-top: 10px;">Once a Code Prototype is generated, the GitAgent creates a new
+                                local branch, applies the file changes, writes unit tests, and pushes to remote. It even
+                                generates the PR description based on the original meeting notes.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 11. Infrastructure: Model Pipeline -->
+            <div class="slide">
+                <span class="label">Infrastructure</span>
+                <h2>Universal Model Hub</h2>
+                <div class="grid-3">
+                    <div class="feature-box">
+                        <i class="fa-solid fa-cloud"></i>
+                        <h3>Cloud Fallback</h3>
+                        <p>If your local GPU is busy, the system transparently routes to Gemini 2.0 Flash or GPT-4o for
+                            instant generation.</p>
+                    </div>
+                    <div class="feature-box">
+                        <i class="fa-solid fa-microchip"></i>
+                        <h3>VRAM Awareness</h3>
+                        <p>Live telemetry of your GPU usage to prevent crashing during heavy local model inference
+                            (Ollama).</p>
+                    </div>
+                    <div class="feature-box">
+                        <i class="fa-brands fa-hugging-face"></i>
+                        <h3>HF Downloader</h3>
+                        <p>Search 10,000+ models on HuggingFace and download them directly into the app's local
+                            registry.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 12. Enterprise: Security & Metrics -->
+            <div class="slide">
+                <span class="label">Security & Ops</span>
+                <h2>Production Ready</h2>
+                <div class="glass-card">
+                    <div class="grid-3">
+                        <div class="feature-item">
+                            <h4 style="color: var(--neon-blue);">Encrypted Secrets</h4>
+                            <p style="font-size: 0.8rem;">API Keys (OpenAI, Groq, etc.) are encrypted at rest and never
+                                exposed.</p>
+                        </div>
+                        <div class="feature-item" style="border-left-color: var(--neon-purple);">
+                            <h4 style="color: var(--neon-purple);">Structured Logs</h4>
+                            <p style="font-size: 0.8rem;">Every AI decision is logged in JSON format for enterprise
+                                auditing.</p>
+                        </div>
+                        <div class="feature-item" style="border-left-color: var(--neon-pink);">
+                            <h4 style="color: var(--neon-pink);">Cross-Origin API</h4>
+                            <p style="font-size: 0.8rem;">Fully enabled for remote access via Ngrok or local networks.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 13. Scalability: Multi-Repo -->
+            <div class="slide">
+                <span class="label">Enterprise Scale</span>
+                <h2>Cross-Repository Intelligence</h2>
+                <div
+                    style="background: rgba(0,243,255,0.05); border: 2px solid var(--neon-blue); border-radius: 30px; padding: 40px; text-align: center;">
+                    <p style="font-size: 1.5rem;">The AI doesn't just see one project.</p>
+                    <p style="font-size: 1.1rem; opacity: 0.7; margin-top: 10px;">It maps dependencies across
+                        microservices. It understands how your <strong>Order Service</strong> (Node.js) talks to your
+                        <strong>Billing Service</strong> (Go).</p>
+                </div>
+            </div>
+
+            <!-- 14. Performance: ML Caching -->
+            <div class="slide">
+                <span class="label">Optimization Layer</span>
+                <h2>Instant Context Delivery</h2>
+                <div class="glass-card">
+                    <div style="display: flex; justify-content: space-around; text-align: center;">
+                        <div>
+                            <div style="font-size: 2.5rem; font-weight: 800; color: var(--neon-blue);">0.002s</div>
+                            <p style="font-size: 0.8rem;">METRIC LOOKUP</p>
+                        </div>
+                        <div>
+                            <div style="font-size: 2.5rem; font-weight: 800; color: var(--neon-purple);">98%</div>
+                            <p style="font-size: 0.8rem;">CACHE HIT RATE</p>
+                        </div>
+                        <div>
+                            <div style="font-size: 2.5rem; font-weight: 800; color: var(--neon-pink);">0ms</div>
+                            <p style="font-size: 0.8rem;">UI LATENCY</p>
+                        </div>
+                    </div>
+                    <p style="margin-top: 30px; font-size: 0.9rem; text-align: center; opacity: 0.7;">Our disk-based
+                        serialization layer saves complex code analytics so they are ready before the AI even finishes
+                        reading your prompt.</p>
+                </div>
+            </div>
+
+            <!-- 15. The Summary: User Value -->
+            <div class="slide">
+                <h2>Why Architect.AI?</h2>
+                <div class="grid-3">
+                    <div style="text-align: center;">
+                        <div style="font-size: 4rem; color: var(--neon-blue);"><i class="fa-solid fa-stopwatch"></i>
+                        </div>
+                        <h3 style="margin-top: 20px;">Speed</h3>
+                        <p>Go from meeting to PR in 15 minutes instead of 3 days.</p>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 4rem; color: var(--neon-purple);"><i
+                                class="fa-solid fa-shield-virus"></i></div>
+                        <h3 style="margin-top: 20px;">Quality</h3>
+                        <p>Neural Judge audits every line. No more sloppy AI boilerplate.</p>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 4rem; color: var(--neon-pink);"><i class="fa-solid fa-users-gear"></i>
+                        </div>
+                        <h3 style="margin-top: 20px;">Alignment</h3>
+                        <p>The AI learns your team's specific coding patterns automatically.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 16. The Vision -->
+            <div class="slide">
+                <h1>Code at the Speed of Thought.</h1>
+                <p style="font-size: 2rem; opacity: 0.6; margin-top: 20px;">Architect.AI: The Final Frontier of Software
+                    Engineering.</p>
+                <div style="margin-top: 60px; font-family: 'JetBrains Mono'; color: var(--neon-blue);">SYSTEM_ONLINE //
+                    ARCHITECT_READY</div>
+            </div>
+
+        </div>
+
+        <div class="nav-ui">
+            <div class="btn" onclick="prev()">PREV</div>
+            <div class="btn" style="background: var(--neon-blue); color:#000; font-weight: bold;" onclick="next()">NEXT
             </div>
         </div>
     </div>
 
-    <!-- Slide 4: System Capabilities -->
-    <div class="slide-container" id="slide4">
-        <h2 class="slide-title">1.2 System Capabilities</h2>
-        <div class="content-area">
-            <div class="bullet-list" style="display:grid; grid-template-columns: 1fr 1fr; gap: 40px; width: 100%;">
-                <div>
-                    <h3 style="margin-bottom: 20px;">Intelligence & Awareness</h3>
-                    <ul>
-                        <li><i class="fa-solid fa-chart-pie"></i> <strong>Complexity Clusters:</strong> Automatic
-                            K-Means grouping of Logic vs. Utilities.</li>
-                        <li><i class="fa-solid fa-robot"></i> <strong>Agentic Browsing:</strong> Real-time
-                            <code>read_file</code> tool execution for grounded answers.</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3 style="margin-bottom: 20px;">Creation Engine</h3>
-                    <ul>
-                        <li><i class="fa-solid fa-pen-nib"></i> <strong>Generative Canvas:</strong> Mermaid ERDs and
-                            Interactive HTML Prototypes.</li>
-                        <li><i class="fa-solid fa-sliders"></i> <strong>Self-Healing Validation:</strong> Automated
-                            syntax repair loop for generated artifacts.</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
+    <script>
+        let cur = 0;
+        const slides = document.querySelectorAll('.slide');
+        const bar = document.getElementById('bar');
+        const num = document.getElementById('num');
 
-    <!-- Slide 5: Section_Title (Architecture) -->
-    <div class="slide-container" id="slide5">
-        <div class="section-title-layout">
-            <h3 style="color: var(--neon-purple); font-family: 'Inter', sans-serif; letter-spacing: 2px;">SECTION 2</h3>
-            <hr style="background: linear-gradient(to right, transparent, var(--neon-purple), transparent);">
-            <h2>THE ARCHITECTURE</h2>
-            <p class="subtitle">Symbolic vs Generative</p>
-        </div>
-    </div>
+        function set(n) {
+            slides.forEach((s, i) => {
+                s.classList.remove('active');
+                if (i === n) s.classList.add('active');
+            });
+            cur = n;
+            bar.style.width = ((n + 1) / slides.length) * 100 + '%';
+            num.innerText = (n + 1).toString().padStart(2, '0') + ' / ' + slides.length;
+        }
 
-    <!-- Slide 6: The Double Brain -->
-    <div class="slide-container" id="slide6">
-        <h2 class="slide-title">2.1 The Double Brain</h2>
-        <div class="content-area">
-            <div class="two-column tiled">
-                <div style="border-color: var(--neon-blue);">
-                    <h3><i class="fa-solid fa-project-diagram"></i> Symbolic Brain (Facts)</h3>
-                    <p>The Knowledge Graph, Pattern Mining, and RAG. This is static, deterministic data.</p>
-                    <p><strong>It doesn't hallucinate.</strong> It knows that <code>User.py</code> imports
-                        <code>Auth.py</code>.</p>
-                </div>
-                <div style="border-color: var(--neon-purple);">
-                    <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Generative Brain (Intuition)</h3>
-                    <p>The LLM (Cerebras, Groq, or local Ollama). It takes the facts from the Symbolic brain and turns
-                        them into human-like artifacts.</p>
-                </div>
-            </div>
-        </div>
-    </div>
+        function next() { if (cur < slides.length - 1) set(cur + 1); }
+        function prev() { if (cur > 0) set(cur - 1); }
 
-    <!-- Slide 7: Section_Title (Deep Dives) -->
-    <div class="slide-container" id="slide7">
-        <div class="section-title-layout">
-            <h3 style="color: #45A29E; font-family: 'Inter', sans-serif; letter-spacing: 2px;">SECTION 3</h3>
-            <hr style="background: linear-gradient(to right, transparent, #45A29E, transparent);">
-            <h2>TECHNICAL DEEP DIVES</h2>
-            <p class="subtitle">The Secret Sauce</p>
-        </div>
-    </div>
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') next();
+            if (e.key === 'ArrowLeft') prev();
+        });
 
-    <!-- Slide 8: ML Pipeline -->
-    <div class="slide-container bleed-image-layout" id="slide8">
-        <div class="content-container">
-            <h2 class="slide-title" style="font-size:42px;">3.1 ML Pipeline</h2>
-            <div class="bleed-text-side">
-                <ul style="list-style:none; padding:0; font-size:15px;">
-                    <li style="margin-bottom:10px"><strong style="color:var(--neon-blue)">1. Metric Extraction:</strong>
-                        LOC, Import Count, Cyclomatic Complexity.</li>
-                    <li style="margin-bottom:10px"><strong style="color:var(--neon-blue)">2. Normalization:</strong>
-                        StandardScaler ensures large files don't drown small critical ones.</li>
-                    <li style="margin-bottom:10px"><strong style="color:var(--neon-blue)">3. K-Means
-                            Clustering:</strong> Groups files into 4 core archetypes:</li>
-                    <ul style="padding-left: 20px; font-size: 14px; color: var(--text-muted); margin-bottom: 10px;">
-                        <li>• Cluster 0: <strong>Utilities</strong> (Helpers)</li>
-                        <li>• Cluster 1: <strong>DTOs</strong> (Data Models)</li>
-                        <li>• Cluster 2: <strong>Business Logic</strong> (Core)</li>
-                        <li>• Cluster 3: <strong>Entrypoints</strong> (System)</li>
-                    </ul>
-                    <li style="margin-bottom:10px"><strong style="color:var(--neon-blue)">4. Prompt Injection:</strong>
-                        "Agent, you are looking at a Cluster 2 file."</li>
-                </ul>
-            </div>
-        </div>
-        <div class="image-container">
-            <div class="visual-container">
-                <div class="cluster-visual">
-                    <div class="data-point" style="top:30%; left:30%; background:var(--neon-purple);"></div>
-                    <div class="data-point" style="top:35%; left:28%; background:var(--neon-purple);"></div>
-                    <div class="data-point" style="top:60%; left:70%; background:var(--neon-blue);"></div>
-                    <div class="data-point" style="top:65%; left:68%; background:var(--neon-blue);"></div>
-                    <svg style="position:absolute; width:100%; height:100%;">
-                        <line x1="30%" y1="30%" x2="70%" y2="60%" style="stroke:rgba(255,255,255,0.1);stroke-width:1" />
-                    </svg>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Slide 9: Agentic Flow -->
-    <div class="slide-container" id="slide9">
-        <h2 class="slide-title">3.2 The Agentic Flow (ReAct)</h2>
-        <div class="content-area">
-            <div class="tiled-content">
-                <div class="tile">
-                    <div class="icon"><i class="fa-solid fa-question"></i></div>
-                    <h3>1. Input</h3>
-                    <p>User asks a complex question.</p>
-                </div>
-                <div class="tile">
-                    <div class="icon"><i class="fa-solid fa-brain"></i></div>
-                    <h3>2. Reasoning</h3>
-                    <p>"I need to read <code>main.py</code> to answer this."</p>
-                </div>
-                <div class="tile">
-                    <div class="icon"><i class="fa-solid fa-wrench"></i></div>
-                    <h3>3. Tool Use</h3>
-                    <p>Calls <code>read_file</code>, <code>search_code</code>, or <code>get_project_overview</code>.</p>
-                </div>
-                <div class="tile">
-                    <div class="icon"><i class="fa-solid fa-check"></i></div>
-                    <h3>4. Answer</h3>
-                    <p>Synthesizes tool output into final response.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Slide 10: Data Lifecycle -->
-    <div class="slide-container" id="slide10">
-        <h2 class="slide-title">3.3 Lifecycle of a User Request</h2>
-        <div class="content-area">
-            <div class="two-column tiled">
-                <div>
-                    <h3><i class="fa-solid fa-magnifying-glass"></i> Hybrid RAG & KG</h3>
-                    <p><strong>RAG (Search):</strong> Uses <strong>Vector + BM25 (Keyword)</strong> search to find exact
-                        code snippets with 99% accuracy.</p>
-                    <p><strong>KG (Filter):</strong> Extracts entities to find relevant "islands" in the graph (Map
-                        Zoom).</p>
-                </div>
-                <div>
-                    <h3><i class="fa-solid fa-bell"></i> PM & ML</h3>
-                    <p><strong>PM (Trigger):</strong> Meeting notes trigger code-smell checks (Alarm).</p>
-                    <p><strong>ML (Context):</strong> Tells AI if it's viewing a "Complex Engine" or "Simple Helper"
-                        (Expert Glasses).</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Slide 11: Section_Title (Feature Atlas) -->
-    <div class="slide-container" id="slide11">
-        <div class="section-title-layout">
-            <h3 style="color: #fff; font-family: 'Inter', sans-serif; letter-spacing: 2px;">SECTION 4</h3>
-            <hr style="background: linear-gradient(to right, transparent, #fff, transparent);">
-            <h2>FEATURE ATLAS</h2>
-            <p class="subtitle">Component Reference</p>
-        </div>
-    </div>
-
-    <!-- Slide 12: Chat & Artifacts -->
-    <div class="slide-container" id="slide12">
-        <h2 class="slide-title">4.1 Chat & Artifacts</h2>
-        <div class="content-area">
-            <div class="two-column tiled">
-                <div>
-                    <h3><i class="fa-solid fa-comments"></i> Floating Chat</h3>
-                    <p><strong>Legacy:</strong> Quick no-overhead queries.</p>
-                    <p><strong>Agentic:</strong> Uses tools to browse project.</p>
-                    <p><strong>Session:</strong> Auto-saves history to local DB.</p>
-                </div>
-                <div>
-                    <h3><i class="fa-solid fa-layer-group"></i> Artifact Engine</h3>
-                    <p><strong>Diagrams:</strong> ERD, Sequence, Gantt, Class, Mindmap, State, Flowchart.</p>
-                    <p><strong>Export Suite:</strong> Single-click PNG, SVG, or PDF (CairoSVG fallback).</p>
-                    <p><strong>Time-Travel:</strong> Version history DB.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Slide 13: Editor & Intelligence -->
-    <div class="slide-container" id="slide13">
-        <h2 class="slide-title">4.2 Editor & Intelligence</h2>
-        <div class="content-area">
-            <div class="two-column tiled">
-                <div>
-                    <h3><i class="fa-solid fa-code"></i> HTML Editor</h3>
-                    <p><strong>Live Preview:</strong> Secured iFrame rendering.</p>
-                    <p><strong>Refactor:</strong> "Turn this into a dashboard."</p>
-                    <p><strong>Isolation:</strong> AI focuses on specific blocks to preserve stability.</p>
-                </div>
-                <div>
-                    <h3><i class="fa-solid fa-brain"></i> Intelligence Suite</h3>
-                    <p><strong>Importance Mapping:</strong> 0.0 - 1.0 Centrality Score (high importance = more RAG
-                        attention).</p>
-                    <p><strong>Code Smells:</strong> Detects God Classes, Feature Envy, Singletons, Factories.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Slide 14: Section_Title (Production) -->
-    <div class="slide-container" id="slide14">
-        <div class="section-title-layout">
-            <h3 style="color: var(--neon-blue); font-family: 'Inter', sans-serif; letter-spacing: 2px;">SECTION 5</h3>
-            <hr>
-            <h2>PRODUCTION & SECURITY</h2>
-            <p class="subtitle">Deployment Architecture</p>
-        </div>
-    </div>
-
-    <!-- Slide 15: Security & Deployment -->
-    <div class="slide-container" id="slide15">
-        <h2 class="slide-title">5.1 Enterprise Readiness</h2>
-        <div class="content-area">
-            <div class="two-column tiled">
-                <div>
-                    <h3><i class="fa-solid fa-server"></i> Deployment</h3>
-                    <ul style="font-size:16px;">
-                        <li><strong>Containerization:</strong> Docker-ready with async startup pipeline.</li>
-                        <li><strong>Local-First:</strong> Prioritizes local Ollama execution for privacy.</li>
-                        <li><strong>Async Boot:</strong> Parallel bootup of RAG/KG/ML services.</li>
-                    </ul>
-                </div>
-                <div>
-                    <h3><i class="fa-solid fa-shield-halved"></i> Security Layers</h3>
-                    <ul style="font-size:16px;">
-                        <li><strong>IP Banning:</strong> StructuredLoggingMiddleware + Rate Limiter.</li>
-                        <li><strong>CORS:</strong> Strict origin validation middleware.</li>
-                        <li><strong>Secrets:</strong> Pydantic Settings singleton for ENV management.</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Slide 16: FAQ -->
-    <div class="slide-container" id="slide16">
-        <h2 class="slide-title">5.2 System FAQ</h2>
-        <div class="content-area">
-            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px; width:100%;">
-                <div class="tile">
-                    <h3 style="font-size:20px; color:#fff;">Cloud Outage?</h3>
-                    <p style="font-size:16px; color:var(--neon-blue);">"Fallback Pipeline"</p>
-                    <p style="font-size:14px;">If Groq 500s, we route to local Ollama. User sees nothing.</p>
-                </div>
-                <div class="tile">
-                    <h3 style="font-size:20px; color:#fff;">Scale Limits?</h3>
-                    <p style="font-size:16px; color:var(--neon-blue);">"Importance Maps"</p>
-                    <p style="font-size:14px;">We prioritize high-centrality files, not everything.</p>
-                </div>
-                <div class="tile">
-                    <h3 style="font-size:20px; color:#fff;">Invalid Output?</h3>
-                    <p style="font-size:16px; color:var(--neon-blue);">"Agentic Repair"</p>
-                    <p style="font-size:14px;">Validation Service fixes syntax before rendering.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Slide 17: Closing -->
-    <div class="slide-container" id="slide17">
-        <div class="qa-layout">
-            <h2 style="font-size: 50px; color: #fff;">"The power isn't in the AI...</h2>
-            <p style="font-size: 30px; color: var(--neon-blue); margin-top:20px;">...it's in the integration of
-                traditional ML metrics with generative reasoning."</p>
-            <p style="margin-top: 50px; font-size: 20px; color: var(--text-muted);">ARCHITECT.AI</p>
-        </div>
-    </div>
-
+        set(0);
+    </script>
 </body>
 
 </html>

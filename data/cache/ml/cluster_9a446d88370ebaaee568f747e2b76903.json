@@ -1,0 +1,63 @@
+{
+  "cluster_labels": [
+    2,
+    4,
+    3,
+    0,
+    1,
+    0,
+    2,
+    0,
+    0,
+    0
+  ],
+  "cluster_stats": {
+    "0": {
+      "size": 5,
+      "samples": [
+        "analysis.py",
+        "cache.py",
+        "code_search.py",
+        "config.py",
+        "context.py"
+      ],
+      "avg_complexity": 13.0,
+      "avg_lines": 123.0
+    },
+    "1": {
+      "size": 1,
+      "samples": [
+        "assistant.py"
+      ],
+      "avg_complexity": 69.0,
+      "avg_lines": 761.0
+    },
+    "2": {
+      "size": 2,
+      "samples": [
+        "main.py",
+        "chat.py"
+      ],
+      "avg_complexity": 100.5,
+      "avg_lines": 723.5
+    },
+    "3": {
+      "size": 1,
+      "samples": [
+        "ai.py"
+      ],
+      "avg_complexity": 240.0,
+      "avg_lines": 1605.0
+    },
+    "4": {
+      "size": 1,
+      "samples": [
+        "__init__.py"
+      ],
+      "avg_complexity": 2.0,
+      "avg_lines": 9.0
+    }
+  },
+  "n_clusters": 5,
+  "method": "kmeans"
+}

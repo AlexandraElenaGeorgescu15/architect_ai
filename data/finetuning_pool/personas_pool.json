@@ -1,0 +1,386 @@
+[
+  {
+    "artifact_type": "personas",
+    "content": "Good Cloud Content",
+    "meeting_notes": "Test requirements",
+    "validation_score": 95.0,
+    "model_used": "llama-3.3-70b-versatile",
+    "context": {
+      "meeting_notes": "Test requirements",
+      "repo_id": null,
+      "created_at": "2026-01-28T05:14:24.624202",
+      "universal_context": {
+        "project_directories": [
+          "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln",
+          "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project"
+        ],
+        "total_files": 69,
+        "key_entities": [],
+        "project_map": {
+          "directories": {
+            "final-proj-sln": {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln",
+              "file_count": 14,
+              "subdirectories": []
+            },
+            "final_project": {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project",
+              "file_count": 55,
+              "subdirectories": []
+            }
+          },
+          "file_types": {
+            ".sln": 1,
+            ".json": 9,
+            ".cs": 9,
+            ".csproj": 1,
+            ".md": 1,
+            ".ico": 1,
+            ".html": 7,
+            ".ts": 27,
+            ".scss": 7,
+            ".less": 1,
+            ".jpg": 2
+          },
+          "key_files": [
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Program.cs",
+              "name": "Program.cs",
+              "importance": 1.0
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs",
+              "name": "Controller.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs",
+              "name": "WeatherForecastController.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs",
+              "name": "IUserService.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+              "name": "UserService.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.spec.ts",
+              "name": "authentication.service.spec.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts",
+              "name": "authentication.service.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.spec.ts",
+              "name": "phone.service.spec.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts",
+              "name": "phone.service.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs",
+              "name": "UserDto.cs",
+              "importance": 0.8
+            }
+          ]
+        }
+      },
+      "sources": {
+        "rag": {
+          "context": "=== PROJECT CONTEXT (Universal Knowledge + Targeted Retrieval) ===\n\n\ud83d\udcc4 RELEVANT CODE SNIPPETS (ranked by importance + relevance):\n\n\n--- Snippet 1 \u2b50\u2b50 (score: 0.187) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\angular.json\n              ],\n              \"outputHashing\": \"all\"\n            },\n            \"development\": {\n              \"buildOptimizer\": false,\n              \"optimization\": false,\n              \"vendorChunk\": true,\n              \"extractLicenses\": false,\n              \"sourceMap\": true,\n              \"namedChunks\": true\n            }\n          },\n          \"defaultConfiguration\": \"production\"\n        },\n        \"serve\": {\n          \"builder\": \"@angular-devkit/build-angular:dev-server\",\n          \"configurations\": {\n            \"production\": {\n              \"browserTarget\": \"final_project:build:production\"\n            },\n            \"development\": {\n              \"browserTarget\": \"final_project:build:development\"\n            }\n          },\n          \"defaultConfiguration\": \"development\"\n        },\n        \"extract-i18n\": {\n          \"builder\": \"@angular-devkit/build-angular:extract-i18n\",\n          \"options\": {\n            \"browserTarget\": \"final_project:build\"\n          }\n        },\n        \"test\": {\n          \"builder\": \"@angular-devkit/build-angular:karma\",\n          \"options\": {\n            \"polyfills\": [\n              \"zone.js\",\n              \"zone.js/testing\"\n            ],\n            \"tsConfig\": \"tsconfig.spec.json\",\n            \"inlineStyleLanguage\": \"scss\",\n            \"assets\": [\n              \"src/favicon.ico\",\n              \"src/assets\"\n            ],\n            \"styles\": [\n              \"src/styles.scss\"\n            ],\n            \"scripts\": []\n          }\n        }\n      }\n    }\n  },\n  \"cli\": {\n    \"analytics\": false\n  }\n}\n\n\n--- Snippet 2 \u2b50\u2b50 (score: 0.184) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html\n<div class=\"Register\">\n  <div class=\"Register__background-image\"></div>\n<form [formGroup]=\"registerForm\" (ngSubmit)=\"onSubmit()\">\n  <div>\n    <label for=\"email\">Email:</label>\n    <input type=\"email\" formControlName=\"email\" id=\"email\" required>\n    <div *ngIf=\"registerForm.get('email')?.invalid && (registerForm.get('email')?.dirty || registerForm.get('email')?.touched)\">\n      <div *ngIf=\"registerForm.get('email')?.errors?.['required']\">Email is required.</div>\n      <div *ngIf=\"registerForm.get('email')?.errors?.['email']\">Invalid email format.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"password\">Password:</label>\n    <input type=\"password\" formControlName=\"password\" id=\"password\" required>\n    <div *ngIf=\"registerForm.get('password')?.invalid && (registerForm.get('password')?.dirty || registerForm.get('password')?.touched)\">\n      <div *ngIf=\"registerForm.get('password')?.errors?.['required']\">Password is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"confirmPassword\">Confirm Password:</label>\n    <input type=\"password\" formControlName=\"confirmPassword\" id=\"confirmPassword\" required>\n    <div *ngIf=\"registerForm.get('confirmPassword')?.invalid && (registerForm.get('confirmPassword')?.dirty || registerForm.get('confirmPassword')?.touched)\">\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['required']\">Confirmation password is required.</div>\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['passwordMismatch']\">Passwords do not match.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"firstName\">First Name:</label>\n    <input type=\"text\" formControlName=\"firstName\" id=\"firstName\" required>\n    <div *ngIf=\"registerForm.get('firstName')?.invalid && (registerForm.get('firstName')?.dirty || registerForm.get('firstName')?.touched)\">\n      <div *ngIf=\"registerForm.get('firstName')?.errors?.['required']\">First name is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"lastName\">Last Name:</label>\n\n--- Snippet 3 \u2b50\u2b50 (score: 0.178) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html\n<input nz-input [(ngModel)]=\"searchQuery\" placeholder=\"Search our phones\" />\n<button nz-button nzType=\"primary\" nzSize=\"large\" (click)=\"sortPhones('id')\">ID</button>\n<button nz-button nzType=\"primary\" nzSize=\"large\" (click)=\"sortPhones('brand')\">Brand</button>\n<button nz-button nzType=\"primary\" nzSize=\"large\" (click)=\"sortPhones('model')\">Model</button>\n<button nz-button nzType=\"primary\" nzSize=\"large\" (click)=\"sortPhones('storage')\">Storage (GB)</button>\n<button nz-button nzType=\"primary\" nzSize=\"large\" (click)=\"sortPhones('price')\">Price ($)</button>\n<button nz-button nzType=\"primary\" nzSize=\"large\" nzShape=\"circle\" (click)=\"logout()\">Logout</button>\n\n<div class=\"table-container\">\n<ng-container *ngIf=\"phones$ | async as phones\">\n  <nz-table #table [nzData]=\"phones\" nzBordered \n  nz-pagination [nzPageIndex]=\"currentPage\" [nzPageSize]=\"pageSize\"\n  [nzTotal]=\"phones.length\" (nzPageIndexChange)=\"onPageChange($event)\">\n     <thead>\n        <tr>\n          <th>ID</th>\n          <th>Brand</th>\n          <th>Model</th>\n          <th>Storage (GB)</th>\n          <th>Price ($)</th>\n          <th>Edit</th>\n          <th>Details</th>\n          <th>Delete</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr *ngFor=\"let phone of getFilteredPhones()\">\n          <td>\n                <span nz-icon nzType=\"phone\" nzTheme=\"outline\"></span>\n                {{ phone.id }}\n          </td>\n          <td>{{ phone.brand }}</td>\n          <td>{{ phone.model | nameUppercase  }}</td>\n          <td>{{ phone.storage }}</td>\n          <td>{{ phone.price }}</td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"edit\" (click)=\"editPhone(phone)\">Edit</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"info-circle\" (click)=\"openDetailsModal(phone)\">Details</button>\n          </td>\n          <td>\n\n--- Snippet 4 \u2b50\u2b50 (score: 0.173) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts\nexport interface User {\n    id?: string;\n    email: string,\n    password: string,\n    firstName: string,\n    lastName: string,\n}\n\n--- Snippet 5 \u2b50\u2b50 (score: 0.173) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs\n    public interface IUserService\n    {\n        Task<bool> Register(UserDto userDto);\n        Task<UserDto?> Login(UserDto userDto);\n    }\n}\n\n\n--- Snippet 6 \u2b50\u2b50 (score: 0.171) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts\nexport interface Phone {\n    id: number;\n    brand: string;\n    model: string;\n    storage: number;\n    price: number;\n  }\n  \n\n--- Snippet 7 \u2b50\u2b50 (score: 0.171) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs\n    public class UserService : IUserService\n    {\n        private readonly IMongoCollection<UserDto> _users;\n        public UserService(IMongoDBSettings settings)\n        {\n            var client = new MongoClient(settings.ConnectionString);\n            var database = client.GetDatabase(settings.DatabaseName);\n\n            _users = database.GetCollection<UserDto>(settings.CollectionName);\n        }\n\n        public async Task<bool> Register(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n            Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n            Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n        );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n\n            if (user != null)\n            {\n                return false; // Registration failed\n            }\n            else { \n\n                userDto.Id = Guid.NewGuid();\n                await _users.InsertOneAsync(userDto);\n                return true;\n                 \n            }\n        }\n\n        public async Task<UserDto?> Login(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n                Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n                Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n            );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n            if(user != null)\n            {\n                return user;\n\n            }\n            return null;\n        }\n\n    }\n}\n\n\n--- Snippet 8 \u2b50\u2b50 (score: 0.171) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md\n# FinalProject\n\nThis project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 15.2.4.\n\n## Development server\n\nRun `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.\n\n## Code scaffolding\n\nRun `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.\n\n## Build\n\nRun `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.\n\n## Running unit tests\n\nRun `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).\n\n## Running end-to-end tests\n\nRun `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.\n\n## Further help\n\nTo get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.\n\n\n--- Snippet 9 \u2b50\u2b50 (score: 0.171) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs\npublic class UserDto\n{\n    public Guid Id { get; set; }\n    public string Email { get; set; }\n    public string Password { get; set; }\n    public string FirstName { get; set; }\n    public string LastName { get; set; }\n}\n\n\n--- Snippet 10 \u2b50\u2b50 (score: 0.170) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Properties\\launchSettings.json\n\ufeff{\n  \"$schema\": \"https://json.schemastore.org/launchsettings.json\",\n  \"iisSettings\": {\n    \"windowsAuthentication\": false,\n    \"anonymousAuthentication\": true,\n    \"iisExpress\": {\n      \"applicationUrl\": \"http://localhost:12049\",\n      \"sslPort\": 44372\n    }\n  },\n  \"profiles\": {\n    \"registration_api\": {\n      \"commandName\": \"Project\",\n      \"dotnetRunMessages\": true,\n      \"launchBrowser\": true,\n      \"launchUrl\": \"swagger\",\n      \"applicationUrl\": \"https://localhost:7214;\",\n      \"environmentVariables\": {\n        \"ASPNETCORE_ENVIRONMENT\": \"Development\"\n      }\n    },\n    \"IIS Express\": {\n      \"commandName\": \"IISExpress\",\n      \"launchBrowser\": true,\n      \"launchUrl\": \"swagger\",\n      \"environmentVariables\": {\n        \"ASPNETCORE_ENVIRONMENT\": \"Development\"\n      }\n    }\n  }\n}\n\n\n--- Snippet 11 \u2b50\u2b50 (score: 0.169) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs\n    public class UsersController : ControllerBase\n    {\n        private readonly IUserService _userService;\n\n        public UsersController(IUserService userService)\n        {\n            _userService = userService;\n        }\n\n        [HttpPost(\"register\")]\n        public async Task<IActionResult> Register(UserDto userDto)\n        {\n            var success = await _userService.Register(userDto);\n\n            if (success)\n            {\n                return Ok(); // Registration successful\n            }\n            else\n            {\n                return BadRequest(); // Registration failed\n            }\n        }\n\n        [HttpPost(\"login\")]\n        public async Task<IActionResult> Login([FromBody] UserDto userDto)\n        {\n            var success = await _userService.Login(userDto);\n            if (success==null)\n            {\n                return NotFound(\"Announcement was not found\");\n            }\n\n            return Ok(success); // Login successful\n        }\n\n    }\n}\n\n\n--- Snippet 12 \u2b50\u2b50 (score: 0.169) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\IMongoDBSettings.cs\n    public interface IMongoDBSettings\n    {\n        string CollectionName { get; set; }\n        string ConnectionString { get; set; }\n        string DatabaseName { get; set; }\n    }\n\n}\n\n\n--- Snippet 13 \u2b50\u2b50 (score: 0.169) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\appsettings.json\n{\n  \"Logging\": {\n    \"LogLevel\": {\n      \"Default\": \"Information\",\n      \"Microsoft.AspNetCore\": \"Warning\"\n    }\n  },\n \n  \"MongoDBSettings\": {\n    \"CollectionName\": \"Users\",\n    \"ConnectionString\": \"mongodb://localhost:27017\",\n    \"DatabaseName\": \"user\"\n  }\n}\n\n\n--- Snippet 14 \u2b50\u2b50 (score: 0.169) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\appsettings.Development.json\n{\n  \"Logging\": {\n    \"LogLevel\": {\n      \"Default\": \"Information\",\n      \"Microsoft.AspNetCore\": \"Warning\"\n    }\n  }\n}\n\n\n--- Snippet 15 \u2b50\u2b50 (score: 0.168) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts\nexport class AuthenticationModule { }\n\n\n--- Snippet 16 \u2b50\u2b50 (score: 0.168) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\package.json\n{\n  \"name\": \"final-project\",\n  \"version\": \"0.0.0\",\n  \"scripts\": {\n    \"ng\": \"ng\",\n    \"start\": \"ng serve\",\n    \"build\": \"ng build\",\n    \"watch\": \"ng build --watch --configuration development\",\n    \"test\": \"ng test\"\n  },\n  \"private\": true,\n  \"dependencies\": {\n    \"@angular/animations\": \"^15.2.0\",\n    \"@angular/cdk\": \"~15.2.1\",\n    \"@angular/common\": \"^15.2.0\",\n    \"@angular/compiler\": \"^15.2.0\",\n    \"@angular/core\": \"^15.2.0\",\n    \"@angular/forms\": \"^15.2.0\",\n    \"@angular/material\": \"~15.2.1\",\n    \"@angular/platform-browser\": \"^15.2.0\",\n    \"@angular/platform-browser-dynamic\": \"^15.2.0\",\n    \"@angular/router\": \"^15.2.0\",\n    \"ng-zorro-antd\": \"^15.1.0\",\n    \"rxjs\": \"~7.8.0\",\n    \"tslib\": \"^2.3.0\",\n    \"zone.js\": \"~0.12.0\"\n  },\n  \"devDependencies\": {\n    \"@angular-devkit/build-angular\": \"^15.2.4\",\n    \"@angular/cli\": \"~15.2.4\",\n    \"@angular/compiler-cli\": \"^15.2.0\",\n    \"@types/jasmine\": \"~4.3.0\",\n    \"jasmine-core\": \"~4.5.0\",\n    \"karma\": \"~6.4.0\",\n    \"karma-chrome-launcher\": \"~3.1.0\",\n    \"karma-coverage\": \"~2.2.0\",\n    \"karma-jasmine\": \"~5.1.0\",\n    \"karma-jasmine-html-reporter\": \"~2.0.0\",\n    \"typescript\": \"~4.9.4\"\n  }\n}\n\n--- Snippet 17 \u2b50\u2b50 (score: 0.168) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts\nexport class LoginComponent implements OnInit{\n  loginForm: FormGroup;\n  \n  constructor(\n    private formBuilder: FormBuilder,\n    private authService: AuthenticationService,\n    private router: Router\n  ) {\n    this.loginForm = this.formBuilder.group({\n      email: ['', [Validators.required, Validators.email]],\n      password: ['', Validators.required],\n      rememberMe: [false]\n    });\n  }\n\n  ngOnInit(): void {\n    this.checkToken();\n  }\n\n  onSubmit() {\n    if (this.loginForm.invalid) {\n      return;\n    }\n    const rememberMe = this.loginForm.value.rememberMe;\n  \n    let user: User = {\n      email: this.loginForm.value.email,\n      password: this.loginForm.value.password,\n      lastName: \"name\",\n      firstName: \"name\"\n    };\n  \n    this.authService.login(user).subscribe(\n      x => {\n        console.log(x);\n        const token = x.token;\n        if (rememberMe) {\n          localStorage.setItem('authToken', token);\n          localStorage.setItem('rememberMe', 'true');\n        } else {\n          sessionStorage.setItem('authToken', token);\n          localStorage.setItem('rememberMe', 'false');\n        }\n        this.router.navigate(['/PAGE']);\n      },\n      error => {\n        if (error.status === 401) {\n          console.log('Invalid email or password.');\n        } else {\n          console.log('An error occurred. Please try again later.');\n        }\n      }\n    );\n  }\n\n  checkToken(): void {\n    const rememberMe = localStorage.getItem('rememberMe') === 'true';\n    const token = rememberMe ? localStorage.getItem('authToken') : sessionStorage.getItem('authToken');\n    if (rememberMe) {\n      this.router.navigate(['/PAGE']);\n    }\n  }\n  \n\n  get email() {\n    return this.loginForm.get('email');\n  }\n\n  get password() {\n    return this.loginForm.get('password');\n  }\n\n  redirectToRegister() {\n    this.router.navigate(['/register']);\n  }\n}\n\n\n--- Snippet 18 \u2b50\u2b50 (score: 0.168) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\WeatherForecast.cs\n    public class WeatherForecast\n    {\n        public DateTime Date { get; set; }\n\n        public int TemperatureC { get; set; }\n\n        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);\n\n        public string? Summary { get; set; }\n    }\n}",
+          "snippets": [
+            {
+              "content": "              ],\n              \"outputHashing\": \"all\"\n            },\n            \"development\": {\n              \"buildOptimizer\": false,\n              \"optimization\": false,\n              \"vendorChunk\": true,\n              \"extractLicenses\": false,\n              \"sourceMap\": true,\n              \"namedChunks\": true\n            }\n          },\n          \"defaultConfiguration\": \"production\"\n        },\n        \"serve\": {\n          \"builder\": \"@angular-devkit/build-angular:dev-server\",\n          \"configurations\": {\n            \"production\": {\n              \"browserTarget\": \"final_project:build:production\"\n            },\n            \"development\": {\n              \"browserTarget\": \"final_project:build:development\"\n            }\n          },\n          \"defaultConfiguration\": \"development\"\n        },\n        \"extract-i18n\": {\n          \"builder\": \"@angular-devkit/build-angular:extract-i18n\",\n          \"options\": {\n            \"browserTarget\": \"final_project:build\"\n          }\n        },\n        \"test\": {\n          \"builder\": \"@angular-devkit/build-angular:karma\",\n          \"options\": {\n            \"polyfills\": [\n              \"zone.js\",\n              \"zone.js/testing\"\n            ],\n            \"tsConfig\": \"tsconfig.spec.json\",\n            \"inlineStyleLanguage\": \"scss\",\n            \"assets\": [\n              \"src/favicon.ico\",\n              \"src/assets\"\n            ],\n            \"styles\": [\n              \"src/styles.scss\"\n            ],\n            \"scripts\": []\n          }\n        }\n      }\n    }\n  },\n  \"cli\": {\n    \"analytics\": false\n  }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\angular.json",
+              "score": 0.18719117907409044,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 114,
+                "file_hash": "bd55415c5b4f3d18996dce424b2fbd7205bfa1c2",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\angular.json",
+                "indexed_at": "2026-01-28T02:15:32.541193",
+                "start_line": 56
+              }
+            },
+            {
+              "content": "<div class=\"Register\">\n  <div class=\"Register__background-image\"></div>\n<form [formGroup]=\"registerForm\" (ngSubmit)=\"onSubmit()\">\n  <div>\n    <label for=\"email\">Email:</label>\n    <input type=\"email\" formControlName=\"email\" id=\"email\" required>\n    <div *ngIf=\"registerForm.get('email')?.invalid && (registerForm.get('email')?.dirty || registerForm.get('email')?.touched)\">\n      <div *ngIf=\"registerForm.get('email')?.errors?.['required']\">Email is required.</div>\n      <div *ngIf=\"registerForm.get('email')?.errors?.['email']\">Invalid email format.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"password\">Password:</label>\n    <input type=\"password\" formControlName=\"password\" id=\"password\" required>\n    <div *ngIf=\"registerForm.get('password')?.invalid && (registerForm.get('password')?.dirty || registerForm.get('password')?.touched)\">\n      <div *ngIf=\"registerForm.get('password')?.errors?.['required']\">Password is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"confirmPassword\">Confirm Password:</label>\n    <input type=\"password\" formControlName=\"confirmPassword\" id=\"confirmPassword\" required>\n    <div *ngIf=\"registerForm.get('confirmPassword')?.invalid && (registerForm.get('confirmPassword')?.dirty || registerForm.get('confirmPassword')?.touched)\">\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['required']\">Confirmation password is required.</div>\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['passwordMismatch']\">Passwords do not match.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"firstName\">First Name:</label>\n    <input type=\"text\" formControlName=\"firstName\" id=\"firstName\" required>\n    <div *ngIf=\"registerForm.get('firstName')?.invalid && (registerForm.get('firstName')?.dirty || registerForm.get('firstName')?.touched)\">\n      <div *ngIf=\"registerForm.get('firstName')?.errors?.['required']\">First name is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"lastName\">Last Name:</label>",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html",
+              "score": 0.18382783160725205,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 35,
+                "file_hash": "809ad6527386f8bb842a99bb2ae1fa79120a6b95",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html",
+                "indexed_at": "2026-01-28T02:15:40.722216",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "<input nz-input [(ngModel)]=\"searchQuery\" placeholder=\"Search our phones\" />\n<button nz-button nzType=\"primary\" nzSize=\"large\" (click)=\"sortPhones('id')\">ID</button>\n<button nz-button nzType=\"primary\" nzSize=\"large\" (click)=\"sortPhones('brand')\">Brand</button>\n<button nz-button nzType=\"primary\" nzSize=\"large\" (click)=\"sortPhones('model')\">Model</button>\n<button nz-button nzType=\"primary\" nzSize=\"large\" (click)=\"sortPhones('storage')\">Storage (GB)</button>\n<button nz-button nzType=\"primary\" nzSize=\"large\" (click)=\"sortPhones('price')\">Price ($)</button>\n<button nz-button nzType=\"primary\" nzSize=\"large\" nzShape=\"circle\" (click)=\"logout()\">Logout</button>\n\n<div class=\"table-container\">\n<ng-container *ngIf=\"phones$ | async as phones\">\n  <nz-table #table [nzData]=\"phones\" nzBordered \n  nz-pagination [nzPageIndex]=\"currentPage\" [nzPageSize]=\"pageSize\"\n  [nzTotal]=\"phones.length\" (nzPageIndexChange)=\"onPageChange($event)\">\n     <thead>\n        <tr>\n          <th>ID</th>\n          <th>Brand</th>\n          <th>Model</th>\n          <th>Storage (GB)</th>\n          <th>Price ($)</th>\n          <th>Edit</th>\n          <th>Details</th>\n          <th>Delete</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr *ngFor=\"let phone of getFilteredPhones()\">\n          <td>\n                <span nz-icon nzType=\"phone\" nzTheme=\"outline\"></span>\n                {{ phone.id }}\n          </td>\n          <td>{{ phone.brand }}</td>\n          <td>{{ phone.model | nameUppercase  }}</td>\n          <td>{{ phone.storage }}</td>\n          <td>{{ phone.price }}</td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"edit\" (click)=\"editPhone(phone)\">Edit</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"info-circle\" (click)=\"openDetailsModal(phone)\">Details</button>\n          </td>\n          <td>",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html",
+              "score": 0.17787267811074617,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 42,
+                "file_hash": "9c379e06d25408857a72df401bf552f0e767bea7",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html",
+                "indexed_at": "2026-01-28T02:15:46.315848",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "export interface User {\n    id?: string;\n    email: string,\n    password: string,\n    firstName: string,\n    lastName: string,\n}",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts",
+              "score": 0.17295081967213113,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 8,
+                "file_hash": "ff003281686afd38348adb1a08b158672ca98999",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts",
+                "indexed_at": "2026-01-28T02:15:48.206244",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "    public interface IUserService\n    {\n        Task<bool> Register(UserDto userDto);\n        Task<UserDto?> Login(UserDto userDto);\n    }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs",
+              "score": 0.17258064516129032,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 11,
+                "file_hash": "73b0c832d36de2cce303e872d692d128c3586195",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs",
+                "indexed_at": "2026-01-28T02:14:41.244833",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "export interface Phone {\n    id: number;\n    brand: string;\n    model: string;\n    storage: number;\n    price: number;\n  }\n  ",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts",
+              "score": 0.17125603864734298,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 8,
+                "file_hash": "73743034e52386bf35b19115aaf75b39fff72057",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts",
+                "indexed_at": "2026-01-28T02:15:47.876879",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "    public class UserService : IUserService\n    {\n        private readonly IMongoCollection<UserDto> _users;\n        public UserService(IMongoDBSettings settings)\n        {\n            var client = new MongoClient(settings.ConnectionString);\n            var database = client.GetDatabase(settings.DatabaseName);\n\n            _users = database.GetCollection<UserDto>(settings.CollectionName);\n        }\n\n        public async Task<bool> Register(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n            Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n            Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n        );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n\n            if (user != null)\n            {\n                return false; // Registration failed\n            }\n            else { \n\n                userDto.Id = Guid.NewGuid();\n                await _users.InsertOneAsync(userDto);\n                return true;\n                 \n            }\n        }\n\n        public async Task<UserDto?> Login(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n                Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n                Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n            );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n            if(user != null)\n            {\n                return user;\n\n            }\n            return null;\n        }\n\n    }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+              "score": 0.17105382180009046,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 58,
+                "file_hash": "ff9b3e84c3737cf9a0979f5770bcb732c95ec1d3",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+                "indexed_at": "2026-01-28T02:14:41.292223",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "# FinalProject\n\nThis project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 15.2.4.\n\n## Development server\n\nRun `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.\n\n## Code scaffolding\n\nRun `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.\n\n## Build\n\nRun `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.\n\n## Running unit tests\n\nRun `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).\n\n## Running end-to-end tests\n\nRun `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.\n\n## Further help\n\nTo get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md",
+              "score": 0.17074187884108866,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 28,
+                "file_hash": "f1c79a135116c7cb7e7bbee8627b3c7bbd843075",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md",
+                "indexed_at": "2026-01-28T02:15:35.920913",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "public class UserDto\n{\n    public Guid Id { get; set; }\n    public string Email { get; set; }\n    public string Password { get; set; }\n    public string FirstName { get; set; }\n    public string LastName { get; set; }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs",
+              "score": 0.17057057057057057,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 11,
+                "file_hash": "a33030529481f5ebd4c7836b0545a9154d174545",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs",
+                "indexed_at": "2026-01-28T02:14:40.989898",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "\ufeff{\n  \"$schema\": \"https://json.schemastore.org/launchsettings.json\",\n  \"iisSettings\": {\n    \"windowsAuthentication\": false,\n    \"anonymousAuthentication\": true,\n    \"iisExpress\": {\n      \"applicationUrl\": \"http://localhost:12049\",\n      \"sslPort\": 44372\n    }\n  },\n  \"profiles\": {\n    \"registration_api\": {\n      \"commandName\": \"Project\",\n      \"dotnetRunMessages\": true,\n      \"launchBrowser\": true,\n      \"launchUrl\": \"swagger\",\n      \"applicationUrl\": \"https://localhost:7214;\",\n      \"environmentVariables\": {\n        \"ASPNETCORE_ENVIRONMENT\": \"Development\"\n      }\n    },\n    \"IIS Express\": {\n      \"commandName\": \"IISExpress\",\n      \"launchBrowser\": true,\n      \"launchUrl\": \"swagger\",\n      \"environmentVariables\": {\n        \"ASPNETCORE_ENVIRONMENT\": \"Development\"\n      }\n    }\n  }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Properties\\launchSettings.json",
+              "score": 0.170491452991453,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 32,
+                "file_hash": "c9ed3b4a786827091d8c45b09a1a67808af9b789",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Properties\\launchSettings.json",
+                "indexed_at": "2026-01-28T02:14:41.190481",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "    public class UsersController : ControllerBase\n    {\n        private readonly IUserService _userService;\n\n        public UsersController(IUserService userService)\n        {\n            _userService = userService;\n        }\n\n        [HttpPost(\"register\")]\n        public async Task<IActionResult> Register(UserDto userDto)\n        {\n            var success = await _userService.Register(userDto);\n\n            if (success)\n            {\n                return Ok(); // Registration successful\n            }\n            else\n            {\n                return BadRequest(); // Registration failed\n            }\n        }\n\n        [HttpPost(\"login\")]\n        public async Task<IActionResult> Login([FromBody] UserDto userDto)\n        {\n            var success = await _userService.Login(userDto);\n            if (success==null)\n            {\n                return NotFound(\"Announcement was not found\");\n            }\n\n            return Ok(success); // Login successful\n        }\n\n    }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs",
+              "score": 0.16945945945945945,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 46,
+                "file_hash": "835883d82f8478c22a71b2cce695c595f7372022",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs",
+                "indexed_at": "2026-01-28T02:14:41.086624",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "    public interface IMongoDBSettings\n    {\n        string CollectionName { get; set; }\n        string ConnectionString { get; set; }\n        string DatabaseName { get; set; }\n    }\n\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\IMongoDBSettings.cs",
+              "score": 0.16937123493975903,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 11,
+                "file_hash": "420bd042aebd46ef8b1f2c44feb89f2eafaec2c0",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\IMongoDBSettings.cs",
+                "indexed_at": "2026-01-28T02:14:41.341841",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "{\n  \"Logging\": {\n    \"LogLevel\": {\n      \"Default\": \"Information\",\n      \"Microsoft.AspNetCore\": \"Warning\"\n    }\n  },\n \n  \"MongoDBSettings\": {\n    \"CollectionName\": \"Users\",\n    \"ConnectionString\": \"mongodb://localhost:27017\",\n    \"DatabaseName\": \"user\"\n  }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\appsettings.json",
+              "score": 0.16895006402048654,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 15,
+                "file_hash": "6ee49c62acf83aa15ec56213b4361d288f8675db",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\appsettings.json",
+                "indexed_at": "2026-01-28T02:14:40.933456",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "{\n  \"Logging\": {\n    \"LogLevel\": {\n      \"Default\": \"Information\",\n      \"Microsoft.AspNetCore\": \"Warning\"\n    }\n  }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\appsettings.Development.json",
+              "score": 0.1685438596491228,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 9,
+                "file_hash": "c4395dec377a5bc3f27955fe131047dc9f4fa2af",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\appsettings.Development.json",
+                "indexed_at": "2026-01-28T02:14:40.675063",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "export class AuthenticationModule { }\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts",
+              "score": 0.1681395348837209,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 27,
+                "file_hash": "0217e8448b16b778dbe7f0fc69ff07c82f385d29",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts",
+                "indexed_at": "2026-01-28T02:15:39.383184",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "{\n  \"name\": \"final-project\",\n  \"version\": \"0.0.0\",\n  \"scripts\": {\n    \"ng\": \"ng\",\n    \"start\": \"ng serve\",\n    \"build\": \"ng build\",\n    \"watch\": \"ng build --watch --configuration development\",\n    \"test\": \"ng test\"\n  },\n  \"private\": true,\n  \"dependencies\": {\n    \"@angular/animations\": \"^15.2.0\",\n    \"@angular/cdk\": \"~15.2.1\",\n    \"@angular/common\": \"^15.2.0\",\n    \"@angular/compiler\": \"^15.2.0\",\n    \"@angular/core\": \"^15.2.0\",\n    \"@angular/forms\": \"^15.2.0\",\n    \"@angular/material\": \"~15.2.1\",\n    \"@angular/platform-browser\": \"^15.2.0\",\n    \"@angular/platform-browser-dynamic\": \"^15.2.0\",\n    \"@angular/router\": \"^15.2.0\",\n    \"ng-zorro-antd\": \"^15.1.0\",\n    \"rxjs\": \"~7.8.0\",\n    \"tslib\": \"^2.3.0\",\n    \"zone.js\": \"~0.12.0\"\n  },\n  \"devDependencies\": {\n    \"@angular-devkit/build-angular\": \"^15.2.4\",\n    \"@angular/cli\": \"~15.2.4\",\n    \"@angular/compiler-cli\": \"^15.2.0\",\n    \"@types/jasmine\": \"~4.3.0\",\n    \"jasmine-core\": \"~4.5.0\",\n    \"karma\": \"~6.4.0\",\n    \"karma-chrome-launcher\": \"~3.1.0\",\n    \"karma-coverage\": \"~2.2.0\",\n    \"karma-jasmine\": \"~5.1.0\",\n    \"karma-jasmine-html-reporter\": \"~2.0.0\",\n    \"typescript\": \"~4.9.4\"\n  }\n}",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\package.json",
+              "score": 0.1678409090909091,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 41,
+                "file_hash": "b8e23c55e4fc252c4bd42dcc0cdad8ecee101cf5",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\package.json",
+                "indexed_at": "2026-01-28T02:15:35.607909",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "export class LoginComponent implements OnInit{\n  loginForm: FormGroup;\n  \n  constructor(\n    private formBuilder: FormBuilder,\n    private authService: AuthenticationService,\n    private router: Router\n  ) {\n    this.loginForm = this.formBuilder.group({\n      email: ['', [Validators.required, Validators.email]],\n      password: ['', Validators.required],\n      rememberMe: [false]\n    });\n  }\n\n  ngOnInit(): void {\n    this.checkToken();\n  }\n\n  onSubmit() {\n    if (this.loginForm.invalid) {\n      return;\n    }\n    const rememberMe = this.loginForm.value.rememberMe;\n  \n    let user: User = {\n      email: this.loginForm.value.email,\n      password: this.loginForm.value.password,\n      lastName: \"name\",\n      firstName: \"name\"\n    };\n  \n    this.authService.login(user).subscribe(\n      x => {\n        console.log(x);\n        const token = x.token;\n        if (rememberMe) {\n          localStorage.setItem('authToken', token);\n          localStorage.setItem('rememberMe', 'true');\n        } else {\n          sessionStorage.setItem('authToken', token);\n          localStorage.setItem('rememberMe', 'false');\n        }\n        this.router.navigate(['/PAGE']);\n      },\n      error => {\n        if (error.status === 401) {\n          console.log('Invalid email or password.');\n        } else {\n          console.log('An error occurred. Please try again later.');\n        }\n      }\n    );\n  }\n\n  checkToken(): void {\n    const rememberMe = localStorage.getItem('rememberMe') === 'true';\n    const token = rememberMe ? localStorage.getItem('authToken') : sessionStorage.getItem('authToken');\n    if (rememberMe) {\n      this.router.navigate(['/PAGE']);\n    }\n  }\n  \n\n  get email() {\n    return this.loginForm.get('email');\n  }\n\n  get password() {\n    return this.loginForm.get('password');\n  }\n\n  redirectToRegister() {\n    this.router.navigate(['/register']);\n  }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts",
+              "score": 0.16774092615769712,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 88,
+                "file_hash": "8fd5ba15032a4e297c694bea9b55da613c57fbd7",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts",
+                "indexed_at": "2026-01-28T02:15:40.343207",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "    public class WeatherForecast\n    {\n        public DateTime Date { get; set; }\n\n        public int TemperatureC { get; set; }\n\n        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);\n\n        public string? Summary { get; set; }\n    }\n}",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\WeatherForecast.cs",
+              "score": 0.16766666666666666,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 13,
+                "file_hash": "6e83c72c43297f4058fbcb127e4201ae0bdb7f46",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\WeatherForecast.cs",
+                "indexed_at": "2026-01-28T02:14:41.032761",
+                "start_line": 1
+              }
+            }
+          ],
+          "num_snippets": 18,
+          "avg_score": 0.17201386507465982,
+          "key_entities": [],
+          "uses_universal_context": true
+        },
+        "kg": {
+          "graph_stats": {
+            "node_count": 0,
+            "edge_count": 0,
+            "file_count": 0,
+            "class_count": 0,
+            "function_count": 0,
+            "total_classes": 0,
+            "total_functions": 0,
+            "total_files": 0,
+            "is_connected": false,
+            "component_count": 0
+          },
+          "relevant_nodes": [],
+          "most_connected": [],
+          "top_central_nodes": [],
+          "key_terms_searched": [
+            "test"
+          ]
+        },
+        "patterns": {
+          "patterns_available": false,
+          "patterns_detected": [],
+          "pattern_count": 0,
+          "code_smells": [],
+          "code_smell_count": 0,
+          "security_issues": [],
+          "security_issue_count": 0,
+          "note": "No patterns detected yet - run analysis first"
+        }
+      },
+      "assembled_context": "\ud83d\udccb === YOUR REQUIREMENTS ===\nTest requirements\n\ud83d\udcc4 === CODEBASE CONTEXT (High Relevance) ===\n\n--- Snippet 1 (score: 0.187, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\angular.json) ---\n              ],\n              \"outputHashing\": \"all\"\n            },\n            \"development\": {\n              \"buildOptimizer\": false,\n              \"optimization\": false,\n              \"vendorChunk\": true,\n              \"extractLicenses\": false,\n              \"sourceMap\": true,\n              \"namedChunks\": true\n            }\n          },\n          \"defaultConfiguration\": \"production\"\n        },\n        \"serve\": {\n          \"builder\": \"@angular-devkit/build-angular:dev-server\",\n          \"configurations\": {\n            \"production\": {\n              \"browserTarget\": \"final_project:build:production\"\n            },\n            \"development\": {\n              \"browserTarget\": \"final_project:build:development\"\n            }\n          },\n          \"defaultConfiguration\": \"development\"\n        },\n        \"extract-i18n\": {\n          \"builder\": \"@angular-devkit/build-angular:extract-i18n\",\n          \"options\": {\n            \"browserTarget\": \"final_project:build\"\n          }\n        },\n        \"test\": {\n          \"builder\": \"@angular-devkit/build-angular:karma\",\n          \"options\": {\n            \"polyfills\": [\n              \"zone.js\",\n              \"zone.js/testing\"\n            ],\n            \"tsConfig\": \"tsconfig.spec.json\",\n            \"inlineStyleLanguage\": \"scss\",\n            \"assets\": [\n              \"src/favicon.ico\",\n              \"src/assets\"\n            ],\n            \"styles\": [\n              \"src/styles.scss\"\n            ],\n            \"scripts\": []\n          }\n        }\n      }\n    }\n  },\n  \"cli\": {\n    \"analytics\": false\n  }\n}\n\n\n--- Snippet 2 (score: 0.184, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html) ---\n<div class=\"Register\">\n  <div class=\"Register__background-image\"></div>\n<form [formGroup]=\"registerForm\" (ngSubmit)=\"onSubmit()\">\n  <div>\n    <label for=\"email\">Email:</label>\n    <input type=\"email\" formControlName=\"email\" id=\"email\" required>\n    <div *ngIf=\"registerForm.get('email')?.invalid && (registerForm.get('email')?.dirty || registerForm.get('email')?.touched)\">\n      <div *ngIf=\"registerForm.get('email')?.errors?.['required']\">Email is required.</div>\n      <div *ngIf=\"registerForm.get('email')?.errors?.['email']\">Invalid email format.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"password\">Password:</label>\n    <input type=\"password\" formControlName=\"password\" id=\"password\" required>\n    <div *ngIf=\"registerForm.get('password')?.invalid && (registerForm.get('password')?.dirty || registerForm.get('password')?.touched)\">\n      <div *ngIf=\"registerForm.get('password')?.errors?.['required']\">Password is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"confirmPassword\">Confirm Password:</label>\n    <input type=\"password\" formControlName=\"confirmPassword\" id=\"confirmPassword\" required>\n    <div *ngIf=\"registerForm.get('confirmPassword')?.invalid && (registerForm.get('confirmPassword')?.dirty || registerForm.get('confirmPassword')?.touched)\">\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['required']\">Confirmation password is required.</div>\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['passwordMismatch']\">Passwords do not match.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"firstName\">First Name:</label>\n    <input type=\"text\" formControlName=\"firstName\" id=\"firstName\" required>\n    <div *ngIf=\"registerForm.get('firstName')?.invalid && (registerForm.get('firstName')?.dirty || registerForm.get('firstName')?.touched)\">\n      <div *ngIf=\"registerForm.get('firstName')?.errors?.['required']\">First name is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"lastName\">Last Name:</label>\n\n--- Snippet 3 (score: 0.178, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html) ---\n<input nz-input [(ngModel)]=\"searchQuery\" placeholder=\"Search our phones\" />\n<button nz-button nzType=\"primary\" nzSize=\"large\" (click)=\"sortPhones('id')\">ID</button>\n<button nz-button nzType=\"primary\" nzSize=\"large\" (click)=\"sortPhones('brand')\">Brand</button>\n<button nz-button nzType=\"primary\" nzSize=\"large\" (click)=\"sortPhones('model')\">Model</button>\n<button nz-button nzType=\"primary\" nzSize=\"large\" (click)=\"sortPhones('storage')\">Storage (GB)</button>\n<button nz-button nzType=\"primary\" nzSize=\"large\" (click)=\"sortPhones('price')\">Price ($)</button>\n<button nz-button nzType=\"primary\" nzSize=\"large\" nzShape=\"circle\" (click)=\"logout()\">Logout</button>\n\n<div class=\"table-container\">\n<ng-container *ngIf=\"phones$ | async as phones\">\n  <nz-table #table [nzData]=\"phones\" nzBordered \n  nz-pagination [nzPageIndex]=\"currentPage\" [nzPageSize]=\"pageSize\"\n  [nzTotal]=\"phones.length\" (nzPageIndexChange)=\"onPageChange($event)\">\n     <thead>\n        <tr>\n          <th>ID</th>\n          <th>Brand</th>\n          <th>Model</th>\n          <th>Storage (GB)</th>\n          <th>Price ($)</th>\n          <th>Edit</th>\n          <th>Details</th>\n          <th>Delete</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr *ngFor=\"let phone of getFilteredPhones()\">\n          <td>\n                <span nz-icon nzType=\"phone\" nzTheme=\"outline\"></span>\n                {{ phone.id }}\n          </td>\n          <td>{{ phone.brand }}</td>\n          <td>{{ phone.model | nameUppercase  }}</td>\n          <td>{{ phone.storage }}</td>\n          <td>{{ phone.price }}</td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"edit\" (click)=\"editPhone(phone)\">Edit</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"info-circle\" (click)=\"openDetailsModal(phone)\">Details</button>\n          </td>\n          <td>\n\n--- Snippet 4 (score: 0.173, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts) ---\nexport interface User {\n    id?: string;\n    email: string,\n    password: string,\n    firstName: string,\n    lastName: string,\n}\n\n--- Snippet 5 (score: 0.173, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs) ---\n    public interface IUserService\n    {\n        Task<bool> Register(UserDto userDto);\n        Task<UserDto?> Login(UserDto userDto);\n    }\n}\n\n\n--- Snippet 6 (score: 0.171, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts) ---\nexport interface Phone {\n    id: number;\n    brand: string;\n    model: string;\n    storage: number;\n    price: number;\n  }\n  \n\n--- Snippet 7 (score: 0.171, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs) ---\n    public class UserService : IUserService\n    {\n        private readonly IMongoCollection<UserDto> _users;\n        public UserService(IMongoDBSettings settings)\n        {\n            var client = new MongoClient(settings.ConnectionString);\n            var database = client.GetDatabase(settings.DatabaseName);\n\n            _users = database.GetCollection<UserDto>(settings.CollectionName);\n        }\n\n        public async Task<bool> Register(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n            Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n            Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n        );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n\n            if (user != null)\n            {\n                return false; // Registration failed\n            }\n            else { \n\n                userDto.Id = Guid.NewGuid();\n                await _users.InsertOneAsync(userDto);\n                return true;\n                 \n            }\n        }\n\n        public async Task<UserDto?> Login(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n                Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n                Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n            );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n            if(user != null)\n            {\n                return user;\n\n            }\n            return null;\n        }\n\n    }\n}\n\n\n--- Snippet 8 (score: 0.171, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md) ---\n# FinalProject\n\nThis project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 15.2.4.\n\n## Development server\n\nRun `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.\n\n## Code scaffolding\n\nRun `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.\n\n## Build\n\nRun `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.\n\n## Running unit tests\n\nRun `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).\n\n## Running end-to-end tests\n\nRun `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.\n\n## Further help\n\nTo get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.\n\n\n--- Snippet 9 (score: 0.171, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs) ---\npublic class UserDto\n{\n    public Guid Id { get; set; }\n    public string Email { get; set; }\n    public string Password { get; set; }\n    public string FirstName { get; set; }\n    public string LastName { get; set; }\n}\n\n\n--- Snippet 10 (score: 0.170, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Properties\\launchSettings.json) ---\n\ufeff{\n  \"$schema\": \"https://json.schemastore.org/launchsettings.json\",\n  \"iisSettings\": {\n    \"windowsAuthentication\": false,\n    \"anonymousAuthentication\": true,\n    \"iisExpress\": {\n      \"applicationUrl\": \"http://localhost:12049\",\n      \"sslPort\": 44372\n    }\n  },\n  \"profiles\": {\n    \"registration_api\": {\n      \"commandName\": \"Project\",\n      \"dotnetRunMessages\": true,\n      \"launchBrowser\": true,\n      \"launchUrl\": \"swagger\",\n      \"applicationUrl\": \"https://localhost:7214;\",\n      \"environmentVariables\": {\n        \"ASPNETCORE_ENVIRONMENT\": \"Development\"\n      }\n    },\n    \"IIS Express\": {\n      \"commandName\": \"IISExpress\",\n      \"launchBrowser\": true,\n      \"launchUrl\": \"swagger\",\n      \"environmentVariables\": {\n        \"ASPNETCORE_ENVIRONMENT\": \"Development\"\n      }\n    }\n  }\n}\n\n\n\ud83e\udde0 === KNOWLEDGE GRAPH INSIGHTS ===\nGraph: 0 nodes, 0 edges\nMost Connected:\n\n\ud83d\udcc4 === ADDITIONAL CONTEXT (Lower Relevance) ===\n\n--- Snippet 11 (score: 0.169, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs) ---\n    public class UsersController : ControllerBase\n    {\n        private readonly IUserService _userService;\n\n        public UsersController(IUserService userService)\n        {\n            _userService = userService;\n        }\n\n        [HttpPost(\"register\")]\n        public async Task<IActionResult> Register(UserDto userDto)\n        {\n            var success = await _userService.Register(userDto);\n\n            if (success)\n            {\n                return Ok(); // Registration successful\n            }\n            else\n            {\n                return BadRequest(); // Registration failed\n            }\n        }\n\n        [HttpPost(\"login\")]\n        public async Task<IActionResult> Login([FromBody] UserDto userDto)\n        {\n            var success = await _userService.Login(userDto);\n            if (success==null)\n            {\n                return NotFound(\"Announcement was not found\");\n            }\n\n            return Ok(success); // Login successful\n        }\n\n    }\n}\n\n\n--- Snippet 12 (score: 0.169, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\IMongoDBSettings.cs) ---\n    public interface IMongoDBSettings\n    {\n        string CollectionName { get; set; }\n        string ConnectionString { get; set; }\n        string DatabaseName { get; set; }\n    }\n\n}\n\n\n--- Snippet 13 (score: 0.169, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\appsettings.json) ---\n{\n  \"Logging\": {\n    \"LogLevel\": {\n      \"Default\": \"Information\",\n      \"Microsoft.AspNetCore\": \"Warning\"\n    }\n  },\n \n  \"MongoDBSettings\": {\n    \"CollectionName\": \"Users\",\n    \"ConnectionString\": \"mongodb://localhost:27017\",\n    \"DatabaseName\": \"user\"\n  }\n}\n\n\n--- Snippet 14 (score: 0.169, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\appsettings.Development.json) ---\n{\n  \"Logging\": {\n    \"LogLevel\": {\n      \"Default\": \"Information\",\n      \"Microsoft.AspNetCore\": \"Warning\"\n    }\n  }\n}\n\n\n--- Snippet 15 (score: 0.168, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts) ---\nexport class AuthenticationModule { }\n\n\n--- Snippet 16 (score: 0.168, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\package.json) ---\n{\n  \"name\": \"final-project\",\n  \"version\": \"0.0.0\",\n  \"scripts\": {\n    \"ng\": \"ng\",\n    \"start\": \"ng serve\",\n    \"build\": \"ng build\",\n    \"watch\": \"ng build --watch --configuration development\",\n    \"test\": \"ng test\"\n  },\n  \"private\": true,\n  \"dependencies\": {\n    \"@angular/animations\": \"^15.2.0\",\n    \"@angular/cdk\": \"~15.2.1\",\n    \"@angular/common\": \"^15.2.0\",\n    \"@angular/compiler\": \"^15.2.0\",\n    \"@angular/core\": \"^15.2.0\",\n    \"@angular/forms\": \"^15.2.0\",\n    \"@angular/material\": \"~15.2.1\",\n    \"@angular/platform-browser\": \"^15.2.0\",\n    \"@angular/platform-browser-dynamic\": \"^15.2.0\",\n    \"@angular/router\": \"^15.2.0\",\n    \"ng-zorro-antd\": \"^15.1.0\",\n    \"rxjs\": \"~7.8.0\",\n    \"tslib\": \"^2.3.0\",\n    \"zone.js\": \"~0.12.0\"\n  },\n  \"devDependencies\": {\n    \"@angular-devkit/build-angular\": \"^15.2.4\",\n    \"@angular/cli\": \"~15.2.4\",\n    \"@angular/compiler-cli\": \"^15.2.0\",\n    \"@types/jasmine\": \"~4.3.0\",\n    \"jasmine-core\": \"~4.5.0\",\n    \"karma\": \"~6.4.0\",\n    \"karma-chrome-launcher\": \"~3.1.0\",\n    \"karma-coverage\": \"~2.2.0\",\n    \"karma-jasmine\": \"~5.1.0\",\n    \"karma-jasmine-html-reporter\": \"~2.0.0\",\n    \"typescript\": \"~4.9.4\"\n  }\n}\n\n--- Snippet 17 (score: 0.168, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts) ---\nexport class LoginComponent implements OnInit{\n  loginForm: FormGroup;\n  \n  constructor(\n    private formBuilder: FormBuilder,\n    private authService: AuthenticationService,\n    private router: Router\n  ) {\n    this.loginForm = this.formBuilder.group({\n      email: ['', [Validators.required, Validators.email]],\n      password: ['', Validators.required],\n      rememberMe: [false]\n    });\n  }\n\n  ngOnInit(): void {\n    this.checkToken();\n  }\n\n  onSubmit() {\n    if (this.loginForm.invalid) {\n      return;\n    }\n    const rememberMe = this.loginForm.value.rememberMe;\n  \n    let user: User = {\n      email: this.loginForm.value.email,\n      password: this.loginForm.value.password,\n      lastName: \"name\",\n      firstName: \"name\"\n    };\n  \n    this.authService.login(user).subscribe(\n      x => {\n        console.log(x);\n        const token = x.token;\n        if (rememberMe) {\n          localStorage.setItem('authToken', token);\n          localStorage.setItem('rememberMe', 'true');\n        } else {\n          sessionStorage.setItem('authToken', token);\n          localStorage.setItem('rememberMe', 'false');\n        }\n        this.router.navigate(['/PAGE']);\n      },\n      error => {\n        if (error.status === 401) {\n          console.log('Invalid email or password.');\n        } else {\n          console.log('An error occurred. Please try again later.');\n        }\n      }\n    );\n  }\n\n  checkToken(): void {\n    const rememberMe = localStorage.getItem('rememberMe') === 'true';\n    const token = rememberMe ? localStorage.getItem('authToken') : sessionStorage.getItem('authToken');\n    if (rememberMe) {\n      this.router.navigate(['/PAGE']);\n    }\n  }\n  \n\n  get email() {\n    return this.loginForm.get('email');\n  }\n\n  get password() {\n    return this.loginForm.get('password');\n  }\n\n  redirectToRegister() {\n    this.router.navigate(['/register']);\n  }\n}\n\n\n--- Snippet 18 (score: 0.168, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\WeatherForecast.cs) ---\n    public class WeatherForecast\n    {\n        public DateTime Date { get; set; }\n\n        public int TemperatureC { get; set; }\n\n        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);\n\n        public string? Summary { get; set; }\n    }\n}",
+      "truncation_info": {
+        "any_truncated": false,
+        "sections_truncated": [],
+        "token_budget": 12000,
+        "tokens_used": 4300
+      },
+      "from_cache": false,
+      "context_id": "2026-01-28T05:14:24.624202"
+    },
+    "added_at": "2026-01-28T05:14:25.736295"
+  }
+]

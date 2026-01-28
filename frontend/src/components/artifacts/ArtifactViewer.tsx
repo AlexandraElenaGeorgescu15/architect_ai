@@ -6,6 +6,7 @@ import { submitFeedback, FeedbackType } from '../../services/feedbackService'
 import { useUIStore } from '../../stores/uiStore'
 import ArtifactComparisonDrawer from './ArtifactComparisonDrawer'
 import VersionSelector from './VersionSelector'
+import CodePrototypeViewer from './CodePrototypeViewer'
 
 interface ArtifactViewerProps {
   artifact: Artifact
@@ -226,6 +227,13 @@ export default function ArtifactViewer({ artifact, onUpdate }: ArtifactViewerPro
                     </button>
                   </div>
                 </div>
+              ) : artifact.type === 'code_prototype' ? (
+                <CodePrototypeViewer
+                  artifact={artifact}
+                  onUpdate={async (content) => {
+                    await handleFeedback('positive') // Or some other update logic
+                  }}
+                />
               ) : (
                 <div className="bg-muted rounded-lg p-4 overflow-auto max-h-96">
                   <pre className="text-sm font-mono whitespace-pre-wrap">{artifact.content}</pre>

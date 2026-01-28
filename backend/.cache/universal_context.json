@@ -1,0 +1,170 @@
+{
+  "built_at": "2026-01-28T05:13:56.491825",
+  "project_directories": [
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln",
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project"
+  ],
+  "total_files": 69,
+  "project_map": {
+    "directories": {
+      "final-proj-sln": {
+        "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln",
+        "file_count": 14,
+        "subdirectories": []
+      },
+      "final_project": {
+        "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project",
+        "file_count": 55,
+        "subdirectories": []
+      }
+    },
+    "file_types": {
+      ".sln": 1,
+      ".json": 9,
+      ".cs": 9,
+      ".csproj": 1,
+      ".md": 1,
+      ".ico": 1,
+      ".html": 7,
+      ".ts": 27,
+      ".scss": 7,
+      ".less": 1,
+      ".jpg": 2
+    },
+    "key_files": [
+      {
+        "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Program.cs",
+        "name": "Program.cs",
+        "importance": 1.0
+      },
+      {
+        "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs",
+        "name": "Controller.cs",
+        "importance": 0.9
+      },
+      {
+        "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs",
+        "name": "WeatherForecastController.cs",
+        "importance": 0.9
+      },
+      {
+        "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs",
+        "name": "IUserService.cs",
+        "importance": 0.9
+      },
+      {
+        "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+        "name": "UserService.cs",
+        "importance": 0.9
+      },
+      {
+        "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.spec.ts",
+        "name": "authentication.service.spec.ts",
+        "importance": 0.9
+      },
+      {
+        "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts",
+        "name": "authentication.service.ts",
+        "importance": 0.9
+      },
+      {
+        "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.spec.ts",
+        "name": "phone.service.spec.ts",
+        "importance": 0.9
+      },
+      {
+        "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts",
+        "name": "phone.service.ts",
+        "importance": 0.9
+      },
+      {
+        "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs",
+        "name": "UserDto.cs",
+        "importance": 0.8
+      }
+    ]
+  },
+  "key_entities": [],
+  "knowledge_graph": {
+    "total_nodes": 0,
+    "total_edges": 0,
+    "nodes": [],
+    "edges": []
+  },
+  "patterns": {
+    "total_patterns": 0,
+    "patterns": []
+  },
+  "importance_scores": {
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api.sln": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\appsettings.Development.json": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\appsettings.json": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Program.cs": 1.0,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\registration-api.csproj": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs": 0.8,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\WeatherForecast.cs": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs": 0.9,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs": 0.9,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Properties\\launchSettings.json": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs": 0.9,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs": 0.9,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\IMongoDBSettings.cs": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\MongoDBSettings.cs": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\.editorconfig": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\.gitignore": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\angular.json": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\package-lock.json": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\package.json": 0.1,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\tsconfig.app.json": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\tsconfig.json": 0.1,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\tsconfig.spec.json": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\favicon.ico": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\index.html": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\main.ts": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\styles.scss": 0.2,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\theme.less": 0.2,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.html": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.scss": 0.2,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.spec.ts": 0.3,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.ts": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.html": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.scss": 0.2,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.spec.ts": 0.3,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.scss": 0.2,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.spec.ts": 0.3,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\pipes\\name-uppercase.pipe.spec.ts": 0.3,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\pipes\\name-uppercase.pipe.ts": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.spec.ts": 0.9,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts": 0.9,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.spec.ts": 0.9,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts": 0.9,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table-routing.module.ts": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\entry-details-modal\\entry-details-modal.component.html": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\entry-details-modal\\entry-details-modal.component.scss": 0.2,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\entry-details-modal\\entry-details-modal.component.spec.ts": 0.3,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\entry-details-modal\\entry-details-modal.component.ts": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.html": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.scss": 0.2,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.spec.ts": 0.3,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.scss": 0.2,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.spec.ts": 0.3,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\validators\\validator.ts": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\assets\\.gitkeep": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\assets\\background.jpg": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\assets\\hardik-sharma-CrPAvN29Nhs-unsplash.jpg": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts": 0.5,
+    "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts": 0.5
+  },
+  "build_duration_seconds": 3.992871
+}
