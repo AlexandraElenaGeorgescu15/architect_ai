@@ -43,38 +43,43 @@ class SetTargetRequest(BaseModel):
 @router.get("/", response_model=TargetResponse)
 async def get_target_info():
     """
-    Get information about the current target project and available alternatives.
-    
-    This helps users understand which project Architect.AI is analyzing.
+    Get information about the current target project.
     """
     from backend.utils.tool_detector import detect_tool_directory
     from backend.utils.target_project import (
         get_available_projects, 
         get_target_project_path,
-        _score_directory,
+        score_directory,
         detect_project_markers
     )
     
     tool_dir = detect_tool_directory()
     current_target = get_target_project_path()
-    available_dirs = get_user_project_directories()
     
-    # Build list of available projects
+    # Get all potential projects
+    available_dirs = get_available_projects()
+    
     projects = []
+    
     for d in available_dirs:
-        # Markers and scores should already be consistent thanks to centralized utility
-        score = _score_directory(d)
+        # Calculate score using unified logic
+        score = score_directory(d)
+        
+        # Get markers
         markers = detect_project_markers(d)
         
+        is_target = current_target and d.resolve() == current_target.resolve()
+        
         projects.append(ProjectInfo(
-            path=str(d),
             name=d.name,
+            path=str(d),
             score=score,
-            is_selected=(d == current_target),
+            is_selected=is_target,
             markers=markers
         ))
     
-    # Sort by score (though get_available_projects already does this)
+    # Check if target is indexed
+    files_indexed = 0
     projects.sort(key=lambda x: x.score, reverse=True)
     
     logger.info(f"📋 [PROJECT_TARGET] Returning {len(projects)} available projects. Current: {current_target}")

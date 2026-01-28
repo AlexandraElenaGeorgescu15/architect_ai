@@ -5,7 +5,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path.cwd()))
 
 from backend.utils.tool_detector import detect_tool_directory
-from backend.utils.target_project import get_available_projects, _score_directory, detect_project_markers, get_target_project_path
+from backend.utils.target_project import get_available_projects, score_directory, detect_project_markers, get_target_project_path
 
 def verify():
     tool_dir = detect_tool_directory()
@@ -26,7 +26,7 @@ def verify():
             print(f"  - Exists: {d.exists()}")
             print(f"  - Is Dir: {d.is_dir()}")
             print(f"  - Is Tool Dir: {d.resolve() == tool_dir.resolve()}")
-            print(f"  - Score: {_score_directory(d)}")
+            print(f"  - Score: {score_directory(d)}")
             print(f"  - Markers: {detect_project_markers(d)}")
     else:
         print("Tool directory not detected!")

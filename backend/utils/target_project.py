@@ -46,7 +46,7 @@ def get_target_project_path() -> Optional[Path]:
     if available:
         # Sort by score descending and pick the best (already sorted in get_available_projects)
         best_dir = available[0]
-        logger.info(f"✅ [TARGET_PROJECT] Auto-detected project: {best_dir} (score: {_score_directory(best_dir)})")
+        logger.info(f"✅ [TARGET_PROJECT] Auto-detected project: {best_dir} (score: {score_directory(best_dir)})")
         return best_dir
     
     # Priority 3: Fallback to parent of tool (mother project folder)
@@ -84,7 +84,7 @@ def get_available_projects() -> List[Path]:
         if not d_resolved.exists():
             continue
             
-        score = _score_directory(d_resolved)
+        score = score_directory(d_resolved)
         # Only include dirs that actually look like projects or are clearly NOT utility folders
         if score > -50:
             scored_dirs.append((d_resolved, score))
@@ -138,7 +138,7 @@ def get_target_project_info() -> Dict[str, Any]:
     }
 
 
-def _score_directory(directory: Path) -> int:
+def score_directory(directory: Path) -> int:
     """
     Score a directory to determine if it's a main project.
     Higher scores indicate more likely to be a real project.
@@ -324,6 +324,8 @@ def is_target_project_indexed() -> bool:
 # Expose main function for easy import
 __all__ = [
     "get_target_project_path",
+    "get_available_projects",
+    "score_directory",
     "get_target_project_name",
     "get_target_project_info",
     "detect_tech_stack",
