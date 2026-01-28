@@ -417,7 +417,28 @@ const MermaidDiagramViewer = memo(function MermaidDiagramViewer({
     )
   }
 
-  if (latestArtifact?.content) {
+  // CRITICAL FIX: Validate that artifact type matches selected type
+  // This prevents showing wrong content (e.g., code prototype content in ERD view)
+  const artifactMatchesType = latestArtifact?.type === selectedArtifactType
+  const progressMatchesType = !progress?.artifact || progress?.artifact?.type === selectedArtifactType
+  
+  // If artifact exists but type doesn't match, don't render it
+  if (latestArtifact?.content && !artifactMatchesType) {
+    console.warn(`⚠️ [MermaidDiagramViewer] Artifact type mismatch: expected ${selectedArtifactType}, got ${latestArtifact.type}. Showing empty state.`)
+    return (
+      <div className="h-full flex items-center justify-center p-8">
+        <div className="text-center max-w-md">
+          <FileCode className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+          <h3 className="text-lg font-semibold text-muted-foreground mb-2">No Diagram Generated Yet</h3>
+          <p className="text-sm text-muted-foreground">
+            Click "Generate" to create your {artifactTypes.find(t => t.value === selectedArtifactType)?.label || 'diagram'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+  
+  if (latestArtifact?.content && artifactMatchesType) {
     return (
       <MermaidRenderer
         // CRITICAL: key forces remount when artifact type/id changes, clearing all state including errors
@@ -427,7 +448,7 @@ const MermaidDiagramViewer = memo(function MermaidDiagramViewer({
         onContentUpdate={handleDiagramContentUpdate}
       />
     )
-  } else if (progress?.artifact?.content) {
+  } else if (progress?.artifact?.content && progressMatchesType) {
     return (
       <MermaidRenderer
         // CRITICAL: key forces remount when artifact type changes during generation

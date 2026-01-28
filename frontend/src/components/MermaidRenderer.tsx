@@ -282,6 +282,24 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
     setMermaidErrorDetail(null)
     // Also reset the diagram store state to ensure clean slate
     resetState()
+    
+    // CRITICAL: Validate content matches expected artifact type
+    // If content is clearly not Mermaid (e.g., code prototype), clear it
+    if (content && artifactType?.startsWith('mermaid_')) {
+      const contentLower = content.toLowerCase().trim()
+      const isCodePrototype = contentLower.includes('component') || 
+                              contentLower.includes('typescript') || 
+                              contentLower.includes('import {') ||
+                              contentLower.includes('@angular') ||
+                              contentLower.includes('nz-button') ||
+                              contentLower.includes('formgroup')
+      
+      if (isCodePrototype) {
+        console.error(`❌ [MermaidRenderer] Content type mismatch: Expected Mermaid diagram (${artifactType}), but content appears to be code prototype. Clearing content.`)
+        // Don't set error here - let the render function handle it
+        // Just clear the state so it shows "No diagram" instead
+      }
+    }
   }, [content, artifactType, setError, setValidation, setLastErrorContent, resetState])
   
   // Repair function - AGGRESSIVE: keeps trying until diagram renders (max 3 attempts)
@@ -419,10 +437,30 @@ export default function MermaidRenderer({ content, className = '', onContentUpda
         const container = containerRef.current
         if (!container) return
 
+        // CRITICAL FIX: Validate that content is actually Mermaid code
+        // If content looks like code prototype (HTML/TypeScript), reject it immediately
+        const contentLower = content.toLowerCase().trim()
+        const isCodePrototype = contentLower.includes('component') || 
+                                contentLower.includes('typescript') || 
+                                contentLower.includes('import {') ||
+                                contentLower.includes('@angular') ||
+                                contentLower.includes('nz-button') ||
+                                contentLower.includes('formgroup') ||
+                                (contentLower.includes('html') && contentLower.includes('typescript')) ||
+                                contentLower.includes('table-page.component')
+        
+        if (isCodePrototype && artifactType?.startsWith('mermaid_')) {
+          console.error(`❌ [MermaidRenderer] Content type mismatch: Expected Mermaid diagram (${artifactType}), but content appears to be code prototype.`)
+          setError('Invalid content: This appears to be code prototype content, not a Mermaid diagram. The artifact may have been saved with the wrong type. Please generate a new diagram.')
+          // Clear the container to show error message
+          container.innerHTML = ''
+          return
+        }
+
         // Clear previous content
         container.innerHTML = ''
         clearMermaidErrorArtifacts()
-
+        
         // Extract Mermaid diagram from content (remove any surrounding text)
         let diagramContent = content.trim()
         

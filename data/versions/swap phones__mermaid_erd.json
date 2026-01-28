@@ -78,6 +78,35 @@
     },
     "folder_id": null,
     "created_at": "2026-01-28T07:44:59.068997",
+    "is_current": false
+  },
+  {
+    "version": 4,
+    "artifact_id": "swap phones__mermaid_erd",
+    "artifact_type": "mermaid_erd",
+    "content": "erDiagram\n    SWAP_REQUEST {\n        int id PK\n        string PHONE\n        string Pending\n    }\n    USER {\n        int id PK\n        string PHONE\n    }\n    SWAP_REQUEST ||--|| USER : requested_by\n    SWAP_REQUEST ||--|| USER : requested_to",
+    "metadata": {
+      "update_type": "manual_edit",
+      "updated_at": "2026-01-28T08:01:58.880542",
+      "artifact_type": "mermaid_erd"
+    },
+    "folder_id": null,
+    "created_at": "2026-01-28T08:01:58.886527",
+    "is_current": false
+  },
+  {
+    "version": 5,
+    "artifact_id": "swap phones__mermaid_erd",
+    "artifact_type": "mermaid_erd",
+    "content": "erDiagram\n    SWAP_REQUEST {\n        int id PK\n        string PHONE\n        string Pending\n    }\n    USER {\n        int id PK\n        string PHONE\n    }\n    SWAP_REQUEST ||--|| USER : requested_by\n    SWAP_REQUEST ||--|| USER : requested_to",
+    "metadata": {
+      "updated_by": "admin",
+      "update_type": "manual_edit",
+      "folder_id": null,
+      "artifact_type": "mermaid_erd"
+    },
+    "folder_id": null,
+    "created_at": "2026-01-28T08:01:58.930015",
     "is_current": true
   }
 ]

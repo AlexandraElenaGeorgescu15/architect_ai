@@ -1498,5 +1498,839 @@
     "model_used": "qwen2.5-coder:14b-instruct-q4_K_M",
     "context": {},
     "added_at": "2026-01-22T18:43:29.512272"
+  },
+  {
+    "artifact_type": "dev_visual_prototype",
+    "content": "Below is the implementation of the \"Request Phone Swap\" feature based on the provided requirements and project context. This includes a button to trigger the modal and the modal structure with form fields.\n\n### `table-page.component.html`\n```html\n<!-- Add the Request Phone Swap button -->\n<button nz-button nzType=\"primary\" (click)=\"openSwapModal()\">Request Phone Swap</button>\n\n<!-- Modal for phone swap request -->\n<nz-modal [(nzVisible)]=\"isSwapModalVisible\" [nzTitle]=\"'Phone Swap Request'\" [nzFooter]=\"null\">\n  <form nz-form [formGroup]=\"swapForm\" (ngSubmit)=\"onSubmitSwap()\">\n    <!-- Phone to Request dropdown -->\n    <nz-form-item>\n      <nz-form-label [nzSm]=\"8\">Phone to Request</nz-form-label>\n      <nz-form-control [nzSm]=\"16\">\n        <select formControlName=\"phoneToRequest\" nz-select>\n          <option *ngFor=\"let phone of availablePhones\" [value]=\"phone.id\">{{ phone.brand }} - {{ phone.model }}</option>\n        </select>\n      </nz-form-control>\n    </nz-form-item>\n\n    <!-- Phone to Exchange dropdown -->\n    <nz-form-item>\n      <nz-form-label [nzSm]=\"8\">Phone to Exchange</nz-form-label>\n      <nz-form-control [nzSm]=\"16\">\n        <select formControlName=\"phoneToExchange\" nz-select>\n          <option *ngFor=\"let phone of ownedPhones\" [value]=\"phone.id\">{{ phone.brand }} - {{ phone.model }}</option>\n        </select>\n      </nz-form-control>\n    </nz-form-item>\n\n    <!-- Reason for Request textarea -->\n    <nz-form-item>\n      <nz-form-label [nzSm]=\"8\">Reason for Request</nz-form-label>\n      <nz-form-control [nzSm]=\"16\">\n        <textarea formControlName=\"reason\" nz-input placeholder=\"Enter reason (optional)\"></textarea>\n      </nz-form-control>\n    </nz-form-item>\n\n    <!-- Actions -->\n    <div class=\"actions\">\n      <button nz-button type=\"submit\" [disabled]=\"swapForm.invalid\">Submit Request</button>\n      <button nz-button (click)=\"isSwapModalVisible = false\">Cancel</button>\n    </div>\n  </form>\n</nz-modal>\n```\n\n### `table-page.component.ts`\n```typescript\nimport { Component, OnInit } from '@angular/core';\nimport { FormBuilder, FormGroup, Validators } from '@angular/forms';\nimport { NzModalService } from 'ng-zorro-antd/modal';\nimport { PhoneService } from '../../services/phone.service';\nimport { Phone } from '../../models/phone';\n\n@Component({\n  selector: 'app-table-page',\n  templateUrl: './table-page.component.html',\n  styleUrls: ['./table-page.component.scss']\n})\nexport class TablePageComponent implements OnInit {\n  availablePhones!: Phone[];\n  ownedPhones!: Phone[];\n  isSwapModalVisible = false;\n  swapForm!: FormGroup;\n\n  constructor(\n    private fb: FormBuilder,\n    private modalService: NzModalService,\n    private phoneService: PhoneService\n  ) {}\n\n  ngOnInit(): void {\n    this.loadPhones();\n    this.getAvailablePhones();\n    this.getOwnedPhones();\n    this.createSwapForm();\n  }\n\n  loadPhones(): void {\n    // Simulate fetching phones\n    this.availablePhones = this.phoneService.phones;\n    this.ownedPhones = this.availablePhones.filter(phone => phone.id <= 3); // Example: First three are owned\n  }\n\n  createSwapForm(): void {\n    this.swapForm = this.fb.group({\n      phoneToRequest: ['', Validators.required],\n      phoneToExchange: ['', Validators.required],\n      reason: ['']\n    });\n  }\n\n  openSwapModal(): void {\n    this.isSwapModalVisible = true;\n  }\n\n  onSubmitSwap(): void {\n    if (this.swapForm.valid) {\n      const swapData = this.swapForm.value;\n      // Simulate API call to submit the request\n      console.log('Submit Swap Request:', swapData);\n      this.isSwapModalVisible = false; // Close the modal\n      alert('Request submitted successfully!');\n    }\n  }\n\n  getAvailablePhones(): void {\n    // Fetch available phones from service or API\n    this.availablePhones = this.phoneService.phones;\n  }\n\n  getOwnedPhones(): void {\n    // Fetch owned phones from service or API\n    this.ownedPhones = this.availablePhones.filter(phone => phone.id <= 3); // Example: First three are owned\n  }\n}\n```\n\n### `table-page.component.scss`\n```scss\n/* Add any custom styles if needed */\n.actions {\n  display: flex;\n  justify-content: flex-end;\n  gap: 10px;\n}\n\nbutton {\n  margin-top: 20px;\n}\n```\n\nThis implementation includes:\n- A button to trigger the modal.\n- A modal with a form containing dropdowns for selecting phones and an optional text area for comments.\n- Form validation to ensure all required fields are filled.\n- Logic to handle form submission, which currently logs the data and displays a success message.\n\nMake sure to integrate this code into your existing Angular project and replace placeholders with actual API calls as needed.",
+    "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan for the new phone swap request feature.\n\nBackground\nUsers currently lack a formal way to request an exchange of their current phone for another one available in our inventory. This new feature aims to create a streamlined, in-app workflow to manage these requests efficiently.\n\nFeature Overview\nThe team agreed on the following user story: \"As a user, I want to request a phone from the available list and offer one of my current phones in exchange, so I can easily manage my device swaps.\"\n\nThe feature will be implemented as a modal pop-up on the main phone list page.\n\nImplementation Details\nFrontend (UI/UX)\nA new button, labeled \"Request Phone Swap,\" will be added to the main phone page.\n\nClicking this button will trigger a modal (pop-up) that overlays the current view.\n\nThe modal will contain a form with the following fields:\n\nPhone to Request: A dropdown list populated with all available phones from the main list.\n\nPhone to Exchange: A dropdown list showing only the phones currently owned by the logged-in user.\n\nReason for Request (Optional): A text area for any additional comments.\n\nActions: \"Submit Request\" and \"Cancel\" buttons.\n\nUpon successful submission, the modal will close, and a confirmation message will be displayed.\n\nBackend (Logic)\nA new API endpoint (POST /api/phone-swaps) will be created to handle form submissions.\n\nA new table will be created in the database to store swap requests. It will include columns for the requester's ID, the requested phone, the offered phone, a status (defaulting to 'Pending'), and the comment.\n\nBackend validation will ensure that the user making the request is the actual owner of the phone being offered in exchange.\n\nAction Items\nUX Team: Create a wireframe of the modal and form by EOD, October 17.\n\nBackend Team: Develop the new API endpoint and database schema. Target completion: October 21.\n\nFrontend Team: Build the \"Request Phone Swap\" button and the basic modal structure. Begin implementation once wireframes are approved.\n\nProduct Manager: Create the formal Jira ticket with the defined user story and acceptance criteria.",
+    "validation_score": 94.0,
+    "model_used": "qwen2.5-coder:14b-instruct-q4_K_M",
+    "context": {
+      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan for the new phone swap request feature.\n\nBackground\nUsers currently lack a formal way to request an exchange of their current phone for another one available in our inventory. This new feature aims to create a streamlined, in-app workflow to manage these requests efficiently.\n\nFeature Overview\nThe team agreed on the following user story: \"As a user, I want to request a phone from the available list and offer one of my current phones in exchange, so I can easily manage my device swaps.\"\n\nThe feature will be implemented as a modal pop-up on the main phone list page.\n\nImplementation Details\nFrontend (UI/UX)\nA new button, labeled \"Request Phone Swap,\" will be added to the main phone page.\n\nClicking this button will trigger a modal (pop-up) that overlays the current view.\n\nThe modal will contain a form with the following fields:\n\nPhone to Request: A dropdown list populated with all available phones from the main list.\n\nPhone to Exchange: A dropdown list showing only the phones currently owned by the logged-in user.\n\nReason for Request (Optional): A text area for any additional comments.\n\nActions: \"Submit Request\" and \"Cancel\" buttons.\n\nUpon successful submission, the modal will close, and a confirmation message will be displayed.\n\nBackend (Logic)\nA new API endpoint (POST /api/phone-swaps) will be created to handle form submissions.\n\nA new table will be created in the database to store swap requests. It will include columns for the requester's ID, the requested phone, the offered phone, a status (defaulting to 'Pending'), and the comment.\n\nBackend validation will ensure that the user making the request is the actual owner of the phone being offered in exchange.\n\nAction Items\nUX Team: Create a wireframe of the modal and form by EOD, October 17.\n\nBackend Team: Develop the new API endpoint and database schema. Target completion: October 21.\n\nFrontend Team: Build the \"Request Phone Swap\" button and the basic modal structure. Begin implementation once wireframes are approved.\n\nProduct Manager: Create the formal Jira ticket with the defined user story and acceptance criteria.",
+      "repo_id": null,
+      "created_at": "2026-01-28T08:03:02.563411",
+      "universal_context": {
+        "project_directories": [
+          "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln",
+          "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project"
+        ],
+        "total_files": 69,
+        "key_entities": [
+          {
+            "name": "UserDto",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs"
+          },
+          {
+            "name": "WeatherForecast",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\WeatherForecast.cs"
+          },
+          {
+            "name": "UsersController",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs"
+          },
+          {
+            "name": "WeatherForecastController",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs"
+          },
+          {
+            "name": "IUserService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs"
+          },
+          {
+            "name": "UserService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs"
+          },
+          {
+            "name": "IMongoDBSettings",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\IMongoDBSettings.cs"
+          },
+          {
+            "name": "MongoDBSettings",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\MongoDBSettings.cs"
+          },
+          {
+            "name": "AppRoutingModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts"
+          },
+          {
+            "name": "AppComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.ts"
+          },
+          {
+            "name": "AppModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts"
+          },
+          {
+            "name": "AuthenticationModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts"
+          },
+          {
+            "name": "LoginComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts"
+          },
+          {
+            "name": "RegisterComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts"
+          },
+          {
+            "name": "NameUppercasePipe",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\pipes\\name-uppercase.pipe.ts"
+          },
+          {
+            "name": "AuthenticationService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts"
+          },
+          {
+            "name": "PhoneService",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts"
+          },
+          {
+            "name": "TableRoutingModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table-routing.module.ts"
+          },
+          {
+            "name": "TableModule",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts"
+          },
+          {
+            "name": "EntryDetailsModalComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\entry-details-modal\\entry-details-modal.component.ts"
+          },
+          {
+            "name": "PhoneComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts"
+          },
+          {
+            "name": "TablePageComponent",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts"
+          },
+          {
+            "name": "Phone",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts"
+          },
+          {
+            "name": "User",
+            "type": "class",
+            "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts"
+          }
+        ],
+        "project_map": {
+          "directories": {
+            "final-proj-sln": {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln",
+              "file_count": 14,
+              "subdirectories": []
+            },
+            "final_project": {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project",
+              "file_count": 55,
+              "subdirectories": []
+            }
+          },
+          "file_types": {
+            ".sln": 1,
+            ".json": 9,
+            ".cs": 9,
+            ".csproj": 1,
+            ".md": 1,
+            ".ico": 1,
+            ".html": 7,
+            ".ts": 27,
+            ".scss": 7,
+            ".less": 1,
+            ".jpg": 2
+          },
+          "key_files": [
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Program.cs",
+              "name": "Program.cs",
+              "importance": 1.0
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs",
+              "name": "Controller.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs",
+              "name": "WeatherForecastController.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs",
+              "name": "IUserService.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+              "name": "UserService.cs",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.spec.ts",
+              "name": "authentication.service.spec.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts",
+              "name": "authentication.service.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.spec.ts",
+              "name": "phone.service.spec.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts",
+              "name": "phone.service.ts",
+              "importance": 0.9
+            },
+            {
+              "path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs",
+              "name": "UserDto.cs",
+              "importance": 0.8
+            }
+          ]
+        }
+      },
+      "sources": {
+        "rag": {
+          "context": "=== PROJECT CONTEXT (Universal Knowledge + Targeted Retrieval) ===\n\n\ud83d\udd11 KEY PROJECT ENTITIES:\n  - UserDto (class)\n  - WeatherForecast (class)\n  - UsersController (class)\n  - WeatherForecastController (class)\n  - IUserService (class)\n  - UserService (class)\n  - IMongoDBSettings (class)\n  - MongoDBSettings (class)\n  - AppRoutingModule (class)\n  - AppComponent (class)\n\n\ud83d\udcc4 RELEVANT CODE SNIPPETS (ranked by importance + relevance):\n\n\n--- Snippet 1 \u2b50\u2b50\u2b50\u2b50 (score: 0.291) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts\nexport class AuthenticationService {\n  private apiUrl = 'https://localhost:7214/Users';\n \n  constructor (private http: HttpClient, private router: Router) { }\n\n  readonly httpOptions = {\n    headers: new HttpHeaders({\n      'Content-Type':  'application/json',\n    })\n  }\n\n  serviceCall() {\n    console.log(\"Service was called\");\n  }\n\n\n  login(user: any): Observable<any> {\n    return this.http.post(`${this.apiUrl}/login`, JSON.stringify(user), this.httpOptions)\n  }\n\n  register(user: any): Observable<any> {\n    return this.http.post(`${this.apiUrl}/register`, JSON.stringify(user), this.httpOptions);\n  }\n\n  logout(): void {\n    // remove user token from storage to log user out\n    localStorage.removeItem('authToken');\n    sessionStorage.removeItem('authToken');\n    localStorage.setItem('rememberMe', 'false');\n    this.router.navigateByUrl('/login');\n  }\n\n}\n\n\n--- Snippet 2 \u2b50\u2b50\u2b50\u2b50 (score: 0.290) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs\n    public class UserService : IUserService\n    {\n        private readonly IMongoCollection<UserDto> _users;\n        public UserService(IMongoDBSettings settings)\n        {\n            var client = new MongoClient(settings.ConnectionString);\n            var database = client.GetDatabase(settings.DatabaseName);\n\n            _users = database.GetCollection<UserDto>(settings.CollectionName);\n        }\n\n        public async Task<bool> Register(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n            Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n            Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n        );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n\n            if (user != null)\n            {\n                return false; // Registration failed\n            }\n            else { \n\n                userDto.Id = Guid.NewGuid();\n                await _users.InsertOneAsync(userDto);\n                return true;\n                 \n            }\n        }\n\n        public async Task<UserDto?> Login(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n                Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n                Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n            );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n            if(user != null)\n            {\n                return user;\n\n            }\n            return null;\n        }\n\n    }\n}\n\n\n--- Snippet 3 \u2b50\u2b50\u2b50\u2b50 (score: 0.289) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts\nexport class PhoneService {\n\n  private phones: Phone[]= [\n    { id: 1, brand: 'Apple', model: 'iPhone 12', storage: 64, price: 799 },\n    { id: 2, brand: 'Samsung', model: 'Galaxy S21', storage: 128, price: 699 },\n    { id: 3, brand: 'Google', model: 'Pixel 5', storage: 128, price: 699 },\n    { id: 4, brand: 'OnePlus', model: '9 Pro', storage: 256, price: 969 },\n    { id: 5, brand: 'Xiaomi', model: 'Mi 11', storage: 256, price: 749 },\n    { id: 6, brand: 'Motorola', model: 'Moto G Power (2021)', storage: 64, price: 199 },\n    { id: 7, brand: 'Samsung', model: 'S22 Ultra', storage: 256, price: 969 },\n    { id: 8, brand: 'Xiaomi', model: 'Mi 12', storage: 256, price: 749 },\n    { id: 9, brand: 'Motorola', model: 'x', storage: 64, price: 199 },\n  ];\n\n  getPhones(): Observable<Phone[]> {\n    // simulate delay of fetching data from API\n    return of(this.phones).pipe(delay(1000));\n  }\n\n  addPhone(phone: Phone): void {\n    phone.id = this.phones.length + 1;\n    this.phones.push(phone);\n  }\n\n  updatePhone(phone: Phone): void {\n    const index = this.phones.findIndex((p) => p.id === phone.id);\n    if (index !== -1) {\n      this.phones[index] = phone;\n    }\n  }\n\n  deletePhone(phoneId: number): void {\n    const index = this.phones.findIndex(p => p.id === phoneId);\n    if (index !== -1) {\n      this.phones.splice(index, 1);\n    }\n  }\n}\n\n\n--- Snippet 4 \u2b50\u2b50\u2b50\u2b50 (score: 0.288) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs\n    public class UsersController : ControllerBase\n    {\n        private readonly IUserService _userService;\n\n        public UsersController(IUserService userService)\n        {\n            _userService = userService;\n        }\n\n        [HttpPost(\"register\")]\n        public async Task<IActionResult> Register(UserDto userDto)\n        {\n            var success = await _userService.Register(userDto);\n\n            if (success)\n            {\n                return Ok(); // Registration successful\n            }\n            else\n            {\n                return BadRequest(); // Registration failed\n            }\n        }\n\n        [HttpPost(\"login\")]\n        public async Task<IActionResult> Login([FromBody] UserDto userDto)\n        {\n            var success = await _userService.Login(userDto);\n            if (success==null)\n            {\n                return NotFound(\"Announcement was not found\");\n            }\n\n            return Ok(success); // Login successful\n        }\n\n    }\n}\n\n\n--- Snippet 5 \u2b50\u2b50 (score: 0.189) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html\n          <td>{{ phone.price }}</td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"edit\" (click)=\"editPhone(phone)\">Edit</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"info-circle\" (click)=\"openDetailsModal(phone)\">Details</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"delete\" (click)=\"deletePhone(phone.id)\">Delete</button>\n          </td>\n        </tr>\n      </tbody>\n    </nz-table>\n  \n  <div class=\"add-button-container\">\n    <button nz-button nzType=\"primary\" nzSize=\"large\" nzShape=\"round\" (click)=\"addPhone()\">Add</button>\n  </div>\n  \n\n--- Snippet 6 \u2b50\u2b50 (score: 0.184) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html\n<div class=\"Register\">\n  <div class=\"Register__background-image\"></div>\n<form [formGroup]=\"registerForm\" (ngSubmit)=\"onSubmit()\">\n  <div>\n    <label for=\"email\">Email:</label>\n    <input type=\"email\" formControlName=\"email\" id=\"email\" required>\n    <div *ngIf=\"registerForm.get('email')?.invalid && (registerForm.get('email')?.dirty || registerForm.get('email')?.touched)\">\n      <div *ngIf=\"registerForm.get('email')?.errors?.['required']\">Email is required.</div>\n      <div *ngIf=\"registerForm.get('email')?.errors?.['email']\">Invalid email format.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"password\">Password:</label>\n    <input type=\"password\" formControlName=\"password\" id=\"password\" required>\n    <div *ngIf=\"registerForm.get('password')?.invalid && (registerForm.get('password')?.dirty || registerForm.get('password')?.touched)\">\n      <div *ngIf=\"registerForm.get('password')?.errors?.['required']\">Password is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"confirmPassword\">Confirm Password:</label>\n    <input type=\"password\" formControlName=\"confirmPassword\" id=\"confirmPassword\" required>\n    <div *ngIf=\"registerForm.get('confirmPassword')?.invalid && (registerForm.get('confirmPassword')?.dirty || registerForm.get('confirmPassword')?.touched)\">\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['required']\">Confirmation password is required.</div>\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['passwordMismatch']\">Passwords do not match.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"firstName\">First Name:</label>\n    <input type=\"text\" formControlName=\"firstName\" id=\"firstName\" required>\n    <div *ngIf=\"registerForm.get('firstName')?.invalid && (registerForm.get('firstName')?.dirty || registerForm.get('firstName')?.touched)\">\n      <div *ngIf=\"registerForm.get('firstName')?.errors?.['required']\">First name is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"lastName\">Last Name:</label>\n\n--- Snippet 7 \u2b50\u2b50 (score: 0.178) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\angular.json\n              ],\n              \"outputHashing\": \"all\"\n            },\n            \"development\": {\n              \"buildOptimizer\": false,\n              \"optimization\": false,\n              \"vendorChunk\": true,\n              \"extractLicenses\": false,\n              \"sourceMap\": true,\n              \"namedChunks\": true\n            }\n          },\n          \"defaultConfiguration\": \"production\"\n        },\n        \"serve\": {\n          \"builder\": \"@angular-devkit/build-angular:dev-server\",\n          \"configurations\": {\n            \"production\": {\n              \"browserTarget\": \"final_project:build:production\"\n            },\n            \"development\": {\n              \"browserTarget\": \"final_project:build:development\"\n            }\n          },\n          \"defaultConfiguration\": \"development\"\n        },\n        \"extract-i18n\": {\n          \"builder\": \"@angular-devkit/build-angular:extract-i18n\",\n          \"options\": {\n            \"browserTarget\": \"final_project:build\"\n          }\n        },\n        \"test\": {\n          \"builder\": \"@angular-devkit/build-angular:karma\",\n          \"options\": {\n            \"polyfills\": [\n              \"zone.js\",\n              \"zone.js/testing\"\n            ],\n            \"tsConfig\": \"tsconfig.spec.json\",\n            \"inlineStyleLanguage\": \"scss\",\n            \"assets\": [\n              \"src/favicon.ico\",\n              \"src/assets\"\n            ],\n            \"styles\": [\n              \"src/styles.scss\"\n            ],\n            \"scripts\": []\n          }\n        }\n      }\n    }\n  },\n  \"cli\": {\n    \"analytics\": false\n  }\n}\n\n\n--- Snippet 8 \u2b50\u2b50 (score: 0.172) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts\nexport class TablePageComponent implements OnInit {\n  \n  phones$!: Observable<Phone[]>;\n  searchQuery: string = '';\n\n\n  constructor(private phoneService: PhoneService, private modal: NzModalService, private authService: AuthenticationService) {}\n\n  ngOnInit(): void {\n    this.loadPhones();\n    this.getPhones();\n  }\n\n  loadPhones(): void {\n    this.phones$ = this.phoneService.getPhones();\n  }\n\n  public addPhone(): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Add Phone',\n      nzContent: PhoneComponent,\n      nzComponentParams: {},\n      nzOnOk: () => {\n        const phoneComponent = modalRef.getContentComponent() as PhoneComponent;\n        phoneComponent.submitForm();\n        const newPhone = phoneComponent.newPhone;\n        if (newPhone) {\n          this.phoneService.addPhone(newPhone);\n          this.loadPhones();\n          console.log(this.phones$)\n        }\n      }\n    })\n  \n    modalRef.afterClose.subscribe((result: Phone) => {\n      if (result) {\n        this.phoneService.addPhone(result);\n        this.loadPhones();\n        console.log(this.phones$)\n      }\n    });\n  }\n  \n  public editPhone(phone: Phone): void {\n    \n    const modalRef = this.modal.create({\n      nzTitle: 'Edit Phone',\n      nzContent: PhoneComponent,\n      nzComponentParams: {\n        phone: { ...phone },\n      },\n      nzOnOk: () => {\n        const phoneComponent = modalRef.getContentComponent() as PhoneComponent;\n        phoneComponent.submitForm();\n        const newPhone = phoneComponent.newPhone;\n        if (newPhone) {\n          this.phoneService.updatePhone(newPhone);\n          this.loadPhones();\n        }\n      }\n      \n    });    \n  \n    modalRef.afterClose.subscribe((result: Phone) => {\n      if (result) {\n        this.phoneService.updatePhone(result);\n        this.loadPhones();\n        console.log(this.phones$)\n      }\n    });\n    \n  }\n  currentPage: number = 1;\n  pageSize: number = 8;\n  @Output() phones! : Phone[];\n\n  getPhones(): void {\n    this.phoneService.getPhones().subscribe((phones) => {\n      this.phones = phones;\n    });\n  }\n\n  getPaginatedPhones(): Phone[] {\n    const startIndex = (this.currentPage - 1) * this.pageSize;\n    const endIndex = startIndex + this.pageSize;\n    return this.phones.slice(startIndex, endIndex);\n  }\n\n  onPageChange(page: number): void {\n    this.currentPage = page;\n  }\n\n  getFilteredPhones(): Phone[] {\n    if (!this.searchQuery) {\n      return this.getPaginatedPhones();\n    }\n    \n    const filteredPhones = this.getPaginatedPhones().filter(phone => {\n      // Modify the condition based on your specific search requirements\n      return phone.brand.toLowerCase().includes(this.searchQuery.toLowerCase()) ||\n             phone.model.toLowerCase().includes(this.searchQuery.toLowerCase()) ||\n             phone.storage.toString().includes(this.searchQuery.toLowerCase()) ||\n             phone.price.toString().includes(this.searchQuery.toLowerCase());\n    });\n  \n    return filteredPhones;\n\n  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload the phones after deletion\n    this.loadPhones();\n  }  \n\n  sortPhones(column: string): void {\n      // Implement the sorting logic based on the selected column\n      switch (column) {\n        case 'id':\n          this.phones.sort((a, b) => a.id - b.id);\n          break;\n        case 'brand':\n          this.phones.sort((a, b) => a.brand.localeCompare(b.brand));\n          break;\n        case 'model':\n          this.phones.sort((a, b) => a.model.localeCompare(b.model));\n          break;\n        case 'storage':\n          this.phones.sort((a, b) => a.storage - b.storage);\n          break;\n        case 'price':\n          this.phones.sort((a, b) => a.price - b.price);\n          break;\n        default:\n          break;\n      }\n    }\n\n  openDetailsModal(phone: Phone): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Phone Details',\n      nzContent: EntryDetailsModalComponent,\n      nzComponentParams: {\n        phone: phone\n      }\n    });\n  }\n\n  logout(): void {\n    this.authService.logout();\n  }\n  \n}\n\n\n--- Snippet 9 \u2b50\u2b50 (score: 0.172) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts\nexport interface Phone {\n    id: number;\n    brand: string;\n    model: string;\n    storage: number;\n    price: number;\n  }\n  \n\n--- Snippet 10 \u2b50\u2b50 (score: 0.171) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts\nexport class PhoneComponent implements OnInit {\n  @Input() phone!: Phone;\n  phoneForm!: FormGroup;\n  newPhone?: Phone;\n\n\n  constructor(private fb: FormBuilder, public modalRef: NzModalRef) {}\n\n  ngOnInit(): void {\n    this.createForm();\n  }\n\n  private createForm(): void {\n    this.phoneForm = this.fb.group({\n      brand: [this.phone?.brand, [Validators.required],],\n      model: [this.phone?.model, [Validators.required]],\n      storage: [this.phone?.storage, [Validators.required, Validators.min(1)]],\n      price: [this.phone?.price, [Validators.required, Validators.min(1)]],\n      id: [this.phone?.id, [Validators.required, Validators.min(1)]]\n    });\n  }\n\n  submitForm(): void {\n    if (this.phoneForm.invalid) {\n      for (const i in this.phoneForm.controls) {\n        if (this.phoneForm.controls.hasOwnProperty(i)) {\n          this.phoneForm.controls[i].markAsDirty();\n          this.phoneForm.controls[i].updateValueAndValidity();\n        }\n      }\n      return;\n    }\n\n    this.newPhone = {\n      brand: this.phoneForm.value.brand,\n      model: this.phoneForm.value.model,\n      storage: this.phoneForm.value.storage,\n      price: this.phoneForm.value.price,\n      id: this.phoneForm.value.id\n    };\n\n  }\n\n}\n\n--- Snippet 11 \u2b50\u2b50 (score: 0.171) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.html\n<form nz-form [formGroup]=\"phoneForm\">\n\n<nz-form-item>\n        <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Id</nz-form-label>\n        <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n          <input nz-input type=\"number\" min=\"0\" formControlName=\"id\" placeholder=\"Enter phone id\">\n        </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n      <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Brand</nz-form-label>\n      <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n        <input nz-input formControlName=\"brand\" placeholder=\"Enter phone brand\">\n        <div *ngIf=\"phoneForm.get('brand')\"></div>\n    </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Model</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input formControlName=\"model\" placeholder=\"Enter phone model\">\n  </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Storage (GB)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"storage\" placeholder=\"Enter phone storage\">\n  </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Price (\u20ac)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"price\" placeholder=\"Enter phone price\">\n  </nz-form-control>\n</nz-form-item>\n</form>\n\n\n\n--- Snippet 12 \u2b50\u2b50 (score: 0.170) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md\n# FinalProject\n\nThis project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 15.2.4.\n\n## Development server\n\nRun `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.\n\n## Code scaffolding\n\nRun `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.\n\n## Build\n\nRun `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.\n\n## Running unit tests\n\nRun `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).\n\n## Running end-to-end tests\n\nRun `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.\n\n## Further help\n\nTo get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.\n\n\n--- Snippet 13 \u2b50\u2b50 (score: 0.168) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts\nexport interface User {\n    id?: string;\n    email: string,\n    password: string,\n    firstName: string,\n    lastName: string,\n}\n\n--- Snippet 14 \u2b50\u2b50 (score: 0.168) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts\nexport class RegisterComponent{\n  registerForm: FormGroup;\n  constructor(\n    private formBuilder: FormBuilder,\n    private authService: AuthenticationService,\n    private router: Router,\n  ) {\n    this.registerForm = this.formBuilder.group({\n      email: ['', [Validators.required, Validators.email]],\n      password: [\n        '',\n        [\n          Validators.required,\n          Validators.minLength(6),\n        ]\n      ],\n      confirmPassword: ['', Validators.required],\n      firstName: ['', Validators.required, capitalLetterValidator()],\n      lastName: ['', Validators.required, capitalLetterValidator()]\n    }, { validators: this.passwordMatchValidator });\n  }\n\n  onSubmit() {\n    if (this.registerForm.invalid) {\n      return;\n    }\n\n    let user:User={\n      email:this.registerForm.value.email,\n      password:this.registerForm.value.password,\n      lastName:this.registerForm.value.lastName,\n      firstName:this.registerForm.value.firstName\n      }\n      console.log(user)\n      this.authService.register(user).subscribe(\n        () => {\n          console.log('Registration successful');\n          this.router.navigateByUrl('/login');\n        },\n        (error) => {\n          console.log('Registration failed:', error);\n          // Handle registration failure, such as displaying an error message\n        }\n      );\n  }\n\n  passwordMatchValidator(formGroup: FormGroup) {\n    const passwordControl = formGroup.get('password');\n    const confirmPasswordControl = formGroup.get('confirmPassword');\n\n    if (passwordControl && confirmPasswordControl) {\n      const password = passwordControl.value;\n      const confirmPassword = confirmPasswordControl.value;\n\n      if (password !== confirmPassword) {\n        confirmPasswordControl.setErrors({ passwordMismatch: true });\n      } else {\n        confirmPasswordControl.setErrors(null);\n      }\n    }\n  }\n\n  get email() {\n    return this.registerForm.get('email');\n  }\n\n  get password() {\n    return this.registerForm.get('password');\n  }\n\n  get confirmPassword() {\n    return this.registerForm.get('confirmPassword');\n  }\n\n  get firstName() {\n    return this.registerForm.get('firstName');\n  }\n\n  get lastName() {\n    return this.registerForm.get('lastName');\n  }\n}\n\n\n--- Snippet 15 \u2b50\u2b50 (score: 0.168) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts\nexport class LoginComponent implements OnInit{\n  loginForm: FormGroup;\n  \n  constructor(\n    private formBuilder: FormBuilder,\n    private authService: AuthenticationService,\n    private router: Router\n  ) {\n    this.loginForm = this.formBuilder.group({\n      email: ['', [Validators.required, Validators.email]],\n      password: ['', Validators.required],\n      rememberMe: [false]\n    });\n  }\n\n  ngOnInit(): void {\n    this.checkToken();\n  }\n\n  onSubmit() {\n    if (this.loginForm.invalid) {\n      return;\n    }\n    const rememberMe = this.loginForm.value.rememberMe;\n  \n    let user: User = {\n      email: this.loginForm.value.email,\n      password: this.loginForm.value.password,\n      lastName: \"name\",\n      firstName: \"name\"\n    };\n  \n    this.authService.login(user).subscribe(\n      x => {\n        console.log(x);\n        const token = x.token;\n        if (rememberMe) {\n          localStorage.setItem('authToken', token);\n          localStorage.setItem('rememberMe', 'true');\n        } else {\n          sessionStorage.setItem('authToken', token);\n          localStorage.setItem('rememberMe', 'false');\n        }\n        this.router.navigate(['/PAGE']);\n      },\n      error => {\n        if (error.status === 401) {\n          console.log('Invalid email or password.');\n        } else {\n          console.log('An error occurred. Please try again later.');\n        }\n      }\n    );\n  }\n\n  checkToken(): void {\n    const rememberMe = localStorage.getItem('rememberMe') === 'true';\n    const token = rememberMe ? localStorage.getItem('authToken') : sessionStorage.getItem('authToken');\n    if (rememberMe) {\n      this.router.navigate(['/PAGE']);\n    }\n  }\n  \n\n  get email() {\n    return this.loginForm.get('email');\n  }\n\n  get password() {\n    return this.loginForm.get('password');\n  }\n\n  redirectToRegister() {\n    this.router.navigate(['/register']);\n  }\n}\n\n\n--- Snippet 16 \u2b50 (score: 0.078) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.scss\n.Register{\n\n    position: relative;\n    height: 100%;\n  \n    &__background-image {\n      position: absolute;\n      top: 0;\n      left: 0;\n      width: 100%;\n      height: 100%;\n      background-image: url('/assets/background.jpg');\n      background-size: cover;\n      z-index: -1;\n    }\n}\n  form {\n    width: 300px;\n    margin: 0 auto;\n    padding: 20px;\n    border-radius: 5px;\n    background-color: white;\n    box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);\n  \n    h2 {\n      margin-bottom: 20px;\n      color: #3f51b5;\n      text-align: center;\n    }\n  \n    div {\n      margin-bottom: 15px;\n      \n      label {\n        color: #3f51b5;\n        font-weight: bold;\n        display: block;\n        margin-bottom: 5px;\n      }\n  \n      input {\n        width: 100%;\n        padding: 10px;\n        border-radius: 5px;\n        border: 1px solid #ddd;\n      }\n    }\n  \n    button {\n      width: 100%;\n      padding: 10px;\n      border: none;\n      border-radius: 5px;\n      background-color: #673ab7;\n      color: white;\n      cursor: pointer;\n      transition: background-color 0.3s ease;\n  \n      &:hover {\n        background-color: #5622a4;\n      }\n  \n      &:disabled {\n        background-color: #ccc;\n        cursor: not-allowed;\n      }\n    }\n  }\n  \n\n--- Snippet 17 \u2b50 (score: 0.078) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.scss\n\n  .Login{\n\n    position: relative;\n    height: 100%;\n  \n    &__background-image {\n      position: absolute;\n      top: 0;\n      left: 0;\n      width: 100%;\n      height: 100%;\n      background-image: url('/assets/background.jpg');\n      background-size: cover;\n      z-index: -1;\n    }\n}\n  form {\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n  }\n  \n  h2 {\n    color: #8188f1;\n  }\n  \n  label {\n    color: #8188f1;\n    align-self: flex-start;\n  }\n  \n  input[type=email], input[type=password], input[type=checkbox] {\n    width: 100%;\n    background-color: #2f2f40;\n    border: none;\n    color: #e1e1ee;\n    padding: 0.5em;\n    margin: 0.5em 0;\n    border-radius: 4px;\n  }\n  \n  button {\n    margin: 1em 0;\n    padding: 0.5em 1em;\n    border-radius: 4px;\n    font-size: 0.9em;\n    text-transform: uppercase;\n    cursor: pointer;\n    transition: background-color 0.3s ease;\n    width: 100%;\n  }\n\n  p{\n    color: #8188f1;\n\n  }\n  \n  button[mat-raised-button][color=accent] {\n    background-color: #8188f1;\n    border: none;\n    color: white;\n    \n    &:hover {\n      background-color: #6b70c7;\n    }\n  \n    &:disabled {\n      background-color: #2f2f40;\n      color: #555577;\n    }\n  }\n\n\n--- Snippet 18 \u2b50 (score: 0.077) ---\nFile: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\styles.scss\n/* You can add global styles to this file, and also import other style files */\n",
+          "snippets": [
+            {
+              "content": "export class AuthenticationService {\n  private apiUrl = 'https://localhost:7214/Users';\n \n  constructor (private http: HttpClient, private router: Router) { }\n\n  readonly httpOptions = {\n    headers: new HttpHeaders({\n      'Content-Type':  'application/json',\n    })\n  }\n\n  serviceCall() {\n    console.log(\"Service was called\");\n  }\n\n\n  login(user: any): Observable<any> {\n    return this.http.post(`${this.apiUrl}/login`, JSON.stringify(user), this.httpOptions)\n  }\n\n  register(user: any): Observable<any> {\n    return this.http.post(`${this.apiUrl}/register`, JSON.stringify(user), this.httpOptions);\n  }\n\n  logout(): void {\n    // remove user token from storage to log user out\n    localStorage.removeItem('authToken');\n    sessionStorage.removeItem('authToken');\n    localStorage.setItem('rememberMe', 'false');\n    this.router.navigateByUrl('/login');\n  }\n\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts",
+              "score": 0.29052654109589043,
+              "importance": 0.9,
+              "metadata": {
+                "end_line": 43,
+                "file_hash": "7ecc7b4f320e353f6d28c8780b64e9abe0c694f2",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts",
+                "indexed_at": "2026-01-28T07:59:14.374761",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "    public class UserService : IUserService\n    {\n        private readonly IMongoCollection<UserDto> _users;\n        public UserService(IMongoDBSettings settings)\n        {\n            var client = new MongoClient(settings.ConnectionString);\n            var database = client.GetDatabase(settings.DatabaseName);\n\n            _users = database.GetCollection<UserDto>(settings.CollectionName);\n        }\n\n        public async Task<bool> Register(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n            Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n            Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n        );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n\n            if (user != null)\n            {\n                return false; // Registration failed\n            }\n            else { \n\n                userDto.Id = Guid.NewGuid();\n                await _users.InsertOneAsync(userDto);\n                return true;\n                 \n            }\n        }\n\n        public async Task<UserDto?> Login(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n                Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n                Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n            );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n            if(user != null)\n            {\n                return user;\n\n            }\n            return null;\n        }\n\n    }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+              "score": 0.2897183098591549,
+              "importance": 0.9,
+              "metadata": {
+                "end_line": 58,
+                "file_hash": "ff9b3e84c3737cf9a0979f5770bcb732c95ec1d3",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs",
+                "indexed_at": "2026-01-28T07:59:03.813225",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "export class PhoneService {\n\n  private phones: Phone[]= [\n    { id: 1, brand: 'Apple', model: 'iPhone 12', storage: 64, price: 799 },\n    { id: 2, brand: 'Samsung', model: 'Galaxy S21', storage: 128, price: 699 },\n    { id: 3, brand: 'Google', model: 'Pixel 5', storage: 128, price: 699 },\n    { id: 4, brand: 'OnePlus', model: '9 Pro', storage: 256, price: 969 },\n    { id: 5, brand: 'Xiaomi', model: 'Mi 11', storage: 256, price: 749 },\n    { id: 6, brand: 'Motorola', model: 'Moto G Power (2021)', storage: 64, price: 199 },\n    { id: 7, brand: 'Samsung', model: 'S22 Ultra', storage: 256, price: 969 },\n    { id: 8, brand: 'Xiaomi', model: 'Mi 12', storage: 256, price: 749 },\n    { id: 9, brand: 'Motorola', model: 'x', storage: 64, price: 199 },\n  ];\n\n  getPhones(): Observable<Phone[]> {\n    // simulate delay of fetching data from API\n    return of(this.phones).pipe(delay(1000));\n  }\n\n  addPhone(phone: Phone): void {\n    phone.id = this.phones.length + 1;\n    this.phones.push(phone);\n  }\n\n  updatePhone(phone: Phone): void {\n    const index = this.phones.findIndex((p) => p.id === phone.id);\n    if (index !== -1) {\n      this.phones[index] = phone;\n    }\n  }\n\n  deletePhone(phoneId: number): void {\n    const index = this.phones.findIndex(p => p.id === phoneId);\n    if (index !== -1) {\n      this.phones.splice(index, 1);\n    }\n  }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts",
+              "score": 0.2893554538520214,
+              "importance": 0.9,
+              "metadata": {
+                "end_line": 46,
+                "file_hash": "612c0daa5990048ba403946925cbdf83b3bea490",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts",
+                "indexed_at": "2026-01-28T07:59:14.810377",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "    public class UsersController : ControllerBase\n    {\n        private readonly IUserService _userService;\n\n        public UsersController(IUserService userService)\n        {\n            _userService = userService;\n        }\n\n        [HttpPost(\"register\")]\n        public async Task<IActionResult> Register(UserDto userDto)\n        {\n            var success = await _userService.Register(userDto);\n\n            if (success)\n            {\n                return Ok(); // Registration successful\n            }\n            else\n            {\n                return BadRequest(); // Registration failed\n            }\n        }\n\n        [HttpPost(\"login\")]\n        public async Task<IActionResult> Login([FromBody] UserDto userDto)\n        {\n            var success = await _userService.Login(userDto);\n            if (success==null)\n            {\n                return NotFound(\"Announcement was not found\");\n            }\n\n            return Ok(success); // Login successful\n        }\n\n    }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs",
+              "score": 0.2881559571619813,
+              "importance": 0.9,
+              "metadata": {
+                "end_line": 46,
+                "file_hash": "835883d82f8478c22a71b2cce695c595f7372022",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs",
+                "indexed_at": "2026-01-28T07:59:02.350509",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "          <td>{{ phone.price }}</td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"edit\" (click)=\"editPhone(phone)\">Edit</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"info-circle\" (click)=\"openDetailsModal(phone)\">Details</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"delete\" (click)=\"deletePhone(phone.id)\">Delete</button>\n          </td>\n        </tr>\n      </tbody>\n    </nz-table>\n  \n  <div class=\"add-button-container\">\n    <button nz-button nzType=\"primary\" nzSize=\"large\" nzShape=\"round\" (click)=\"addPhone()\">Add</button>\n  </div>\n  ",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html",
+              "score": 0.1888710496230097,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 52,
+                "file_hash": "9c379e06d25408857a72df401bf552f0e767bea7",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html",
+                "indexed_at": "2026-01-28T07:59:18.353380",
+                "start_line": 35
+              }
+            },
+            {
+              "content": "<div class=\"Register\">\n  <div class=\"Register__background-image\"></div>\n<form [formGroup]=\"registerForm\" (ngSubmit)=\"onSubmit()\">\n  <div>\n    <label for=\"email\">Email:</label>\n    <input type=\"email\" formControlName=\"email\" id=\"email\" required>\n    <div *ngIf=\"registerForm.get('email')?.invalid && (registerForm.get('email')?.dirty || registerForm.get('email')?.touched)\">\n      <div *ngIf=\"registerForm.get('email')?.errors?.['required']\">Email is required.</div>\n      <div *ngIf=\"registerForm.get('email')?.errors?.['email']\">Invalid email format.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"password\">Password:</label>\n    <input type=\"password\" formControlName=\"password\" id=\"password\" required>\n    <div *ngIf=\"registerForm.get('password')?.invalid && (registerForm.get('password')?.dirty || registerForm.get('password')?.touched)\">\n      <div *ngIf=\"registerForm.get('password')?.errors?.['required']\">Password is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"confirmPassword\">Confirm Password:</label>\n    <input type=\"password\" formControlName=\"confirmPassword\" id=\"confirmPassword\" required>\n    <div *ngIf=\"registerForm.get('confirmPassword')?.invalid && (registerForm.get('confirmPassword')?.dirty || registerForm.get('confirmPassword')?.touched)\">\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['required']\">Confirmation password is required.</div>\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['passwordMismatch']\">Passwords do not match.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"firstName\">First Name:</label>\n    <input type=\"text\" formControlName=\"firstName\" id=\"firstName\" required>\n    <div *ngIf=\"registerForm.get('firstName')?.invalid && (registerForm.get('firstName')?.dirty || registerForm.get('firstName')?.touched)\">\n      <div *ngIf=\"registerForm.get('firstName')?.errors?.['required']\">First name is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"lastName\">Last Name:</label>",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html",
+              "score": 0.18400232345813072,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 35,
+                "file_hash": "809ad6527386f8bb842a99bb2ae1fa79120a6b95",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html",
+                "indexed_at": "2026-01-28T07:59:12.722179",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "              ],\n              \"outputHashing\": \"all\"\n            },\n            \"development\": {\n              \"buildOptimizer\": false,\n              \"optimization\": false,\n              \"vendorChunk\": true,\n              \"extractLicenses\": false,\n              \"sourceMap\": true,\n              \"namedChunks\": true\n            }\n          },\n          \"defaultConfiguration\": \"production\"\n        },\n        \"serve\": {\n          \"builder\": \"@angular-devkit/build-angular:dev-server\",\n          \"configurations\": {\n            \"production\": {\n              \"browserTarget\": \"final_project:build:production\"\n            },\n            \"development\": {\n              \"browserTarget\": \"final_project:build:development\"\n            }\n          },\n          \"defaultConfiguration\": \"development\"\n        },\n        \"extract-i18n\": {\n          \"builder\": \"@angular-devkit/build-angular:extract-i18n\",\n          \"options\": {\n            \"browserTarget\": \"final_project:build\"\n          }\n        },\n        \"test\": {\n          \"builder\": \"@angular-devkit/build-angular:karma\",\n          \"options\": {\n            \"polyfills\": [\n              \"zone.js\",\n              \"zone.js/testing\"\n            ],\n            \"tsConfig\": \"tsconfig.spec.json\",\n            \"inlineStyleLanguage\": \"scss\",\n            \"assets\": [\n              \"src/favicon.ico\",\n              \"src/assets\"\n            ],\n            \"styles\": [\n              \"src/styles.scss\"\n            ],\n            \"scripts\": []\n          }\n        }\n      }\n    }\n  },\n  \"cli\": {\n    \"analytics\": false\n  }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\angular.json",
+              "score": 0.17843645150414728,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 114,
+                "file_hash": "bd55415c5b4f3d18996dce424b2fbd7205bfa1c2",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\angular.json",
+                "indexed_at": "2026-01-28T07:59:05.120483",
+                "start_line": 56
+              }
+            },
+            {
+              "content": "export class TablePageComponent implements OnInit {\n  \n  phones$!: Observable<Phone[]>;\n  searchQuery: string = '';\n\n\n  constructor(private phoneService: PhoneService, private modal: NzModalService, private authService: AuthenticationService) {}\n\n  ngOnInit(): void {\n    this.loadPhones();\n    this.getPhones();\n  }\n\n  loadPhones(): void {\n    this.phones$ = this.phoneService.getPhones();\n  }\n\n  public addPhone(): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Add Phone',\n      nzContent: PhoneComponent,\n      nzComponentParams: {},\n      nzOnOk: () => {\n        const phoneComponent = modalRef.getContentComponent() as PhoneComponent;\n        phoneComponent.submitForm();\n        const newPhone = phoneComponent.newPhone;\n        if (newPhone) {\n          this.phoneService.addPhone(newPhone);\n          this.loadPhones();\n          console.log(this.phones$)\n        }\n      }\n    })\n  \n    modalRef.afterClose.subscribe((result: Phone) => {\n      if (result) {\n        this.phoneService.addPhone(result);\n        this.loadPhones();\n        console.log(this.phones$)\n      }\n    });\n  }\n  \n  public editPhone(phone: Phone): void {\n    \n    const modalRef = this.modal.create({\n      nzTitle: 'Edit Phone',\n      nzContent: PhoneComponent,\n      nzComponentParams: {\n        phone: { ...phone },\n      },\n      nzOnOk: () => {\n        const phoneComponent = modalRef.getContentComponent() as PhoneComponent;\n        phoneComponent.submitForm();\n        const newPhone = phoneComponent.newPhone;\n        if (newPhone) {\n          this.phoneService.updatePhone(newPhone);\n          this.loadPhones();\n        }\n      }\n      \n    });    \n  \n    modalRef.afterClose.subscribe((result: Phone) => {\n      if (result) {\n        this.phoneService.updatePhone(result);\n        this.loadPhones();\n        console.log(this.phones$)\n      }\n    });\n    \n  }\n  currentPage: number = 1;\n  pageSize: number = 8;\n  @Output() phones! : Phone[];\n\n  getPhones(): void {\n    this.phoneService.getPhones().subscribe((phones) => {\n      this.phones = phones;\n    });\n  }\n\n  getPaginatedPhones(): Phone[] {\n    const startIndex = (this.currentPage - 1) * this.pageSize;\n    const endIndex = startIndex + this.pageSize;\n    return this.phones.slice(startIndex, endIndex);\n  }\n\n  onPageChange(page: number): void {\n    this.currentPage = page;\n  }\n\n  getFilteredPhones(): Phone[] {\n    if (!this.searchQuery) {\n      return this.getPaginatedPhones();\n    }\n    \n    const filteredPhones = this.getPaginatedPhones().filter(phone => {\n      // Modify the condition based on your specific search requirements\n      return phone.brand.toLowerCase().includes(this.searchQuery.toLowerCase()) ||\n             phone.model.toLowerCase().includes(this.searchQuery.toLowerCase()) ||\n             phone.storage.toString().includes(this.searchQuery.toLowerCase()) ||\n             phone.price.toString().includes(this.searchQuery.toLowerCase());\n    });\n  \n    return filteredPhones;\n\n  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload the phones after deletion\n    this.loadPhones();\n  }  \n\n  sortPhones(column: string): void {\n      // Implement the sorting logic based on the selected column\n      switch (column) {\n        case 'id':\n          this.phones.sort((a, b) => a.id - b.id);\n          break;\n        case 'brand':\n          this.phones.sort((a, b) => a.brand.localeCompare(b.brand));\n          break;\n        case 'model':\n          this.phones.sort((a, b) => a.model.localeCompare(b.model));\n          break;\n        case 'storage':\n          this.phones.sort((a, b) => a.storage - b.storage);\n          break;\n        case 'price':\n          this.phones.sort((a, b) => a.price - b.price);\n          break;\n        default:\n          break;\n      }\n    }\n\n  openDetailsModal(phone: Phone): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Phone Details',\n      nzContent: EntryDetailsModalComponent,\n      nzComponentParams: {\n        phone: phone\n      }\n    });\n  }\n\n  logout(): void {\n    this.authService.logout();\n  }\n  \n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts",
+              "score": 0.17240143369175626,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 168,
+                "file_hash": "33520ad0f26dd0d060a5511b75fce2257a02db5d",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts",
+                "indexed_at": "2026-01-28T07:59:19.372678",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "export interface Phone {\n    id: number;\n    brand: string;\n    model: string;\n    storage: number;\n    price: number;\n  }\n  ",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts",
+              "score": 0.1715435606060606,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 8,
+                "file_hash": "73743034e52386bf35b19115aaf75b39fff72057",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts",
+                "indexed_at": "2026-01-28T07:59:20.290822",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "export class PhoneComponent implements OnInit {\n  @Input() phone!: Phone;\n  phoneForm!: FormGroup;\n  newPhone?: Phone;\n\n\n  constructor(private fb: FormBuilder, public modalRef: NzModalRef) {}\n\n  ngOnInit(): void {\n    this.createForm();\n  }\n\n  private createForm(): void {\n    this.phoneForm = this.fb.group({\n      brand: [this.phone?.brand, [Validators.required],],\n      model: [this.phone?.model, [Validators.required]],\n      storage: [this.phone?.storage, [Validators.required, Validators.min(1)]],\n      price: [this.phone?.price, [Validators.required, Validators.min(1)]],\n      id: [this.phone?.id, [Validators.required, Validators.min(1)]]\n    });\n  }\n\n  submitForm(): void {\n    if (this.phoneForm.invalid) {\n      for (const i in this.phoneForm.controls) {\n        if (this.phoneForm.controls.hasOwnProperty(i)) {\n          this.phoneForm.controls[i].markAsDirty();\n          this.phoneForm.controls[i].updateValueAndValidity();\n        }\n      }\n      return;\n    }\n\n    this.newPhone = {\n      brand: this.phoneForm.value.brand,\n      model: this.phoneForm.value.model,\n      storage: this.phoneForm.value.storage,\n      price: this.phoneForm.value.price,\n      id: this.phoneForm.value.id\n    };\n\n  }\n\n}",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts",
+              "score": 0.17129032258064514,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 55,
+                "file_hash": "287036664b71903508f067a4c732ccc3e55ff1e8",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts",
+                "indexed_at": "2026-01-28T07:59:17.987814",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "<form nz-form [formGroup]=\"phoneForm\">\n\n<nz-form-item>\n        <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Id</nz-form-label>\n        <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n          <input nz-input type=\"number\" min=\"0\" formControlName=\"id\" placeholder=\"Enter phone id\">\n        </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n      <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Brand</nz-form-label>\n      <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n        <input nz-input formControlName=\"brand\" placeholder=\"Enter phone brand\">\n        <div *ngIf=\"phoneForm.get('brand')\"></div>\n    </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Model</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input formControlName=\"model\" placeholder=\"Enter phone model\">\n  </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Storage (GB)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"storage\" placeholder=\"Enter phone storage\">\n  </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Price (\u20ac)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"price\" placeholder=\"Enter phone price\">\n  </nz-form-control>\n</nz-form-item>\n</form>\n\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.html",
+              "score": 0.1710633484162896,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 40,
+                "file_hash": "e741613976ad4e674a08696d6d00f976a726f997",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.html",
+                "indexed_at": "2026-01-28T07:59:17.128101",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "# FinalProject\n\nThis project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 15.2.4.\n\n## Development server\n\nRun `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.\n\n## Code scaffolding\n\nRun `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.\n\n## Build\n\nRun `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.\n\n## Running unit tests\n\nRun `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).\n\n## Running end-to-end tests\n\nRun `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.\n\n## Further help\n\nTo get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md",
+              "score": 0.1696149447197865,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 28,
+                "file_hash": "f1c79a135116c7cb7e7bbee8627b3c7bbd843075",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md",
+                "indexed_at": "2026-01-28T07:59:06.111001",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "export interface User {\n    id?: string;\n    email: string,\n    password: string,\n    firstName: string,\n    lastName: string,\n}",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts",
+              "score": 0.16832021895313035,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 8,
+                "file_hash": "ff003281686afd38348adb1a08b158672ca98999",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts",
+                "indexed_at": "2026-01-28T07:59:20.699989",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "export class RegisterComponent{\n  registerForm: FormGroup;\n  constructor(\n    private formBuilder: FormBuilder,\n    private authService: AuthenticationService,\n    private router: Router,\n  ) {\n    this.registerForm = this.formBuilder.group({\n      email: ['', [Validators.required, Validators.email]],\n      password: [\n        '',\n        [\n          Validators.required,\n          Validators.minLength(6),\n        ]\n      ],\n      confirmPassword: ['', Validators.required],\n      firstName: ['', Validators.required, capitalLetterValidator()],\n      lastName: ['', Validators.required, capitalLetterValidator()]\n    }, { validators: this.passwordMatchValidator });\n  }\n\n  onSubmit() {\n    if (this.registerForm.invalid) {\n      return;\n    }\n\n    let user:User={\n      email:this.registerForm.value.email,\n      password:this.registerForm.value.password,\n      lastName:this.registerForm.value.lastName,\n      firstName:this.registerForm.value.firstName\n      }\n      console.log(user)\n      this.authService.register(user).subscribe(\n        () => {\n          console.log('Registration successful');\n          this.router.navigateByUrl('/login');\n        },\n        (error) => {\n          console.log('Registration failed:', error);\n          // Handle registration failure, such as displaying an error message\n        }\n      );\n  }\n\n  passwordMatchValidator(formGroup: FormGroup) {\n    const passwordControl = formGroup.get('password');\n    const confirmPasswordControl = formGroup.get('confirmPassword');\n\n    if (passwordControl && confirmPasswordControl) {\n      const password = passwordControl.value;\n      const confirmPassword = confirmPasswordControl.value;\n\n      if (password !== confirmPassword) {\n        confirmPasswordControl.setErrors({ passwordMismatch: true });\n      } else {\n        confirmPasswordControl.setErrors(null);\n      }\n    }\n  }\n\n  get email() {\n    return this.registerForm.get('email');\n  }\n\n  get password() {\n    return this.registerForm.get('password');\n  }\n\n  get confirmPassword() {\n    return this.registerForm.get('confirmPassword');\n  }\n\n  get firstName() {\n    return this.registerForm.get('firstName');\n  }\n\n  get lastName() {\n    return this.registerForm.get('lastName');\n  }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts",
+              "score": 0.16820945945945945,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 95,
+                "file_hash": "cdc9fd3f06b93f72ab8b8392a917c9ecfdf190ae",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts",
+                "indexed_at": "2026-01-28T07:59:13.546161",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "export class LoginComponent implements OnInit{\n  loginForm: FormGroup;\n  \n  constructor(\n    private formBuilder: FormBuilder,\n    private authService: AuthenticationService,\n    private router: Router\n  ) {\n    this.loginForm = this.formBuilder.group({\n      email: ['', [Validators.required, Validators.email]],\n      password: ['', Validators.required],\n      rememberMe: [false]\n    });\n  }\n\n  ngOnInit(): void {\n    this.checkToken();\n  }\n\n  onSubmit() {\n    if (this.loginForm.invalid) {\n      return;\n    }\n    const rememberMe = this.loginForm.value.rememberMe;\n  \n    let user: User = {\n      email: this.loginForm.value.email,\n      password: this.loginForm.value.password,\n      lastName: \"name\",\n      firstName: \"name\"\n    };\n  \n    this.authService.login(user).subscribe(\n      x => {\n        console.log(x);\n        const token = x.token;\n        if (rememberMe) {\n          localStorage.setItem('authToken', token);\n          localStorage.setItem('rememberMe', 'true');\n        } else {\n          sessionStorage.setItem('authToken', token);\n          localStorage.setItem('rememberMe', 'false');\n        }\n        this.router.navigate(['/PAGE']);\n      },\n      error => {\n        if (error.status === 401) {\n          console.log('Invalid email or password.');\n        } else {\n          console.log('An error occurred. Please try again later.');\n        }\n      }\n    );\n  }\n\n  checkToken(): void {\n    const rememberMe = localStorage.getItem('rememberMe') === 'true';\n    const token = rememberMe ? localStorage.getItem('authToken') : sessionStorage.getItem('authToken');\n    if (rememberMe) {\n      this.router.navigate(['/PAGE']);\n    }\n  }\n  \n\n  get email() {\n    return this.loginForm.get('email');\n  }\n\n  get password() {\n    return this.loginForm.get('password');\n  }\n\n  redirectToRegister() {\n    this.router.navigate(['/register']);\n  }\n}\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts",
+              "score": 0.16766666666666666,
+              "importance": 0.5,
+              "metadata": {
+                "end_line": 88,
+                "file_hash": "8fd5ba15032a4e297c694bea9b55da613c57fbd7",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts",
+                "indexed_at": "2026-01-28T07:59:12.371984",
+                "start_line": 1
+              }
+            },
+            {
+              "content": ".Register{\n\n    position: relative;\n    height: 100%;\n  \n    &__background-image {\n      position: absolute;\n      top: 0;\n      left: 0;\n      width: 100%;\n      height: 100%;\n      background-image: url('/assets/background.jpg');\n      background-size: cover;\n      z-index: -1;\n    }\n}\n  form {\n    width: 300px;\n    margin: 0 auto;\n    padding: 20px;\n    border-radius: 5px;\n    background-color: white;\n    box-shadow: 0px 0px 10px 0px rgba(0,0,0,0.1);\n  \n    h2 {\n      margin-bottom: 20px;\n      color: #3f51b5;\n      text-align: center;\n    }\n  \n    div {\n      margin-bottom: 15px;\n      \n      label {\n        color: #3f51b5;\n        font-weight: bold;\n        display: block;\n        margin-bottom: 5px;\n      }\n  \n      input {\n        width: 100%;\n        padding: 10px;\n        border-radius: 5px;\n        border: 1px solid #ddd;\n      }\n    }\n  \n    button {\n      width: 100%;\n      padding: 10px;\n      border: none;\n      border-radius: 5px;\n      background-color: #673ab7;\n      color: white;\n      cursor: pointer;\n      transition: background-color 0.3s ease;\n  \n      &:hover {\n        background-color: #5622a4;\n      }\n  \n      &:disabled {\n        background-color: #ccc;\n        cursor: not-allowed;\n      }\n    }\n  }\n  ",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.scss",
+              "score": 0.07818488529014844,
+              "importance": 0.2,
+              "metadata": {
+                "end_line": 69,
+                "file_hash": "0887de19403483b2e3a8fe9f87d0caaf868ec4c6",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.scss",
+                "indexed_at": "2026-01-28T07:59:13.157139",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "\n  .Login{\n\n    position: relative;\n    height: 100%;\n  \n    &__background-image {\n      position: absolute;\n      top: 0;\n      left: 0;\n      width: 100%;\n      height: 100%;\n      background-image: url('/assets/background.jpg');\n      background-size: cover;\n      z-index: -1;\n    }\n}\n  form {\n    display: flex;\n    flex-direction: column;\n    align-items: center;\n    justify-content: center;\n  }\n  \n  h2 {\n    color: #8188f1;\n  }\n  \n  label {\n    color: #8188f1;\n    align-self: flex-start;\n  }\n  \n  input[type=email], input[type=password], input[type=checkbox] {\n    width: 100%;\n    background-color: #2f2f40;\n    border: none;\n    color: #e1e1ee;\n    padding: 0.5em;\n    margin: 0.5em 0;\n    border-radius: 4px;\n  }\n  \n  button {\n    margin: 1em 0;\n    padding: 0.5em 1em;\n    border-radius: 4px;\n    font-size: 0.9em;\n    text-transform: uppercase;\n    cursor: pointer;\n    transition: background-color 0.3s ease;\n    width: 100%;\n  }\n\n  p{\n    color: #8188f1;\n\n  }\n  \n  button[mat-raised-button][color=accent] {\n    background-color: #8188f1;\n    border: none;\n    color: white;\n    \n    &:hover {\n      background-color: #6b70c7;\n    }\n  \n    &:disabled {\n      background-color: #2f2f40;\n      color: #555577;\n    }\n  }\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.scss",
+              "score": 0.07784090909090909,
+              "importance": 0.2,
+              "metadata": {
+                "end_line": 74,
+                "file_hash": "78fd1e537bd7d242e7e4585d225e37250be76547",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.scss",
+                "indexed_at": "2026-01-28T07:59:11.940025",
+                "start_line": 1
+              }
+            },
+            {
+              "content": "/* You can add global styles to this file, and also import other style files */\n",
+              "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\styles.scss",
+              "score": 0.07747474747474747,
+              "importance": 0.2,
+              "metadata": {
+                "end_line": 2,
+                "file_hash": "95ae0effe99f220f2aaf933b1e4ebd647dfa5464",
+                "file_path": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\styles.scss",
+                "indexed_at": "2026-01-28T07:59:08.585941",
+                "start_line": 1
+              }
+            }
+          ],
+          "num_snippets": 18,
+          "avg_score": 0.1834820324168853,
+          "key_entities": [
+            {
+              "name": "UserDto",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\UserDto.cs"
+            },
+            {
+              "name": "WeatherForecast",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\WeatherForecast.cs"
+            },
+            {
+              "name": "UsersController",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs"
+            },
+            {
+              "name": "WeatherForecastController",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\WeatherForecastController.cs"
+            },
+            {
+              "name": "IUserService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\IUserService.cs"
+            },
+            {
+              "name": "UserService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs"
+            },
+            {
+              "name": "IMongoDBSettings",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\IMongoDBSettings.cs"
+            },
+            {
+              "name": "MongoDBSettings",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Settings\\MongoDBSettings.cs"
+            },
+            {
+              "name": "AppRoutingModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts"
+            },
+            {
+              "name": "AppComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.component.ts"
+            },
+            {
+              "name": "AppModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts"
+            },
+            {
+              "name": "AuthenticationModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts"
+            },
+            {
+              "name": "LoginComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts"
+            },
+            {
+              "name": "RegisterComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts"
+            },
+            {
+              "name": "NameUppercasePipe",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\pipes\\name-uppercase.pipe.ts"
+            },
+            {
+              "name": "AuthenticationService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts"
+            },
+            {
+              "name": "PhoneService",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts"
+            },
+            {
+              "name": "TableRoutingModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table-routing.module.ts"
+            },
+            {
+              "name": "TableModule",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts"
+            },
+            {
+              "name": "EntryDetailsModalComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\entry-details-modal\\entry-details-modal.component.ts"
+            },
+            {
+              "name": "PhoneComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts"
+            },
+            {
+              "name": "TablePageComponent",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts"
+            },
+            {
+              "name": "Phone",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts"
+            },
+            {
+              "name": "User",
+              "type": "class",
+              "file": "C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts"
+            }
+          ],
+          "uses_universal_context": true
+        },
+        "kg": {
+          "graph_stats": {
+            "node_count": 104,
+            "edge_count": 127,
+            "file_count": 27,
+            "class_count": 16,
+            "function_count": 3,
+            "total_classes": 16,
+            "total_functions": 3,
+            "total_files": 27,
+            "is_connected": false,
+            "component_count": 5
+          },
+          "relevant_nodes": [],
+          "most_connected": [
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts",
+              "degree": 22
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts",
+              "degree": 15
+            },
+            {
+              "node_id": "module:@angular/core",
+              "degree": 14
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts:table-page.component.ts",
+              "degree": 10
+            },
+            {
+              "node_id": "module:@angular/core/testing",
+              "degree": 8
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts:authentication.module.ts",
+              "degree": 8
+            },
+            {
+              "node_id": "module:@angular/forms",
+              "degree": 7
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts:register.component.ts",
+              "degree": 7
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts:app-routing.module.ts",
+              "degree": 6
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts:login.component.ts",
+              "degree": 6
+            }
+          ],
+          "top_central_nodes": [
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts",
+              "centrality": 0.21359223300970873
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts",
+              "centrality": 0.14563106796116504
+            },
+            {
+              "node_id": "module:@angular/core",
+              "centrality": 0.13592233009708737
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts:table-page.component.ts",
+              "centrality": 0.09708737864077668
+            },
+            {
+              "node_id": "module:@angular/core/testing",
+              "centrality": 0.07766990291262135
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\authentication.module.ts:authentication.module.ts",
+              "centrality": 0.07766990291262135
+            },
+            {
+              "node_id": "module:@angular/forms",
+              "centrality": 0.06796116504854369
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts:register.component.ts",
+              "centrality": 0.06796116504854369
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app-routing.module.ts:app-routing.module.ts",
+              "centrality": 0.058252427184466014
+            },
+            {
+              "node_id": "file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts:login.component.ts",
+              "centrality": 0.058252427184466014
+            }
+          ],
+          "key_terms_searched": [
+            "phone",
+            "swap",
+            "request",
+            "feature",
+            "date",
+            "october",
+            "attendees",
+            "product",
+            "manager",
+            "designer"
+          ]
+        },
+        "patterns": {
+          "patterns_available": false,
+          "patterns_detected": [],
+          "pattern_count": 0,
+          "code_smells": [],
+          "code_smell_count": 0,
+          "security_issues": [],
+          "security_issue_count": 0,
+          "note": "No patterns detected yet - run analysis first"
+        },
+        "ml_features": {
+          "ml_context": "\n\ud83d\udcca === CODE INTELLIGENCE (ML Analysis) ===\nProject Structure (clustered by complexity/style):\n  \u2022 Cluster 0: 11 files. Avg Complexity: 2.7. Examples: Program.cs, Controller.cs, WeatherForecastController.cs...\n  \u2022 Cluster 1: 8 files. Avg Complexity: 1.1. Examples: UserDto.cs, WeatherForecast.cs, MongoDBSettings.cs...\n  \u2022 Cluster 2: 5 files. Avg Complexity: 1.0. Examples: IUserService.cs, authentication.service.spec.ts, phone.service.spec.ts...\n  \u2022 Cluster 3: 1 files. Avg Complexity: 14.0. Examples: table-page.component.ts...\n  \u2022 Cluster 4: 2 files. Avg Complexity: 1.0. Examples: app.module.ts, table.module.ts...",
+          "raw_analysis": {
+            "cluster_labels": [
+              0,
+              0,
+              0,
+              2,
+              0,
+              2,
+              0,
+              2,
+              0,
+              1,
+              1,
+              2,
+              1,
+              2,
+              0,
+              1,
+              4,
+              1,
+              0,
+              0,
+              1,
+              1,
+              4,
+              1,
+              0,
+              3,
+              0
+            ],
+            "cluster_stats": {
+              "0": {
+                "size": 11,
+                "samples": [
+                  "Program.cs",
+                  "Controller.cs",
+                  "WeatherForecastController.cs",
+                  "UserService.cs",
+                  "authentication.service.ts",
+                  "phone.service.ts",
+                  "app-routing.module.ts",
+                  "login.component.ts",
+                  "register.component.ts",
+                  "phone.component.ts",
+                  "validator.ts"
+                ],
+                "avg_complexity": 2.727272727272727,
+                "avg_lines": 50.18181818181818
+              },
+              "1": {
+                "size": 8,
+                "samples": [
+                  "UserDto.cs",
+                  "WeatherForecast.cs",
+                  "MongoDBSettings.cs",
+                  "app.component.ts",
+                  "authentication.module.ts",
+                  "name-uppercase.pipe.ts",
+                  "table-routing.module.ts",
+                  "entry-details-modal.component.ts"
+                ],
+                "avg_complexity": 1.125,
+                "avg_lines": 14.5
+              },
+              "2": {
+                "size": 5,
+                "samples": [
+                  "IUserService.cs",
+                  "authentication.service.spec.ts",
+                  "phone.service.spec.ts",
+                  "IMongoDBSettings.cs",
+                  "main.ts"
+                ],
+                "avg_complexity": 1.0,
+                "avg_lines": 12.8
+              },
+              "3": {
+                "size": 1,
+                "samples": [
+                  "table-page.component.ts"
+                ],
+                "avg_complexity": 14.0,
+                "avg_lines": 168.0
+              },
+              "4": {
+                "size": 2,
+                "samples": [
+                  "app.module.ts",
+                  "table.module.ts"
+                ],
+                "avg_complexity": 1.0,
+                "avg_lines": 47.0
+              }
+            },
+            "n_clusters": 5,
+            "method": "kmeans"
+          },
+          "note": "ML analysis of top 50 key project files"
+        }
+      },
+      "assembled_context": "\ud83d\udd11 === KEY PROJECT ENTITIES (Most Important) ===\n  \u2022 UserDto (class)\n  \u2022 WeatherForecast (class)\n  \u2022 UsersController (class)\n  \u2022 WeatherForecastController (class)\n  \u2022 IUserService (class)\n  \u2022 UserService (class)\n  \u2022 IMongoDBSettings (class)\n  \u2022 MongoDBSettings (class)\n  \u2022 AppRoutingModule (class)\n  \u2022 AppComponent (class)\n  \u2022 AppModule (class)\n  \u2022 AuthenticationModule (class)\n  \u2022 LoginComponent (class)\n  \u2022 RegisterComponent (class)\n  \u2022 NameUppercasePipe (class)\n\n\ud83d\udccb === YOUR REQUIREMENTS ===\nPhone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan for the new phone swap request feature.\n\nBackground\nUsers currently lack a formal way to request an exchange of their current phone for another one available in our inventory. This new feature aims to create a streamlined, in-app workflow to manage these requests efficiently.\n\nFeature Overview\nThe team agreed on the following user story: \"As a user, I want to request a phone from the available list and offer one of my current phones in exchange, so I can easily manage my device swaps.\"\n\nThe feature will be implemented as a modal pop-up on the main phone list page.\n\nImplementation Details\nFrontend (UI/UX)\nA new button, labeled \"Request Phone Swap,\" will be added to the main phone page.\n\nClicking this button will trigger a modal (pop-up) that overlays the current view.\n\nThe modal will contain a form with the following fields:\n\nPhone to Request: A dropdown list populated with all available phones from the main list.\n\nPhone to Exchange: A dropdown list showing only the phones currently owned by the logged-in user.\n\nReason for Request (Optional): A text area for any additional comments.\n\nActions: \"Submit Request\" and \"Cancel\" buttons.\n\nUpon successful submission, the modal will close, and a confirmation message will be displayed.\n\nBackend (Logic)\nA new API endpoint (POST /api/phone-swaps) will be created to handle form submissions.\n\nA new table will be created in the database to store swap requests. It will include columns for the requester's ID, the requested phone, the offered phone, a status (defaulting to 'Pending'), and the comment.\n\nBackend validation will ensure that the user making the request is the actual owner of the phone being offered in exchange.\n\nAction Items\nUX Team: Create a wireframe of the modal and form by EOD, October 17.\n\nBackend Team: Develop the new API endpoint and database schema. Target completion: October 21.\n\nFrontend Team: Build the \"Request Phone Swap\" button and the basic modal structure. Begin implementation once wireframes are approved.\n\nProduct Manager: Create the formal Jira ticket with the defined user story and acceptance criteria.\n\ud83d\udcc4 === CODEBASE CONTEXT (High Relevance) ===\n\n--- Snippet 1 (score: 0.291, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\authentication.service.ts) ---\nexport class AuthenticationService {\n  private apiUrl = 'https://localhost:7214/Users';\n \n  constructor (private http: HttpClient, private router: Router) { }\n\n  readonly httpOptions = {\n    headers: new HttpHeaders({\n      'Content-Type':  'application/json',\n    })\n  }\n\n  serviceCall() {\n    console.log(\"Service was called\");\n  }\n\n\n  login(user: any): Observable<any> {\n    return this.http.post(`${this.apiUrl}/login`, JSON.stringify(user), this.httpOptions)\n  }\n\n  register(user: any): Observable<any> {\n    return this.http.post(`${this.apiUrl}/register`, JSON.stringify(user), this.httpOptions);\n  }\n\n  logout(): void {\n    // remove user token from storage to log user out\n    localStorage.removeItem('authToken');\n    sessionStorage.removeItem('authToken');\n    localStorage.setItem('rememberMe', 'false');\n    this.router.navigateByUrl('/login');\n  }\n\n}\n\n\n--- Snippet 2 (score: 0.290, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Services\\UserService.cs) ---\n    public class UserService : IUserService\n    {\n        private readonly IMongoCollection<UserDto> _users;\n        public UserService(IMongoDBSettings settings)\n        {\n            var client = new MongoClient(settings.ConnectionString);\n            var database = client.GetDatabase(settings.DatabaseName);\n\n            _users = database.GetCollection<UserDto>(settings.CollectionName);\n        }\n\n        public async Task<bool> Register(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n            Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n            Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n        );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n\n            if (user != null)\n            {\n                return false; // Registration failed\n            }\n            else { \n\n                userDto.Id = Guid.NewGuid();\n                await _users.InsertOneAsync(userDto);\n                return true;\n                 \n            }\n        }\n\n        public async Task<UserDto?> Login(UserDto userDto)\n        {\n            var filter = Builders<UserDto>.Filter.And(\n                Builders<UserDto>.Filter.Eq(u => u.Email, userDto.Email),\n                Builders<UserDto>.Filter.Eq(u => u.Password, userDto.Password)\n            );\n\n            var user = await _users.Find(filter).FirstOrDefaultAsync();\n            if(user != null)\n            {\n                return user;\n\n            }\n            return null;\n        }\n\n    }\n}\n\n\n--- Snippet 3 (score: 0.289, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\services\\phone.service.ts) ---\nexport class PhoneService {\n\n  private phones: Phone[]= [\n    { id: 1, brand: 'Apple', model: 'iPhone 12', storage: 64, price: 799 },\n    { id: 2, brand: 'Samsung', model: 'Galaxy S21', storage: 128, price: 699 },\n    { id: 3, brand: 'Google', model: 'Pixel 5', storage: 128, price: 699 },\n    { id: 4, brand: 'OnePlus', model: '9 Pro', storage: 256, price: 969 },\n    { id: 5, brand: 'Xiaomi', model: 'Mi 11', storage: 256, price: 749 },\n    { id: 6, brand: 'Motorola', model: 'Moto G Power (2021)', storage: 64, price: 199 },\n    { id: 7, brand: 'Samsung', model: 'S22 Ultra', storage: 256, price: 969 },\n    { id: 8, brand: 'Xiaomi', model: 'Mi 12', storage: 256, price: 749 },\n    { id: 9, brand: 'Motorola', model: 'x', storage: 64, price: 199 },\n  ];\n\n  getPhones(): Observable<Phone[]> {\n    // simulate delay of fetching data from API\n    return of(this.phones).pipe(delay(1000));\n  }\n\n  addPhone(phone: Phone): void {\n    phone.id = this.phones.length + 1;\n    this.phones.push(phone);\n  }\n\n  updatePhone(phone: Phone): void {\n    const index = this.phones.findIndex((p) => p.id === phone.id);\n    if (index !== -1) {\n      this.phones[index] = phone;\n    }\n  }\n\n  deletePhone(phoneId: number): void {\n    const index = this.phones.findIndex(p => p.id === phoneId);\n    if (index !== -1) {\n      this.phones.splice(index, 1);\n    }\n  }\n}\n\n\n--- Snippet 4 (score: 0.288, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final-proj-sln\\registration-api\\registration-api\\Controllers\\Controller.cs) ---\n    public class UsersController : ControllerBase\n    {\n        private readonly IUserService _userService;\n\n        public UsersController(IUserService userService)\n        {\n            _userService = userService;\n        }\n\n        [HttpPost(\"register\")]\n        public async Task<IActionResult> Register(UserDto userDto)\n        {\n            var success = await _userService.Register(userDto);\n\n            if (success)\n            {\n                return Ok(); // Registration successful\n            }\n            else\n            {\n                return BadRequest(); // Registration failed\n            }\n        }\n\n        [HttpPost(\"login\")]\n        public async Task<IActionResult> Login([FromBody] UserDto userDto)\n        {\n            var success = await _userService.Login(userDto);\n            if (success==null)\n            {\n                return NotFound(\"Announcement was not found\");\n            }\n\n            return Ok(success); // Login successful\n        }\n\n    }\n}\n\n\n--- Snippet 5 (score: 0.189, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.html) ---\n          <td>{{ phone.price }}</td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"edit\" (click)=\"editPhone(phone)\">Edit</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"info-circle\" (click)=\"openDetailsModal(phone)\">Details</button>\n          </td>\n          <td>\n            <button nz-button nzType=\"primary\" nzShape=\"circle\" nzIcon=\"delete\" (click)=\"deletePhone(phone.id)\">Delete</button>\n          </td>\n        </tr>\n      </tbody>\n    </nz-table>\n  \n  <div class=\"add-button-container\">\n    <button nz-button nzType=\"primary\" nzSize=\"large\" nzShape=\"round\" (click)=\"addPhone()\">Add</button>\n  </div>\n  \n\n--- Snippet 6 (score: 0.184, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.html) ---\n<div class=\"Register\">\n  <div class=\"Register__background-image\"></div>\n<form [formGroup]=\"registerForm\" (ngSubmit)=\"onSubmit()\">\n  <div>\n    <label for=\"email\">Email:</label>\n    <input type=\"email\" formControlName=\"email\" id=\"email\" required>\n    <div *ngIf=\"registerForm.get('email')?.invalid && (registerForm.get('email')?.dirty || registerForm.get('email')?.touched)\">\n      <div *ngIf=\"registerForm.get('email')?.errors?.['required']\">Email is required.</div>\n      <div *ngIf=\"registerForm.get('email')?.errors?.['email']\">Invalid email format.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"password\">Password:</label>\n    <input type=\"password\" formControlName=\"password\" id=\"password\" required>\n    <div *ngIf=\"registerForm.get('password')?.invalid && (registerForm.get('password')?.dirty || registerForm.get('password')?.touched)\">\n      <div *ngIf=\"registerForm.get('password')?.errors?.['required']\">Password is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"confirmPassword\">Confirm Password:</label>\n    <input type=\"password\" formControlName=\"confirmPassword\" id=\"confirmPassword\" required>\n    <div *ngIf=\"registerForm.get('confirmPassword')?.invalid && (registerForm.get('confirmPassword')?.dirty || registerForm.get('confirmPassword')?.touched)\">\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['required']\">Confirmation password is required.</div>\n      <div *ngIf=\"registerForm.get('confirmPassword')?.errors?.['passwordMismatch']\">Passwords do not match.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"firstName\">First Name:</label>\n    <input type=\"text\" formControlName=\"firstName\" id=\"firstName\" required>\n    <div *ngIf=\"registerForm.get('firstName')?.invalid && (registerForm.get('firstName')?.dirty || registerForm.get('firstName')?.touched)\">\n      <div *ngIf=\"registerForm.get('firstName')?.errors?.['required']\">First name is required.</div>\n    </div>\n  </div>\n  <div>\n    <label for=\"lastName\">Last Name:</label>\n\n--- Snippet 7 (score: 0.178, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\angular.json) ---\n              ],\n              \"outputHashing\": \"all\"\n            },\n            \"development\": {\n              \"buildOptimizer\": false,\n              \"optimization\": false,\n              \"vendorChunk\": true,\n              \"extractLicenses\": false,\n              \"sourceMap\": true,\n              \"namedChunks\": true\n            }\n          },\n          \"defaultConfiguration\": \"production\"\n        },\n        \"serve\": {\n          \"builder\": \"@angular-devkit/build-angular:dev-server\",\n          \"configurations\": {\n            \"production\": {\n              \"browserTarget\": \"final_project:build:production\"\n            },\n            \"development\": {\n              \"browserTarget\": \"final_project:build:development\"\n            }\n          },\n          \"defaultConfiguration\": \"development\"\n        },\n        \"extract-i18n\": {\n          \"builder\": \"@angular-devkit/build-angular:extract-i18n\",\n          \"options\": {\n            \"browserTarget\": \"final_project:build\"\n          }\n        },\n        \"test\": {\n          \"builder\": \"@angular-devkit/build-angular:karma\",\n          \"options\": {\n            \"polyfills\": [\n              \"zone.js\",\n              \"zone.js/testing\"\n            ],\n            \"tsConfig\": \"tsconfig.spec.json\",\n            \"inlineStyleLanguage\": \"scss\",\n            \"assets\": [\n              \"src/favicon.ico\",\n              \"src/assets\"\n            ],\n            \"styles\": [\n              \"src/styles.scss\"\n            ],\n            \"scripts\": []\n          }\n        }\n      }\n    }\n  },\n  \"cli\": {\n    \"analytics\": false\n  }\n}\n\n\n--- Snippet 8 (score: 0.172, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\table-page\\table-page.component.ts) ---\nexport class TablePageComponent implements OnInit {\n  \n  phones$!: Observable<Phone[]>;\n  searchQuery: string = '';\n\n\n  constructor(private phoneService: PhoneService, private modal: NzModalService, private authService: AuthenticationService) {}\n\n  ngOnInit(): void {\n    this.loadPhones();\n    this.getPhones();\n  }\n\n  loadPhones(): void {\n    this.phones$ = this.phoneService.getPhones();\n  }\n\n  public addPhone(): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Add Phone',\n      nzContent: PhoneComponent,\n      nzComponentParams: {},\n      nzOnOk: () => {\n        const phoneComponent = modalRef.getContentComponent() as PhoneComponent;\n        phoneComponent.submitForm();\n        const newPhone = phoneComponent.newPhone;\n        if (newPhone) {\n          this.phoneService.addPhone(newPhone);\n          this.loadPhones();\n          console.log(this.phones$)\n        }\n      }\n    })\n  \n    modalRef.afterClose.subscribe((result: Phone) => {\n      if (result) {\n        this.phoneService.addPhone(result);\n        this.loadPhones();\n        console.log(this.phones$)\n      }\n    });\n  }\n  \n  public editPhone(phone: Phone): void {\n    \n    const modalRef = this.modal.create({\n      nzTitle: 'Edit Phone',\n      nzContent: PhoneComponent,\n      nzComponentParams: {\n        phone: { ...phone },\n      },\n      nzOnOk: () => {\n        const phoneComponent = modalRef.getContentComponent() as PhoneComponent;\n        phoneComponent.submitForm();\n        const newPhone = phoneComponent.newPhone;\n        if (newPhone) {\n          this.phoneService.updatePhone(newPhone);\n          this.loadPhones();\n        }\n      }\n      \n    });    \n  \n    modalRef.afterClose.subscribe((result: Phone) => {\n      if (result) {\n        this.phoneService.updatePhone(result);\n        this.loadPhones();\n        console.log(this.phones$)\n      }\n    });\n    \n  }\n  currentPage: number = 1;\n  pageSize: number = 8;\n  @Output() phones! : Phone[];\n\n  getPhones(): void {\n    this.phoneService.getPhones().subscribe((phones) => {\n      this.phones = phones;\n    });\n  }\n\n  getPaginatedPhones(): Phone[] {\n    const startIndex = (this.currentPage - 1) * this.pageSize;\n    const endIndex = startIndex + this.pageSize;\n    return this.phones.slice(startIndex, endIndex);\n  }\n\n  onPageChange(page: number): void {\n    this.currentPage = page;\n  }\n\n  getFilteredPhones(): Phone[] {\n    if (!this.searchQuery) {\n      return this.getPaginatedPhones();\n    }\n    \n    const filteredPhones = this.getPaginatedPhones().filter(phone => {\n      // Modify the condition based on your specific search requirements\n      return phone.brand.toLowerCase().includes(this.searchQuery.toLowerCase()) ||\n             phone.model.toLowerCase().includes(this.searchQuery.toLowerCase()) ||\n             phone.storage.toString().includes(this.searchQuery.toLowerCase()) ||\n             phone.price.toString().includes(this.searchQuery.toLowerCase());\n    });\n  \n    return filteredPhones;\n\n  }\n\n  deletePhone(phoneId: number): void {\n    this.phoneService.deletePhone(phoneId);\n    // Reload the phones after deletion\n    this.loadPhones();\n  }  \n\n  sortPhones(column: string): void {\n      // Implement the sorting logic based on the selected column\n      switch (column) {\n        case 'id':\n          this.phones.sort((a, b) => a.id - b.id);\n          break;\n        case 'brand':\n          this.phones.sort((a, b) => a.brand.localeCompare(b.brand));\n          break;\n        case 'model':\n          this.phones.sort((a, b) => a.model.localeCompare(b.model));\n          break;\n        case 'storage':\n          this.phones.sort((a, b) => a.storage - b.storage);\n          break;\n        case 'price':\n          this.phones.sort((a, b) => a.price - b.price);\n          break;\n        default:\n          break;\n      }\n    }\n\n  openDetailsModal(phone: Phone): void {\n    const modalRef = this.modal.create({\n      nzTitle: 'Phone Details',\n      nzContent: EntryDetailsModalComponent,\n      nzComponentParams: {\n        phone: phone\n      }\n    });\n  }\n\n  logout(): void {\n    this.authService.logout();\n  }\n  \n}\n\n\n--- Snippet 9 (score: 0.172, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\phone.ts) ---\nexport interface Phone {\n    id: number;\n    brand: string;\n    model: string;\n    storage: number;\n    price: number;\n  }\n  \n\n--- Snippet 10 (score: 0.171, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.ts) ---\nexport class PhoneComponent implements OnInit {\n  @Input() phone!: Phone;\n  phoneForm!: FormGroup;\n  newPhone?: Phone;\n\n\n  constructor(private fb: FormBuilder, public modalRef: NzModalRef) {}\n\n  ngOnInit(): void {\n    this.createForm();\n  }\n\n  private createForm(): void {\n    this.phoneForm = this.fb.group({\n      brand: [this.phone?.brand, [Validators.required],],\n      model: [this.phone?.model, [Validators.required]],\n      storage: [this.phone?.storage, [Validators.required, Validators.min(1)]],\n      price: [this.phone?.price, [Validators.required, Validators.min(1)]],\n      id: [this.phone?.id, [Validators.required, Validators.min(1)]]\n    });\n  }\n\n  submitForm(): void {\n    if (this.phoneForm.invalid) {\n      for (const i in this.phoneForm.controls) {\n        if (this.phoneForm.controls.hasOwnProperty(i)) {\n          this.phoneForm.controls[i].markAsDirty();\n          this.phoneForm.controls[i].updateValueAndValidity();\n        }\n      }\n      return;\n    }\n\n    this.newPhone = {\n      brand: this.phoneForm.value.brand,\n      model: this.phoneForm.value.model,\n      storage: this.phoneForm.value.storage,\n      price: this.phoneForm.value.price,\n      id: this.phoneForm.value.id\n    };\n\n  }\n\n}\n\n\ud83e\udde0 === KNOWLEDGE GRAPH INSIGHTS ===\nGraph: 104 nodes, 127 edges\nMost Connected:\n  \u2022 file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\table.module.ts:table.module.ts (degree: 22)\n  \u2022 file:C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\app.module.ts:app.module.ts (degree: 15)\n  \u2022 module:@angular/core (degree: 14)\n\n\n\ud83d\udcca === CODE INTELLIGENCE (ML Analysis) ===\nProject Structure (clustered by complexity/style):\n  \u2022 Cluster 0: 11 files. Avg Complexity: 2.7. Examples: Program.cs, Controller.cs, WeatherForecastController.cs...\n  \u2022 Cluster 1: 8 files. Avg Complexity: 1.1. Examples: UserDto.cs, WeatherForecast.cs, MongoDBSettings.cs...\n  \u2022 Cluster 2: 5 files. Avg Complexity: 1.0. Examples: IUserService.cs, authentication.service.spec.ts, phone.service.spec.ts...\n  \u2022 Cluster 3: 1 files. Avg Complexity: 14.0. Examples: table-page.component.ts...\n  \u2022 Cluster 4: 2 files. Avg Complexity: 1.0. Examples: app.module.ts, table.module.ts...\n\ud83d\udcc4 === ADDITIONAL CONTEXT (Lower Relevance) ===\n\n--- Snippet 11 (score: 0.171, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\table\\components\\phone\\phone.component.html) ---\n<form nz-form [formGroup]=\"phoneForm\">\n\n<nz-form-item>\n        <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Id</nz-form-label>\n        <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n          <input nz-input type=\"number\" min=\"0\" formControlName=\"id\" placeholder=\"Enter phone id\">\n        </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n      <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Brand</nz-form-label>\n      <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n        <input nz-input formControlName=\"brand\" placeholder=\"Enter phone brand\">\n        <div *ngIf=\"phoneForm.get('brand')\"></div>\n    </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Model</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input formControlName=\"model\" placeholder=\"Enter phone model\">\n  </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Storage (GB)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"storage\" placeholder=\"Enter phone storage\">\n  </nz-form-control>\n</nz-form-item>\n\n<nz-form-item>\n  <nz-form-label [nzSm]=\"6\" [nzXs]=\"24\" nzRequired>Price (\u20ac)</nz-form-label>\n  <nz-form-control [nzSm]=\"14\" [nzXs]=\"24\">\n    <input nz-input type=\"number\" min=\"0\" formControlName=\"price\" placeholder=\"Enter phone price\">\n  </nz-form-control>\n</nz-form-item>\n</form>\n\n\n\n--- Snippet 12 (score: 0.170, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\README.md) ---\n# FinalProject\n\nThis project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 15.2.4.\n\n## Development server\n\nRun `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.\n\n## Code scaffolding\n\nRun `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.\n\n## Build\n\nRun `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.\n\n## Running unit tests\n\nRun `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).\n\n## Running end-to-end tests\n\nRun `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.\n\n## Further help\n\nTo get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.\n\n\n--- Snippet 13 (score: 0.168, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\models\\user.ts) ---\nexport interface User {\n    id?: string;\n    email: string,\n    password: string,\n    firstName: string,\n    lastName: string,\n}\n\n--- Snippet 14 (score: 0.168, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\register\\register.component.ts) ---\nexport class RegisterComponent{\n  registerForm: FormGroup;\n  constructor(\n    private formBuilder: FormBuilder,\n    private authService: AuthenticationService,\n    private router: Router,\n  ) {\n    this.registerForm = this.formBuilder.group({\n      email: ['', [Validators.required, Validators.email]],\n      password: [\n        '',\n        [\n          Validators.required,\n          Validators.minLength(6),\n        ]\n      ],\n      confirmPassword: ['', Validators.required],\n      firstName: ['', Validators.required, capitalLetterValidator()],\n      lastName: ['', Validators.required, capitalLetterValidator()]\n    }, { validators: this.passwordMatchValidator });\n  }\n\n  onSubmit() {\n    if (this.registerForm.invalid) {\n      return;\n    }\n\n    let user:User={\n      email:this.registerForm.value.email,\n      password:this.registerForm.value.password,\n      lastName:this.registerForm.value.lastName,\n      firstName:this.registerForm.value.firstName\n      }\n      console.log(user)\n      this.authService.register(user).subscribe(\n        () => {\n          console.log('Registration successful');\n          this.router.navigateByUrl('/login');\n        },\n        (error) => {\n          console.log('Registration failed:', error);\n          // Handle registration failure, such as displaying an error message\n        }\n      );\n  }\n\n  passwordMatchValidator(formGroup: FormGroup) {\n    const passwordControl = formGroup.get('password');\n    const confirmPasswordControl = formGroup.get('confirmPassword');\n\n    if (passwordControl && confirmPasswordControl) {\n      const password = passwordControl.value;\n      const confirmPassword = confirmPasswordControl.value;\n\n      if (password !== confirmPassword) {\n        confirmPasswordControl.setErrors({ passwordMismatch: true });\n      } else {\n        confirmPasswordControl.setErrors(null);\n      }\n    }\n  }\n\n  get email() {\n    return this.registerForm.get('email');\n  }\n\n  get password() {\n    return this.registerForm.get('password');\n  }\n\n  get confirmPassword() {\n    return this.registerForm.get('confirmPassword');\n  }\n\n  get firstName() {\n    return this.registerForm.get('firstName');\n  }\n\n  get lastName() {\n    return this.registerForm.get('lastName');\n  }\n}\n\n\n--- Snippet 15 (score: 0.168, file: C:\\Users\\AGEORGE2\\Desktop\\Dawn-final-project\\final_project\\src\\app\\authentication\\login\\login.component.ts) ---\nexport class LoginComponent implements OnInit{\n  loginForm: FormGroup;\n  \n  constructor(\n    private formBuilder: FormBuilder,\n    private authService: AuthenticationService,\n    private router: Router\n  ) {\n    this.loginForm = this.formBuilder.group({\n      email: ['', [Validators.required, Validators.email]],\n      password: ['', Validators.required],\n      rememberMe: [false]\n    });\n  }\n\n  ngOnInit(): void {\n    this.checkToken();\n  }\n\n  onSubmit() {\n    if (this.loginForm.invalid) {\n      return;\n    }\n    const rememberMe = this.loginForm.value.rememberMe;\n  \n    let user: User = {\n      email: this.loginForm.value.email,\n      password: this.loginForm.value.password,\n      lastName: \"name\",\n      firstName: \"name\"\n    };\n  \n    this.authService.login(user).subscribe(\n      x => {\n        console.log(x);\n        const token = x.token;\n        if (rememberMe) {\n          localStorage.setItem('authToken', token);\n          localStorage.setItem('rememberMe', 'true');\n        } else {\n          sessionStorage.setItem('authToken', token);\n          localStorage.setItem('rememberMe', 'false');\n        }\n        this.router.navigate(['/PAGE']);\n      },\n      error => {\n        if (error.status === 401) {\n          console.log('Invalid email or password.');\n        } else {\n          console.log('An error occurred. Please try again later.');\n        }\n      }\n    );\n  }\n\n  checkToken(): void {\n    const rememberMe = localStorage.getItem('rememberMe') === 'true';\n    const token = rememberMe ? localStorage.getItem('authToken') : sessionStorage.getItem('authToken');\n    if (rememberMe) {\n      this.router.navigate(['/PAGE']);\n    }\n  }\n  \n\n  get email() {\n    return this.loginForm.get('email');\n  }\n\n  get password() {\n\n[... Low-Priority RAG truncated to preserve higher-priority context ...]",
+      "truncation_info": {
+        "any_truncated": true,
+        "sections_truncated": [
+          {
+            "section": "Low-Priority RAG",
+            "original_tokens": 2672,
+            "budget_tokens": 1800,
+            "reduction_percent": 32.6
+          }
+        ],
+        "token_budget": 12000,
+        "tokens_used": 6457
+      },
+      "from_cache": false,
+      "context_id": "2026-01-28T08:03:02.563411"
+    },
+    "added_at": "2026-01-28T08:09:03.580465"
+  },
+  {
+    "artifact_type": "dev_visual_prototype",
+    "content": "Below is the implementation of the \"Request Phone Swap\" feature based on the provided requirements and project context. This includes a button to trigger the modal and the modal structure with form fields.\n\n### `table-page.component.html`\n```html\n<!-- Add the Request Phone Swap button -->\n<button nz-button nzType=\"primary\" (click)=\"openSwapModal()\">Request Phone Swap</button>\n\n<!-- Modal for phone swap request -->\n<nz-modal [(nzVisible)]=\"isSwapModalVisible\" [nzTitle]=\"'Phone Swap Request'\" [nzFooter]=\"null\">\n  <form nz-form [formGroup]=\"swapForm\" (ngSubmit)=\"onSubmitSwap()\">\n    <!-- Phone to Request dropdown -->\n    <nz-form-item>\n      <nz-form-label [nzSm]=\"8\">Phone to Request</nz-form-label>\n      <nz-form-control [nzSm]=\"16\">\n        <select formControlName=\"phoneToRequest\" nz-select>\n          <option *ngFor=\"let phone of availablePhones\" [value]=\"phone.id\">{{ phone.brand }} - {{ phone.model }}</option>\n        </select>\n      </nz-form-control>\n    </nz-form-item>\n\n    <!-- Phone to Exchange dropdown -->\n    <nz-form-item>\n      <nz-form-label [nzSm]=\"8\">Phone to Exchange</nz-form-label>\n      <nz-form-control [nzSm]=\"16\">\n        <select formControlName=\"phoneToExchange\" nz-select>\n          <option *ngFor=\"let phone of ownedPhones\" [value]=\"phone.id\">{{ phone.brand }} - {{ phone.model }}</option>\n        </select>\n      </nz-form-control>\n    </nz-form-item>\n\n    <!-- Reason for Request textarea -->\n    <nz-form-item>\n      <nz-form-label [nzSm]=\"8\">Reason for Request</nz-form-label>\n      <nz-form-control [nzSm]=\"16\">\n        <textarea formControlName=\"reason\" nz-input placeholder=\"Enter reason (optional)\"></textarea>\n      </nz-form-control>\n    </nz-form-item>\n\n    <!-- Actions -->\n    <div class=\"actions\">\n      <button nz-button type=\"submit\" [disabled]=\"swapForm.invalid\">Submit Request</button>\n      <button nz-button (click)=\"isSwapModalVisible = false\">Cancel</button>\n    </div>\n  </form>\n</nz-modal>\n```\n\n### `table-page.component.ts`\n```typescript\nimport { Component, OnInit } from '@angular/core';\nimport { FormBuilder, FormGroup, Validators } from '@angular/forms';\nimport { NzModalService } from 'ng-zorro-antd/modal';\nimport { PhoneService } from '../../services/phone.service';\nimport { Phone } from '../../models/phone';\n\n@Component({\n  selector: 'app-table-page',\n  templateUrl: './table-page.component.html',\n  styleUrls: ['./table-page.component.scss']\n})\nexport class TablePageComponent implements OnInit {\n  availablePhones!: Phone[];\n  ownedPhones!: Phone[];\n  isSwapModalVisible = false;\n  swapForm!: FormGroup;\n\n  constructor(\n    private fb: FormBuilder,\n    private modalService: NzModalService,\n    private phoneService: PhoneService\n  ) {}\n\n  ngOnInit(): void {\n    this.loadPhones();\n    this.getAvailablePhones();\n    this.getOwnedPhones();\n    this.createSwapForm();\n  }\n\n  loadPhones(): void {\n    // Simulate fetching phones\n    this.availablePhones = this.phoneService.phones;\n    this.ownedPhones = this.availablePhones.filter(phone => phone.id <= 3); // Example: First three are owned\n  }\n\n  createSwapForm(): void {\n    this.swapForm = this.fb.group({\n      phoneToRequest: ['', Validators.required],\n      phoneToExchange: ['', Validators.required],\n      reason: ['']\n    });\n  }\n\n  openSwapModal(): void {\n    this.isSwapModalVisible = true;\n  }\n\n  onSubmitSwap(): void {\n    if (this.swapForm.valid) {\n      const swapData = this.swapForm.value;\n      // Simulate API call to submit the request\n      console.log('Submit Swap Request:', swapData);\n      this.isSwapModalVisible = false; // Close the modal\n      alert('Request submitted successfully!');\n    }\n  }\n\n  getAvailablePhones(): void {\n    // Fetch available phones from service or API\n    this.availablePhones = this.phoneService.phones;\n  }\n\n  getOwnedPhones(): void {\n    // Fetch owned phones from service or API\n    this.ownedPhones = this.availablePhones.filter(phone => phone.id <= 3); // Example: First three are owned\n  }\n}\n```\n\n### `table-page.component.scss`\n```scss\n/* Add any custom styles if needed */\n.actions {\n  display: flex;\n  justify-content: flex-end;\n  gap: 10px;\n}\n\nbutton {\n  margin-top: 20px;\n}\n```\n\nThis implementation includes:\n- A button to trigger the modal.\n- A modal with a form containing dropdowns for selecting phones and an optional text area for comments.\n- Form validation to ensure all required fields are filled.\n- Logic to handle form submission, which currently logs the data and displays a success message.\n\nMake sure to integrate this code into your existing Angular project and replace placeholders with actual API calls as needed.",
+    "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan for the new phone swap request feature.\n\nBackground\nUsers currently lack a formal way to request an exchange of their current phone for another one available in our inventory. This new feature aims to create a streamlined, in-app workflow to manage these requests efficiently.\n\nFeature Overview\nThe team agreed on the following user story: \"As a user, I want to request a phone from the available list and offer one of my current phones in exchange, so I can easily manage my device swaps.\"\n\nThe feature will be implemented as a modal pop-up on the main phone list page.\n\nImplementation Details\nFrontend (UI/UX)\nA new button, labeled \"Request Phone Swap,\" will be added to the main phone page.\n\nClicking this button will trigger a modal (pop-up) that overlays the current view.\n\nThe modal will contain a form with the following fields:\n\nPhone to Request: A dropdown list populated with all available phones from the main list.\n\nPhone to Exchange: A dropdown list showing only the phones currently owned by the logged-in user.\n\nReason for Request (Optional): A text area for any additional comments.\n\nActions: \"Submit Request\" and \"Cancel\" buttons.\n\nUpon successful submission, the modal will close, and a confirmation message will be displayed.\n\nBackend (Logic)\nA new API endpoint (POST /api/phone-swaps) will be created to handle form submissions.\n\nA new table will be created in the database to store swap requests. It will include columns for the requester's ID, the requested phone, the offered phone, a status (defaulting to 'Pending'), and the comment.\n\nBackend validation will ensure that the user making the request is the actual owner of the phone being offered in exchange.\n\nAction Items\nUX Team: Create a wireframe of the modal and form by EOD, October 17.\n\nBackend Team: Develop the new API endpoint and database schema. Target completion: October 21.\n\nFrontend Team: Build the \"Request Phone Swap\" button and the basic modal structure. Begin implementation once wireframes are approved.\n\nProduct Manager: Create the formal Jira ticket with the defined user story and acceptance criteria.",
+    "validation_score": 94.0,
+    "model_used": "qwen2.5-coder:14b-instruct-q4_K_M",
+    "context": {},
+    "added_at": "2026-01-28T08:09:03.624697"
   }
 ]
