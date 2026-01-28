@@ -36,9 +36,9 @@ if (-not $ngrokInstalled) {
     Write-Host "[OK] ngrok detected!" -ForegroundColor Green
     Write-Host ""
     
-    # Start ngrok in background
+    # Start ngrok (HTTP 8000)
     Write-Host "Starting ngrok tunnel..." -ForegroundColor Cyan
-    $ngrokProcess = Start-Process ngrok -ArgumentList "http 8000" -PassThru -WindowStyle Hidden
+    $ngrokProcess = Start-Process -FilePath "ngrok" -ArgumentList "http","http://127.0.0.1:8000","--log=stdout" -RedirectStandardOutput "ngrok.log" -RedirectStandardError "ngrok.err" -PassThru -NoNewWindow
     
     # Wait for ngrok to initialize
     Start-Sleep -Seconds 3

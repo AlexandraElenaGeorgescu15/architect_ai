@@ -28,7 +28,7 @@ if %ERRORLEVEL% NEQ 0 (
 echo [INFO] ngrok detected!
 echo.
 echo Starting ngrok tunnel in background...
-start /B ngrok http 8000 --log=stdout > ngrok.log 2>&1
+start /B ngrok http http://127.0.0.1:8000 --log=stdout > ngrok.log 2>&1
 
 :: Wait for ngrok to start
 timeout /t 3 /nobreak >nul
@@ -36,8 +36,10 @@ timeout /t 3 /nobreak >nul
 :: Try to get ngrok URL
 echo.
 echo Fetching ngrok public URL...
-curl -s http://localhost:4040/api/tunnels > ngrok_tunnels.json 2>nul
-if %ERRORLEVEL% NEQ 0 (
+:: Use PowerShell to fetch and parse the JSON - much more reliable
+for /f "usebackq tokens=*" %%A in (`powershell -Command "try { (Invoke-RestMethod -Uri 'http://localhost:4040/api/tunnels').tunnels | Where-Object { $_.proto -eq 'https' } | Select-Object -ExpandProperty public_url } catch { Write-Host '' }"`) do set "NGROK_URL=%%A"
+
+if "%NGROK_URL%"=="" (
     echo [WARNING] Could not fetch ngrok URL automatically
     echo Check ngrok dashboard at http://localhost:4040
 ) else (
@@ -47,16 +49,14 @@ if %ERRORLEVEL% NEQ 0 (
     echo ============================================
     echo.
     echo   Local:  http://localhost:8000
-    echo.
-    echo   To get your public ngrok URL:
-    echo   Open http://localhost:4040 in your browser
+    echo   Public: %NGROK_URL%
     echo.
     echo ============================================
     echo.
     echo NEXT STEPS:
     echo   1. Open https://architect-ai-mvm.vercel.app/
     echo   2. Click the connection indicator (bottom-left)
-    echo   3. Enter your ngrok URL (e.g., https://xxxx.ngrok.io)
+    echo   3. Enter: %NGROK_URL%
     echo   4. Click "Save & Connect"
     echo ============================================
 )
