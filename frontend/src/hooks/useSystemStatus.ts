@@ -43,7 +43,15 @@ export function useSystemStatus(pollInterval?: number): UseSystemStatusResult {
         setHasSuccess(true)
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unable to reach backend'
+      // Ensure we always have a string message, never an object
+      let message = 'Unable to reach backend'
+      if (err instanceof Error) {
+        message = err.message || 'Unable to reach backend'
+      } else if (typeof err === 'string') {
+        message = err
+      } else if (err && typeof err === 'object' && 'message' in err) {
+        message = String(err.message) || 'Unable to reach backend'
+      }
       console.warn('⚠️ [SYSTEM_STATUS] Health check failed:', message)
 
       const newFailures = consecutiveFailures + 1
@@ -51,7 +59,7 @@ export function useSystemStatus(pollInterval?: number): UseSystemStatusResult {
 
       // Grace period: Only show error and lose readiness after 3 consecutive failures
       if (hasSuccess && newFailures >= 3) {
-        setError(message)
+        setError(message) // Always a string now
         // Optionally update status to not-ready if we want to force UI change
         setStatus(prev => prev ? { ...prev, ready: false } : null)
       }

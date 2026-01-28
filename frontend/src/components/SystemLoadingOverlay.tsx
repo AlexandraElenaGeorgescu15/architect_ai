@@ -63,6 +63,17 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
     }
   })()
 
+  // Ensure error is always a string, never an object
+  const errorMessage = (() => {
+    if (!error) return null
+    if (typeof error === 'string') return error
+    if (error instanceof Error) return error.message
+    if (typeof error === 'object' && error !== null && 'message' in error) {
+      return String(error.message)
+    }
+    return String(error)
+  })()
+
   // Check if backend is ready - multiple fallback checks
   const allPhasesComplete = phases.length > 0 && phases.every(([_, phase]) =>
     phase.status === 'complete' || phase.status === 'skipped'
@@ -244,7 +255,7 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
 
         <div className="mt-6 flex items-center justify-between pt-6 border-t border-border">
           <div className="text-xs text-muted-foreground">
-            {error ? (
+            {errorMessage ? (
               <span className="text-destructive font-medium">
                 {isUsingNgrok ? (
                   <>
@@ -252,7 +263,7 @@ export default function SystemLoadingOverlay({ status, error, isChecking, onRetr
                   </>
                 ) : (
                   <>
-                    Unable to reach backend. Click the <span className="font-bold border border-destructive/20 rounded px-1">WiFi Icon</span> at bottom-left to configure.
+                    {errorMessage}. Click the <span className="font-bold border border-destructive/20 rounded px-1">WiFi Icon</span> at bottom-left to configure.
                   </>
                 )}
               </span>
