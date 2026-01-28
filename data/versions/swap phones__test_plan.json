@@ -1,0 +1,31 @@
+[
+  {
+    "version": 1,
+    "artifact_id": "swap phones::test_plan",
+    "artifact_type": "test_plan",
+    "content": "<!-- VALIDATION WARNING: Score 0.0/100 - Issues Detected -->\n# test_plan\n\nError: All 0 generation attempts failed. | Ollama: running, API keys: configured",
+    "metadata": {
+      "model_used": "failed",
+      "provider": "cloud",
+      "validation_score": 0.0,
+      "is_valid": false,
+      "meeting_notes": "Phone Swap Request Feature\nDate: October 14, 2025\nAttendees: Product Manager, UX Designer, Lead Frontend Developer, Lead Backend Developer\nObjective: Define the requirements and implementation plan fo",
+      "html_content": null,
+      "quality_prediction": {
+        "label": "high",
+        "confidence": 0.9,
+        "score": 0.9,
+        "reasons": {
+          "notes_depth": 0.2,
+          "notes_structure": 0.05,
+          "context_rag": 0.1
+        }
+      },
+      "job_id": "gen_e63c915f",
+      "attempts": []
+    },
+    "folder_id": "swap phones",
+    "created_at": "2026-01-28T03:55:10.853421",
+    "is_current": true
+  }
+]

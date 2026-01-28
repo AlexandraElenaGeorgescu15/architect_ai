@@ -66,6 +66,11 @@ class UniversalContextService:
         self._last_build: Optional[datetime] = None
         self._cache_ttl = timedelta(hours=6)  # Rebuild every 6 hours or on changes
         
+        # Persistence
+        self.cache_dir = Path("backend/.cache")
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.cache_file = self.cache_dir / "universal_context.json"
+        
         # File importance scores
         self._file_importance: Dict[str, float] = {}
         
@@ -175,7 +180,7 @@ class UniversalContextService:
         logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 1: Checking cache")
         logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 1.1: force_rebuild={force_rebuild}, has_cached_context={bool(self._universal_context)}")
         
-        # Check if cache is still fresh
+        # Check if cache is still fresh (Memory)
         if (not force_rebuild and 
             self._universal_context and 
             self._last_build and 
@@ -183,6 +188,21 @@ class UniversalContextService:
             logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 1.2: Cache HIT - Using cached universal context (still fresh)")
             logger.info(f"🚀 [UNIVERSAL_CONTEXT] ========== BUILD UNIVERSAL CONTEXT COMPLETE (FROM CACHE) ==========")
             return self._universal_context
+            
+        # Check disk cache
+        if not force_rebuild and self.cache_file.exists():
+            try:
+                # Check modification time
+                mtime = datetime.fromtimestamp(self.cache_file.stat().st_mtime)
+                if (datetime.now() - mtime) < self._cache_ttl:
+                    logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 1.3: Disk Cache FOUND - Loading from {self.cache_file}")
+                    content = self.cache_file.read_text(encoding='utf-8')
+                    self._universal_context = json.loads(content)
+                    self._last_build = mtime
+                    logger.info(f"🚀 [UNIVERSAL_CONTEXT] ========== BUILD UNIVERSAL CONTEXT COMPLETE (FROM DISK CACHE) ==========")
+                    return self._universal_context
+            except Exception as e:
+                logger.warning(f"Failed to load disk cache: {e}")
         
         logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 1.2: Cache MISS or expired - building fresh context")
         logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 2: Building universal project context - this will take a moment...")
@@ -253,6 +273,14 @@ class UniversalContextService:
             ttl=int(self._cache_ttl.total_seconds())
         )
         logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 11.1: Universal context cached (TTL={self._cache_ttl.total_seconds()}s)")
+        
+        # Save to disk
+        try:
+            logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 11.2: Saving to disk cache: {self.cache_file}")
+            self.cache_file.write_text(json.dumps(universal_context, indent=2), encoding='utf-8')
+            logger.info(f"🚀 [UNIVERSAL_CONTEXT] Step 11.2: Saved to disk!")
+        except Exception as e:
+            logger.error(f"Failed to save to disk cache: {e}")
         
         logger.info(f"🚀 [UNIVERSAL_CONTEXT] ========== BUILD UNIVERSAL CONTEXT COMPLETE ==========")
         logger.info(f"🚀 [UNIVERSAL_CONTEXT] ✅ Universal context built in {build_duration:.2f}s")
